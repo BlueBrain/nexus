@@ -207,6 +207,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -245,7 +246,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#payload" class="header">Payload</a>
     <ul>
       <li><a href="../../../docs/delta/api/storages-api.html#local-disk-storage" class="header">Local disk storage</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
@@ -291,7 +291,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#payload" class="header">Payload</a>
     <ul>
       <li><a href="../../../docs/delta/api/storages-api.html#local-disk-storage" class="header">Local disk storage</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
@@ -359,32 +358,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-write-permission</code> (<code>files/write</code>).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-max-file-size</code> (10G).</li>
-</ul>
-<h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3><div class="callout warning "><div class="callout-title">Warning</div>
-<p>The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.</p></div>
-<p>This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system. This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph, Gluster, GPFS, Lustre, &hellip;) that you don&rsquo;t want to mount directly on the system where Nexus Delta runs.</p>
-<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/master/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
-<p>In order to be able to use this storage, the configuration flag <code>plugins.storage.storages.remote-disk.enabled</code> should be set to <code>true</code>. <a href="../../getting-started/running-nexus/configuration/index.html#remote-storage-configuration">More information about configuration</a></p>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
-  &quot;name&quot;: &quot;{name}&quot;,
-  &quot;description&quot;: &quot;{description}&quot;,
-  &quot;default&quot;: &quot;{default}&quot;,
-  &quot;folder&quot;: &quot;{folder}&quot;,
-  &quot;readPermission&quot;: &quot;{read_permission}&quot;,
-  &quot;writePermission&quot;: &quot;{write_permission}&quot;,
-  &quot;maxFileSize&quot;: {max_file_size}
-}
-</code></pre>
-<p>&hellip;where</p>
-<ul>
-  <li><code>{name}</code>: String - A name for this storage. This field is optional.</li>
-  <li><code>{description}</code>: String - A description for this storage. This field is optional.</li>
-  <li><code>{default}</code>: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.</li>
-  <li><code>{folder}</code>: String - the storage service bucket where files using this storage are going to be saved.</li>
-  <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-read-permission</code> (<code>resources/read</code>).</li>
-  <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-write-permission</code> (<code>files/write</code>).</li>
-  <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-max-file-size</code> (10G).</li>
 </ul>
 <h3><a href="#amazon-s3-compatible-storage" name="amazon-s3-compatible-storage" class="anchor"><span class="anchor-link"></span></a>Amazon S3 compatible storage</h3>
 <p>This storage type allows the use of an internal or external blob-store that is compatible with the Amazon S3 API.</p>
@@ -482,18 +455,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/create-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
    -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot; -d \
+   &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot; -d \
     &#39;{
-        &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+        &quot;@type&quot;: &quot;S3Storage&quot;,
         &quot;default&quot;: false,
-        &quot;folder&quot;: &quot;test&quot;
+        &quot;bucket&quot;: &quot;test&quot;
     }&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/create-put.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+  &quot;@type&quot;: &quot;S3Storage&quot;,
   &quot;default&quot;: false,
-  &quot;folder&quot;: &quot;test&quot;
+  &quot;bucket&quot;: &quot;test&quot;
 }</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -502,21 +475,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;https://bluebrain.github.io/nexus/contexts/storages-metadata.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
   ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
   &quot;@type&quot;: [
     &quot;Storage&quot;,
-    &quot;RemoteDiskStorage&quot;
+    &quot;S3Storage&quot;
   ],
-  &quot;_algorithm&quot;: &quot;SHA-256&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
   &quot;_rev&quot;: 1,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
@@ -534,18 +506,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/update.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
    -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/storages/myorg/myproject/remote?rev=1&quot; -d \
+   &quot;http://localhost:8080/v1/storages/myorg/myproject/s3?rev=1&quot; -d \
     &#39;{
-        &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+        &quot;@type&quot;: &quot;S3Storage&quot;,
         &quot;default&quot;: false,
-        &quot;folder&quot;: &quot;test-updated&quot;
+        &quot;bucket&quot;: &quot;test-updated&quot;
     }&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/update.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+  &quot;@type&quot;: &quot;S3Storage&quot;,
   &quot;default&quot;: false,
-  &quot;folder&quot;: &quot;test-updated&quot;
+  &quot;bucket&quot;: &quot;test-updated&quot;
 }</code></pre></dd>
   <dt>Response</dt>
   <dd>
@@ -554,21 +526,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;https://bluebrain.github.io/nexus/contexts/storages-metadata.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
   ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
   &quot;@type&quot;: [
     &quot;Storage&quot;,
-    &quot;RemoteDiskStorage&quot;
+    &quot;S3Storage&quot;
   ],
-  &quot;_algorithm&quot;: &quot;SHA-256&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
   &quot;_rev&quot;: 2,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:24:24.242Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
@@ -584,7 +555,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/deprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X DELETE \
-   &quot;http://localhost:8080/v1/storages/myorg/myproject/remote?rev=3&quot;</code></pre></dd>
+   &quot;http://localhost:8080/v1/storages/myorg/myproject/s3?rev=3&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/deprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
@@ -592,21 +563,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;https://bluebrain.github.io/nexus/contexts/storages-metadata.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
   ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
   &quot;@type&quot;: [
     &quot;Storage&quot;,
-    &quot;RemoteDiskStorage&quot;
+    &quot;S3Storage&quot;
   ],
-  &quot;_algorithm&quot;: &quot;SHA-256&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: true,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
   &quot;_rev&quot;: 4,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
@@ -622,7 +592,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/undeprecate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
-   &quot;http://localhost:8080/v1/storages/myorg/myproject/remote?rev=4&quot;</code></pre></dd>
+   &quot;http://localhost:8080/v1/storages/myorg/myproject/s3?rev=4&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/undeprecated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
@@ -630,21 +600,21 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;https://bluebrain.github.io/nexus/contexts/storages-metadata.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
   ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
   &quot;@type&quot;: [
     &quot;Storage&quot;,
-    &quot;RemoteDiskStorage&quot;
+    &quot;S3Storage&quot;
   ],
   &quot;_algorithm&quot;: &quot;SHA-256&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
   &quot;_rev&quot;: 5,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
@@ -660,7 +630,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;</code></pre></dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetched.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
@@ -668,26 +638,24 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
   ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
   &quot;@type&quot;: [
     &quot;Storage&quot;,
-    &quot;RemoteDiskStorage&quot;
+    &quot;S3Storage&quot;
   ],
   &quot;default&quot;: false,
-  &quot;folder&quot;: &quot;test-updated&quot;,
-  &quot;maxFileSize&quot;: 10737418240,
+  &quot;bucket&quot;: &quot;test-updated&quot;,
   &quot;readPermission&quot;: &quot;resources/read&quot;,
   &quot;writePermission&quot;: &quot;files/write&quot;,
-  &quot;_algorithm&quot;: &quot;SHA-256&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: true,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
   &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
   &quot;_rev&quot;: 4,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
@@ -704,13 +672,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch-source.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/source&quot;</code></pre></dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch-source.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/source&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetched-source.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+  &quot;@type&quot;: &quot;S3Storage&quot;,
   &quot;default&quot;: false,
-  &quot;folder&quot;: &quot;test-updated&quot;
+  &quot;bucket&quot;: &quot;test-updated&quot;
 }</code></pre></dd>
 </dl>
 <h2><a href="#list" name="list" class="anchor"><span class="anchor-link"></span></a>List</h2>
@@ -820,21 +788,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
     },
     {
-      &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
+      &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
       &quot;@type&quot;: [
         &quot;Storage&quot;,
-        &quot;RemoteDiskStorage&quot;
+        &quot;S3Storage&quot;
       ],
-      &quot;_algorithm&quot;: &quot;SHA-256&quot;,
       &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
       &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
       &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
       &quot;_deprecated&quot;: true,
-      &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/incoming&quot;,
-      &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/outgoing&quot;,
+      &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
+      &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
       &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
       &quot;_rev&quot;: 4,
-      &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/remote&quot;,
+      &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
       &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
       &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
     }
@@ -870,19 +837,19 @@ data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/met
 event:StorageCreated
 id:642ccf20-b253-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:22:19.195Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@type&quot;:&quot;RemoteDiskStorage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:22:19.195Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@type&quot;:&quot;S3Storage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageCreated
 id:879fab30-b253-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageUpdated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:24:24.242Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_rev&quot;:2,&quot;_source&quot;:{&quot;@type&quot;:&quot;RemoteDiskStorage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test-updated&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageUpdated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:24:24.242Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:2,&quot;_source&quot;:{&quot;@type&quot;:&quot;S3Storage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test-updated&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageUpdated
 id:d2226030-b253-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageTagAdded&quot;,&quot;tag&quot;:&quot;mytag&quot;,&quot;targetRev&quot;:1,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:28:08.479Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_rev&quot;:3,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageTagAdded&quot;,&quot;tag&quot;:&quot;mytag&quot;,&quot;targetRev&quot;:1,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:28:08.479Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:3,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageTagAdded
 id:57ca3a00-b254-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageDeprecated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:29:27.821Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_rev&quot;:4,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageDeprecated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:29:27.821Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:4,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageDeprecated
 id:8714dae0-b254-11eb-b48a-9d94c78eda08</code></pre></dd>
 </dl>
@@ -899,7 +866,7 @@ id:8714dae0-b254-11eb-b48a-9d94c78eda08</code></pre></dd>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch-statistics.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/statistics&quot;</code></pre></dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch-statistics.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/statistics&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetched-statistics.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{

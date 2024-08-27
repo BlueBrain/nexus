@@ -207,6 +207,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -248,9 +249,18 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/files-api.html#request-body-and-headers-for-create-and-updates-operations" class="header">Request body and headers for create and updates operations</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
-    <li><a href="../../../docs/delta/api/files-api.html#link-using-post" class="header">Link using POST</a></li>
-    <li><a href="../../../docs/delta/api/files-api.html#link-using-put" class="header">Link using PUT</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#update" class="header">Update</a></li>
+    <li><a href="../../../docs/delta/api/files-api.html#delegation-linking-s3-only-" class="header">Delegation &amp; Linking (S3 only)</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/files-api.html#linking-a-new-file-using-post" class="header">Linking a new file using POST</a></li>
+      <li><a href="../../../docs/delta/api/files-api.html#linking-a-new-file-update-an-existing-file-using-put" class="header">Linking a new file / update an existing file using PUT</a></li>
+      <li><a href="../../../docs/delta/api/files-api.html#delegating-file-uploads" class="header">Delegating file uploads</a>
+      <ul>
+        <li><a href="../../../docs/delta/api/files-api.html#1-validate-and-generate-path-for-file-delegation" class="header">1. Validate and generate path for file delegation</a></li>
+        <li><a href="../../../docs/delta/api/files-api.html#2-upload-file-to-s3" class="header">2. Upload file to S3</a></li>
+        <li><a href="../../../docs/delta/api/files-api.html#3-create-update-delegated-file-resource" class="header">3. Create/update delegated file resource</a></li>
+      </ul></li>
+    </ul></li>
     <li><a href="../../../docs/delta/api/files-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#deprecate" class="header">Deprecate</a></li>
@@ -263,16 +273,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/files-api.html#within-an-organization" class="header">Within an organization</a></li>
       <li><a href="../../../docs/delta/api/files-api.html#within-all-projects" class="header">Within all projects</a></li>
       <li><a href="../../../docs/delta/api/files-api.html#parameter-description" class="header">Parameter description</a></li>
-    </ul></li>
-    <li><a href="../../../docs/delta/api/files-api.html#delegation-registration-s3-only-" class="header">Delegation &amp; Registration (S3 only)</a>
-    <ul>
-      <li><a href="../../../docs/delta/api/files-api.html#register-external-file" class="header">Register external file</a></li>
-      <li><a href="../../../docs/delta/api/files-api.html#delegating-file-uploads" class="header">Delegating file uploads</a>
-      <ul>
-        <li><a href="../../../docs/delta/api/files-api.html#1-validate-and-generate-path-for-file-delegation" class="header">1. Validate and generate path for file delegation</a></li>
-        <li><a href="../../../docs/delta/api/files-api.html#2-upload-file-to-s3" class="header">2. Upload file to S3</a></li>
-        <li><a href="../../../docs/delta/api/files-api.html#3-create-delegated-file-resource" class="header">3. Create delegated file resource</a></li>
-      </ul></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/files-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
@@ -304,9 +304,18 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/files-api.html#request-body-and-headers-for-create-and-updates-operations" class="header">Request body and headers for create and updates operations</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
-    <li><a href="../../../docs/delta/api/files-api.html#link-using-post" class="header">Link using POST</a></li>
-    <li><a href="../../../docs/delta/api/files-api.html#link-using-put" class="header">Link using PUT</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#update" class="header">Update</a></li>
+    <li><a href="../../../docs/delta/api/files-api.html#delegation-linking-s3-only-" class="header">Delegation &amp; Linking (S3 only)</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/files-api.html#linking-a-new-file-using-post" class="header">Linking a new file using POST</a></li>
+      <li><a href="../../../docs/delta/api/files-api.html#linking-a-new-file-update-an-existing-file-using-put" class="header">Linking a new file / update an existing file using PUT</a></li>
+      <li><a href="../../../docs/delta/api/files-api.html#delegating-file-uploads" class="header">Delegating file uploads</a>
+      <ul>
+        <li><a href="../../../docs/delta/api/files-api.html#1-validate-and-generate-path-for-file-delegation" class="header">1. Validate and generate path for file delegation</a></li>
+        <li><a href="../../../docs/delta/api/files-api.html#2-upload-file-to-s3" class="header">2. Upload file to S3</a></li>
+        <li><a href="../../../docs/delta/api/files-api.html#3-create-update-delegated-file-resource" class="header">3. Create/update delegated file resource</a></li>
+      </ul></li>
+    </ul></li>
     <li><a href="../../../docs/delta/api/files-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#deprecate" class="header">Deprecate</a></li>
@@ -319,16 +328,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/files-api.html#within-an-organization" class="header">Within an organization</a></li>
       <li><a href="../../../docs/delta/api/files-api.html#within-all-projects" class="header">Within all projects</a></li>
       <li><a href="../../../docs/delta/api/files-api.html#parameter-description" class="header">Parameter description</a></li>
-    </ul></li>
-    <li><a href="../../../docs/delta/api/files-api.html#delegation-registration-s3-only-" class="header">Delegation &amp; Registration (S3 only)</a>
-    <ul>
-      <li><a href="../../../docs/delta/api/files-api.html#register-external-file" class="header">Register external file</a></li>
-      <li><a href="../../../docs/delta/api/files-api.html#delegating-file-uploads" class="header">Delegating file uploads</a>
-      <ul>
-        <li><a href="../../../docs/delta/api/files-api.html#1-validate-and-generate-path-for-file-delegation" class="header">1. Validate and generate path for file delegation</a></li>
-        <li><a href="../../../docs/delta/api/files-api.html#2-upload-file-to-s3" class="header">2. Upload file to S3</a></li>
-        <li><a href="../../../docs/delta/api/files-api.html#3-create-delegated-file-resource" class="header">3. Create delegated file resource</a></li>
-      </ul></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/files-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
@@ -465,7 +464,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/create-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
      -F &quot;file=@/path/to/myfile.pdf;type=application/pdf&quot; \
      -H &#39;x-nxs-file-metadata: {&quot;name&quot;: &quot;My File&quot;}&#39; \
-     &quot;http://localhost:8080/v1/files/myorg/myproject/myfile?storage=remote&amp;tag=mytag&quot;</code></pre></dd>
+     &quot;http://localhost:8080/v1/files/myorg/myproject/myfile?storage=s3&amp;tag=mytag&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/created-put.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
@@ -495,200 +494,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_rev&quot;: 1,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/myfile&quot;,
   &quot;_storage&quot;: {
-    &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
-    &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+    &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
+    &quot;@type&quot;: &quot;S3Storage&quot;,
     &quot;_rev&quot;: 1
   },
   &quot;_updatedAt&quot;: &quot;2021-05-12T07:30:54.576Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_uuid&quot;: &quot;cb5c4d8e-0189-49ab-b761-c92b2d4f49d2&quot;
-}</code></pre></dd>
-</dl>
-<h2><a href="#link-using-post" name="link-using-post" class="anchor"><span class="anchor-link"></span></a>Link using POST</h2>
-<p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>RemoteDiskStorage</code>.</p>
-<pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
-  {
-    &quot;path&quot;: &quot;{path}&quot;,
-    &quot;filename&quot;: &quot;{filename}&quot;,
-    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
-    &quot;metadata&quot;: &quot;{metadata}&quot;
-  }
-</code></pre>
-<ul>
-  <li><code>{storageId}</code>: String - Selects a specific storage backend that supports linking existing files. This field is optional.  When not specified, the default storage of the project is used.</li>
-  <li><code>{path}</code>: String - the relative location (from the point of view of storage folder) on the remote storage where the file exists.</li>
-  <li><code>{filename}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
-  <li><code>{mediaType}</code>: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.</li>
-  <li><code>{tagName}</code> an optional label given to the linked file resource on its first revision.</li>
-  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
-   -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/files/myorg/myproject?storage=remote&quot; -d \
-   &#39;{
-      &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
-      &quot;filename&quot;: &quot;myfile.png&quot;,
-      &quot;mediaType&quot;: &quot;image/png&quot;,
-      &quot;metadata&quot;: {
-        &quot;name&quot;: &quot;My File&quot;,
-        &quot;description&quot;: &quot;a description of the file&quot;,
-        &quot;keywords&quot;: {
-          &quot;key1&quot;: &quot;value1&quot;,
-          &quot;key2&quot;: &quot;value2&quot;
-        }
-      }
-   }&#39;</code></pre></dd>
-  <dt>Payload</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
-  &quot;filename&quot;: &quot;myfile.png&quot;,
-  &quot;mediaType&quot;: &quot;image/png&quot;,
-  &quot;metadata&quot;: {
-    &quot;name&quot;: &quot;My File&quot;,
-    &quot;description&quot;: &quot;a description of the file&quot;,
-    &quot;keywords&quot;: {
-      &quot;key1&quot;: &quot;value1&quot;,
-      &quot;key2&quot;: &quot;value2&quot;
-    }
-  }
-}</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/linked-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: [
-    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
-  ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,
-  &quot;@type&quot;: &quot;File&quot;,
-  &quot;name&quot;: &quot;My File&quot;,
-  &quot;description&quot;: &quot;a description of the file&quot;,
-  &quot;_bytes&quot;: 1658857,
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
-  &quot;_createdAt&quot;: &quot;2021-05-12T07:56:42.991Z&quot;,
-  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-  &quot;_deprecated&quot;: false,
-  &quot;_digest&quot;: {
-    &quot;_value&quot;: &quot;&quot;
-  },
-  &quot;_filename&quot;: &quot;myfile.png&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5/incoming&quot;,
-  &quot;_keywords&quot;: {
-    &quot;key1&quot;: &quot;value1&quot;,
-    &quot;key2&quot;: &quot;value2&quot;
-  },
-  &quot;_location&quot;: &quot;file:///tmp/test/nexus/myorg/myproject/3/4/c/4/9/1/a/1/myfile.png&quot;,
-  &quot;_mediaType&quot;: &quot;image/png&quot;,
-  &quot;_origin&quot;: &quot;Storage&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,
-  &quot;_storage&quot;: {
-    &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
-    &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
-    &quot;_rev&quot;: 1
-  },
-  &quot;_updatedAt&quot;: &quot;2021-05-12T07:56:42.991Z&quot;,
-  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-  &quot;_uuid&quot;: &quot;34c491a1-17ba-4726-bdf2-3b4e1e150750&quot;
-}</code></pre></dd>
-</dl>
-<h2><a href="#link-using-put" name="link-using-put" class="anchor"><span class="anchor-link"></span></a>Link using PUT</h2>
-<p>Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using <code>RemoteDiskStorage</code>.</p>
-<p>This alternative endpoint allows to specify the resource <code>@id</code>.</p>
-<pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&amp;tag={tagName}
-  {
-    &quot;path&quot;: &quot;{path}&quot;,
-    &quot;filename&quot;: &quot;{filename}&quot;,
-    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
-    &quot;metadata&quot;: &quot;{metadata}&quot;
-  }
-</code></pre>
-<p>&hellip; where </p>
-<ul>
-  <li><code>{storageId}</code>: String - Selects a specific storage backend that supports linking existing files. This field is optional. When not specified, the default storage of the project is used.</li>
-  <li><code>{path}</code>: String - the relative location (from the point of view of the storage folder) on the remote storage where the file exists.</li>
-  <li><code>{filename}</code>: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.</li>
-  <li><code>{mediaType}</code>: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.</li>
-  <li><code>{tagName}</code> an optional label given to the linked file resource on its first revision.</li>
-  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
-   -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/files/myorg/myproject/mylink?storage=remote&amp;tag=mytag&quot; -d \
-   &#39;{
-      &quot;path&quot;: &quot;relative/path/to/myfile2.png&quot;,
-      &quot;metadata&quot;: {
-        &quot;name&quot;: &quot;My File&quot;,
-        &quot;description&quot;: &quot;a description of the file&quot;,
-        &quot;keywords&quot;: {
-          &quot;key1&quot;: &quot;value1&quot;,
-          &quot;key2&quot;: &quot;value2&quot;
-        }
-      }
-   }&#39;</code></pre></dd>
-  <dt>Payload</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-put.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;path&quot;: &quot;relative/path/to/myfile2.png&quot;,
-  &quot;metadata&quot;: {
-    &quot;name&quot;: &quot;My File&quot;,
-    &quot;description&quot;: &quot;a description of the file&quot;,
-    &quot;keywords&quot;: {
-      &quot;key1&quot;: &quot;value1&quot;,
-      &quot;key2&quot;: &quot;value2&quot;
-    }
-  }
-}</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/linked-put.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: [
-    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
-  ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/mylink&quot;,
-  &quot;@type&quot;: &quot;File&quot;,
-  &quot;name&quot;: &quot;My File&quot;,
-  &quot;description&quot;: &quot;description of the file&quot;,
-  &quot;_bytes&quot;: 1658857,
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
-  &quot;_createdAt&quot;: &quot;2021-05-12T08:00:34.563Z&quot;,
-  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-  &quot;_deprecated&quot;: false,
-  &quot;_digest&quot;: {
-    &quot;_value&quot;: &quot;&quot;
-  },
-  &quot;_filename&quot;: &quot;myfile2.png&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/mylink/incoming&quot;,
-  &quot;_keywords&quot;: {
-    &quot;key1&quot;: &quot;value1&quot;,
-    &quot;key2&quot;: &quot;value2&quot;
-  },
-  &quot;_location&quot;: &quot;file:///tmp/test/nexus/myorg/myproject/6/6/0/4/9/9/d/9/myfile2.png&quot;,
-  &quot;_origin&quot;: &quot;Storage&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/mylink/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/mylink&quot;,
-  &quot;_storage&quot;: {
-    &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
-    &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
-    &quot;_rev&quot;: 1
-  },
-  &quot;_updatedAt&quot;: &quot;2021-05-12T08:00:34.563Z&quot;,
-  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-  &quot;_uuid&quot;: &quot;660499d9-c522-4f90-beda-2d79e538ffce&quot;
 }</code></pre></dd>
 </dl>
 <h2><a href="#update" name="update" class="anchor"><span class="anchor-link"></span></a>Update</h2>
@@ -742,6 +554,318 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_updatedAt&quot;: &quot;2021-05-12T08:04:08.440Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_uuid&quot;: &quot;3e86d93a-c196-407d-a13c-cea7168e32e3&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#delegation-linking-s3-only-" name="delegation-linking-s3-only-" class="anchor"><span class="anchor-link"></span></a>Delegation &amp; Linking (S3 only)</h2>
+<p>To support files stored in the cloud, Delta allows users to register files already uploaded to S3. This is useful primarily for large files where uploading directly through Delta using HTTP is inefficient and expensive.</p>
+<p>There are two use cases: registering an already uploaded file by specifying its path, and asking Delta to generate a path in its standard format.</p>
+<h3><a href="#linking-a-new-file-using-post" name="linking-a-new-file-using-post" class="anchor"><span class="anchor-link"></span></a>Linking a new file using POST</h3>
+<p>This endpoint accepts a path and creates a new file resource based on an existing S3 file.</p>
+<pre><code>POST /v1/link/files/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
+  {
+    &quot;path&quot;: &quot;{path}&quot;,
+    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
+    &quot;metadata&quot;: {metadata}
+  }
+</code></pre>
+<p>&hellip; where</p>
+<ul>
+  <li><code>{path}</code>: String - the relative path to the file from the root of S3.</li>
+  <li><code>{mediaType}</code>: String - Optional <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the file type. If omitted this will be inferred by S3.</li>
+  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
+  <li><code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional.  When not specified, the default storage of the project is used.</li>
+  <li><code>{tagName}</code> an optional label given to the file on its first revision.</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
+   -H &quot;Content-Type: application/json&quot; \
+   &quot;http://localhost:8080/v1/link/files/myorg/myproject?storage=mys3storage&quot; -d \
+   &#39;{
+      &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+      &quot;mediaType&quot;: &quot;image/png&quot;,
+      &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;My File&quot;,
+        &quot;description&quot;: &quot;a description of the file&quot;,
+        &quot;keywords&quot;: {
+          &quot;key1&quot;: &quot;value1&quot;,
+          &quot;key2&quot;: &quot;value2&quot;
+        }
+      }
+   }&#39;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-result.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot; : [
+    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot; : &quot;http://delta:8080/v1/resources/hkrxvoxdyiiev1p/03vctrp70usfehq/_/iwa41vwspwke6nx&quot;,
+  &quot;@type&quot; : &quot;File&quot;,
+  &quot;_bytes&quot; : 29625,
+  &quot;_constrainedBy&quot; : &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
+  &quot;_createdAt&quot; : &quot;2024-06-14T12:44:36.525177Z&quot;,
+  &quot;_createdBy&quot; : &quot;http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv&quot;,
+  &quot;_deprecated&quot; : false,
+  &quot;_digest&quot; : {
+    &quot;_algorithm&quot; : &quot;SHA-256&quot;,
+    &quot;_value&quot; : &quot;05bf442810213b9e5fecd5242eefeff1f3d207913861c96658c75ccf58997e87&quot;
+  },
+  &quot;_filename&quot; : &quot;myfile.png&quot;,
+  &quot;_incoming&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/incoming&quot;,
+  &quot;_location&quot; : &quot;relative/path/to/myfile.png&quot;,
+  &quot;_mediaType&quot; : &quot;image/png&quot;,
+  &quot;_origin&quot; : &quot;Link&quot;,
+  &quot;_outgoing&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/outgoing&quot;,
+  &quot;_project&quot; : &quot;http://delta:8080/v1/projects/hkrxvoxdyiiev1p/03vctrp70usfehq&quot;,
+  &quot;_rev&quot; : 1,
+  &quot;_self&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx&quot;,
+  &quot;_storage&quot; : {
+    &quot;@id&quot; : &quot;https://bluebrain.github.io/nexus/vocabulary/mys3storage&quot;,
+    &quot;@type&quot; : &quot;S3Storage&quot;,
+    &quot;_rev&quot; : 3
+  },
+  &quot;_updatedAt&quot; : &quot;2024-06-14T12:44:36.525177Z&quot;,
+  &quot;_updatedBy&quot; : &quot;http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv&quot;,
+  &quot;_uuid&quot; : &quot;79695062-ecbb-42dc-a62d-61c2c02be129&quot;
+}</code></pre></dd>
+</dl>
+<h3><a href="#linking-a-new-file-update-an-existing-file-using-put" name="linking-a-new-file-update-an-existing-file-using-put" class="anchor"><span class="anchor-link"></span></a>Linking a new file / update an existing file using PUT</h3>
+<p>This endpoint accepts a path and creates a new file resource or update an existing one based on an existing S3 file.</p>
+<p>This alternative endpoint allows to specify the file <code>@id</code>.</p>
+<pre><code>PUT /v1/link/files/{org_label}/{project_label}/{fileId}?storage={storageId}&amp;rev={previous_rev}&amp;tag={tagName}
+  {
+    &quot;path&quot;: &quot;{path}&quot;,
+    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
+    &quot;metadata&quot;: {metadata}
+  }
+</code></pre>
+<p>&hellip; where</p>
+<ul>
+  <li><code>{path}</code>: String - the relative path to the file from the root of S3.</li>
+  <li><code>{mediaType}</code>: String - Optional <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the file type. If omitted this will be inferred by S3.</li>
+  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
+  <li><code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional.  When not specified, the default storage of the project is used.</li>
+  <li><code>{previous_rev}</code>: the last known revision number for the file (if a file for <code>{file_id}</code> already exists on that project).</li>
+  <li><code>{tagName}</code> an optional label given to the file on the new revision.</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-put.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X PUT \
+   -H &quot;Content-Type: application/json&quot; \
+   &quot;http://localhost:8080/v1/link/files/myorg/myproject/fileid?storage=mys3storage&quot; -d \
+   &#39;{
+      &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+      &quot;mediaType&quot;: &quot;image/png&quot;,
+      &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;My File&quot;,
+        &quot;description&quot;: &quot;a description of the file&quot;,
+        &quot;keywords&quot;: {
+          &quot;key1&quot;: &quot;value1&quot;,
+          &quot;key2&quot;: &quot;value2&quot;
+        }
+      }
+   }&#39;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/link-result.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot; : [
+    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot; : &quot;http://delta:8080/v1/resources/hkrxvoxdyiiev1p/03vctrp70usfehq/_/iwa41vwspwke6nx&quot;,
+  &quot;@type&quot; : &quot;File&quot;,
+  &quot;_bytes&quot; : 29625,
+  &quot;_constrainedBy&quot; : &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
+  &quot;_createdAt&quot; : &quot;2024-06-14T12:44:36.525177Z&quot;,
+  &quot;_createdBy&quot; : &quot;http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv&quot;,
+  &quot;_deprecated&quot; : false,
+  &quot;_digest&quot; : {
+    &quot;_algorithm&quot; : &quot;SHA-256&quot;,
+    &quot;_value&quot; : &quot;05bf442810213b9e5fecd5242eefeff1f3d207913861c96658c75ccf58997e87&quot;
+  },
+  &quot;_filename&quot; : &quot;myfile.png&quot;,
+  &quot;_incoming&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/incoming&quot;,
+  &quot;_location&quot; : &quot;relative/path/to/myfile.png&quot;,
+  &quot;_mediaType&quot; : &quot;image/png&quot;,
+  &quot;_origin&quot; : &quot;Link&quot;,
+  &quot;_outgoing&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/outgoing&quot;,
+  &quot;_project&quot; : &quot;http://delta:8080/v1/projects/hkrxvoxdyiiev1p/03vctrp70usfehq&quot;,
+  &quot;_rev&quot; : 1,
+  &quot;_self&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx&quot;,
+  &quot;_storage&quot; : {
+    &quot;@id&quot; : &quot;https://bluebrain.github.io/nexus/vocabulary/mys3storage&quot;,
+    &quot;@type&quot; : &quot;S3Storage&quot;,
+    &quot;_rev&quot; : 3
+  },
+  &quot;_updatedAt&quot; : &quot;2024-06-14T12:44:36.525177Z&quot;,
+  &quot;_updatedBy&quot; : &quot;http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv&quot;,
+  &quot;_uuid&quot; : &quot;79695062-ecbb-42dc-a62d-61c2c02be129&quot;
+}</code></pre></dd>
+</dl>
+<h3><a href="#delegating-file-uploads" name="delegating-file-uploads" class="anchor"><span class="anchor-link"></span></a>Delegating file uploads</h3>
+<p>Clients can use delegation for files that cannot be uploaded through Delta (e.g. large files which may benefit from multipart upload from S3). Here Delta will provide bucket and path details for the upload. Users are then expected to upload the file using other methods, and call back to Delta to register this file with the same metadata that was initially validated. The three steps are outlined in detail below.</p>
+<h4><a href="#1-validate-and-generate-path-for-file-delegation" name="1-validate-and-generate-path-for-file-delegation" class="anchor"><span class="anchor-link"></span></a>1. Validate and generate path for file delegation</h4>
+<p>Delta accepts and validates the following payload.</p>
+<h5><a href="#generate-a-delegation-for-a-new-file-using-post" name="generate-a-delegation-for-a-new-file-using-post" class="anchor"><span class="anchor-link"></span></a>Generate a delegation for a new file using POST</h5>
+<pre><code>POST /v1/delegate/files/generate/{org_label}/{project_label}?storage={storageId}&amp;tag={tagName}
+  {
+    &quot;filename&quot;: &quot;{filename}&quot;,
+    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
+    &quot;metadata&quot;: {metadata}
+  }
+</code></pre>
+<p>&hellip; where</p>
+<ul>
+  <li><code>{filename}</code>: String - mandatory name given to the file within the generated path.</li>
+  <li><code>{mediaType}</code>: String - Optional <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the file type. If omitted this will be inferred by S3.</li>
+  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
+  <li><code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional.  When not specified, the default storage of the project is used.</li>
+  <li><code>{tagName}</code>: String - an optional label given to the file on the new revision.</li>
+</ul>
+<h5><a href="#generate-a-delegation-for-a-new-file-update-an-existing-file-using-put" name="generate-a-delegation-for-a-new-file-update-an-existing-file-using-put" class="anchor"><span class="anchor-link"></span></a>Generate a delegation for a new file / update an existing file using PUT</h5>
+<p>This endpoint accepts a path and creates a new file resource or update an existing one based on an existing S3 file.</p>
+<p>This alternative endpoint allows to specify the file <code>@id</code>.</p>
+<pre><code>PUT /v1/delegate/files/generate/{org_label}/{project_label}/{fileId}?storage={storageId}&amp;rev={previous_rev}&amp;tag={tagName}
+  {
+    &quot;filename&quot;: &quot;{filename}&quot;,
+    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
+    &quot;metadata&quot;: {metadata}
+  }
+</code></pre>
+<p>&hellip; where</p>
+<ul>
+  <li><code>{filename}</code>: String - mandatory name given to the file within the generated path.</li>
+  <li><code>{mediaType}</code>: String - Optional <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the file type. If omitted this will be inferred by S3.</li>
+  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
+  <li><code>{storageId}</code> selects a specific storage backend where the file will be uploaded. This field is optional.  When not specified, the default storage of the project is used.</li>
+  <li><code>{previous_rev}</code>: the last known revision number for the file (if a file for <code>{file_id}</code> already exists on that project).</li>
+  <li><code>{tagName}</code>: String - an optional label given to the file on the new revision.</li>
+</ul>
+<h5><a href="#delegation-payload" name="delegation-payload" class="anchor"><span class="anchor-link"></span></a>Delegation payload</h5>
+<p>It then generates the following details for the file:</p>
+<pre class="prettyprint"><code class="language-json"> {
+    &quot;@type&quot;: &quot;FileDelegationCreationRequest&quot;,
+    &quot;project&quot;: &quot;{org_label}/{project_label}&quot;,
+    &quot;id&quot;: &quot;&lt;file resource identifier&gt;&quot;,
+    &quot;rev&quot;: &quot;&lt;last known revision&gt;&quot;,
+    &quot;targetLocation&quot;: {
+      &quot;storageId&quot;: &quot;&lt;storage identifier&gt;&quot;,
+      &quot;bucket&quot;: &quot;&lt;s3 bucket&gt;&quot;,
+      &quot;path&quot;: &quot;&lt;path from s3 root&gt;&quot;
+    },
+    &quot;description&quot;: {
+      &quot;filename&quot;: &quot;&lt;filename&gt;&quot;,
+      &quot;mediaType&quot;: &quot;&lt;user provided mediaType&gt;&quot;,
+      &quot;metadata&quot;: {}
+    }
+ }
+</code></pre>
+<p>The user is expected to upload their file to <code>path</code> within <code>bucket</code>. The <code>id</code> is reserved for when the file resource is created. <code>mediaType</code> and <code>metadata</code> are what the user specified in the request.</p>
+<p>This payload is then signed using the <a href="https://datatracker.ietf.org/doc/html/rfc7515#section-7.2.2">flattened JWS serialization format</a> to ensure that Delta has validated and generated the correct data. This same payload will be passed when creating the file resource.</p>
+<pre class="prettyprint"><code class="language-json"> {
+    &quot;payload&quot;: &quot;&lt;base64 encoded payload contents&gt;&quot;,
+    &quot;protected&quot;: &quot;&lt;integrity-protected header contents&gt;&quot;,
+    &quot;signature&quot;: &quot;&lt;signature contents&gt;&quot;
+ }
+</code></pre>
+<p>The <code>payload</code> field can be base64 decoded to access the generated file details. Note that <code>protected</code> contains an expiry field <code>exp</code> with the datetime at which this signature will expire (in epoch seconds). To view this can also be base64 decoded.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-submit-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
+   -H &quot;Content-Type: application/json&quot; \
+   &quot;http://localhost:8080/v1/delegate/generate/files/myorg/myproject?storage=mys3storage&quot; -d \
+   &#39;{
+      &quot;filename&quot;: &quot;myfile.png&quot;,
+      &quot;mediaType&quot;: &quot;image/png&quot;,
+      &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;My File&quot;,
+        &quot;description&quot;: &quot;a description of the file&quot;,
+        &quot;keywords&quot;: {
+          &quot;key1&quot;: &quot;value1&quot;,
+          &quot;key2&quot;: &quot;value2&quot;
+        }
+      }
+   }&#39;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-submit-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;protected&quot; : &quot;eyJleHAiOjE3MTg2Mjg1NDUsImFsZyI6IlJTMjU2In0&quot;,
+  &quot;payload&quot; : &quot;eyJidWNrZXQiOiJqNDc4M2NjNWFkY2F1a3UiLCJwYXRoIjoibXlwcmVmaXgvYTE0bTYxZWgzajVuNzVjLzhrbXlpb2QyMzM1MnhpZC9maWxlcy9iLzIvOS80LzMvYy9jLzYvaG5qeXR3b2x0ZnVyc2JlaCIsIm1lZGlhVHlwZSI6ImltYWdlL2RhbiIsIm1ldGFkYXRhIjp7ImRlc2NyaXB0aW9uIjoicnByZndzdWpveGJpaXllaSIsImtleXdvcmRzIjp7ImtvZXZvd3Bsc3Jld2NlZGIiOiJ2dnNlaW9wa3Z5Y3d1dG1oIn0sIm5hbWUiOiJmbW94dHh3a3JvdWhtZG90In0sImlkIjoiaHR0cDovL2RlbHRhOjgwODAvdjEvcmVzb3VyY2VzL2ExNG02MWVoM2o1bjc1Yy84a215aW9kMjMzNTJ4aWQvXy9hNGE5ODE2Mi1jYTNmLTQ2YmUtYWUxMC00MzJjYTZmOTdjNGYifQ&quot;,
+  &quot;signature&quot; : &quot;htQLymfQIrks7MejErb4v3mnhQT2W6iPZdkd7LVBPJ0Ksybj8XG8dbTJH5pjZJF7-HXi848R14tquZ6iSeXpEqFGiZYge8obPQRLpJA0qbc9Mmhlq-CTbIdsy5OFpdzcDadSj6_k_kzuU2PR-Fli9GtH-34z2d4C9dWsBmnUo_IA3dvSFCF_PaQuajo7cJYa_0yc4VVGKG-xYi9yV4ylD5D2cxMUDFun78NOKDD_2upF-kuf9t5E-NjCl0DffkelbqYuH6nMop2zmwfu-cwHnChaDwKM7HLJGLomD5duU5sq-mVsunnMy58NgzMecLGDbER-27zk7w0TwxkXTKfxWg&quot;
+}</code></pre></dd>
+</dl>
+<h4><a href="#2-upload-file-to-s3" name="2-upload-file-to-s3" class="anchor"><span class="anchor-link"></span></a>2. Upload file to S3</h4>
+<p>Using the bucket and path from the previous step, the file should be uploaded to S3 by whatever means are appropriate. The only restriction is that this must be finished before the expiry datetime of the signed payload.</p>
+<h4><a href="#3-create-update-delegated-file-resource" name="3-create-update-delegated-file-resource" class="anchor"><span class="anchor-link"></span></a>3. Create/update delegated file resource</h4>
+<p>Once the file has been uploaded to S3 at the specified path, the file resource can be created. The payload can be passed back exactly as it was returned in the previous step.</p>
+<pre><code>POST /v1/delegate/files/submit
+   {
+      &quot;payload&quot;: &quot;&lt;base64 encoded payload contents&gt;&quot;,
+      &quot;protected&quot;: &quot;&lt;integrity-protected header contents&gt;&quot;,
+      &quot;signature&quot;: &quot;&lt;signature contents&gt;&quot;
+   }
+</code></pre>
+<p>Delta will verify that the signature matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-create-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
+   -H &quot;Content-Type: application/json&quot; \
+   &quot;http://localhost:8080/v1/delegate/files/submit&quot; -d \
+   &#39;{
+      &quot;protected&quot; : &quot;eyJleHAiOjE3MTg2Mjg1NDUsImFsZyI6IlJTMjU2In0&quot;,
+      &quot;payload&quot; : &quot;eyJidWNrZXQiOiJqNDc4M2NjNWFkY2F1a3UiLCJwYXRoIjoibXlwcmVmaXgvYTE0bTYxZWgzajVuNzVjLzhrbXlpb2QyMzM1MnhpZC9maWxlcy9iLzIvOS80LzMvYy9jLzYvaG5qeXR3b2x0ZnVyc2JlaCIsIm1lZGlhVHlwZSI6ImltYWdlL2RhbiIsIm1ldGFkYXRhIjp7ImRlc2NyaXB0aW9uIjoicnByZndzdWpveGJpaXllaSIsImtleXdvcmRzIjp7ImtvZXZvd3Bsc3Jld2NlZGIiOiJ2dnNlaW9wa3Z5Y3d1dG1oIn0sIm5hbWUiOiJmbW94dHh3a3JvdWhtZG90In0sImlkIjoiaHR0cDovL2RlbHRhOjgwODAvdjEvcmVzb3VyY2VzL2ExNG02MWVoM2o1bjc1Yy84a215aW9kMjMzNTJ4aWQvXy9hNGE5ODE2Mi1jYTNmLTQ2YmUtYWUxMC00MzJjYTZmOTdjNGYifQ&quot;,
+      &quot;signature&quot; : &quot;htQLymfQIrks7MejErb4v3mnhQT2W6iPZdkd7LVBPJ0Ksybj8XG8dbTJH5pjZJF7-HXi848R14tquZ6iSeXpEqFGiZYge8obPQRLpJA0qbc9Mmhlq-CTbIdsy5OFpdzcDadSj6_k_kzuU2PR-Fli9GtH-34z2d4C9dWsBmnUo_IA3dvSFCF_PaQuajo7cJYa_0yc4VVGKG-xYi9yV4ylD5D2cxMUDFun78NOKDD_2upF-kuf9t5E-NjCl0DffkelbqYuH6nMop2zmwfu-cwHnChaDwKM7HLJGLomD5duU5sq-mVsunnMy58NgzMecLGDbER-27zk7w0TwxkXTKfxWg&quot;
+    }&#39;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-create-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot; : [
+    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+  ],
+  &quot;@id&quot; : &quot;http://delta:8080/v1/resources/fcp5xcw67hittxm/loeu5kgu48i8tw7/_/1205b629-2a73-4891-abff-140a64e9c391&quot;,
+  &quot;@type&quot; : &quot;File&quot;,
+  &quot;description&quot; : &quot;a description of the file&quot;,
+  &quot;name&quot; : &quot;My File&quot;,
+  &quot;_bytes&quot; : 29625,
+  &quot;_constrainedBy&quot; : &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
+  &quot;_createdAt&quot; : &quot;2024-06-14T12:53:38.516222Z&quot;,
+  &quot;_createdBy&quot; : &quot;http://delta:8080/v1/realms/test-pmcfwjobxkuvebro/users/fwhbqlnnhqncpsqk&quot;,
+  &quot;_deprecated&quot; : false,
+  &quot;_digest&quot; : {
+    &quot;_algorithm&quot; : &quot;SHA-256&quot;,
+    &quot;_value&quot; : &quot;05bf442810213b9e5fecd5242eefeff1f3d207913861c96658c75ccf58997e87&quot;
+  },
+  &quot;_filename&quot; : &quot;myfile.png&quot;,
+  &quot;_incoming&quot; : &quot;http://delta:8080/v1/files/fcp5xcw67hittxm/loeu5kgu48i8tw7/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Ffcp5xcw67hittxm%2Floeu5kgu48i8tw7%2F_%2F1205b629-2a73-4891-abff-140a64e9c391/incoming&quot;,
+  &quot;_keywords&quot; : {
+    &quot;key1&quot; : &quot;value1&quot;,
+    &quot;key2&quot; : &quot;value2&quot;
+  },
+  &quot;_location&quot; : &quot;myprefix/fcp5xcw67hittxm/loeu5kgu48i8tw7/files/f/f/9/5/3/4/c/2/ngbeydtjyibvcanj&quot;,
+  &quot;_mediaType&quot; : &quot;image/png&quot;,
+  &quot;_origin&quot; : &quot;Link&quot;,
+  &quot;_outgoing&quot; : &quot;http://delta:8080/v1/files/fcp5xcw67hittxm/loeu5kgu48i8tw7/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Ffcp5xcw67hittxm%2Floeu5kgu48i8tw7%2F_%2F1205b629-2a73-4891-abff-140a64e9c391/outgoing&quot;,
+  &quot;_project&quot; : &quot;http://delta:8080/v1/projects/fcp5xcw67hittxm/loeu5kgu48i8tw7&quot;,
+  &quot;_rev&quot; : 1,
+  &quot;_self&quot; : &quot;http://delta:8080/v1/files/fcp5xcw67hittxm/loeu5kgu48i8tw7/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Ffcp5xcw67hittxm%2Floeu5kgu48i8tw7%2F_%2F1205b629-2a73-4891-abff-140a64e9c391&quot;,
+  &quot;_storage&quot; : {
+    &quot;@id&quot; : &quot;https://bluebrain.github.io/nexus/vocabulary/mys3storage&quot;,
+    &quot;@type&quot; : &quot;S3Storage&quot;,
+    &quot;_rev&quot; : 3
+  },
+  &quot;_updatedAt&quot; : &quot;2024-06-14T12:53:38.516222Z&quot;,
+  &quot;_updatedBy&quot; : &quot;http://delta:8080/v1/realms/test-pmcfwjobxkuvebro/users/fwhbqlnnhqncpsqk&quot;,
+  &quot;_uuid&quot; : &quot;c96a229c-8d1d-46a5-8f47-08555fd98cb3&quot;
 }</code></pre></dd>
 </dl>
 <h2><a href="#tag" name="tag" class="anchor"><span class="anchor-link"></span></a>Tag</h2>
@@ -1165,8 +1289,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;_rev&quot;: 2,
       &quot;_self&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,
       &quot;_storage&quot;: {
-        &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
-        &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+        &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
+        &quot;@type&quot;: &quot;S3Storage&quot;,
         &quot;_rev&quot;: 1
       },
       &quot;_updatedAt&quot;: &quot;2021-05-12T07:56:48.380Z&quot;,
@@ -1194,8 +1318,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;_rev&quot;: 2,
       &quot;_self&quot;: &quot;http://localhost:8080/v1/files/myorg/myproject/mylink&quot;,
       &quot;_storage&quot;: {
-        &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,
-        &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
+        &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
+        &quot;@type&quot;: &quot;S3Storage&quot;,
         &quot;_rev&quot;: 1
       },
       &quot;_updatedAt&quot;: &quot;2021-05-12T08:00:40.790Z&quot;,
@@ -1203,209 +1327,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;_uuid&quot;: &quot;660499d9-c522-4f90-beda-2d79e538ffce&quot;
     }
   ]
-}</code></pre></dd>
-</dl>
-<h2><a href="#delegation-registration-s3-only-" name="delegation-registration-s3-only-" class="anchor"><span class="anchor-link"></span></a>Delegation &amp; Registration (S3 only)</h2>
-<p>To support files stored in the cloud, Delta allows users to register files already uploaded to S3. This is useful primarily for large files where uploading directly through Delta using HTTP is inefficient and expensive. </p>
-<p>There are two use cases: registering an already uploaded file by specifying its path, and asking Delta to generate a path in its standard format.</p>
-<h3><a href="#register-external-file" name="register-external-file" class="anchor"><span class="anchor-link"></span></a>Register external file</h3>
-<p>This endpoint accepts a path and creates a new file resource based on an existing S3 file. </p>
-<pre><code>POST /v1/files/{org_label}/{project_label}/register/{file_id}?storage={storageId}&amp;tag={tagName}
-  {
-    &quot;path&quot;: &quot;{path}&quot;,
-    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
-    &quot;metadata&quot;: {metadata}
-  }
-</code></pre>
-<p>&hellip; where</p>
-<ul>
-  <li><code>{path}</code>: String - the relative path to the file from the root of S3.</li>
-  <li><code>{mediaType}</code>: String - Optional <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the file type. If omitted this will be inferred by S3.</li>
-  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/register-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
-   -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/files/myorg/myproject/register/myfile?storage=mys3storage&quot; -d \
-   &#39;{
-      &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
-      &quot;mediaType&quot;: &quot;image/png&quot;,
-      &quot;metadata&quot;: {
-        &quot;name&quot;: &quot;My File&quot;,
-        &quot;description&quot;: &quot;a description of the file&quot;,
-        &quot;keywords&quot;: {
-          &quot;key1&quot;: &quot;value1&quot;,
-          &quot;key2&quot;: &quot;value2&quot;
-        }
-      }
-   }&#39;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/register-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot; : [
-    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
-  ],
-  &quot;@id&quot; : &quot;http://delta:8080/v1/resources/hkrxvoxdyiiev1p/03vctrp70usfehq/_/iwa41vwspwke6nx&quot;,
-  &quot;@type&quot; : &quot;File&quot;,
-  &quot;_bytes&quot; : 29625,
-  &quot;_constrainedBy&quot; : &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
-  &quot;_createdAt&quot; : &quot;2024-06-14T12:44:36.525177Z&quot;,
-  &quot;_createdBy&quot; : &quot;http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv&quot;,
-  &quot;_deprecated&quot; : false,
-  &quot;_digest&quot; : {
-    &quot;_algorithm&quot; : &quot;SHA-256&quot;,
-    &quot;_value&quot; : &quot;05bf442810213b9e5fecd5242eefeff1f3d207913861c96658c75ccf58997e87&quot;
-  },
-  &quot;_filename&quot; : &quot;myfile.png&quot;,
-  &quot;_incoming&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/incoming&quot;,
-  &quot;_location&quot; : &quot;relative/path/to/myfile.png&quot;,
-  &quot;_mediaType&quot; : &quot;image/png&quot;,
-  &quot;_origin&quot; : &quot;External&quot;,
-  &quot;_outgoing&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/outgoing&quot;,
-  &quot;_project&quot; : &quot;http://delta:8080/v1/projects/hkrxvoxdyiiev1p/03vctrp70usfehq&quot;,
-  &quot;_rev&quot; : 1,
-  &quot;_self&quot; : &quot;http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx&quot;,
-  &quot;_storage&quot; : {
-    &quot;@id&quot; : &quot;https://bluebrain.github.io/nexus/vocabulary/mys3storage&quot;,
-    &quot;@type&quot; : &quot;S3Storage&quot;,
-    &quot;_rev&quot; : 3
-  },
-  &quot;_updatedAt&quot; : &quot;2024-06-14T12:44:36.525177Z&quot;,
-  &quot;_updatedBy&quot; : &quot;http://delta:8080/v1/realms/test-vuaplrsvrbkpkhca/users/byfxikrrdlmmvsvv&quot;,
-  &quot;_uuid&quot; : &quot;79695062-ecbb-42dc-a62d-61c2c02be129&quot;
-}</code></pre></dd>
-</dl>
-<h3><a href="#delegating-file-uploads" name="delegating-file-uploads" class="anchor"><span class="anchor-link"></span></a>Delegating file uploads</h3>
-<p>Users can use delegation for files that cannot be uploaded through Delta (e.g. large files). Here Delta will provide bucket and path details for the upload. Users are then expected to upload the file using other methods, and call back to Delta to register this file with the same metadata that was initially validated. The three steps are outlined in detail below. </p>
-<h4><a href="#1-validate-and-generate-path-for-file-delegation" name="1-validate-and-generate-path-for-file-delegation" class="anchor"><span class="anchor-link"></span></a>1. Validate and generate path for file delegation</h4>
-<p>Delta accepts and validates the following payload. </p>
-<pre><code>POST /v1/delegate/files/{org_label}/{project_label}/validate?storage={storageId}
-  {
-    &quot;filename&quot;: &quot;{filename}&quot;,
-    &quot;mediaType&quot;: &quot;{mediaType}&quot;,
-    &quot;metadata&quot;: {metadata}
-  }
-</code></pre>
-<p>&hellip; where</p>
-<ul>
-  <li><code>{filename}</code>: String - mandatory name given to the file within the generated path.</li>
-  <li><code>{mediaType}</code>: String - Optional <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the file type. If omitted this will be inferred by S3.</li>
-  <li><code>{metadata}</code>: JSON Object - Optional, see <a href="files-api.html#custom-file-metadata">custom file metadata</a>.</li>
-</ul>
-<p>It then generates the following details for the file:</p>
-<pre class="prettyprint"><code class="language-json"> {
-    &quot;bucket&quot;: &quot;&lt;s3 bucket&gt;&quot;,
-    &quot;id&quot;: &quot;&lt;file resource identifier&gt;&quot;,
-    &quot;path&quot;: &quot;&lt;path from s3 root&gt;&quot;,
-    &quot;mediaType&quot;: &quot;&lt;user provided mediaType&gt;&quot;,
-    &quot;metadata&quot;: {}
- }
-</code></pre>
-<p>The user is expected to upload their file to <code>path</code> within <code>bucket</code>. The <code>id</code> is reserved for when the file resource is created. <code>mediaType</code> and <code>metadata</code> are what the user specified in the request.</p>
-<p>This payload is then signed using the <a href="https://datatracker.ietf.org/doc/html/rfc7515#section-7.2.2">flattened JWS serialization format</a> to ensure that Delta has validated and generated the correct data. This same payload will be passed when creating the file resource.</p>
-<pre class="prettyprint"><code class="language-json"> {
-    &quot;payload&quot;: &quot;&lt;base64 encoded payload contents&gt;&quot;,
-    &quot;protected&quot;: &quot;&lt;integrity-protected header contents&gt;&quot;,
-    &quot;signature&quot;: &quot;&lt;signature contents&gt;&quot;
- }
-</code></pre>
-<p>The <code>payload</code> field can be base64 decoded to access the generated file details. Note that <code>protected</code> contains an expiry field <code>exp</code> with the datetime at which this signature will expire (in epoch seconds). To view this can also be base64 decoded.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-validate-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
-   -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/delegate/files/myorg/myproject/validate?storage=mys3storage&quot; -d \
-   &#39;{
-      &quot;filename&quot;: &quot;myfile.png&quot;,
-      &quot;mediaType&quot;: &quot;image/png&quot;,
-      &quot;metadata&quot;: {
-        &quot;name&quot;: &quot;My File&quot;,
-        &quot;description&quot;: &quot;a description of the file&quot;,
-        &quot;keywords&quot;: {
-          &quot;key1&quot;: &quot;value1&quot;,
-          &quot;key2&quot;: &quot;value2&quot;
-        }
-      }
-   }&#39;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-validate-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;protected&quot; : &quot;eyJleHAiOjE3MTg2Mjg1NDUsImFsZyI6IlJTMjU2In0&quot;,
-  &quot;payload&quot; : &quot;eyJidWNrZXQiOiJqNDc4M2NjNWFkY2F1a3UiLCJwYXRoIjoibXlwcmVmaXgvYTE0bTYxZWgzajVuNzVjLzhrbXlpb2QyMzM1MnhpZC9maWxlcy9iLzIvOS80LzMvYy9jLzYvaG5qeXR3b2x0ZnVyc2JlaCIsIm1lZGlhVHlwZSI6ImltYWdlL2RhbiIsIm1ldGFkYXRhIjp7ImRlc2NyaXB0aW9uIjoicnByZndzdWpveGJpaXllaSIsImtleXdvcmRzIjp7ImtvZXZvd3Bsc3Jld2NlZGIiOiJ2dnNlaW9wa3Z5Y3d1dG1oIn0sIm5hbWUiOiJmbW94dHh3a3JvdWhtZG90In0sImlkIjoiaHR0cDovL2RlbHRhOjgwODAvdjEvcmVzb3VyY2VzL2ExNG02MWVoM2o1bjc1Yy84a215aW9kMjMzNTJ4aWQvXy9hNGE5ODE2Mi1jYTNmLTQ2YmUtYWUxMC00MzJjYTZmOTdjNGYifQ&quot;,
-  &quot;signature&quot; : &quot;htQLymfQIrks7MejErb4v3mnhQT2W6iPZdkd7LVBPJ0Ksybj8XG8dbTJH5pjZJF7-HXi848R14tquZ6iSeXpEqFGiZYge8obPQRLpJA0qbc9Mmhlq-CTbIdsy5OFpdzcDadSj6_k_kzuU2PR-Fli9GtH-34z2d4C9dWsBmnUo_IA3dvSFCF_PaQuajo7cJYa_0yc4VVGKG-xYi9yV4ylD5D2cxMUDFun78NOKDD_2upF-kuf9t5E-NjCl0DffkelbqYuH6nMop2zmwfu-cwHnChaDwKM7HLJGLomD5duU5sq-mVsunnMy58NgzMecLGDbER-27zk7w0TwxkXTKfxWg&quot;
-}</code></pre></dd>
-</dl>
-<h4><a href="#2-upload-file-to-s3" name="2-upload-file-to-s3" class="anchor"><span class="anchor-link"></span></a>2. Upload file to S3</h4>
-<p>Using the bucket and path from the previous step, the file should be uploaded to S3 by whatever means are appropriate. The only restriction is that this must be finished before the expiry datetime of the signed payload.</p>
-<h4><a href="#3-create-delegated-file-resource" name="3-create-delegated-file-resource" class="anchor"><span class="anchor-link"></span></a>3. Create delegated file resource</h4>
-<p>Once the file has been uploaded to S3 at the specified path, the file resource can be created. The payload can be passed back exactly as it was returned in the previous step.</p>
-<pre><code>POST /v1/delegate/files/{org_label}/{project_label}?storage={storageId}
-   {
-      &quot;payload&quot;: &quot;&lt;base64 encoded payload contents&gt;&quot;,
-      &quot;protected&quot;: &quot;&lt;integrity-protected header contents&gt;&quot;,
-      &quot;signature&quot;: &quot;&lt;signature contents&gt;&quot;
-   }
-</code></pre>
-<p>Delta will verify that the signature matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-create-post.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
-   -H &quot;Content-Type: application/json&quot; \
-   &quot;http://localhost:8080/v1/delegate/files/myorg/myproject?storage=mys3storage&quot; -d \
-   &#39;{
-      &quot;protected&quot; : &quot;eyJleHAiOjE3MTg2Mjg1NDUsImFsZyI6IlJTMjU2In0&quot;,
-      &quot;payload&quot; : &quot;eyJidWNrZXQiOiJqNDc4M2NjNWFkY2F1a3UiLCJwYXRoIjoibXlwcmVmaXgvYTE0bTYxZWgzajVuNzVjLzhrbXlpb2QyMzM1MnhpZC9maWxlcy9iLzIvOS80LzMvYy9jLzYvaG5qeXR3b2x0ZnVyc2JlaCIsIm1lZGlhVHlwZSI6ImltYWdlL2RhbiIsIm1ldGFkYXRhIjp7ImRlc2NyaXB0aW9uIjoicnByZndzdWpveGJpaXllaSIsImtleXdvcmRzIjp7ImtvZXZvd3Bsc3Jld2NlZGIiOiJ2dnNlaW9wa3Z5Y3d1dG1oIn0sIm5hbWUiOiJmbW94dHh3a3JvdWhtZG90In0sImlkIjoiaHR0cDovL2RlbHRhOjgwODAvdjEvcmVzb3VyY2VzL2ExNG02MWVoM2o1bjc1Yy84a215aW9kMjMzNTJ4aWQvXy9hNGE5ODE2Mi1jYTNmLTQ2YmUtYWUxMC00MzJjYTZmOTdjNGYifQ&quot;,
-      &quot;signature&quot; : &quot;htQLymfQIrks7MejErb4v3mnhQT2W6iPZdkd7LVBPJ0Ksybj8XG8dbTJH5pjZJF7-HXi848R14tquZ6iSeXpEqFGiZYge8obPQRLpJA0qbc9Mmhlq-CTbIdsy5OFpdzcDadSj6_k_kzuU2PR-Fli9GtH-34z2d4C9dWsBmnUo_IA3dvSFCF_PaQuajo7cJYa_0yc4VVGKG-xYi9yV4ylD5D2cxMUDFun78NOKDD_2upF-kuf9t5E-NjCl0DffkelbqYuH6nMop2zmwfu-cwHnChaDwKM7HLJGLomD5duU5sq-mVsunnMy58NgzMecLGDbER-27zk7w0TwxkXTKfxWg&quot;
-    }&#39;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/delegate-create-post.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot; : [
-    &quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
-  ],
-  &quot;@id&quot; : &quot;http://delta:8080/v1/resources/fcp5xcw67hittxm/loeu5kgu48i8tw7/_/1205b629-2a73-4891-abff-140a64e9c391&quot;,
-  &quot;@type&quot; : &quot;File&quot;,
-  &quot;description&quot; : &quot;a description of the file&quot;,
-  &quot;name&quot; : &quot;My File&quot;,
-  &quot;_bytes&quot; : 29625,
-  &quot;_constrainedBy&quot; : &quot;https://bluebrain.github.io/nexus/schemas/files.json&quot;,
-  &quot;_createdAt&quot; : &quot;2024-06-14T12:53:38.516222Z&quot;,
-  &quot;_createdBy&quot; : &quot;http://delta:8080/v1/realms/test-pmcfwjobxkuvebro/users/fwhbqlnnhqncpsqk&quot;,
-  &quot;_deprecated&quot; : false,
-  &quot;_digest&quot; : {
-    &quot;_algorithm&quot; : &quot;SHA-256&quot;,
-    &quot;_value&quot; : &quot;05bf442810213b9e5fecd5242eefeff1f3d207913861c96658c75ccf58997e87&quot;
-  },
-  &quot;_filename&quot; : &quot;myfile.png&quot;,
-  &quot;_incoming&quot; : &quot;http://delta:8080/v1/files/fcp5xcw67hittxm/loeu5kgu48i8tw7/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Ffcp5xcw67hittxm%2Floeu5kgu48i8tw7%2F_%2F1205b629-2a73-4891-abff-140a64e9c391/incoming&quot;,
-  &quot;_keywords&quot; : {
-    &quot;key1&quot; : &quot;value1&quot;,
-    &quot;key2&quot; : &quot;value2&quot;
-  },
-  &quot;_location&quot; : &quot;myprefix/fcp5xcw67hittxm/loeu5kgu48i8tw7/files/f/f/9/5/3/4/c/2/ngbeydtjyibvcanj&quot;,
-  &quot;_mediaType&quot; : &quot;image/png&quot;,
-  &quot;_origin&quot; : &quot;External&quot;,
-  &quot;_outgoing&quot; : &quot;http://delta:8080/v1/files/fcp5xcw67hittxm/loeu5kgu48i8tw7/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Ffcp5xcw67hittxm%2Floeu5kgu48i8tw7%2F_%2F1205b629-2a73-4891-abff-140a64e9c391/outgoing&quot;,
-  &quot;_project&quot; : &quot;http://delta:8080/v1/projects/fcp5xcw67hittxm/loeu5kgu48i8tw7&quot;,
-  &quot;_rev&quot; : 1,
-  &quot;_self&quot; : &quot;http://delta:8080/v1/files/fcp5xcw67hittxm/loeu5kgu48i8tw7/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Ffcp5xcw67hittxm%2Floeu5kgu48i8tw7%2F_%2F1205b629-2a73-4891-abff-140a64e9c391&quot;,
-  &quot;_storage&quot; : {
-    &quot;@id&quot; : &quot;https://bluebrain.github.io/nexus/vocabulary/mys3storage&quot;,
-    &quot;@type&quot; : &quot;S3Storage&quot;,
-    &quot;_rev&quot; : 3
-  },
-  &quot;_updatedAt&quot; : &quot;2024-06-14T12:53:38.516222Z&quot;,
-  &quot;_updatedBy&quot; : &quot;http://delta:8080/v1/realms/test-pmcfwjobxkuvebro/users/fwhbqlnnhqncpsqk&quot;,
-  &quot;_uuid&quot; : &quot;c96a229c-8d1d-46a5-8f47-08555fd98cb3&quot;
 }</code></pre></dd>
 </dl>
 <h2><a href="#server-sent-events" name="server-sent-events" class="anchor"><span class="anchor-link"></span></a>Server Sent Events</h2>
@@ -1429,7 +1350,7 @@ GET /v1/files/{org_label}/{project_label}/events  # for file events in the given
    &quot;http://localhost:8080/v1/files/myorg/myproject/events&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/sse.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;],&quot;@type&quot;:&quot;FileCreated&quot;,&quot;_attributes&quot;:{&quot;_bytes&quot;:1658857,&quot;_digest&quot;:{&quot;_value&quot;:&quot;&quot;},&quot;_filename&quot;:&quot;myfile.png&quot;,&quot;_location&quot;:&quot;file:///tmp/test/nexus/myorg/myproject/3/4/c/4/9/1/a/1/myfile.png&quot;,&quot;_mediaType&quot;:&quot;image/png&quot;,&quot;_origin&quot;:&quot;Storage&quot;,&quot;_uuid&quot;:&quot;34c491a1-17ba-4726-bdf2-3b4e1e150750&quot;},&quot;_fileId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,&quot;_instant&quot;:&quot;2021-05-12T07:56:42.991Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,&quot;_rev&quot;:1,&quot;_storage&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;@type&quot;:&quot;RemoteDiskStorage&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_rev&quot;:1},&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/files/sse.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;],&quot;@type&quot;:&quot;FileCreated&quot;,&quot;_attributes&quot;:{&quot;_bytes&quot;:1658857,&quot;_digest&quot;:{&quot;_value&quot;:&quot;&quot;},&quot;_filename&quot;:&quot;myfile.png&quot;,&quot;_location&quot;:&quot;file:///tmp/test/nexus/myorg/myproject/3/4/c/4/9/1/a/1/myfile.png&quot;,&quot;_mediaType&quot;:&quot;image/png&quot;,&quot;_origin&quot;:&quot;Storage&quot;,&quot;_uuid&quot;:&quot;34c491a1-17ba-4726-bdf2-3b4e1e150750&quot;},&quot;_fileId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,&quot;_instant&quot;:&quot;2021-05-12T07:56:42.991Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/9ca0d270-35f0-4369-9c17-296fe36fd9a5&quot;,&quot;_rev&quot;:1,&quot;_storage&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;@type&quot;:&quot;S3Storage&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:1},&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
 event:FileCreated
 id:9750c010-b2f7-11eb-96af-ed7fe24c2ccf
 
@@ -1437,7 +1358,7 @@ data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/met
 event:FileAttributesUpdated
 id:9a8229e0-b2f7-11eb-96af-ed7fe24c2ccf
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;],&quot;@type&quot;:&quot;FileCreated&quot;,&quot;_attributes&quot;:{&quot;_bytes&quot;:1658857,&quot;_digest&quot;:{&quot;_value&quot;:&quot;&quot;},&quot;_filename&quot;:&quot;myfile2.png&quot;,&quot;_location&quot;:&quot;file:///tmp/test/nexus/myorg/myproject/6/6/0/4/9/9/d/9/myfile2.png&quot;,&quot;_origin&quot;:&quot;Storage&quot;,&quot;_uuid&quot;:&quot;660499d9-c522-4f90-beda-2d79e538ffce&quot;},&quot;_fileId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/mylink&quot;,&quot;_instant&quot;:&quot;2021-05-12T08:00:34.563Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/mylink&quot;,&quot;_rev&quot;:1,&quot;_storage&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;@type&quot;:&quot;RemoteDiskStorage&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_rev&quot;:1},&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/files.json&quot;],&quot;@type&quot;:&quot;FileCreated&quot;,&quot;_attributes&quot;:{&quot;_bytes&quot;:1658857,&quot;_digest&quot;:{&quot;_value&quot;:&quot;&quot;},&quot;_filename&quot;:&quot;myfile2.png&quot;,&quot;_location&quot;:&quot;file:///tmp/test/nexus/myorg/myproject/6/6/0/4/9/9/d/9/myfile2.png&quot;,&quot;_origin&quot;:&quot;Storage&quot;,&quot;_uuid&quot;:&quot;660499d9-c522-4f90-beda-2d79e538ffce&quot;},&quot;_fileId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/mylink&quot;,&quot;_instant&quot;:&quot;2021-05-12T08:00:34.563Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/mylink&quot;,&quot;_rev&quot;:1,&quot;_storage&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;@type&quot;:&quot;S3Storage&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:1},&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
 event:FileCreated
 id:21564eb0-b2f8-11eb-96af-ed7fe24c2ccf
 

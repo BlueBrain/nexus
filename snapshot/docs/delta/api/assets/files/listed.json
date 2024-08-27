@@ -55,8 +55,8 @@
       "_rev": 2,
       "_self": "http://localhost:8080/v1/files/myorg/myproject/9ca0d270-35f0-4369-9c17-296fe36fd9a5",
       "_storage": {
-        "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/remote",
-        "@type": "RemoteDiskStorage",
+        "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/s3",
+        "@type": "S3Storage",
         "_rev": 1
       },
       "_updatedAt": "2021-05-12T07:56:48.380Z",
@@ -84,8 +84,8 @@
       "_rev": 2,
       "_self": "http://localhost:8080/v1/files/myorg/myproject/mylink",
       "_storage": {
-        "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/remote",
-        "@type": "RemoteDiskStorage",
+        "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/s3",
+        "@type": "S3Storage",
         "_rev": 1
       },
       "_updatedAt": "2021-05-12T08:00:40.790Z",

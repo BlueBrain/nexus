@@ -207,6 +207,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -259,6 +260,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#search" class="header">Search</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#create-a-point-in-time" class="header">Create a point in time</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#delete-a-point-in-time" class="header">Delete a point in time</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-elasticsearch-mapping" class="header">Fetch Elasticsearch mapping</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-indexing" class="header">Fetch indexing</a></li>
@@ -303,6 +306,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#search" class="header">Search</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#create-a-point-in-time" class="header">Create a point in time</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#delete-a-point-in-time" class="header">Delete a point in time</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-elasticsearch-mapping" class="header">Fetch Elasticsearch mapping</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-indexing" class="header">Fetch indexing</a></li>
@@ -1076,6 +1081,44 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;total&quot;: 1
   }
 }</code></pre></dd>
+</dl>
+<h2><a href="#create-a-point-in-time" name="create-a-point-in-time" class="anchor"><span class="anchor-link"></span></a>Create a point in time</h2>
+<p>Creates a point in time on the underlying index of the view to be used in further search requests.</p>
+<p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html" title="See the Elasticsearch documentation for more details">See the Elasticsearch documentation for more details</a></p>
+<pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/_pit?keep_alive={keep_alive}
+  {...}
+</code></pre>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{keep_alive}</code>: Number - the time to live in seconds of the corresponding point in time.</li>
+</ul>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/pit.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -XPOST \
+-H &quot;Content-Type: application/json&quot; \
+&quot;http://localhost:8080/v1/views/myorg/myproj/myview/_pit?keep_alive=300&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/pit-response.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;id&quot;: &quot;xxx&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#delete-a-point-in-time" name="delete-a-point-in-time" class="anchor"><span class="anchor-link"></span></a>Delete a point in time</h2>
+<p>Closes a point in time on the underlying index of the view when it is no longer used.</p>
+<p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html" title="See the Elasticsearch documentation for more details">See the Elasticsearch documentation for more details</a></p>
+<pre><code>DELETE /v1/views/{org_label}/{project_label}/{view_id}/_pit
+  {...}
+</code></pre>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/delete-pit.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -XDELETE \
+-H &quot;Content-Type: application/json&quot; \
+&quot;http://localhost:8080/v1/views/myorg/myproj/myview/_pit&quot; -d \
+&#39;{
+  &quot;id&quot;: &quot;xxx&quot;
+}&#39;</code></pre></dd>
 </dl>
 <h2><a href="#fetch-elasticsearch-mapping" name="fetch-elasticsearch-mapping" class="anchor"><span class="anchor-link"></span></a>Fetch Elasticsearch mapping</h2>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/_mapping

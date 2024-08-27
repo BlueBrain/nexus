@@ -1,9 +1,8 @@
 curl -X POST \
    -H "Content-Type: application/json" \
-   "http://localhost:8080/v1/files/myorg/myproject?storage=remote" -d \
+   "http://localhost:8080/v1/link/files/myorg/myproject?storage=mys3storage" -d \
    '{
       "path": "relative/path/to/myfile.png",
-      "filename": "myfile.png",
       "mediaType": "image/png",
       "metadata": {
         "name": "My File",

@@ -25,8 +25,8 @@
   "_rev": 1,
   "_self": "http://localhost:8080/v1/files/myorg/myproject/myfile",
   "_storage": {
-    "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/remote",
-    "@type": "RemoteDiskStorage",
+    "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/s3",
+    "@type": "S3Storage",
     "_rev": 1
   },
   "_updatedAt": "2021-05-12T07:30:54.576Z",

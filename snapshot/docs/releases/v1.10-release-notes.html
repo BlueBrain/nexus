@@ -207,6 +207,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -251,6 +252,7 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#schemas" class="header">Schemas</a>
       <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#return-annotated-original-payload-for-schemas" class="header">Return annotated original payload for schemas</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-schemas" class="header">Undeprecate schemas</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#views" class="header">Views</a>
@@ -260,6 +262,7 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.10-release-notes.html#elasticsearch-views" class="header">Elasticsearch views</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#new-mapping-and-settings-for-the-default-elasticsearch-view" class="header">New mapping and settings for the default Elasticsearch view</a></li>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#create-and-delete-point-in-time-to-use-during-search-queries" class="header">Create and delete point-in-time to use during search queries</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#files" class="header">Files</a>
       <ul>
@@ -269,7 +272,6 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#disabling-default-storage" class="header">Disabling default storage</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-storages" class="header">Undeprecate Storages</a></li>
-        <li><a href="../../docs/releases/v1.10-release-notes.html#the-endpoint-for-remote-storages-can-not-be-overridden-anymore" class="header">The endpoint for remote storages can not be overridden anymore</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#deprecations" class="header">Deprecations</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#resolvers" class="header">Resolvers</a>
@@ -326,6 +328,7 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#schemas" class="header">Schemas</a>
       <ul>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#return-annotated-original-payload-for-schemas" class="header">Return annotated original payload for schemas</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-schemas" class="header">Undeprecate schemas</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#views" class="header">Views</a>
@@ -335,6 +338,7 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.10-release-notes.html#elasticsearch-views" class="header">Elasticsearch views</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#new-mapping-and-settings-for-the-default-elasticsearch-view" class="header">New mapping and settings for the default Elasticsearch view</a></li>
+        <li><a href="../../docs/releases/v1.10-release-notes.html#create-and-delete-point-in-time-to-use-during-search-queries" class="header">Create and delete point-in-time to use during search queries</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#files" class="header">Files</a>
       <ul>
@@ -344,7 +348,6 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#disabling-default-storage" class="header">Disabling default storage</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-storages" class="header">Undeprecate Storages</a></li>
-        <li><a href="../../docs/releases/v1.10-release-notes.html#the-endpoint-for-remote-storages-can-not-be-overridden-anymore" class="header">The endpoint for remote storages can not be overridden anymore</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#deprecations" class="header">Deprecations</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.10-release-notes.html#resolvers" class="header">Resolvers</a>
@@ -407,6 +410,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>It is now possible to ban unconstrained resource in a project.</p>
 <p><a href="../delta/api/projects-api.html">More information</a></p>
 <h3><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h3>
+<h4><a href="#return-annotated-original-payload-for-schemas" name="return-annotated-original-payload-for-schemas" class="anchor"><span class="anchor-link"></span></a>Return annotated original payload for schemas</h4>
+<p>It is now possible to return the schema original payload along with its metadata.</p>
+<p><a href="../delta/api/schemas-api.html#fetch-original-payload">More information</a></p>
 <h4><a href="#undeprecate-schemas" name="undeprecate-schemas" class="anchor"><span class="anchor-link"></span></a>Undeprecate schemas</h4>
 <p>Previously deprecated schemas can now be undeprecated.</p>
 <p><a href="../delta/api/schemas-api.html#undeprecate">More information</a></p>
@@ -417,6 +423,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#elasticsearch-views" name="elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Elasticsearch views</h3>
 <h4><a href="#new-mapping-and-settings-for-the-default-elasticsearch-view" name="new-mapping-and-settings-for-the-default-elasticsearch-view" class="anchor"><span class="anchor-link"></span></a>New mapping and settings for the default Elasticsearch view</h4>
 <p>The default Elasticsearch view now uses a new mapping and settings which improves the ability to search for resources using the listing endpoints.</p>
+<h4><a href="#create-and-delete-point-in-time-to-use-during-search-queries" name="create-and-delete-point-in-time-to-use-during-search-queries" class="anchor"><span class="anchor-link"></span></a>Create and delete point-in-time to use during search queries</h4>
+<p>It is now possible to create point-in-time on underlying Elasticsearch indices and use them on search queries.</p>
+<p><a href="../delta/api/views/elasticsearch-view-api.html#create-a-point-in-time">More information</a></p>
 <h3><a href="#files" name="files" class="anchor"><span class="anchor-link"></span></a>Files</h3>
 <h4><a href="#custom-metadata" name="custom-metadata" class="anchor"><span class="anchor-link"></span></a>Custom metadata</h4>
 <p>It is now possible to add custom metadata when creating and updating files. This metadata will be indexed for full-text search.</p>
@@ -427,8 +436,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#undeprecate-storages" name="undeprecate-storages" class="anchor"><span class="anchor-link"></span></a>Undeprecate Storages</h4>
 <p>Previously deprecated storages can now be undeprecated.</p>
 <p><a href="../delta/api/storages-api.html#undeprecate">More information</a></p>
-<h4><a href="#the-endpoint-for-remote-storages-can-not-be-overridden-anymore" name="the-endpoint-for-remote-storages-can-not-be-overridden-anymore" class="anchor"><span class="anchor-link"></span></a>The endpoint for remote storages can not be overridden anymore</h4>
-<p>The endpoint for remote storages is now only defined by configuration and can not be overridden in the create and update operations.</p>
 <h4><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h4>
 <ul>
   <li>Storages can no longer be tagged, looked up by tag or have their tags fetched.</li>

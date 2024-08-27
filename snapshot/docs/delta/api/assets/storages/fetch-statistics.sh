@@ -1,1 +1,1 @@
-curl "http://localhost:8080/v1/storages/myorg/myproject/remote/statistics"
+curl "http://localhost:8080/v1/storages/myorg/myproject/s3/statistics"

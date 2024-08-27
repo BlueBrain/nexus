@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Version · Blue Brain Nexus</title>
+<title>History of resources · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Version
+History of resources
 </span>
 </div>
 </div>
@@ -192,7 +192,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../../docs/delta/api/version.html" class="active page">Version</a></li>
+      <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -207,7 +207,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
-      <li><a href="../../../docs/delta/api/history.html" class="page">History of resources</a></li>
+      <li><a href="../../../docs/delta/api/history.html" class="active page">History of resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -262,35 +262,68 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#version" name="version" class="anchor"><span class="anchor-link"></span></a>Version</h1>
-<pre class="prettyprint"><code class="language-http request">GET /v1/version
+<h1><a href="#history-of-resources" name="history-of-resources" class="anchor"><span class="anchor-link"></span></a>History of resources</h1>
+<p>The history endpoint allows to get an overview of the differents events and actions which occured during the lifetime of a resource (creation/update/tag/deprecation) for the different types of resources (generic resources, schemas, files).</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When performing a request, the caller must have <code>resources/read</code> permission on the project the resource belongs to.</p>
+<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
+<p>The described endpoints are experimental and the responses structure might change in the future.</p></div>
+<pre><code>GET /v1/history/{org_label}/{project_label}/{id}
 </code></pre>
-<p>This endpoint returns information about the running Delta instance: Delta version, plugin versions and service dependency versions(e.g PostgreSQL).</p>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{id}</code>: the identifier of the resource to resolve (URL encoded value).</li>
+</ul>
+<p><strong>Example</strong></p>
 <dl>
-  <dt>Example</dt>
+  <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/version.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/version.json&quot;,
-  &quot;delta&quot;: &quot;1.10.0&quot;,
-  &quot;dependencies&quot;: {
-    &quot;blazegraph&quot;: &quot;2.1.6-RC-21-jre&quot;,
-    &quot;postgresql&quot;: &quot;16.4&quot;,
-    &quot;elasticsearch&quot;: &quot;8.14.1&quot;
-  },
-  &quot;plugins&quot;: {
-    &quot;archive&quot;: &quot;1.10.0&quot;,
-    &quot;blazegraph&quot;: &quot;1.10.0&quot;,
-    &quot;composite-views&quot;: &quot;1.10.0&quot;,
-    &quot;elasticsearch&quot;: &quot;1.10.0&quot;,
-    &quot;storage&quot;: &quot;1.10.0&quot;
-  }
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/history/request.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/org/project/https%3A%2F%2Fexample.com%2FAlice&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/history/response.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;_total&quot;: 2,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;https://example.com/Alice&quot;,
+      &quot;@type&quot;: [
+        &quot;http://schema.org/Person&quot;
+      ],
+      &quot;action&quot;: [
+        &quot;Created&quot;
+      ],
+      &quot;organization&quot;: &quot;org&quot;,
+      &quot;project&quot;: &quot;org/project&quot;,
+      &quot;rev&quot;: 1,
+      &quot;subject&quot;: {
+        &quot;@type&quot;: &quot;User&quot;,
+        &quot;realm&quot;: &quot;realm&quot;,
+        &quot;subject&quot;: &quot;user&quot;
+      }
+    },
+    {
+      &quot;@id&quot;: &quot;https://example.com/Alice&quot;,
+      &quot;@type&quot;: [
+        &quot;http://schema.org/Person&quot;
+      ],
+      &quot;action&quot;: [
+        &quot;Tagged&quot;
+      ],
+      &quot;instant&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+      &quot;organization&quot;: &quot;org&quot;,
+      &quot;project&quot;: &quot;org/project&quot;,
+      &quot;rev&quot;: 2,
+      &quot;subject&quot;: {
+        &quot;@type&quot;: &quot;User&quot;,
+        &quot;realm&quot;: &quot;realm&quot;,
+        &quot;subject&quot;: &quot;user&quot;
+      }
+    }
+  ]
 }</code></pre></dd>
-</dl><div class="callout note tip"><div class="callout-title">Authorization notes</div>
-<p>When accessing the version endpoint, the caller must have <code>version/read</code> permission <code>/</code>.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
+</dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/version.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/history.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -306,7 +339,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/error-signaling.html" title="Error Signaling" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/id-resolution.html" title="Id Resolution" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -315,17 +348,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Error Signaling
+Id Resolution
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/authentication.html" title="Authentication & Authorization" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/resolvers-api.html" title="Resolvers" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Authentication & Authorization
+Resolvers
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

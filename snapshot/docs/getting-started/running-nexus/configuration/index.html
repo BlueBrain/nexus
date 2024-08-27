@@ -207,6 +207,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -392,14 +393,33 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#composite-views-plugin-configuration" name="composite-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Composite views plugin configuration</h3>
 <p>The composite views plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/composite-views/src/main/resources/composite-views.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
 <p>There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.</p>
-<p>Authentication for remote sources can be specified in three different ways. The value of <code>plugins.composite-views.remote-source-credentials</code> should be speficied in the same way as remote storages, as shown <a href="index.html#remote-storage-configuration">here</a></p>
+<p>Authentication for remote sources can be specified in three different ways. The value of <code>plugins.composite-views.remote-source-credentials</code> can be set as:</p>
+<h5><a href="#recommended-client-credentials-openid-authentication-" name="recommended-client-credentials-openid-authentication-" class="anchor"><span class="anchor-link"></span></a>Recommended: client credentials (OpenId authentication)</h5>
+<pre class="prettyprint"><code class="language-hocon">{
+  type: &quot;client-credentials&quot;
+  user: &quot;username&quot;
+  password: &quot;password&quot;
+  realm: &quot;internal&quot;
+}
+</code></pre>
+<p>This configuration tells Delta to log into the <code>internal</code> realm (which should have already been defined) with the <code>user</code> and <code>password</code> credentials, which will give Delta an access token to use when making requests to the remote instance</p>
+<h5><a href="#anonymous" name="anonymous" class="anchor"><span class="anchor-link"></span></a>Anonymous</h5>
+<pre class="prettyprint"><code class="language-hocon">{
+  type: &quot;anonymous&quot;
+}
+</code></pre>
+<h5><a href="#long-living-auth-token-legacy-" name="long-living-auth-token-legacy-" class="anchor"><span class="anchor-link"></span></a>Long-living auth token (legacy)</h5>
+<pre class="prettyprint"><code class="language-hocon">{
+  type: &quot;jwt-token&quot;
+  token: &quot;long-living-auth-token&quot;
+}
+</code></pre>
 <h3><a href="#storage-plugin-configuration" name="storage-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Storage plugin configuration</h3>
 <p>The storage plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/storage/src/main/resources/storage.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
-<p>Nexus Delta supports 3 types of storages: &lsquo;disk&rsquo;, &lsquo;amazon&rsquo; (s3 compatible) and &lsquo;remote&rsquo;.</p>
+<p>Nexus Delta supports 2 types of storages: &lsquo;disk&rsquo;, &lsquo;amazon&rsquo; (s3 compatible).</p>
 <ul>
   <li>For disk storages the most relevant configuration flag is <code>plugins.storage.storages.disk.default-volume</code>, which defines the default location in the Nexus Delta filesystem where the files using that storage are going to be saved.</li>
   <li>For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: <code>plugins.storage.storages.amazon.default-endpoint</code>, <code>plugins.storage.storages.amazon.default-access-key</code> and <code>plugins.storage.storages.amazon.default-secret-key</code>.</li>
-  <li>For remote disk storages the most relevant configuration flags are <code>plugins.storage.storages.remote-disk.default-endpoint</code> (the endpoint where the remote storage service is running) and <code>plugins.storage.storages.remote-disk.credentials</code> (the method to authenticate to the remote storage service).</li>
 </ul>
 <h4><a href="#file-configuration" name="file-configuration" class="anchor"><span class="anchor-link"></span></a>File configuration</h4>
 <p>When the media type is not provided by the user, Delta relies on automatic detection based on the file extension in order to provide one.</p>
@@ -422,28 +442,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Fallback on akka automatic detection</li>
   <li>Fallback to the default value <code>application/octet-stream</code></li>
 </ul>
-<h4><a href="#remote-storage-configuration" name="remote-storage-configuration" class="anchor"><span class="anchor-link"></span></a>Remote storage configuration</h4>
-<p>Authentication for remote storage can be specified in three different ways. The value of <code>plugins.storage.storages.remote-disk.credentials</code> can be:</p>
-<h5><a href="#recommended-client-credentials-openid-authentication-" name="recommended-client-credentials-openid-authentication-" class="anchor"><span class="anchor-link"></span></a>Recommended: client credentials (OpenId authentication)</h5>
-<pre class="prettyprint"><code class="language-hocon">{
-  type: &quot;client-credentials&quot;
-  user: &quot;username&quot;
-  password: &quot;password&quot;
-  realm: &quot;internal&quot;
-}
-</code></pre>
-<p>This configuration tells Delta to log into the <code>internal</code> realm (which should have already been defined) with the <code>user</code> and <code>password</code> credentials, which will give Delta an access token to use when making requests to remote storage</p>
-<h5><a href="#anonymous" name="anonymous" class="anchor"><span class="anchor-link"></span></a>Anonymous</h5>
-<pre class="prettyprint"><code class="language-hocon">{
-  type: &quot;anonymous&quot;
-}
-</code></pre>
-<h5><a href="#long-living-auth-token-legacy-" name="long-living-auth-token-legacy-" class="anchor"><span class="anchor-link"></span></a>Long-living auth token (legacy)</h5>
-<pre class="prettyprint"><code class="language-hocon">{
-  type: &quot;jwt-token&quot;
-  token: &quot;long-living-auth-token&quot;
-}
-</code></pre>
 <h4><a href="#s3-storage-configuration" name="s3-storage-configuration" class="anchor"><span class="anchor-link"></span></a>S3 storage configuration</h4>
 <p>Delta&rsquo;s S3 storage integration supports users uploading files to S3 independently and then registering them within Delta.</p>
 <p>However, Delta is still responsible for the structure of the bucket so it issues a path to clients via the delegation validation endpoint (TODO link). This involves signing and later verifying a payload using JWS.</p>
