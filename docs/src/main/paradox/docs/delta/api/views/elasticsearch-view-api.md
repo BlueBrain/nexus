@@ -95,7 +95,44 @@ Please note that for retro-compatibility purposes, omitting the pipeline will ap
 
 ## Legacy payload
 
-Retro-compatibility is ensured with the legacy payload as defined @link:[here](https://bluebrainnexus.io/v1.5.x/docs/delta/api/views/elasticsearch-view-api.html)
+Retro-compatibility is ensured with the legacy payload as defined:
+
+```json
+{
+  "@id": "{someid}",
+  "@type": "ElasticSearchView",
+  "resourceSchemas": [ "{resourceSchema}", ...],
+  "resourceTypes": [ "{resourceType}", ...],
+  "resourceTag": "{tag}",
+  "sourceAsText": {sourceAsText},
+  "includeMetadata": {includeMetadata},
+  "includeDeprecated": {includeDeprecated},
+  "mapping": _elasticsearch mapping_,
+  "settings": _elasticsearch settings_,
+  "permission": "{permission}"
+}
+```
+
+where...
+
+- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is
+  optional.
+- `{resourceType}`: Iri - Select only resources of the provided type Iri. This field is optional.
+- `{tag}`: String - Selects only resources with the provided tag. This field is optional.
+- `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the
+  @link:[ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping){
+  open=new }.
+- `_elasticssearch settings_`: Json object - defines Elasticsearch
+  @link:[index settings](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#create-index-settings){
+  open=new } for the underlying Elasticsearch index. Default settings are applied, if not specified.
+- `{sourceAsText}`: Boolean - If true, the resource's payload will be stored in the ElasticSearch document as a single
+  escaped string value under the key `_original_source`. If false, the resource's payload will be stored normally in the
+  ElasticSearch document. The default value is `false`.
+- `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be
+  stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
+- `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
+- `{someid}`: Iri - The @id value for this view.
+- `{permission}`: String - permission required to query this view. Defaults to `views/query`.
 
 The legacy payload is now deprecated and will be removed in an upcoming version.
 
