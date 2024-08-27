@@ -655,9 +655,6 @@ CONSTRUCT {
     ?qualityMeasurementAnnotation   nsg:hasBody   ?canBeLoadedBody                            .
                                                   ?canBeLoadedBody                            nsg:isMeasurementOf   bmo:CanBeLoadedWithMorphioMetric ;
                                                                                               schema:value          ?canBeLoaded                     .
-    BIND (
-          IF (isLiteral(?canBeLoaded),
-               IF (?canBeLoaded))
 
     ?qualityMeasurementAnnotation   nsg:hasBody   ?neuriteHasDiffDiameterBody                 .
                                                   ?neuriteHasDiffDiameterBody                 nsg:isMeasurementOf   bmo:NeuriteHasDifferentDiametersMetric ;
