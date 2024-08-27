@@ -9,8 +9,6 @@
 - @ref:[v1.6 To v1.7 Migration](v1.6-to-v1.7-migration.md)
 - @ref:[v1.6 Release Notes](v1.6-release-notes.md)
 - @ref:[v1.5 To v1.6 Migration](v1.5-to-v1.6-migration.md)
-- @ref:[v1.5 Release Notes](v1.5-release-notes.md)
-- @ref:[v1.4 To v1.5 Migration](v1.4-to-v1.5-migration.md)
 - @ref:[Older releases](older-releases.md)
 
 @@@
@@ -251,8 +249,8 @@ Fusion: [v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus-web/compare/v1.7.0.
 
 ### Breaking changes
 
-- @link:[Removal of the Nexus cli](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli)
-- @link:[Removal of the docker based client](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#indexing-data-in-other-systems)
+- Removal of the Nexus cli
+- Removal of the docker based client
 
 ### Deprecations
 
@@ -328,53 +326,6 @@ This release contains bugfixes and minor improvements:
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.6-release-notes.md).
 
-## v1.5.1 (04.06.2021)
-
-This release contains bugfixes and minor improvements:
-
-- File paths now respect tar spec, added n-quads format option to archives
-  @link:[#2459](https://github.com/BlueBrain/nexus/pull/2459)
-- Use service account to unset previous default storage @link:[#2465](https://github.com/BlueBrain/nexus/pull/2465)
-- Support type query exclusion on listings @link:[#2468](https://github.com/BlueBrain/nexus/pull/2468)
-- Added organization events to SSEs @link:[#2477](https://github.com/BlueBrain/nexus/pull/2477)
-- Allow the deletion of some persistence ids at startup @link:[#2480](https://github.com/BlueBrain/nexus/pull/2480)
-- Prevent creating schemas starting with `schemas.base` @link:[#2481](https://github.com/BlueBrain/nexus/pull/2481)
-- Updated the default number of shards value to 50 (prev => 1000)
-  @link:[#2490](https://github.com/BlueBrain/nexus/pull/2490)
-- Expose indexing metrics @link:[#2485](https://github.com/BlueBrain/nexus/pull/2485)
-- Clean up error messages @link:[#2497](https://github.com/BlueBrain/nexus/pull/2497)
-- Allow plugins to be disabled via configuration @link:[#2498](https://github.com/BlueBrain/nexus/pull/2498)
-- Consume the entire base URI path in the routes @link:[#2502](https://github.com/BlueBrain/nexus/pull/2502)
-- Update progress cache on stream start. @link:[#2505](https://github.com/BlueBrain/nexus/pull/2505)
-- Fetch org/project events from their creation time if none is provided
-  @link:[#2500](https://github.com/BlueBrain/nexus/pull/2500)
-- Count view statistics deterministically. @link:[#2509](https://github.com/BlueBrain/nexus/pull/2509)
-- Add SHACL context to resource/schemas errors including SHACL report
-  @link:[#2508](https://github.com/BlueBrain/nexus/pull/2508)
-
-## v1.5.0 (19.05.2021)
-
-The release is backwards compatible with v1.x.y releases in terms of API (except for some issues that were corrected -
-please see the @ref:[release notes](v1.5-release-notes.md) for the exact changes). If you're upgrading from v1.4.x
-please visit the @ref:[migration instructions](v1.4-to-v1.5-migration.md).
-
-Summary of the significant changes:
-
-- Introduced the ability to define workflows in Fusion;
-- Introduced support for plugins in Delta;
-- Remote context and `owl:imports` resolution is executed during creation and update providing full resource
-  immutability;
-- Consistent JSON-LD support across all endpoints and resource types;
-- Support for named graphs;
-- Specific SSE endpoints for Delta managed resource types (schemas, resolvers, storages, files and views);
-- Views can be configured with the required permission for querying;
-- CrossProject resolvers can be configured with `useCurrentCaller` that enables resource resolution with the caller
-  identities instead of a fixed identity set;
-- ElasticSearch views can be configured with `settings` (this allows the customization of ElasticSearch index with
-  number of shards and replicas, tokenizers, filters etc.).
-
-A detailed list of changes included in the release can be found in the @ref:[release notes](v1.5-release-notes.md).
-
 ## Older releases
 
-The release notes of older versions are available @link:[here](https://bluebrainnexus.io/v1.5.x/docs/releases/index.html).
+The release notes of older versions are available @link:[here](https://bluebrainnexus.io/v1.6.x/docs/releases/index.html).
