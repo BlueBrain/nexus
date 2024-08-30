@@ -1,6 +1,7 @@
 @@@ index
 
 - @ref:[v1.10 Release Notes](v1.10-release-notes.md)
+- @ref:[v1.9 To v1.10 Migration](v1.9-to-v1.10-migration.md)
 - @ref:[v1.9 Release Notes](v1.9-release-notes.md)
 - @ref:[v1.8 To v1.9 Migration](v1.8-to-v1.9-migration.md)
 - @ref:[v1.8 Release Notes](v1.8-release-notes.md)
@@ -18,11 +19,36 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web
 applications.
 
-//TODO change the date
-
-The latest stable release is **v1.9.0** released on **18.12.2023**.
+The latest stable release is **v1.10.0** released on **18.12.2023**.
 
 ## 1.10.0
+
+### Breaking changes
+
+- The S3 support for files has been completely rewritten
+- The default Elasticsearch views now uses a new mapping and settings which improves the ability to search for resources
+  using the listing endpoints.
+- Resolvers/storages/views can't be tagged anymore
+- The global SSE endpoint, the SSE endpoints for realms/acls/organizations and the SSE endpoint 
+  to fetch indexing errors have been removed
+- Fetch organizations and projects by their uuid is now removed
+
+### Deprecations
+
+- Jira Plugin
+
+### New features / enhancements
+
+- @ref:[S3 support has been rewritten with new features](../delta/api/files-api.md)
+- The projects and the different types of resources can now be undeprecated
+- @ref:[Custom metadata can now be added to files](../delta/api/files-api.md#create-using-post)
+- @ref:[Creating point-in-time for Elasticsearch queries](../delta/api/views/elasticsearch-view-api.md#create-a-point-in-time)
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.10-release-notes.md).
+
+## 1.9.1 (13.02.2024)
+
+- Fix computing diff on large resources during updates
 
 ## 1.9.0 (18.12.2023)
 
