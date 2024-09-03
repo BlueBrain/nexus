@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -707,6 +708,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </dl>
 <h3><a href="#delegating-file-uploads" name="delegating-file-uploads" class="anchor"><span class="anchor-link"></span></a>Delegating file uploads</h3>
 <p>Clients can use delegation for files that cannot be uploaded through Delta (e.g. large files which may benefit from multipart upload from S3). Here Delta will provide bucket and path details for the upload. Users are then expected to upload the file using other methods, and call back to Delta to register this file with the same metadata that was initially validated. The three steps are outlined in detail below.</p>
+<p>The following diagram illustrates the process of uploading a large file using the delegation method: <img src="assets/files/multipart-upload.png" alt="delegation" title="Multipart upload process" /></p>
+<p>There is Delta <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf" title="configuration" target="_blank" rel="noopener noreferrer">configuration</a> to be done prior to using this feature, in particular setting up the necessary RSA key to support secure communication between Delta and AWS and signing payloads.</p>
+<p>The configuration can be found under the following key <code>app.jws</code>. Please note that the allowed duration of the process is configured there with a default of 3h. Check the configuration key <code>app.jws.ttl</code> to change this value.</p>
 <h4><a href="#1-validate-and-generate-path-for-file-delegation" name="1-validate-and-generate-path-for-file-delegation" class="anchor"><span class="anchor-link"></span></a>1. Validate and generate path for file delegation</h4>
 <p>Delta accepts and validates the following payload.</p>
 <h5><a href="#generate-a-delegation-for-a-new-file-using-post" name="generate-a-delegation-for-a-new-file-using-post" class="anchor"><span class="anchor-link"></span></a>Generate a delegation for a new file using POST</h5>
@@ -771,7 +775,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;signature&quot;: &quot;&lt;signature contents&gt;&quot;
  }
 </code></pre>
-<p>The <code>payload</code> field can be base64 decoded to access the generated file details. Note that <code>protected</code> contains an expiry field <code>exp</code> with the datetime at which this signature will expire (in epoch seconds). To view this can also be base64 decoded.</p>
+<p>The <code>payload</code> field can be base64 decoded to access the generated file details. Note that <code>protected</code> contains an expiry field <code>exp</code> with the datetime at which this <code>signature</code> will expire (in epoch seconds). To view this can also be base64 decoded.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -801,8 +805,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </dl>
 <h4><a href="#2-upload-file-to-s3" name="2-upload-file-to-s3" class="anchor"><span class="anchor-link"></span></a>2. Upload file to S3</h4>
 <p>Using the bucket and path from the previous step, the file should be uploaded to S3 by whatever means are appropriate. The only restriction is that this must be finished before the expiry datetime of the signed payload.</p>
+<p>Here are some tutorials in both <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/example_s3_Scenario_MultipartUpload_section.html" title="Java with AWS SDK" target="_blank" rel="noopener noreferrer">Java with AWS SDK</a> and <a href="https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11" title="Python with Boto3" target="_blank" rel="noopener noreferrer">Python with Boto3</a> that illustrate the process of doing a multipart upload to S3.</p>
 <h4><a href="#3-create-update-delegated-file-resource" name="3-create-update-delegated-file-resource" class="anchor"><span class="anchor-link"></span></a>3. Create/update delegated file resource</h4>
-<p>Once the file has been uploaded to S3 at the specified path, the file resource can be created. The payload can be passed back exactly as it was returned in the previous step.</p>
+<p>Once the file has been uploaded to S3 at the specified path, the file resource can be created in the knowledge graph. The payload can be passed back exactly as it was returned in the previous step.</p>
 <pre><code>POST /v1/delegate/files/submit
    {
       &quot;payload&quot;: &quot;&lt;base64 encoded payload contents&gt;&quot;,
@@ -810,7 +815,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;signature&quot;: &quot;&lt;signature contents&gt;&quot;
    }
 </code></pre>
-<p>Delta will verify that the signature matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.</p>
+<p>Delta will verify that the <code>signature</code> matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>

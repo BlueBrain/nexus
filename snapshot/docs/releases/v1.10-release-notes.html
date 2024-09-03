@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="active page">v1.10 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -266,7 +267,8 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#custom-metadata" class="header">Custom metadata</a></li>
       </ul></li>
-      <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#s3-support" class="header">S3 support</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#disabling-default-storage" class="header">Disabling default storage</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-storages" class="header">Undeprecate Storages</a></li>
@@ -293,7 +295,6 @@ BlueBrain/nexus
       </ul></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
-    <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -342,7 +343,8 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#custom-metadata" class="header">Custom metadata</a></li>
       </ul></li>
-      <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#storages" class="header">Storages</a></li>
+      <li><a href="../../docs/releases/v1.10-release-notes.html#s3-support" class="header">S3 support</a>
       <ul>
         <li><a href="../../docs/releases/v1.10-release-notes.html#disabling-default-storage" class="header">Disabling default storage</a></li>
         <li><a href="../../docs/releases/v1.10-release-notes.html#undeprecate-storages" class="header">Undeprecate Storages</a></li>
@@ -369,7 +371,6 @@ BlueBrain/nexus
       </ul></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
-    <li><a href="../../docs/releases/v1.10-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -389,10 +390,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#v1-10-release-notes" name="v1-10-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.10 Release Notes</h1>
 <blockquote>
-  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible with v1.9.</p>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible with v1.9 except for creating and updating S3 storages</p>
 </blockquote>
 <p>//TODO adjust the end date</p>
-<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2023-06-15..2023-12-14+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.9.</p>
+<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2023-12-18..2024-08-30+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.9.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
 <h3><a href="#fetching-by-org-and-project-uuids" name="fetching-by-org-and-project-uuids" class="anchor"><span class="anchor-link"></span></a>Fetching by org and project UUIDs</h3>
 <p>The legacy way of being able to:</p>
@@ -429,6 +430,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>It is now possible to add custom metadata when creating and updating files. This metadata will be indexed for full-text search.</p>
 <p><a href="../delta/api/files-api.html#create-using-post">More information about metadata during file creation</a> <a href="../delta/api/files-api.html#update">More information about metadata during file update</a></p>
 <h3><a href="#storages" name="storages" class="anchor"><span class="anchor-link"></span></a>Storages</h3>
+<h3><a href="#s3-support" name="s3-support" class="anchor"><span class="anchor-link"></span></a>S3 support</h3>
+<p>The S3 support for Nexus Delta has been rewritten and new operations are available.</p>
+<p><a href="../delta/api/storages-api.html">More information for storages</a> <a href="../delta/api/files-api.html">More information for files</a></p>
 <h4><a href="#disabling-default-storage" name="disabling-default-storage" class="anchor"><span class="anchor-link"></span></a>Disabling default storage</h4>
 <p>The creation of a default storage at project creation can now be disabled.</p>
 <h4><a href="#undeprecate-storages" name="undeprecate-storages" class="anchor"><span class="anchor-link"></span></a>Undeprecate Storages</h4>
@@ -437,7 +441,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h4>
 <ul>
   <li>Storages can no longer be tagged, looked up by tag or have their tags fetched.</li>
-  <li>S3 storages no longer support a linking operation.</li>
   <li>It is no longer possible to provide the storage capacity as it is no longer enforced.</li>
 </ul>
 <h3><a href="#resolvers" name="resolvers" class="anchor"><span class="anchor-link"></span></a>Resolvers</h3>
@@ -470,8 +473,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p><a href="../delta/api/supervision-api.html#project-healing">More information</a></p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <p>TODO</p>
-<h2><a href="#nexus-forge" name="nexus-forge" class="anchor"><span class="anchor-link"></span></a>Nexus forge</h2>
-<p>TODO</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.10-release-notes.md" title="Edit this page" class="md-source-file md-edit">
@@ -503,13 +504,13 @@ Releases
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.9-release-notes.html" title="v1.9 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.9-to-v1.10-migration.html" title="v1.9 To v1.10 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.9 Release Notes
+v1.9 To v1.10 Migration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
