@@ -215,6 +215,12 @@ Response
 Clients can use delegation for files that cannot be uploaded through Delta (e.g. large files which may benefit from multipart upload from S3).
 Here Delta will provide bucket and path details for the upload. Users are then expected to upload the file using other methods, and call back to Delta to register this file with the same metadata that was initially validated. The three steps are outlined in detail below.
 
+The following diagram illustrates the process of uploading a large file using the delegation method:
+![delegation](assets/files/multipart-upload.png "Multipart upload process")
+
+There is Delta @link:[configuration](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf){ open=new } to be done prior to using this feature, in particular setting up the necessary RSA key to support secure communication between Delta and AWS and signing payloads.
+The configuration can be found under the following key `app.jws`. Please note that the allowed duration of the process is configured there with a default of 3h. Check the configuration key `app.jws.ttl` to change this value.
+
 #### 1. Validate and generate path for file delegation
 
 Delta accepts and validates the following payload.
@@ -298,7 +304,7 @@ This payload is then signed using the [flattened JWS serialization format](https
  }
 ```
 
-The `payload` field can be base64 decoded to access the generated file details. Note that `protected` contains an expiry field `exp` with the datetime at which this signature will expire (in epoch seconds). To view this can also be base64 decoded.
+The `payload` field can be base64 decoded to access the generated file details. Note that `protected` contains an expiry field `exp` with the datetime at which this `signature` will expire (in epoch seconds). To view this can also be base64 decoded.
 
 **Example**
 
@@ -312,9 +318,12 @@ Response
 
 Using the bucket and path from the previous step, the file should be uploaded to S3 by whatever means are appropriate. The only restriction is that this must be finished before the expiry datetime of the signed payload.
 
+Here are some tutorials in both @link:[Java with AWS SDK](https://docs.aws.amazon.com/AmazonS3/latest/userguide/example_s3_Scenario_MultipartUpload_section.html){ open=new } and
+@link:[Python with Boto3](https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11){ open=new } that illustrate the process of doing a multipart upload to S3.
+
 #### 3. Create/update delegated file resource
 
-Once the file has been uploaded to S3 at the specified path, the file resource can be created. The payload can be passed back exactly as it was returned in the previous step.
+Once the file has been uploaded to S3 at the specified path, the file resource can be created in the knowledge graph. The payload can be passed back exactly as it was returned in the previous step.
 
 ```
 POST /v1/delegate/files/submit
@@ -325,7 +334,7 @@ POST /v1/delegate/files/submit
    }
 ```
 
-Delta will verify that the signature matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.
+Delta will verify that the `signature` matches the payload and that the expiry date is not passed. Then the file will be registered as a resource. The usual file resource response will be returned with all the standard metadata and file location details.
 
 **Example**
 
