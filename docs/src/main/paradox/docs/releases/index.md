@@ -28,19 +28,27 @@ The latest stable release is **v1.10.0** released on **18.12.2023**.
 - The S3 support for files has been completely rewritten
 - The default Elasticsearch views now uses a new mapping and settings which improves the ability to search for resources
   using the listing endpoints.
-- Resolvers/storages/views can't be tagged anymore
-- The global SSE endpoint, the SSE endpoints for realms/acls/organizations and the SSE endpoint 
-  to fetch indexing errors have been removed
-- Fetch organizations and projects by their uuid is now removed
 
 ### Deprecations
 
+- Resolvers/storages/views can't be tagged anymore
+- The global SSE endpoint, the SSE endpoints for realms/acls/organizations and the SSE endpoint
+  to fetch indexing errors have been removed
+- Fetch organizations and projects by their uuid is now removed
 - Jira Plugin
 
 ### New features / enhancements
 
 - @ref:[S3 support has been rewritten with new features](../delta/api/files-api.md)
-- The projects and the different types of resources can now be undeprecated
+- Ability to @ref[enforce usage of schema at Project level](../delta/api/projects-api.md)
+- Ability to retrieve the annotated original payload for a @ref:[Schema](../delta/api/schemas-api.md#fetch-original-payload) and a @ref:[Resolver](../delta/api/resolvers-api.md#fetch-original-resource-payload-using-resolvers)
+- Ability to add custom metadata upon @ref:[creating](../delta/api/files-api.md#create-using-post) and @ref[updating](../delta/api/files-api.md#update) Files
+- Ability to @ref:[fetch a search suite](../delta/api/search-api.md#fetch-a-suite)
+- Ability to check if a project has been @ref:[correctly provisioned](../delta/api/supervision-api.md#projects-health) and potentially @ref:[heal](../delta/api/supervision-api.md#project-healing) this process 
+- The @ref:[Projects](../delta/api/projects-api.md#undeprecate) and the different types of resources (
+  @ref:[Storages](../delta/api/storages-api.md#undeprecate), 
+  @ref:[ElasticSearch Views](../delta/api/views/elasticsearch-view-api.md#undeprecate), @ref:[Sparql Views](../delta/api/views/sparql-view-api.md#undeprecate), @ref:[Composite Views](../delta/api/views/composite-view-api.md#undeprecate), 
+  @ref:[Schemas](../delta/api/schemas-api.md#undeprecate)) can now be undeprecated
 - @ref:[Custom metadata can now be added to files](../delta/api/files-api.md#create-using-post)
 - @ref:[Creating point-in-time for Elasticsearch queries](../delta/api/views/elasticsearch-view-api.md#create-a-point-in-time)
 
