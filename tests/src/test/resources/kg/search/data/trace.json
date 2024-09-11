@@ -78,11 +78,33 @@
     "@value": "2021-05-18T18:59:02.602182+02:00"
   },
   "description": "This dataset is about simulated electrophysiology traces for cell instance S1J_L6_IPC_cADpyr_2. The dataset contains one distribution of the traces in NWB file format.",
-  "distribution": {
+  "distribution": [
+      {
+      "@type": "DataDownload",
+      "atLocation": {
+        "@type": "Location",
+        "location": "file:///gpfs/bbp.cscs.ch/data/project/proj109/nexus/public/sscx/e/1/0/5/5/9/1/c/S1J_L6_IPC_cADpyr_2.nwb",
+        "store": {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/4820323e-bee0-48d2-824f-9d9d404dbbee"
+        }
+      },
+      "contentSize": {
+        "unitCode": "bytes",
+        "value": 1657656
+      },
+      "contentUrl": "https://bbp.epfl.ch/nexus/v1/files/public/sscx/5b24efb8-ce68-4ce7-afa6-53b8d8ea9a01",
+      "digest": {
+        "algorithm": "SHA-256",
+        "value": "9dfe31ab52dd636987a610b9ac70f6ca28f03331d75a17624a4308a1d64266fc"
+      },
+      "encodingFormat": "application/nwb",
+      "name": "S1J_L6_IPC_cADpyr_2.nwb"
+    },
+    {
     "@type": "DataDownload",
     "atLocation": {
       "@type": "Location",
-      "location": "file:///gpfs/bbp.cscs.ch/data/project/proj109/nexus/public/sscx/e/1/0/5/5/9/1/c/S1J_L6_IPC_cADpyr_2.nwb",
+      "location": "file:///gpfs/bbp.cscs.ch/data/project/proj109/nexus/public/sscx/e/1/0/5/5/9/1/c/S1J_L6_IPC_cADpyr_2.abf",
       "store": {
         "@id": "https://bbp.epfl.ch/neurosciencegraph/data/4820323e-bee0-48d2-824f-9d9d404dbbee"
       }
@@ -96,9 +118,10 @@
       "algorithm": "SHA-256",
       "value": "9dfe31ab52dd636987a610b9ac70f6ca28f03331d75a17624a4308a1d64266fc"
     },
-    "encodingFormat": "application/nwb",
-    "name": "S1J_L6_IPC_cADpyr_2.nwb"
-  },
+    "encodingFormat": "application/abf",
+    "name": "S1J_L6_IPC_cADpyr_2.abf"
+  }
+  ],
   "image": [
     {
       "@id": "https://bbp.epfl.ch/neurosciencegraph/data/58342dff-8034-4b53-933b-1c034cdc8180",
