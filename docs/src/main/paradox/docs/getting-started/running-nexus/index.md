@@ -143,7 +143,7 @@ This setup runs the Nexus ecosystem without an identity provider, and the anonym
 #### Administration
 
 To list running services or access logs, please refer to the official Docker
-@link:[documentation](https://docs.docker.com/engine/reference/commandline/stack/){ open=new }.
+@link:[documentation](https://docs.docker.com/reference/cli/docker/stack/){ open=new }.
 
 #### Stopping Nexus
 
