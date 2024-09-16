@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, CopyResult, S3LocationGenerator}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, S3LocationGenerator, S3OperationResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.ship.config.FileProcessingConfig
@@ -74,8 +74,8 @@ object FileCopier {
           } else
             s3StorageClient.copyObject(importBucket, originKey, targetBucket, targetKey, copyOptions)
         }.flatMap {
-          case CopyResult.Success       => IO.unit
-          case CopyResult.AlreadyExists =>
+          case S3OperationResult.Success       => IO.unit
+          case S3OperationResult.AlreadyExists =>
             IO.whenA(forceContentType) {
               attributes.mediaType.traverse { mediaType =>
                 logger.info(s"Patching to content type $mediaType for file $patchedFileName") >>

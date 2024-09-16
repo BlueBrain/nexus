@@ -62,7 +62,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[CopyResult] =
+  ): IO[S3OperationResult] =
     approveCopy(destinationBucket, destinationKey, options.overwriteTarget).flatMap { approved =>
       if (approved) {
         val requestBuilder     = CopyObjectRequest
@@ -77,8 +77,8 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
             .contentType(contentType.value)
             .metadataDirective(MetadataDirective.REPLACE)
         }
-        client.copyObject(requestWithOptions.build()).as(CopyResult.Success)
-      } else IO.pure(CopyResult.AlreadyExists)
+        client.copyObject(requestWithOptions.build()).as(S3OperationResult.Success)
+      } else IO.pure(S3OperationResult.AlreadyExists)
     }
 
   def copyObjectMultiPart(
@@ -87,13 +87,13 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[CopyResult] =
+  ): IO[S3OperationResult] =
     approveCopy(destinationBucket, destinationKey, options.overwriteTarget).flatMap { approved =>
       if (approved) {
         copyObjectMultiPart(sourceBucket, sourceKey, destinationBucket, destinationKey, options.newContentType).as(
-          CopyResult.Success
+          S3OperationResult.Success
         )
-      } else IO.pure(CopyResult.AlreadyExists)
+      } else IO.pure(S3OperationResult.AlreadyExists)
     }
 
   private def copyObjectMultiPart(
@@ -183,19 +183,21 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       .compile
       .drain
 
-  override def updateContentType(bucket: String, key: String, contentType: ContentType): IO[Unit] = {
-    val requestBuilder = CopyObjectRequest
-      .builder()
-      .sourceBucket(bucket)
-      .sourceKey(key)
-      .destinationBucket(bucket)
-      .destinationKey(key)
-      .checksumAlgorithm(checksumAlgorithm)
-      .contentType(contentType.value)
-      .metadataDirective(MetadataDirective.REPLACE)
-
-    client.copyObject(requestBuilder.build()).void
-  }
+  override def updateContentType(bucket: String, key: String, contentType: ContentType): IO[S3OperationResult] =
+    headObject(bucket, key).flatMap {
+      case head if head.contentType.contains(contentType) => IO.pure(S3OperationResult.AlreadyExists)
+      case _                                              =>
+        val requestBuilder = CopyObjectRequest
+          .builder()
+          .sourceBucket(bucket)
+          .sourceKey(key)
+          .destinationBucket(bucket)
+          .destinationKey(key)
+          .checksumAlgorithm(checksumAlgorithm)
+          .contentType(contentType.value)
+          .metadataDirective(MetadataDirective.REPLACE)
+        client.copyObject(requestBuilder.build()).as(S3OperationResult.Success)
+    }
 
   override def bucketExists(bucket: String): IO[Boolean] = {
     listObjectsV2(bucket)
