@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 import akka.http.scaladsl.model.ContentTypes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, CopyResult, LocalStackS3StorageClient, S3Helpers}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, LocalStackS3StorageClient, S3Helpers, S3OperationResult}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
@@ -33,7 +33,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           result <- s3StorageClient.copyObject(bucket, key, bucket, newKey, options)
           head   <- s3StorageClient.headObject(bucket, newKey)
         } yield {
-          assertEquals(result, CopyResult.Success)
+          assertEquals(result, S3OperationResult.Success)
           assertEquals(head.fileSize, contentLength)
           assertEquals(head.contentType, Some(expectedContentType))
         }
@@ -50,7 +50,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           result <- s3StorageClient.copyObject(bucket, key, bucket, newKey, options)
           head   <- s3StorageClient.headObject(bucket, newKey)
         } yield {
-          assertEquals(result, CopyResult.Success)
+          assertEquals(result, S3OperationResult.Success)
           assertEquals(head.fileSize, contentLength)
           assertEquals(head.contentType, Some(contentType))
         }
@@ -67,7 +67,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           head   <- s3StorageClient.headObject(bucket, existingTargetKey)
         } yield {
           val clue = "The file should not have been overwritten"
-          assertEquals(result, CopyResult.AlreadyExists)
+          assertEquals(result, S3OperationResult.AlreadyExists)
           assertEquals(head.fileSize, anotherContentLength, clue)
           assertEquals(head.contentType, Some(expectedContentType), clue)
         }
@@ -84,7 +84,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           head   <- s3StorageClient.headObject(bucket, existingTargetKey)
         } yield {
           val clue = "The file should have been overwritten"
-          assertEquals(result, CopyResult.Success)
+          assertEquals(result, S3OperationResult.Success)
           assertEquals(head.fileSize, contentLength, clue)
           assertEquals(head.contentType, Some(contentType), clue)
         }
@@ -96,10 +96,26 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
     givenAnS3Bucket { bucket =>
       givenAFileInABucket(bucket, fileContents) { key =>
         for {
-          _    <- s3StorageClient.updateContentType(bucket, key, contentType)
-          head <- s3StorageClient.headObject(bucket, key)
+          result <- s3StorageClient.updateContentType(bucket, key, contentType)
+          head   <- s3StorageClient.headObject(bucket, key)
         } yield {
+          assertEquals(result, S3OperationResult.Success)
           assertEquals(head.contentType, Some(contentType))
+        }
+      }
+    }
+  }
+
+  test("Do not update the content type of an existing object if it is already set to this value") {
+    val originalContentType = ContentTypes.`text/plain(UTF-8)`
+    givenAnS3Bucket { bucket =>
+      givenAFileInABucket(bucket, fileContents) { key =>
+        for {
+          result <- s3StorageClient.updateContentType(bucket, key, originalContentType)
+          head   <- s3StorageClient.headObject(bucket, key)
+        } yield {
+          assertEquals(result, S3OperationResult.AlreadyExists)
+          assertEquals(head.contentType, Some(originalContentType))
         }
       }
     }
