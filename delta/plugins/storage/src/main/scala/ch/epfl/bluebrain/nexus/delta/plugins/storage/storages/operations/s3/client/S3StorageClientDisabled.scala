@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, CopyResult, HeadObject, PutObjectRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest, S3OperationResult}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import fs2.Stream
 import software.amazon.awssdk.services.s3.model._
@@ -27,7 +27,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[CopyResult] = raiseDisabledErr
+  ): IO[S3OperationResult] = raiseDisabledErr
 
   override def objectExists(bucket: String, key: String): IO[Boolean] = raiseDisabledErr
 
@@ -36,7 +36,8 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       data: Stream[IO, ByteBuffer]
   ): IO[Unit] = raiseDisabledErr
 
-  override def updateContentType(bucket: String, key: String, contentType: ContentType): IO[Unit] = raiseDisabledErr
+  override def updateContentType(bucket: String, key: String, contentType: ContentType): IO[S3OperationResult] =
+    raiseDisabledErr
 
   override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr
 
@@ -46,7 +47,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       destinationBucket: String,
       destinationKey: String,
       options: CopyOptions
-  ): IO[CopyResult] = raiseDisabledErr
+  ): IO[S3OperationResult] = raiseDisabledErr
 
   override def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte] = throw disabledErr
 }
