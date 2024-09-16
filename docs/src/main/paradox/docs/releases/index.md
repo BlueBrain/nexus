@@ -25,6 +25,8 @@ The latest stable release is **v1.10.0** released on **18.12.2023**.
 
 ### Breaking changes
 
+@@@ note { .warning }
+
 The items listed below are changes that have been made in this release that break compatibility with previous releases.
 
 - The S3 support for files has been completely rewritten
@@ -32,7 +34,11 @@ The items listed below are changes that have been made in this release that brea
   using the listing endpoints.
 - Resolvers/storages/views can't be tagged anymore
 
+@@@
+
 ### Deprecations
+
+@@@ note { .warning }
 
 The items listed below are announcement of future deprecation, these features will be removed in the next release.
 
@@ -40,6 +46,8 @@ The items listed below are announcement of future deprecation, these features wi
   to fetch indexing errors have been removed
 - Fetch organizations and projects by their uuid is now removed
 - Jira Plugin
+
+@@@
 
 ### New features / enhancements
 
