@@ -30,7 +30,7 @@ That means that when those get updated, the resources importing them must be als
 
 @@@ note { .warning title="Reserved types and fields" }
 
-A generic resource can not have a type belonging to the Nexus vocabulary (https://bluebrain.github.io/nexus/vocabulary/).
+A generic resource can not have a type belonging to the Nexus vocabulary `https://bluebrain.github.io/nexus/vocabulary/`.
 
 Moreover it can not include any field starting with underscore (_) at the root level as these fields are reserved for Nexus metadata.
 @@@
