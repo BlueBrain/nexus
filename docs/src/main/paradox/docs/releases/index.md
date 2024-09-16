@@ -25,13 +25,17 @@ The latest stable release is **v1.10.0** released on **18.12.2023**.
 
 ### Breaking changes
 
+The items listed below are changes that have been made in this release that break compatibility with previous releases.
+
 - The S3 support for files has been completely rewritten
 - The default Elasticsearch views now uses a new mapping and settings which improves the ability to search for resources
   using the listing endpoints.
+- Resolvers/storages/views can't be tagged anymore
 
 ### Deprecations
 
-- Resolvers/storages/views can't be tagged anymore
+The items listed below are announcement of future deprecation, these features will be removed in the next release.
+
 - The global SSE endpoint, the SSE endpoints for realms/acls/organizations and the SSE endpoint
   to fetch indexing errors have been removed
 - Fetch organizations and projects by their uuid is now removed
