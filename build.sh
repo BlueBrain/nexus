@@ -14,7 +14,7 @@ chmod +x /usr/local/bin/docker-compose
 cp -R ./product-page/src/site/* ./target
 
 # Build every version of docs
-current_version=v1.9.x
+current_version=v1.10.x
 
 for i in $(ls -d versions/*/);
 do
