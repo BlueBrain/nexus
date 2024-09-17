@@ -93,5 +93,5 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
   }
 
   private def log(bucket: String, key: String, msg: String): IO[Unit] =
-    logger.info(s"Bucket: $bucket. Key: $key. $msg")
+    logger.debug(s"Bucket: $bucket. Key: $key. $msg")
 }
