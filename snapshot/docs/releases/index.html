@@ -364,24 +364,32 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.10.0</strong> released on <strong>18.12.2023</strong>.</p>
+<p>The latest stable release is <strong>v1.10.0</strong> released on <strong>17.09.2024</strong>.</p>
 <h2><a href="#1-10-0" name="1-10-0" class="anchor"><span class="anchor-link"></span></a>1.10.0</h2>
-<h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
+<h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3><div class="callout note warning"><div class="callout-title">Note</div>
+<p>The items listed below are changes that have been made in this release that break compatibility with previous releases.</p>
 <ul>
   <li>The S3 support for files has been completely rewritten</li>
   <li>The default Elasticsearch views now uses a new mapping and settings which improves the ability to search for resources  using the listing endpoints.</li>
   <li>Resolvers/storages/views can&rsquo;t be tagged anymore</li>
   <li>The global SSE endpoint, the SSE endpoints for realms/acls/organizations and the SSE endpoint  to fetch indexing errors have been removed</li>
   <li>Fetch organizations and projects by their uuid is now removed</li>
-</ul>
-<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+</ul></div>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3><div class="callout note warning"><div class="callout-title">Note</div>
+<p>The items listed below are announcement of future deprecation, these features will be removed in the next release.</p>
 <ul>
+  <li>Remote storage support</li>
   <li>Jira Plugin</li>
-</ul>
+</ul></div>
 <h3><a href="#new-features-enhancements" name="new-features-enhancements" class="anchor"><span class="anchor-link"></span></a>New features / enhancements</h3>
 <ul>
   <li><a href="../delta/api/files-api.html">S3 support has been rewritten with new features</a></li>
-  <li>The projects and the different types of resources can now be undeprecated</li>
+  <li>Ability to <a href="../delta/api/projects-api.html">enforce usage of schema at Project level</a></li>
+  <li>Ability to retrieve the annotated original payload for a <a href="../delta/api/schemas-api.html#fetch-original-payload">Schema</a> and a <a href="../delta/api/resolvers-api.html#fetch-original-resource-payload-using-resolvers">Resolver</a></li>
+  <li>Ability to add custom metadata upon <a href="../delta/api/files-api.html#create-using-post">creating</a> and <a href="../delta/api/files-api.html#update">updating</a> Files</li>
+  <li>Ability to <a href="../delta/api/search-api.html#fetch-a-suite">fetch a search suite</a></li>
+  <li>Ability to check if a project has been <a href="../delta/api/supervision-api.html#projects-health">correctly provisioned</a> and potentially <a href="../delta/api/supervision-api.html#project-healing">heal</a> this process</li>
+  <li>The <a href="../delta/api/projects-api.html#undeprecate">Projects</a> and the different types of resources (  <a href="../delta/api/storages-api.html#undeprecate">Storages</a>,  <a href="../delta/api/views/elasticsearch-view-api.html#undeprecate">ElasticSearch Views</a>, <a href="../delta/api/views/sparql-view-api.html#undeprecate">Sparql Views</a>, <a href="../delta/api/views/composite-view-api.html#undeprecate">Composite Views</a>,  <a href="../delta/api/schemas-api.html#undeprecate">Schemas</a>) can now be undeprecated</li>
   <li><a href="../delta/api/files-api.html#create-using-post">Custom metadata can now be added to files</a></li>
   <li><a href="../delta/api/views/elasticsearch-view-api.html#create-a-point-in-time">Creating point-in-time for Elasticsearch queries</a></li>
 </ul>

@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -245,11 +246,9 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#update" class="header">Update</a></li>
-    <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#search-documents" class="header">Search Documents</a></li>
   </ul></li>
 </ul>
@@ -259,7 +258,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -278,11 +277,9 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#update" class="header">Update</a></li>
-    <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html#search-documents" class="header">Search Documents</a></li>
   </ul></li>
 </ul>
@@ -293,6 +290,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#aggregateelasticsearchview" name="aggregateelasticsearchview" class="anchor"><span class="anchor-link"></span></a>AggregateElasticSearchView</h1>
 <p>This view is an aggregate of ElasticSearchViews. The view itself does not create any index, but it references the already existing indices of the linked ElasticSearchViews.</p><div class="callout note "><div class="callout-title">Note</div>
@@ -520,64 +524,6 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
 </dl>
-<h2><a href="#tag" name="tag" class="anchor"><span class="anchor-link"></span></a>Tag</h2>
-<p>Links a view revision to a specific name.</p>
-<p>Tagging a view is considered to be an update as well.</p>
-<pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
-  {
-    &quot;tag&quot;: &quot;{name}&quot;,
-    &quot;rev&quot;: {rev}
-  }
-</code></pre>
-<p>&hellip; where</p>
-<ul>
-  <li><code>{previous_rev}</code>: is the last known revision number for the resource.</li>
-  <li><code>{name}</code>: String - label given to the view at specific revision.</li>
-  <li><code>{rev}</code>: Number - the revision to link the provided <code>{name}</code>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/tag-aggregate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
-  -H &quot;Content-Type: application/json&quot; \
-  &quot;http://localhost:8080/v1/views/myorg/myproj/my_aggregate_view/tags?rev=2&quot; \
-  -d \
-  &#39;{
-    &quot;tag&quot;: &quot;mytag&quot;,
-    &quot;rev&quot;: 1
-  }&#39;</code></pre></dd>
-  <dt>Payload</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/tag.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;tag&quot;: &quot;mytag&quot;,
-  &quot;rev&quot;: 1
-}</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/tagged-aggregate.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: [
-    &quot;https://bluebrain.github.io/nexus/contexts/elasticsearch-metadata.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
-  ],
-  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/_/my_aggregate_view&quot;,
-  &quot;@type&quot;: [
-    &quot;AggregateElasticSearchView&quot;,
-    &quot;View&quot;
-  ],
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/views.json&quot;,
-  &quot;_createdAt&quot;: &quot;2021-05-17T09:58:58.203Z&quot;,
-  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-  &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/my_aggregate_view/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/my_aggregate_view/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/myproj/my_aggregate_view&quot;,
-  &quot;_updatedAt&quot;: &quot;2021-05-17T10:06:13.453Z&quot;,
-  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
-}</code></pre></dd>
-</dl>
 <h2><a href="#deprecate" name="deprecate" class="anchor"><span class="anchor-link"></span></a>Deprecate</h2>
 <p>Locks the view, so no further operations can be performed.</p>
 <p>Deprecating a view is considered to be an update as well.</p><div class="callout note warning"><div class="callout-title">Note</div>
@@ -689,32 +635,6 @@ BlueBrain/nexus
     {
       &quot;project&quot;: &quot;myorg/myproj2&quot;,
       &quot;viewId&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex&quot;
-    }
-  ]
-}</code></pre></dd>
-</dl>
-<h2><a href="#fetch-tags" name="fetch-tags" class="anchor"><span class="anchor-link"></span></a>Fetch tags</h2>
-<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&amp;tag={tag}
-</code></pre>
-<p>where &hellip;</p>
-<ul>
-  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
-</ul>
-<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/tags-aggregate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/views/myorg/myproj/my_aggregate_view/tags&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/tags.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/tags.json&quot;,
-  &quot;tags&quot;: [
-    {
-      &quot;rev&quot;: 1,
-      &quot;tag&quot;: &quot;mytag&quot;
     }
   ]
 }</code></pre></dd>
@@ -879,7 +799,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>

@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="active page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -250,11 +251,9 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#update" class="header">Update</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a>
     <ul>
       <li><a href="../../../docs/delta/api/resolvers-api.html#within-a-project" class="header">Within a project</a></li>
@@ -273,7 +272,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -297,11 +296,9 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#update" class="header">Update</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a>
     <ul>
       <li><a href="../../../docs/delta/api/resolvers-api.html#within-a-project" class="header">Within a project</a></li>
@@ -321,6 +318,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#resolvers" name="resolvers" class="anchor"><span class="anchor-link"></span></a>Resolvers</h1>
 <p>Resolvers are rooted in the <code>/v1/resolvers/{org_label}/{project_label}</code> collection and are used in the following scenarios:</p>
@@ -376,7 +380,7 @@ BlueBrain/nexus
   <li><code>{useCurrentCaller}</code>: Boolean - the resolution process will use the caller and its identitites to enforce acls. Can&rsquo;t be <code>true</code> when <code>_identity_</code> is defined.</li>
 </ul>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
-<p>All the API calls modifying a resolver (creation, update, tagging, deprecation) can specify whether the resolver should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<p>All the API calls modifying a resolver (creation, update, deprecation) can specify whether the resolver should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>
   <li><code>async</code> - (default value) the resolver will be indexed asynchronously</li>
   <li><code>sync</code> - the resolver will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
@@ -597,64 +601,6 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
 }</code></pre></dd>
 </dl>
-<h2><a href="#tag" name="tag" class="anchor"><span class="anchor-link"></span></a>Tag</h2>
-<p>Links a resolver revision to a specific name. </p>
-<p>Tagging a resolver is considered to be an update as well.</p>
-<pre><code>POST /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={previous_rev}
-  {
-    &quot;tag&quot;: &quot;{name}&quot;,
-    &quot;rev&quot;: {rev}
-  }
-</code></pre>
-<p>&hellip; where </p>
-<ul>
-  <li><code>{previous_rev}</code>: Number - the last known revision for the resolver.</li>
-  <li><code>{name}</code>: String - label given to the resolver at specific revision.</li>
-  <li><code>{rev}</code>: Number - the revision to link the provided <code>{name}</code>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/tag.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST \
-     -H &quot;Content-Type: application/json&quot; \
-     &quot;http://localhost:8080/v1/resolvers/myorg/myproj/nxv:myresolver/tags?rev=2&quot; \
-     -d \
-&#39;{
-  &quot;tag&quot;: &quot;mytag&quot;,
-  &quot;rev&quot;: 1
-}&#39;</code></pre></dd>
-  <dt>Payload</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/tag.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;tag&quot;: &quot;mytag&quot;,
-  &quot;rev&quot;: 1
-}</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/tagged.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: [
-    &quot;https://bluebrain.github.io/nexus/contexts/resolvers-metadata.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
-  ],
-  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;,
-  &quot;@type&quot;: [
-    &quot;Resolver&quot;,
-    &quot;CrossProject&quot;
-  ],
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver/outgoing&quot;,
-  &quot;_self&quot;: &quot;http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver&quot;,
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resolvers&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_deprecated&quot;: false,
-  &quot;_createdAt&quot;: &quot;2021-04-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2021-04-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
-}</code></pre></dd>
-</dl>
 <h2><a href="#deprecate" name="deprecate" class="anchor"><span class="anchor-link"></span></a>Deprecate</h2>
 <p>Locks the resolver, so no further operations can be performed. It will also not be taken into account in the resolution process.</p>
 <p>Deprecating a resolver is considered to be an update as well. </p>
@@ -693,14 +639,12 @@ BlueBrain/nexus
 }</code></pre></dd>
 </dl>
 <h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}&amp;tag={tag}
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}
 </code></pre>
 <p>where &hellip;</p>
 <ul>
   <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
 </ul>
-<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -745,14 +689,12 @@ BlueBrain/nexus
 </dl>
 <p>If the <a href="../../getting-started/running-nexus/configuration/index.html#fusion-configuration">redirect to Fusion feature</a> is enabled and if the <code>Accept</code> header is set to <code>text/html</code>, a redirection to the fusion representation of the resource will be returned.</p>
 <h2><a href="#fetch-original-payload" name="fetch-original-payload" class="anchor"><span class="anchor-link"></span></a>Fetch original payload</h2>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}&amp;tag={tag}
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}
 </code></pre>
 <p>where &hellip;</p>
 <ul>
   <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
 </ul>
-<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -776,32 +718,6 @@ BlueBrain/nexus
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre></dd>
-</dl>
-<h2><a href="#fetch-tags" name="fetch-tags" class="anchor"><span class="anchor-link"></span></a>Fetch tags</h2>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={rev}&amp;tag={tag}
-</code></pre>
-<p>where &hellip;</p>
-<ul>
-  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
-</ul>
-<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/tags.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resolvers/myorg/myproj/myresolvers/e1729302-35b8-4d80-97b2-d63c984e2b5c/tags?rev=2&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/tags.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/tags.json&quot;,
-  &quot;tags&quot;: [
-    {
-      &quot;rev&quot;: 1,
-      &quot;tag&quot;: &quot;mytag&quot;
-    }
-  ]
 }</code></pre></dd>
 </dl>
 <h2><a href="#list" name="list" class="anchor"><span class="anchor-link"></span></a>List</h2>
@@ -922,8 +838,8 @@ BlueBrain/nexus
 <p>&hellip; where</p>
 <ul>
   <li><code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved.</li>
-  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
-  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+  <li><code>{rev}</code>: Number - the targeted resource revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted resource tag to be fetched. This field is optional.</li>
   <li><code>{showReport}</code>: Boolean - return the resolver resolution steps instead of the resource for debugging purposes.</li>
 </ul>
 <p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
@@ -964,10 +880,11 @@ BlueBrain/nexus
 <h2><a href="#fetch-original-resource-payload-using-resolvers" name="fetch-original-resource-payload-using-resolvers" class="anchor"><span class="anchor-link"></span></a>Fetch original resource payload using resolvers</h2>
 <p>Fetches the original source payload of a resource using the provided resolver.</p>
 <p>If the resolver segment (<code>{resolver_id}</code>) is <code>_</code> the resource is fetched from the first resolver in the requested project (<code>{org_label}/{project_label}</code>). The resolvers are ordered by its priority field.</p>
-<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&amp;tag={tag}
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}/source?rev={rev}&amp;tag={tag}&amp;annotate={annotate}
 </code></pre>
-<p>where &hellip; - <code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved. - <code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision. - <code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</p>
+<p>where &hellip; - <code>{resource_id}</code>: Iri - the @id value of the resource to be retrieved. - <code>{rev}</code>: Number - the targeted resource revision to be fetched. This field is optional and defaults to the latest revision. - <code>{tag}</code>: String - the targeted resource tag to be fetched. This field is optional. - <code>{annotate}</code>: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.</p>
 <p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
+<p>If <code>{annotate}</code> is set, the metadata is injected alongside with the original payload where the ones from the original payload take precedence. The context in the original payload is also amended with the metadata context.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -1006,19 +923,19 @@ GET /v1/resolvers/{org_label}/{project_label}/events # for resolver events in th
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/sse.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;https://localhost:8080/v1/resolvers/events&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/sse.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-18T09:58:00.801Z&quot;,&quot;_organizationUuid&quot;:&quot;6073a640-8da1-405d-acb5-ffa311b0877b&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project2&quot;,&quot;_projectUuid&quot;:&quot;d7b102d9-f8fd-490b-b25f-23dfc5ff2bf8&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@context&quot;:{&quot;nxv&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/&quot;},&quot;@id&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project-provided-entities-put2&quot;,&quot;@type&quot;:[&quot;CrossProject&quot;],&quot;identities&quot;:[{&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;wonderland&quot;,&quot;subject&quot;:&quot;alice&quot;}],&quot;priority&quot;:9,&quot;projects&quot;:[&quot;org/project1&quot;,&quot;org/project2&quot;],&quot;resourceTypes&quot;:[&quot;nxv:Schema&quot;,&quot;nxv:Custom&quot;]},&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/alice&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resolvers/sse.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-18T09:58:00.801Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project2&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@context&quot;:{&quot;nxv&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/&quot;},&quot;@id&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project-provided-entities-put2&quot;,&quot;@type&quot;:[&quot;CrossProject&quot;],&quot;identities&quot;:[{&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;wonderland&quot;,&quot;subject&quot;:&quot;alice&quot;}],&quot;priority&quot;:9,&quot;projects&quot;:[&quot;org/project1&quot;,&quot;org/project2&quot;],&quot;resourceTypes&quot;:[&quot;nxv:Schema&quot;,&quot;nxv:Custom&quot;]},&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/alice&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
 event:ResolverCreated
 id:1
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverUpdated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-19T09:58:00.801Z&quot;,&quot;_organizationUuid&quot;:&quot;6073a640-8da1-405d-acb5-ffa311b0877b&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project&quot;,&quot;_projectUuid&quot;:&quot;d7b102d9-f8fd-490b-b25f-23dfc5ff2bf8&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:2,&quot;_source&quot;:{&quot;@type&quot;:[&quot;InProject&quot;],&quot;priority&quot;:34},&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/bob&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverUpdated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-19T09:58:00.801Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:2,&quot;_source&quot;:{&quot;@type&quot;:[&quot;InProject&quot;],&quot;priority&quot;:34},&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/bob&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
 event:ResolverUpdated
 id:2
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverTagAdded&quot;,&quot;tag&quot;:&quot;my-tag&quot;,&quot;targetRev&quot;:1,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-20T09:58:00.801Z&quot;,&quot;_organizationUuid&quot;:&quot;6073a640-8da1-405d-acb5-ffa311b0877b&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project&quot;,&quot;_projectUuid&quot;:&quot;d7b102d9-f8fd-490b-b25f-23dfc5ff2bf8&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:3,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/alice&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverTagAdded&quot;,&quot;tag&quot;:&quot;my-tag&quot;,&quot;targetRev&quot;:1,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-20T09:58:00.801Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:3,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/alice&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
 event:ResolverTagAdded
 id:3
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverDeprecated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-21T09:58:00.801Z&quot;,&quot;_organizationUuid&quot;:&quot;6073a640-8da1-405d-acb5-ffa311b0877b&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project&quot;,&quot;_projectUuid&quot;:&quot;d7b102d9-f8fd-490b-b25f-23dfc5ff2bf8&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:4,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/alice&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resolvers.json&quot;],&quot;@type&quot;:&quot;ResolverDeprecated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/resolvers.json&quot;,&quot;_instant&quot;:&quot;2021-04-21T09:58:00.801Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/org/project&quot;,&quot;_resolverId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/cross-project&quot;,&quot;_rev&quot;:4,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/wonderland/users/alice&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/CrossProject&quot;]}
 event:ResolverDeprecated
 id:6</code></pre></dd>
 </dl>
@@ -1030,7 +947,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>
@@ -1040,7 +957,7 @@ v1.9.x
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/id-resolution.html" title="Id Resolution" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/history.html" title="History of resources" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -1049,7 +966,7 @@ v1.9.x
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Id Resolution
+History of resources
 </span>
 </div>
 </a>

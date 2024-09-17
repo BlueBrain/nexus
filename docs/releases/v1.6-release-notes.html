@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="active page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -271,7 +272,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -317,6 +318,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#v1-6-release-notes" name="v1-6-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.6 Release Notes</h1>
 <blockquote>
@@ -345,7 +353,7 @@ BlueBrain/nexus
 <ul>
   <li>Nexus client</li>
   <li>Indexing data in other systems</li>
-  <li><a href="../delta/api/storages-api.html#remote-disk-storage">RemoteDiskStorage</a></li>
+  <li>Remote storages</li>
 </ul>
 <h3><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h3>
 <p>Before 1.6, searching across several projects was not available in Nexus. The first version of Global search included in this release aims to fill this blank.</p>
@@ -359,7 +367,7 @@ BlueBrain/nexus
 <h3><a href="#secure-the-delta-elasticsearch-client" name="secure-the-delta-elasticsearch-client" class="anchor"><span class="anchor-link"></span></a>Secure the Delta Elasticsearch client</h3>
 <p>With 1.6, it is now possible to define credentials to query a secured Elasticsearch cluster: <a href="../getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration">Elasticsearch configuration</a>.</p>
 <h3><a href="#dedicated-blazegraph-client-for-user-defined-queries" name="dedicated-blazegraph-client-for-user-defined-queries" class="anchor"><span class="anchor-link"></span></a>Dedicated Blazegraph client for user-defined queries</h3>
-<p>User-defined queries could bring instability to Blazegraph because of their complexity. In 1.6, a <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L34" title="dedicated client with a timeout">dedicated client with a timeout</a> which triggers a circuit breaker in Blazegraph has been introduced in order to solve that problem.</p>
+<p>User-defined queries could bring instability to Blazegraph because of their complexity. In 1.6, a <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L34" title="dedicated client with a timeout">dedicated client with a timeout</a> which triggers a circuit breaker in Blazegraph has been introduced in order to solve that problem.</p>
 <h3><a href="#synchronous-indexing" name="synchronous-indexing" class="anchor"><span class="anchor-link"></span></a>Synchronous indexing</h3>
 <p>From 1.6, the different types of resources can be <a href="../delta/api/resources-api.html#indexing">indexed directly after creation/modification</a> without waiting for the background indexing process to pick it up.</p>
 <h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h3>
@@ -368,7 +376,7 @@ BlueBrain/nexus
 <h3><a href="#listings" name="listings" class="anchor"><span class="anchor-link"></span></a>Listings</h3>
 <p>The different types of resources can now be listed at the <a href="../delta/api/resources-api.html#within-an-organization">organization level</a> and <a href="../delta/api/resources-api.html#within-all-projects">within all the projects</a> the current user has access to.</p>
 <h3><a href="#configurable-rdf-parser" name="configurable-rdf-parser" class="anchor"><span class="anchor-link"></span></a>Configurable RDF parser</h3>
-<p>The RDF parser allowing to validate incoming data can now be <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L83" title="configured">configured</a> in order to be more or less strict.</p>
+<p>The RDF parser allowing to validate incoming data can now be <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L83" title="configured">configured</a> in order to be more or less strict.</p>
 <h3><a href="#automatic-project-provisioning" name="automatic-project-provisioning" class="anchor"><span class="anchor-link"></span></a>Automatic project provisioning</h3>
 <p>When enabled, a dedicated project is created for the current user on its first access to the Nexus platform.</p>
 <p>How to enable and configure it is detailed <a href="../getting-started/running-nexus/configuration/index.html#automatic-project-provisioning">here</a></p>
@@ -383,7 +391,7 @@ BlueBrain/nexus
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <h3><a href="#features" name="features" class="anchor"><span class="anchor-link"></span></a>Features</h3>
 <ul>
-  <li>Revamped <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/docs/src/main/paradox/docs/fusion/search.md">Fusion search</a>. Fusion search will now use delta search end point and will provide a improved UI with sorting, filtering, pagination etc.</li>
+  <li>Revamped <a href="https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/fusion/search.md">Fusion search</a>. Fusion search will now use delta search end point and will provide a improved UI with sorting, filtering, pagination etc.</li>
   <li>Real-time updates. Fusion now uses &lsquo;indexing=sync&rsquo; option in delta API. This means all the updates made through fusion will be indexed in delta synchronously.</li>
   <li>Sub apps other than studio will be hidden in sidebar for anonymous users.</li>
   <li>Fusion will show a warning message when projects are due for deletion.</li>
@@ -402,7 +410,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>

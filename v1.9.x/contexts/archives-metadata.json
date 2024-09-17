@@ -1,0 +1,7 @@
+{
+  "@context": {
+    "Archive": "https://bluebrain.github.io/nexus/vocabulary/Archive",
+    "_expiresInSeconds": "https://bluebrain.github.io/nexus/vocabulary/expiresInSeconds"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/archives-metadata.json"
+}

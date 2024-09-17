@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -250,7 +251,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/acls-api.html#delete" class="header">Delete</a></li>
     <li><a href="../../../docs/delta/api/acls-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/acls-api.html#list" class="header">List</a></li>
-    <li><a href="../../../docs/delta/api/acls-api.html#acl-server-sent-events" class="header">ACL Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -259,7 +259,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -283,7 +283,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/acls-api.html#delete" class="header">Delete</a></li>
     <li><a href="../../../docs/delta/api/acls-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/acls-api.html#list" class="header">List</a></li>
-    <li><a href="../../../docs/delta/api/acls-api.html#acl-server-sent-events" class="header">ACL Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -293,6 +292,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#access-control-lists" name="access-control-lists" class="anchor"><span class="anchor-link"></span></a>Access Control Lists</h1>
 <p>Access Control Lists are rooted in the <code>/v1/acls</code> collection.</p>
@@ -956,49 +962,6 @@ BlueBrain/nexus
   ]
 }</code></pre></dd>
 </dl>
-<h2><a href="#acl-server-sent-events" name="acl-server-sent-events" class="anchor"><span class="anchor-link"></span></a>ACL Server Sent Events</h2>
-<p>This endpoint allows clients to receive automatic updates from the ACLs in a streaming fashion.</p>
-<pre><code>GET /v1/acls/events
-</code></pre>
-<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed ACL event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
-<p>The response contains a series of ACL events, represented in the following way</p>
-<pre><code>data:{payload}
-event:{type}
-id:{id}
-</code></pre>
-<p>where&hellip;</p>
-<ul>
-  <li><code>{payload}</code>: Json - is the actual payload of the current ACL</li>
-  <li><code>{type}</code>: String - is a type identifier for the current ACL. Possible types are: AclAppended, AclSubtracted,  AclReplaced, AclDeleted</li>
-  <li><code>{id}</code>: String - is the identifier of the ACL event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/acls/event.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/acls/events&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/acls/event.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;],&quot;@type&quot;:&quot;AclReplaced&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/myrealm/groups/a-group&quot;,&quot;@type&quot;:&quot;Group&quot;,&quot;group&quot;:&quot;a-group&quot;,&quot;realm&quot;:&quot;myrealm&quot;},&quot;permissions&quot;:[&quot;projects/read&quot;]},{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/realm/groups/some-group&quot;,&quot;@type&quot;:&quot;Group&quot;,&quot;group&quot;:&quot;some-group&quot;,&quot;realm&quot;:&quot;realm&quot;},&quot;permissions&quot;:[&quot;projects/read&quot;,&quot;projects/write&quot;]},{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/realm/users/alice&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;realm&quot;,&quot;subject&quot;:&quot;alice&quot;},&quot;permissions&quot;:[&quot;acls/read&quot;,&quot;acls/write&quot;]}],&quot;_aclId&quot;:&quot;http://localhost:8080/v1/acls/org1&quot;,&quot;_instant&quot;:&quot;2021-05-11T11:03:06.071Z&quot;,&quot;_path&quot;:&quot;/org1&quot;,&quot;_rev&quot;:1,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:AclReplaced
-id:76848d80-b248-11eb-a0d9-6dedbaa155f8
-
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;],&quot;@type&quot;:&quot;AclReplaced&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/myrealm/groups/a-group&quot;,&quot;@type&quot;:&quot;Group&quot;,&quot;group&quot;:&quot;a-group&quot;,&quot;realm&quot;:&quot;myrealm&quot;},&quot;permissions&quot;:[&quot;projects/read&quot;]},{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/realm/groups/some-group&quot;,&quot;@type&quot;:&quot;Group&quot;,&quot;group&quot;:&quot;some-group&quot;,&quot;realm&quot;:&quot;realm&quot;},&quot;permissions&quot;:[&quot;projects/read&quot;,&quot;projects/write&quot;]},{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/realm/users/alice&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;realm&quot;,&quot;subject&quot;:&quot;alice&quot;},&quot;permissions&quot;:[&quot;acls/read&quot;,&quot;acls/write&quot;]}],&quot;_aclId&quot;:&quot;http://localhost:8080/v1/acls/org1&quot;,&quot;_instant&quot;:&quot;2021-05-11T11:03:32.596Z&quot;,&quot;_path&quot;:&quot;/org1&quot;,&quot;_rev&quot;:2,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:AclReplaced
-id:8653f250-b248-11eb-a0d9-6dedbaa155f8
-
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;],&quot;@type&quot;:&quot;AclSubtracted&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/myrealm/groups/a-group&quot;,&quot;@type&quot;:&quot;Group&quot;,&quot;group&quot;:&quot;a-group&quot;,&quot;realm&quot;:&quot;myrealm&quot;},&quot;permissions&quot;:[&quot;projects/read&quot;]}],&quot;_aclId&quot;:&quot;http://localhost:8080/v1/acls/org1&quot;,&quot;_instant&quot;:&quot;2021-05-11T11:03:52.875Z&quot;,&quot;_path&quot;:&quot;/org1&quot;,&quot;_rev&quot;:3,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:AclSubtracted
-id:926a46c0-b248-11eb-a0d9-6dedbaa155f8
-
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;],&quot;@type&quot;:&quot;AclAppended&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;http://localhost:8080/v1/realms/myrealm/groups/a-group&quot;,&quot;@type&quot;:&quot;Group&quot;,&quot;group&quot;:&quot;a-group&quot;,&quot;realm&quot;:&quot;myrealm&quot;},&quot;permissions&quot;:[&quot;own&quot;,&quot;other&quot;]}],&quot;_aclId&quot;:&quot;http://localhost:8080/v1/acls/org1&quot;,&quot;_instant&quot;:&quot;2021-05-11T11:04:54.614Z&quot;,&quot;_path&quot;:&quot;/org1&quot;,&quot;_rev&quot;:4,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:AclAppended
-id:b736bf60-b248-11eb-a0d9-6dedbaa155f8
-
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;],&quot;@type&quot;:&quot;AclDeleted&quot;,&quot;_aclId&quot;:&quot;http://localhost:8080/v1/acls/org1&quot;,&quot;_instant&quot;:&quot;2021-05-11T11:05:15.919Z&quot;,&quot;_path&quot;:&quot;/org1&quot;,&quot;_rev&quot;:5,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
-event:AclDeleted
-id:c3e9c900-b248-11eb-a0d9-6dedbaa155f8</code></pre></dd>
-</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/acls-api.md" title="Edit this page" class="md-source-file md-edit">
@@ -1007,7 +970,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>

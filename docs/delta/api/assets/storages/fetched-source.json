@@ -1,5 +1,5 @@
 {
-  "@type": "RemoteDiskStorage",
+  "@type": "S3Storage",
   "default": false,
-  "folder": "test-updated"
+  "bucket": "test-updated"
 }

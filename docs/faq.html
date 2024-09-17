@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -275,7 +276,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -325,13 +326,20 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#faq" name="faq" class="anchor"><span class="anchor-link"></span></a>FAQ</h1>
 <h2><a href="#general-faq" name="general-faq" class="anchor"><span class="anchor-link"></span></a>General FAQ</h2>
 <h3><a href="#what-is-blue-brain-nexus-" name="what-is-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>What is Blue Brain Nexus?</h3>
 <p>Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. You can find out more information on our <a href="https://bluebrainnexus.io/" title="product home page" target="_blank" rel="noopener noreferrer">product home page</a>. </p>
 <h3><a href="#is-blue-brain-nexus-free-to-use-" name="is-blue-brain-nexus-free-to-use-" class="anchor"><span class="anchor-link"></span></a>Is Blue Brain Nexus free to use?</h3>
-<p>Yes, Nexus is a free, Open Source platform released under <a href="https://opensource.org/license/apache-2-0/" title="Apache Licence 2.0" target="_blank" rel="noopener noreferrer">Apache Licence 2.0</a></p>
+<p>Yes, Nexus is a free, Open Source platform released under <a href="https://www.apache.org/licenses/LICENSE-2.0" title="Apache Licence 2.0" target="_blank" rel="noopener noreferrer">Apache Licence 2.0</a></p>
 <h3><a href="#how-do-i-run-blue-brain-nexus-" name="how-do-i-run-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>How do I run Blue Brain Nexus?</h3>
 <p>There are many ways to run Nexus. Our public Sandbox is running <a href="https://sandbox.bluebrainnexus.io" title="here" target="_blank" rel="noopener noreferrer">here</a> and you can use it to test Nexus on small, non-sensitive data. Our <a href="getting-started/try-nexus.html">tutorial</a> can help you to run Nexus step by step.</p>
 <p>Meanwhile if you want to run it locally you can do so using <a href="getting-started/running-nexus/index.html#docker">Docker</a>. You can also deploy Nexus <a href="getting-started/running-nexus/index.html#on-premise-cloud-deployment">“on premise”</a>, as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>.</p>
@@ -391,7 +399,7 @@ BlueBrain/nexus
 <h3><a href="#can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" name="can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" class="anchor"><span class="anchor-link"></span></a>Can I connect any SPARQL client to Nexus’ SPARQL endpoint?</h3>
 <p>Yes. As long as the client supports the ability to provide a <code>Authentication</code> HTTP Header (for authentication purposes) on the HTTP request, any SPARQL client should work.</p>
 <h3><a href="#how-can-i-create-an-organization-as-an-anonymous-user-in-the-docker-compose-file-what-needs-to-be-done-to-switch-to-mode-" name="how-can-i-create-an-organization-as-an-anonymous-user-in-the-docker-compose-file-what-needs-to-be-done-to-switch-to-mode-" class="anchor"><span class="anchor-link"></span></a>How can I create an organization as an anonymous user in the docker-compose file? What needs to be done to switch to &ldquo;authenticated&rdquo; mode?</h3>
-<p>By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM property <a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/delta/app/src/main/resources/app.conf#L92" title="app.permissions.minimum" target="_blank" rel="noopener noreferrer">app.permissions.minimum</a>. In order to change that behaviour, please create some ACLs for the path <code>/</code>. For more details about ACLs creation, visit the <a href="delta/api/acls-api.html#create">ACLs page</a>.</p>
+<p>By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM property <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L92" title="app.permissions.minimum" target="_blank" rel="noopener noreferrer">app.permissions.minimum</a>. In order to change that behaviour, please create some ACLs for the path <code>/</code>. For more details about ACLs creation, visit the <a href="delta/api/acls-api.html#create">ACLs page</a>.</p>
 <h3><a href="#can-i-use-blue-brain-nexus-from-jupyter-notebooks-" name="can-i-use-blue-brain-nexus-from-jupyter-notebooks-" class="anchor"><span class="anchor-link"></span></a>Can I use Blue Brain Nexus from Jupyter Notebooks?</h3>
 <p>Blue Brain Nexus can be used from Jupyter Notebooks using <a href="https://github.com/blueBrain/nexus-forge" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a> or <a href="https://github.com/BlueBrain/nexus-python-sdk/" title="Nexus Python SDK" target="_blank" rel="noopener noreferrer">Nexus Python SDK</a>. Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook. Please consider looking at our <a href="getting-started/try-nexus.html">tutorial</a> to learn how to user Nexus Forge on the Sandbox. Other examples are provided in the folder <a href="https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks" title="Notebooks" target="_blank" rel="noopener noreferrer">Notebooks</a>.</p>
 </div>
@@ -402,7 +410,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>

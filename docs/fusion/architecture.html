@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -261,7 +262,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -297,6 +298,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#architecture" name="architecture" class="anchor"><span class="anchor-link"></span></a>Architecture</h1>
 <h2><a href="#technology-overview" name="technology-overview" class="anchor"><span class="anchor-link"></span></a>Technology Overview</h2>
@@ -318,10 +326,10 @@ BlueBrain/nexus
 <p><img src="./assets/environment-variables.png" alt="Nexus Header" /></p>
 <h4><a href="#landing-page-customization" name="landing-page-customization" class="anchor"><span class="anchor-link"></span></a>Landing Page Customization</h4>
 <ul>
-  <li><code>LOGO_IMG</code>: HTTPS URL for the application logo. Recommended: SVG format with transparent background. Ideal size: ~35 px height, max 250 px width. <a href="https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/EPFL_BBP_logo.svg" title="Click here for an example SVG" target="_blank" rel="noopener noreferrer">Click here for an example SVG</a>.</li>
-  <li><code>LOGO_LINK</code>: HTTPS URL redirecting from the logo. Example: <a href="https://www.epfl.ch">https://www.epfl.ch</a></li>
-  <li><code>LANDING_VIDEO</code>: HTTPS URL for a landing page video. Requirements: MP4 format, H.264 codec, ~10MB, 1920×1080 resolution. <a href="https://github.com/BlueBrain/nexus-web/tree/main/src/videos/BrainRegionsNexusPage.mp4" title="Click here for an example video" target="_blank" rel="noopener noreferrer">Click here for an example video</a>. Ensure that the video&rsquo;s main color is not too bright, as the text on top of it will be white.</li>
-  <li><code>LANDING_POSTER_IMG</code>: HTTPS URL for a loading image on the landing page, displayed while the video loads. <a href="https://github.com/BlueBrain/nexus-web/tree/main/src/shared/images/BrainRegionsNexusPage.jpg" title="Click here for an example poster image" target="_blank" rel="noopener noreferrer">Click here for an example poster image</a>. Please use a PNG or JPG image that matches the size and color of the video. Aim for the image to have the same dimensions as the video. Ensure that the image size is kept under 200 KB to improve loading time and user experience.</li>
+  <li><code>LOGO_IMG</code>: HTTPS URL for the application logo. Recommended: SVG format with transparent background. Ideal size: ~35 px height, max 250 px width. <a href="https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/EPFL_BBP_logo.svg" title="Click here for an example SVG" target="_blank" rel="noopener noreferrer">Click here for an example SVG</a>.</li>
+  <li><code>LOGO_LINK</code>: HTTPS URL redirecting from the logo. Example: <a href="https://www.epfl.ch/en/">https://www.epfl.ch/en/</a></li>
+  <li><code>LANDING_VIDEO</code>: HTTPS URL for a landing page video. Requirements: MP4 format, H.264 codec, ~10MB, 1920×1080 resolution. <a href="https://raw.githubusercontent.com/BlueBrain/nexus-web/main/src/shared/videos/BrainRegionsNexusPage.mp4" title="Click here for an example video" target="_blank" rel="noopener noreferrer">Click here for an example video</a>. Ensure that the video&rsquo;s main color is not too bright, as the text on top of it will be white.</li>
+  <li><code>LANDING_POSTER_IMG</code>: HTTPS URL for a loading image on the landing page, displayed while the video loads. <a href="https://github.com/BlueBrain/nexus-web/blob/main/src/shared/images/BrainRegionsNexusPage.jpg" title="Click here for an example poster image" target="_blank" rel="noopener noreferrer">Click here for an example poster image</a>. Please use a PNG or JPG image that matches the size and color of the video. Aim for the image to have the same dimensions as the video. Ensure that the image size is kept under 200 KB to improve loading time and user experience.</li>
   <li><code>MAIN_COLOR</code>: Main background color in hex code. Example color: #062d68</li>
 </ul>
 <h4><a href="#page-specific-customization" name="page-specific-customization" class="anchor"><span class="anchor-link"></span></a>Page Specific Customization</h4>
@@ -333,7 +341,7 @@ BlueBrain/nexus
 </ul>
 <h4><a href="#additional-options" name="additional-options" class="anchor"><span class="anchor-link"></span></a>Additional Options</h4>
 <ul>
-  <li><code>FORGE_LINK</code>: HTTPS URL for the <code>Forge templates</code> button (only if using Nexus Forge). Example: <a href="https://some-url.com">https://some-url.com</a></li>
+  <li><code>FORGE_LINK</code>: HTTPS URL for the <code>Forge templates</code> button (only if using Nexus Forge). Example: <code>https://some-url.com</code></li>
 </ul>
 <p>For a comprehensive list of environment variables, see the <a href="https://github.com/BlueBrain/nexus-web/blob/main/README.md#env-variables-list" title="Environment Variables List" target="_blank" rel="noopener noreferrer">Environment Variables List</a>.</p>
 </div>
@@ -344,7 +352,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>

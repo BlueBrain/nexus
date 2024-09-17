@@ -356,7 +356,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When reading resources, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Remote contexts</div>
 <p>Remote contexts are only resolved during creates and updates. That means that when those get updated, the resources importing them must be also updated to take them into account in a new version.</p></div><div class="callout note warning"><div class="callout-title">Reserved types and fields</div>
-<p>A generic resource can not have a type belonging to the Nexus vocabulary (<a href="https://bluebrain.github.io/nexus/vocabulary/)">https://bluebrain.github.io/nexus/vocabulary/)</a>.</p>
+<p>A generic resource can not have a type belonging to the Nexus vocabulary <code>https://bluebrain.github.io/nexus/vocabulary/</code>.</p>
 <p>Moreover it can not include any field starting with underscore (_) at the root level as these fields are reserved for Nexus metadata.</p></div>
 <h2><a href="#nexus-metadata" name="nexus-metadata" class="anchor"><span class="anchor-link"></span></a>Nexus metadata</h2>
 <p>When using the endpoints described on this page, the responses will contain global metadata described on the <a href="../metadata.html">Nexus Metadata</a> page. In addition, the following resource specific metadata can be present</p>

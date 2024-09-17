@@ -1,0 +1,26 @@
+{
+  "result": {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/metadata.json",
+      {
+        "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+      },
+      "https://neuroshapes.org"
+    ],
+    "@id": "https://bbp.epfl.ch/nexus/data/morphology-001",
+    "@type": "Morphology",
+    "name": "Morphology 001",
+    "_constrainedBy": "https://bbp.epfl.ch/nexus/schema/morphology",
+    "_createdAt": "2023-09-18T12:00:00Z",
+    "_createdBy": "http://localhost/v1/realms/wonderland/users/alice",
+    "_deprecated": false,
+    "_incoming": "http://localhost/v1/resources/myorg/myproj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2FmyId/incoming",
+    "_outgoing": "http://localhost/v1/resources/myorg/myproj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2FmyId/outgoing",
+    "_project": "http://localhost/v1/projects/myorg/myproj",
+    "_rev": 1,
+    "_schemaProject": "http://localhost/v1/projects/myorg/myproj",
+    "_self": "http://localhost/v1/resources/myorg/myproj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2FmyId",
+    "_updatedAt": "2023-09-18T12:00:00Z",
+    "_updatedBy": "http://localhost/v1/realms/wonderland/users/alice"
+  }
+}

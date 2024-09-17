@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/statistics.json",
+  "@type": "ViewStatistics",
+  "totalEvents": 3754,
+  "processedEvents": 3754,
+  "evaluatedEvents": 3754,
+  "remainingEvents": 0,
+  "discardedEvents": 0,
+  "failedEvents": 0,
+  "delayInSeconds": 0,
+  "lastEventDateTime": "2021-04-30T15:04:44.021Z",
+  "lastProcessedEventDateTime": "2021-04-30T15:04:44.021Z"
+}

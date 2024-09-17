@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -303,7 +304,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -381,6 +382,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#try-nexus-with-neuroscience-datasets" name="try-nexus-with-neuroscience-datasets" class="anchor"><span class="anchor-link"></span></a>Try Nexus with Neuroscience Datasets</h1>
 <p>Welcome to our Nexus tutorial! Nexus is an open-source data and metadata management suite. With Nexus, your data is catalogued and indexed as a knowledge graph, all interconnected.</p>
@@ -494,11 +502,11 @@ BlueBrain/nexus
 </code></pre>
 <p>We see that the original <code>id</code> will be formatted to a type identifier, that the <code>givenName</code> and <code>familyName</code> were concatenated, and finally that for the <code>gender</code>, we will check to see if the value exists in an ontology (and is thus already standardized).</p>
 <p><a href="https://nexus-forge.readthedocs.io/en/latest/interaction.html#mapping" title="Read more about mapping with Forge." target="_blank" rel="noopener noreferrer">Read more about mapping with Forge.</a></p>
-<p>In the code available, we will integrate data from two sources: the AIBS and MouseLight (see Step 3). We will provide mappers for both data sources. You can check the mappers <a href="https://github.com/BlueBrain/nexus/tree/v1.9.x/docs/src/main/paradox/docs/getting-started/notebooks/mappings" title="directly on GitHub" target="_blank" rel="noopener noreferrer">directly on GitHub</a>. There are two mappers for the AIBS, one for neuron morphologies and another for electrophysiology data. For MouseLight, there&rsquo;s only one mapper, as both morphologies and traces are in the same data source.</p>
+<p>In the code available, we will integrate data from two sources: the AIBS and MouseLight (see Step 3). We will provide mappers for both data sources. You can check the mappers <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/notebooks/mappings" title="directly on GitHub" target="_blank" rel="noopener noreferrer">directly on GitHub</a>. There are two mappers for the AIBS, one for neuron morphologies and another for electrophysiology data. For MouseLight, there&rsquo;s only one mapper, as both morphologies and traces are in the same data source.</p>
 <h3><a href="#2-6-running-the-notebook" name="2-6-running-the-notebook" class="anchor"><span class="anchor-link"></span></a>2.6. Running the Notebook</h3>
 <ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/v1.9.x/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
   <li><a href="https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F" title="Binder" target="_blank" rel="noopener noreferrer">Binder</a></li>
 </ul>
 <p>To run the notebook locally, open your terminal, clone the <a href="https://github.com/BlueBrain/nexus" title="Nexus repository" target="_blank" rel="noopener noreferrer">Nexus repository</a>, go to the notebook directory, and run Jupyter:</p>
@@ -533,8 +541,8 @@ BlueBrain/nexus
 <p>The example notebooks will use these endpoints to collect and download the datasets and their metadata.</p>
 <h3><a href="#3-2-running-the-notebook" name="3-2-running-the-notebook" class="anchor"><span class="anchor-link"></span></a>3.2. Running the Notebook</h3>
 <ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/v1.9.x/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
   <li><a href="https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F" title="Binder" target="_blank" rel="noopener noreferrer">Binder</a></li>
 </ul>
 <p>To run the notebook locally, open your terminal, clone the <a href="https://github.com/BlueBrain/nexus" title="Nexus repository" target="_blank" rel="noopener noreferrer">Nexus repository</a>, go to the notebook directory, and run Jupyter:</p>
@@ -937,8 +945,8 @@ LIMIT 1000
 </ul>
 <h3><a href="#5-2-running-the-notebook" name="5-2-running-the-notebook" class="anchor"><span class="anchor-link"></span></a>5.2. Running the Notebook</h3>
 <ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.9.x/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/v1.9.x/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
   <li><a href="https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F" title="Binder" target="_blank" rel="noopener noreferrer">Binder</a></li>
 </ul>
 <p>To run the notebook locally, open your terminal, clone the <a href="https://github.com/BlueBrain/nexus" title="Nexus repository" target="_blank" rel="noopener noreferrer">Nexus repository</a>, go to the notebook directory, and run Jupyter:</p>
@@ -966,7 +974,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>

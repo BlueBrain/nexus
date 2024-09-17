@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/search-api.html" class="active page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -242,7 +243,9 @@ BlueBrain/nexus
   <li><a href="../../../docs/delta/api/search-api.html#global-search" class="header">Global search</a>
   <ul>
     <li><a href="../../../docs/delta/api/search-api.html#query" class="header">Query</a></li>
+    <li><a href="../../../docs/delta/api/search-api.html#query-a-suite" class="header">Query a suite</a></li>
     <li><a href="../../../docs/delta/api/search-api.html#configuration" class="header">Configuration</a></li>
+    <li><a href="../../../docs/delta/api/search-api.html#fetch-a-suite" class="header">Fetch a suite</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -251,7 +254,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -267,7 +270,9 @@ BlueBrain/nexus
   <li><a href="../../../docs/delta/api/search-api.html#global-search" class="header">Global search</a>
   <ul>
     <li><a href="../../../docs/delta/api/search-api.html#query" class="header">Query</a></li>
+    <li><a href="../../../docs/delta/api/search-api.html#query-a-suite" class="header">Query a suite</a></li>
     <li><a href="../../../docs/delta/api/search-api.html#configuration" class="header">Configuration</a></li>
+    <li><a href="../../../docs/delta/api/search-api.html#fetch-a-suite" class="header">Fetch a suite</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -277,21 +282,69 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h1>
-<p>Nexus provides global search functionality across all projects through the <a href="https://github.com/BlueBrain/nexus/tree/v1.9.x/delta/plugins/search/src" title="search plugin" target="_blank" rel="noopener noreferrer">search plugin</a>.</p><div class="callout warning "><div class="callout-title">Warning</div>
+<p>Nexus provides global search functionality across all projects through the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/plugins/search/src" title="search plugin" target="_blank" rel="noopener noreferrer">search plugin</a>.</p><div class="callout warning "><div class="callout-title">Warning</div>
 <p>The search plugin is experimental and its functionality and API can change without notice.</p></div>
-<p>For instructions on how to configure global search in Nexus and how it works please visit the <a href="../../getting-started/running-nexus/search-configuration.html">Search configuration</a> page.</p>
+<p>The search plugin relies on <a href="views/composite-view-api.html">composite views</a>:</p>
+<ul>
+  <li>An underlying composite view is created for every project in the Nexus deployment</li>
+  <li>Those views are identical and index data from their enclosing project in a single Elasticsearch projection.</li>
+  <li>The query endpoints filter the Elasticsearch projections from the underlying composite views and only returns results from  indices to which user has access to, i.e. has <code>views/query</code> permission.</li>
+</ul>
+<p>For instructions on how to configure global search in Nexus and how it works please visit the <a href="../../getting-started/running-nexus/search-configuration.html">Search configuration</a> page.</p><div class="callout note tip"><div class="callout-title">Api Mapping</div>
+<p>The underlying composite views can queried to monitor their indexing progress, to query their intermediate namespaces, &hellip;</p>
+<p>An API mapping <code>search</code> has been defined to make it easier:</p>
+<p>Example:</p>
+<pre><code>GET /v1/views/myorg/myproject/search/offset
+</code></pre>
+<p>Will allow to get the indexing progress for search for the <code>myorg/myproject</code> </p></div>
 <h2><a href="#query" name="query" class="anchor"><span class="anchor-link"></span></a>Query</h2>
 <pre><code>POST /v1/search/query
 {payload}
 </code></pre>
 <p>&hellip; where <code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</p>
-<p>The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to, i.e. has <code>views/query</code> permission.</p>
+<h2><a href="#query-a-suite" name="query-a-suite" class="anchor"><span class="anchor-link"></span></a>Query a suite</h2>
+<p>Nexus Delta allows to configure multiple search suites under <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/search/src/main/resources/search.conf" title="`plugins.search.suites`"><code>plugins.search.suites</code></a>. Each suite is composed of one or more projects. When querying using a suite, the query is only performed on the underlying Elasticsearch indices of the projects in the suite.</p>
+<pre><code>POST /v1/search/query/suite/{suiteName}?addProject={project}
+{payload}
+</code></pre>
+<p>&hellip; where:</p>
+<ul>
+  <li><code>{suiteName}</code> is the name of the suite</li>
+  <li><code>{project}</code>: Project - can be used to extend the scope of the suite by providing other projects under the format <code>org/project</code>. This parameter can appear  multiple times, expanding further the scope of the search.</li>
+  <li><code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</li>
+</ul>
 <h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
 <pre><code>GET /v1/search/config
 </code></pre>
 <p>This endpoint returns the search configuration. The contents of <code>plugins.search.fields</code> config file is the payload of this response.</p>
+<h2><a href="#fetch-a-suite" name="fetch-a-suite" class="anchor"><span class="anchor-link"></span></a>Fetch a suite</h2>
+<pre><code>GET /v1/search/suite/{suiteName}
+</code></pre>
+<p>&hellip; where <code>{suiteName}</code> is the name of the suite.</p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/search/fetch-suite.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">GET /v1/search/suite/suiteName</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/search/suite-fetched.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/suites.json&quot;,
+  &quot;name&quot;: &quot;suiteName&quot;,
+  &quot;projects&quot;: [
+    &quot;org/project&quot;,
+    &quot;org2/project2&quot;
+  ]
+}</code></pre></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/search-api.md" title="Edit this page" class="md-source-file md-edit">
@@ -300,7 +353,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>

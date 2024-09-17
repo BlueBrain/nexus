@@ -1,0 +1,29 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "name": "http://schema.org/name",
+    "description": "http://schema.org/description",
+    "resourceTypes": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "projects": {
+      "@container": "@list"
+    },
+    "identities": {
+      "@container": "@set"
+    },
+    "history": {
+      "@container": "@list"
+    },
+    "rejections": {
+      "@container": "@list"
+    },
+    "subject": "https://bluebrain.github.io/nexus/vocabulary/subject",
+    "_resolverId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/resolverId",
+      "@type": "@id"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/resolvers.json"
+}

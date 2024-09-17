@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -162,8 +164,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
+      <li><a href="../../../docs/delta/api/history.html" class="page">History of resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,8 +223,8 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
-      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -278,7 +279,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.9.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -331,6 +332,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
 <p>If you wish to quickly try out Nexus, we provide a <a href="index.html#using-the-public-sandbox">public sandbox</a>. For a more in-depth test-drive of Nexus on your machine, we recommend the <a href="index.html#docker-compose">Docker Compose approach</a>. For a production deployment on your in-house or cloud infrastructure, please refer to our <a href="index.html#on-premise-cloud-deployment">deployment guide</a>.</p>
@@ -341,13 +349,13 @@ BlueBrain/nexus
 <h2><a href="#run-nexus-locally-with-docker" name="run-nexus-locally-with-docker" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Docker</h2>
 <h3><a href="#requirements" name="requirements" class="anchor"><span class="anchor-link"></span></a>Requirements</h3>
 <h4><a href="#docker" name="docker" class="anchor"><span class="anchor-link"></span></a>Docker</h4>
-<p>Regardless of your OS, make sure to run a recent version of the Docker Engine. This was tested with version <strong>20.10.23</strong>. The Docker Engine, along the Docker CLI, come with an installation of Docker Desktop. Visit the <a href="https://docs.docker.com/desktop/" title="official Docker Desktop documentation">official Docker Desktop documentation</a> for detailed installation steps.</p>
+<p>Regardless of your OS, make sure to run a recent version of the Docker Engine. This was tested with version <strong>26.0.0</strong>. The Docker Engine, along the Docker CLI, come with an installation of Docker Desktop. Visit the <a href="https://docs.docker.com/desktop/" title="official Docker Desktop documentation">official Docker Desktop documentation</a> for detailed installation steps.</p>
 <p>Command :</p>
 <pre class="prettyprint"><code class="language-shell">docker --version
 </code></pre>
 <p>Example :</p>
 <pre class="prettyprint"><code class="language-shell">$ docker --version
-Docker version 20.10.23, build 7155243
+Docker version 26.0.0, build 2ae903e86c
 </code></pre>
 <h4><a href="#memory-and-cpu-limits" name="memory-and-cpu-limits" class="anchor"><span class="anchor-link"></span></a>Memory and CPU limits</h4>
 <p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least <strong>2 CPUs</strong> and <strong>8 GiB</strong> of memory in total. You can increase the limits in Docker settings in the menu <em>Settings</em> &gt; <em>Resources</em>.</p>
@@ -410,19 +418,19 @@ $ docker compose --project-name nexus --file=docker-compose.yaml up --detach
 <pre class="prettyprint"><code class="language-shell">$ curl http://localhost/v1/version | jq
 {
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/version.json&quot;,
-  &quot;delta&quot;: &quot;1.9.0&quot;,
+  &quot;delta&quot;: &quot;1.10.0&quot;,
   &quot;dependencies&quot;: {
     &quot;blazegraph&quot;: &quot;2.1.6-SNAPSHOT&quot;,
-    &quot;elasticsearch&quot;: &quot;8.11.1&quot;,
-    &quot;postgres&quot;: &quot;15.5&quot;
+    &quot;elasticsearch&quot;: &quot;8.15.1&quot;,
+    &quot;postgres&quot;: &quot;16.4&quot;
   },
   &quot;environment&quot;: &quot;dev&quot;,
   &quot;plugins&quot;: {
-    &quot;archive&quot;: &quot;1.9.0&quot;,
-    &quot;blazegraph&quot;: &quot;1.9.0&quot;,
-    &quot;composite-views&quot;: &quot;1.9.0&quot;,
-    &quot;elasticsearch&quot;: &quot;1.9.0&quot;,
-    &quot;storage&quot;: &quot;1.9.0&quot;
+    &quot;archive&quot;: &quot;1.10.0&quot;,
+    &quot;blazegraph&quot;: &quot;1.10.0&quot;,
+    &quot;composite-views&quot;: &quot;1.10.0&quot;,
+    &quot;elasticsearch&quot;: &quot;1.10.0&quot;,
+    &quot;storage&quot;: &quot;1.10.0&quot;
   }
 }
 </code></pre>
@@ -430,7 +438,7 @@ $ docker compose --project-name nexus --file=docker-compose.yaml up --detach
 <p>Fusion can be accessed by opening <code>http://localhost</code> in your web browser. You can start by creating an organization from the <code>http://localhost/admin</code> page.</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>This setup runs the Nexus ecosystem without an identity provider, and the anonymous user is given all default permissions; do not publicly expose the endpoints of such a deployment.</p></div>
 <h4><a href="#administration" name="administration" class="anchor"><span class="anchor-link"></span></a>Administration</h4>
-<p>To list running services or access logs, please refer to the official Docker <a href="https://docs.docker.com/engine/reference/commandline/stack/" title="documentation" target="_blank" rel="noopener noreferrer">documentation</a>.</p>
+<p>To list running services or access logs, please refer to the official Docker <a href="https://docs.docker.com/reference/cli/docker/stack/" title="documentation" target="_blank" rel="noopener noreferrer">documentation</a>.</p>
 <h4><a href="#stopping-nexus" name="stopping-nexus" class="anchor"><span class="anchor-link"></span></a>Stopping Nexus</h4>
 <p>You can stop and delete the entire deployment with:</p>
 <p>Command :</p>
@@ -507,7 +515,7 @@ $ docker compose --project-name nexus --file=docker-compose.yaml up --detach
 <h3><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h3>
 <p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../../delta/benchmarks/v1.4.2.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
 <ol>
-  <li>Nexus uses a collection of data stores (<a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a>, <a href="https://www.elastic.co/elasticsearch/" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a>, <a href="https://blazegraph.com/" title="Blazegraph" target="_blank" rel="noopener noreferrer">Blazegraph</a>) which depend performance wise to the underlying disk access, so:
+  <li>Nexus uses a collection of data stores (<a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a>, <a href="https://www.elastic.co/elasticsearch" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a>, <a href="https://blazegraph.com/" title="Blazegraph" target="_blank" rel="noopener noreferrer">Blazegraph</a>) which depend performance wise to the underlying disk access, so:
     <ul>
       <li>prefer local storage over network storage for lower latency when doing IO,</li>
       <li>prefer SSD over HDDs because random access speed is more important than sequential access,</li>
@@ -524,7 +532,7 @@ $ docker compose --project-name nexus --file=docker-compose.yaml up --detach
 <p>As described in the <a href="../../delta/architecture.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
 <p>// TODO formula computing disk space</p>
 <h3><a href="#elasticsearch" name="elasticsearch" class="anchor"><span class="anchor-link"></span></a>Elasticsearch</h3>
-<p>Nexus uses <a href="https://www.elastic.co/elasticsearch/" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
+<p>Nexus uses <a href="https://www.elastic.co/elasticsearch" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
 <p>The Elasticsearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html" title="setup documentation" target="_blank" rel="noopener noreferrer">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
 <p>A formula for computing the required disk space:</p>
 <pre class="prettyprint"><code class="nocode">total = (resource_size * count * documents + lucene_index) * replication_factor
@@ -571,7 +579,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.9.x
+Snapshot
 </span>
 </div>
 </article>
