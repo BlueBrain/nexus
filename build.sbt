@@ -20,8 +20,6 @@ val akkaHttpCirceVersion       = "1.39.2"
 val akkaCorsVersion            = "1.2.0"
 val akkaVersion                = "2.6.21"
 val alpakkaVersion             = "3.0.4"
-val apacheCompressVersion      = "1.27.1"
-val apacheIOVersion            = "2.16.1"
 val awsSdkVersion              = "2.28.1"
 val betterMonadicForVersion    = "0.3.1"
 val caffeineVersion            = "3.1.8"
@@ -75,8 +73,6 @@ lazy val akkaTestKit                   = "com.typesafe.akka"            %% "akka
 lazy val akkaTestKitTyped              = "com.typesafe.akka"            %% "akka-actor-testkit-typed"           % akkaVersion
 lazy val alpakkaFile                   = "com.lightbend.akka"           %% "akka-stream-alpakka-file"           % alpakkaVersion
 lazy val alpakkaSse                    = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"            % alpakkaVersion
-lazy val apacheCompress                = "org.apache.commons"            % "commons-compress"                   % apacheCompressVersion
-lazy val apacheIO                      = "commons-io"                    % "commons-io"                         % apacheIOVersion
 lazy val awsSdk                        = "software.amazon.awssdk"        % "s3"                                 % awsSdkVersion
 lazy val betterMonadicFor              = "com.olegpy"                   %% "better-monadic-for"                 % betterMonadicForVersion
 lazy val caffeine                      = "com.github.ben-manes.caffeine" % "caffeine"                           % caffeineVersion
@@ -763,78 +759,6 @@ lazy val ship = project
     Docker / packageName := "nexus-ship"
   )
 
-lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
-
-lazy val storage = project
-  .in(file("storage"))
-  .enablePlugins(UniversalPlugin, UniversalDeployPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
-  .settings(
-    shared,
-    compilation,
-    assertJavaVersion,
-    kamonSettings,
-    storageAssemblySettings,
-    coverage,
-    release,
-    servicePackaging,
-    addArtifact(Artifact("delta-storage-app", "application"), assembly),
-    coverageMinimumStmtTotal := 75
-  )
-  .dependsOn(kernel, testkit % "test->compile")
-  .settings(cargo := {
-    import scala.sys.process._
-
-    val log = streams.value.log
-    val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
-    if (cmd.! == 0) {
-      log.success("Cargo build successful.")
-      (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
-    } else {
-      log.error("Cargo build failed.")
-      throw new RuntimeException
-    }
-  })
-  .settings(
-    name                               := "storage",
-    moduleName                         := "storage",
-    buildInfoKeys                      := Seq[BuildInfoKey](version),
-    buildInfoPackage                   := "ch.epfl.bluebrain.nexus.storage.config",
-    Docker / packageName               := "nexus-storage",
-    libraryDependencies               ++= Seq(
-      apacheCompress,
-      apacheIO,
-      akkaHttp,
-      akkaHttpCirce,
-      akkaStream,
-      akkaSlf4j,
-      alpakkaFile,
-      catsCore,
-      catsEffect,
-      circeCore,
-      circeGenericExtras,
-      fs2io,
-      logback,
-      pureconfig,
-      akkaHttpTestKit % Test,
-      akkaTestKit     % Test,
-      mockito         % Test,
-      munit           % Test,
-      munitCatsEffect % Test,
-      scalaTest       % Test
-    ),
-    addCompilerPlugin(betterMonadicFor),
-    cleanFiles                        ++= Seq(
-      baseDirectory.value / "permissions-fixer" / "target" / "**",
-      baseDirectory.value / "nexus-storage.jar"
-    ),
-    Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
-    Test / parallelExecution           := false,
-    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.ScalaLibrary,
-    Universal / mappings               := {
-      (Universal / mappings).value :+ cargo.value
-    }
-  )
-
 lazy val tests = project
   .in(file("tests"))
   .dependsOn(testkit)
@@ -871,7 +795,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(compilation, shared, noPublish)
-  .aggregate(docs, delta, ship, storage, tests)
+  .aggregate(docs, delta, ship, tests)
 
 lazy val noPublish = Seq(
   publish / skip                         := true,
@@ -918,23 +842,6 @@ lazy val kamonSettings = Seq(
     "io.kamon" %% "kamon-system-metrics" % kamonVersion
   ),
   javaAgents           += kanelaAgent
-)
-
-lazy val storageAssemblySettings = Seq(
-  assembly / assemblyJarName       := "nexus-storage.jar",
-  assembly / test                  := {},
-  assembly / assemblyMergeStrategy := {
-    case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
-    case PathList("org", "apache", "commons", "codec", xs @ _*)          => MergeStrategy.last
-    case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
-    case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
-    case PathList("javax", "annotation", xs @ _*)                        => MergeStrategy.first
-    case PathList("META-INF", "okio.kotlin_module")                      => MergeStrategy.first
-    case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
-    case x                                                               =>
-      val oldStrategy = (assembly / assemblyMergeStrategy).value
-      oldStrategy(x)
-  }
 )
 
 lazy val discardModuleInfoAssemblySettings = Seq(
@@ -1036,9 +943,7 @@ ThisBuild / licenses                     := Seq("Apache-2.0" -> url("http://www.
 ThisBuild / scmInfo                      := Some(ScmInfo(url("https://github.com/BlueBrain/nexus"), "scm:git:git@github.com:BlueBrain/nexus.git"))
 ThisBuild / developers                   := List(
   Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("olivergrabinski ", "Oliver Grabinski", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("dantb", "Daniel Tattan-Birch", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
+  Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
 )
 ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"

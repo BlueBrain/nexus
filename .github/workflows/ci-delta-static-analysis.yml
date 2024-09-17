@@ -4,7 +4,6 @@ on:
     paths:
       - 'delta/**'
       - 'ship/**'
-      - 'storage/**'
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-delta-static-analysis.yml'
