@@ -19,7 +19,7 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web
 applications.
 
-The latest stable release is **v1.10.0** released on **18.12.2023**.
+The latest stable release is **v1.10.0** released on **17.09.2024**.
 
 ## 1.10.0
 
@@ -33,6 +33,9 @@ The items listed below are changes that have been made in this release that brea
 - The default Elasticsearch views now uses a new mapping and settings which improves the ability to search for resources
   using the listing endpoints.
 - Resolvers/storages/views can't be tagged anymore
+- The global SSE endpoint, the SSE endpoints for realms/acls/organizations and the SSE endpoint
+  to fetch indexing errors have been removed
+- Fetch organizations and projects by their uuid is now removed
 
 @@@
 
@@ -42,9 +45,7 @@ The items listed below are changes that have been made in this release that brea
 
 The items listed below are announcement of future deprecation, these features will be removed in the next release.
 
-- The global SSE endpoint, the SSE endpoints for realms/acls/organizations and the SSE endpoint
-  to fetch indexing errors have been removed
-- Fetch organizations and projects by their uuid is now removed
+- Remote storage support
 - Jira Plugin
 
 @@@
