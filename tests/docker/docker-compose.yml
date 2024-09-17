@@ -146,7 +146,7 @@ services:
 
   storage-service:
     container_name: "nexus-storage-service"
-    image: bluebrain/nexus-storage:latest
+    image: bluebrain/nexus-storage:1.10.0
     environment:
       STORAGE_CONFIG_FILE: "/config/storage.conf"
       KAMON_ENABLED: "false"
