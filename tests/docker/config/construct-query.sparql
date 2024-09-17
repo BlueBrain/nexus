@@ -269,8 +269,8 @@ CONSTRUCT {
 
   # for Traces, only consider ones that have the nwb encoding format
   OPTIONAL {
-        ?id a bmo:ExperimentalTrace ;
-        FILTER EXISTS {schema:distribution/schema:encodingFormat "application/nwb"}
+        ?id a bmo:ExperimentalTrace .
+        FILTER EXISTS {?id schema:distribution/schema:encodingFormat "application/nwb"} .
   } .
 
   ?id  nxv:createdAt   ?createdAt      ;
