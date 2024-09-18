@@ -98,24 +98,18 @@ class KeycloakDsl(implicit
         .toEntity
     )
 
-    logger.info(s"Getting token for user ${user.name} for ${user.realm.name}") >>
-      keycloakClient(request)
-        .flatMap { res =>
-          IO.fromFuture { IO(um(res.entity)) }
-        }
-        .onError { t =>
-          logger.error(t)(s"Error while getting user token for realm: ${user.realm.name} and user:$user")
-        }
-        .map { response =>
-          keycloak.access_token
-            .getOption(response)
-            .getOrElse(
-              throw new IllegalArgumentException(
-                s"Couldn't get a token for user ${user.name}, we got response: $response"
-              )
-            )
-        }
-
+    for {
+      _        <- logger.info(s"Getting token for user ${user.name} for ${user.realm.name}")
+      response <- keycloakClient(request)
+      json     <- IO.fromFuture { IO(um(response.entity)) }
+      token    <- IO.fromOption(keycloak.access_token.getOption(json))(
+                    new IllegalArgumentException(
+                      s"Couldn't get a token for user ${user.name}, we got response: $response"
+                    )
+                  )
+    } yield token
+  }.onError { t =>
+    logger.error(t)(s"Error while getting user token for realm: ${user.realm.name} and user:$user")
   }
 
   def serviceAccountToken(client: ClientCredentials): IO[String] = {

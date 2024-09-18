@@ -53,8 +53,8 @@ object BlazegraphErrorParser {
     error match {
       case WrappedHttpClientError(httpError) =>
         httpError match {
-          case HttpClientError.HttpClientStatusError(_, _, message) => parse(message)
-          case error                                                => error.reason
+          case HttpClientError.HttpClientStatusError(_, _, _, message) => parse(message)
+          case error                                                   => error.reason
         }
       case sparqlClientError                 => sparqlClientError.toString()
     }

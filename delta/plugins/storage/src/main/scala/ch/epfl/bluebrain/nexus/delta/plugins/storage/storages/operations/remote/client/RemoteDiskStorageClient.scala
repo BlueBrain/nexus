@@ -166,9 +166,9 @@ object RemoteDiskStorageClient {
         client
           .fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials(authToken))
           .adaptError {
-            case HttpClientStatusError(_, `Conflict`, _) =>
+            case HttpClientStatusError(_, `Conflict`, _, _) =>
               SaveFileRejection.ResourceAlreadyExists(relativePath.toString)
-            case error: HttpClientError                  =>
+            case error: HttpClientError                     =>
               SaveFileRejection.UnexpectedSaveError(relativePath.toString, error.asString)
           }
       }
@@ -180,9 +180,9 @@ object RemoteDiskStorageClient {
         client
           .toDataBytes(Get(endpoint).withCredentials(authToken))
           .adaptError {
-            case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
+            case error @ HttpClientStatusError(_, `NotFound`, _, _) if !bucketNotFoundType(error) =>
               FetchFileRejection.FileNotFound(relativePath.toString)
-            case error: HttpClientError                                                        =>
+            case error: HttpClientError                                                           =>
               UnexpectedFetchError(relativePath.toString, error.asString)
           }
       }
@@ -195,9 +195,9 @@ object RemoteDiskStorageClient {
       getAuthToken(credentials).flatMap { authToken =>
         val endpoint = baseUri.endpoint / "buckets" / bucket.value / "attributes" / relativePath
         client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials(authToken)).adaptError {
-          case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
+          case error @ HttpClientStatusError(_, `NotFound`, _, _) if !bucketNotFoundType(error) =>
             FetchFileRejection.FileNotFound(relativePath.toString)
-          case error: HttpClientError                                                        =>
+          case error: HttpClientError                                                           =>
             UnexpectedFetchError(relativePath.toString, error.asString)
         }
       }
@@ -214,13 +214,13 @@ object RemoteDiskStorageClient {
         client
           .fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials(authToken))
           .adaptError {
-            case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
+            case error @ HttpClientStatusError(_, `NotFound`, _, _) if !bucketNotFoundType(error)     =>
               MoveFileRejection.FileNotFound(sourceRelativePath.toString)
-            case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
+            case error @ HttpClientStatusError(_, `BadRequest`, _, _) if pathContainsLinksType(error) =>
               MoveFileRejection.PathContainsLinks(destRelativePath.toString)
-            case HttpClientStatusError(_, `Conflict`, _)                                           =>
+            case HttpClientStatusError(_, `Conflict`, _, _)                                           =>
               MoveFileRejection.ResourceAlreadyExists(destRelativePath.toString)
-            case error: HttpClientError                                                            =>
+            case error: HttpClientError                                                               =>
               UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
           }
       }
