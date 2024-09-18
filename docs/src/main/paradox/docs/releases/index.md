@@ -1,5 +1,6 @@
 @@@ index
 
+- @ref:[v1.11 Release Notes](v1.11-release-notes.md)
 - @ref:[v1.10 Release Notes](v1.10-release-notes.md)
 - @ref:[v1.9 To v1.10 Migration](v1.9-to-v1.10-migration.md)
 - @ref:[v1.9 Release Notes](v1.9-release-notes.md)
@@ -19,7 +20,20 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web
 applications.
 
+TODO: update release date
 The latest stable release is **v1.10.0** released on **17.09.2024**.
+
+## 1.11.0
+
+### Breaking changes
+
+@@@ note { .warning }
+
+The items listed below are changes that have been made in this release that break compatibility with previous releases.
+
+- The Remote storage server implementation has been removed
+- 
+@@@
 
 ## 1.10.0
 
