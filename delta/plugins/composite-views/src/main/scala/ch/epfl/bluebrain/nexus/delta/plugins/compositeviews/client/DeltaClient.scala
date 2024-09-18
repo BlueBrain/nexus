@@ -170,7 +170,7 @@ object DeltaClient {
                        source.resourceTag.fold(resourceUrl)(t => resourceUrl.withQuery(Query("tag" -> t.value)))
                      ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials(authToken)
         result    <- client.fromEntityTo[String](req).map[Option[NQuads]](nq => Some(NQuads(nq, id))).recover {
-                       case HttpClientStatusError(_, StatusCodes.NotFound, _) => None
+                       case HttpClientStatusError(_, StatusCodes.NotFound, _, _) => None
                      }
       } yield result
     }

@@ -165,7 +165,7 @@ object HttpClient {
           )
         ).redeemWith(
           error => IO.raiseError(HttpUnexpectedError(req, error.getMessage)),
-          consumedString => IO.raiseError(HttpClientError(req, resp.status, consumedString))
+          consumedString => IO.raiseError(HttpClientError(req, resp.status, resp.headers, consumedString))
         )
     }
 }

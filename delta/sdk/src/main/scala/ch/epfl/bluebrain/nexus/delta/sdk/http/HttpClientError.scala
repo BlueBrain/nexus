@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.http.scaladsl.model.headers.HttpEncoding
-import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, StatusCode, StatusCodes}
 import io.circe.Json
 import io.circe.parser.parse
 
@@ -34,11 +34,16 @@ sealed trait HttpClientError extends Exception with Product with Serializable {
 
 object HttpClientError {
 
-  def apply(req: HttpRequest, status: StatusCode, body: String): HttpClientError =
-    status match {
-      case code: StatusCodes.ClientError => HttpClientStatusError(req, code, body)
+  def apply(
+      req: HttpRequest,
+      responseStatus: StatusCode,
+      responseHeaders: Seq[HttpHeader],
+      body: String
+  ): HttpClientError =
+    responseStatus match {
+      case code: StatusCodes.ClientError => HttpClientStatusError(req, code, responseHeaders, body)
       case code: StatusCodes.ServerError => HttpServerStatusError(req, code, body)
-      case _                             => HttpUnexpectedStatusError(req, status, body)
+      case _                             => HttpUnexpectedStatusError(req, responseStatus, body)
     }
 
   /**
@@ -93,14 +98,27 @@ object HttpClientError {
   /**
     * A Client status error (HTTP status codes 4xx).
     */
-  final case class HttpClientStatusError(req: HttpRequest, code: StatusCodes.ClientError, message: String)
-      extends HttpClientError {
+  final case class HttpClientStatusError(
+      req: HttpRequest,
+      code: StatusCodes.ClientError,
+      responseHeaders: Seq[HttpHeader],
+      message: String
+  ) extends HttpClientError {
     override val reason: String                =
-      s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' that should have been successful, returned the HTTP status code '$code'"
-    override val details: Option[String]       = Some(s"the request failed with body '$message'")
+      s"An HTTP response to endpoint '${req.uri}' with method '${req.method}' that should have been successful, returned the HTTP status code '$code'"
+    override val details: Option[String]       = Some(s"""The request failed:
+         |Headers: ${responseHeaders.mkString(", ")}
+         |Body: $message
+         |""".stripMargin)
     override val body: Option[String]          = Some(message)
     override val errorCode: Option[StatusCode] = Some(code)
 
+  }
+
+  object HttpClientStatusError {
+
+    def apply(req: HttpRequest, code: StatusCodes.ClientError, message: String): HttpClientStatusError =
+      HttpClientStatusError(req, code, Seq.empty, message)
   }
 
   /**
