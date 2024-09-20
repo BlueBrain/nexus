@@ -12,10 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.ship.{IriPatcher, ProjectMapper}
 import ch.epfl.bluebrain.nexus.ship.resources.DistributionPatcher._
+import ch.epfl.bluebrain.nexus.ship.{IriPatcher, ProjectMapper}
 import io.circe.optics.JsonPath.root
-import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.syntax.KeyOps
 import io.circe.{Encoder, Json, JsonObject}
 
 final class DistributionPatcher(
@@ -23,6 +23,7 @@ final class DistributionPatcher(
     projectMapper: ProjectMapper,
     iriPatcher: IriPatcher,
     targetBase: BaseUri,
+    locationPrefixToStripOpt: Option[Uri],
     fetchFileAttributes: (ProjectRef, ResourceRef) => IO[FileAttributes]
 ) {
 
@@ -60,11 +61,19 @@ final class DistributionPatcher(
                 .andThen(setDigest(attributes.digest))
             )
         case Left(e)           =>
-          logger.error(e)(s"File '$patchedResourceRef' in project '$targetProject' could not be fetched") >>
+          logger.warn(e)(s"File '$patchedResourceRef' in project '$targetProject' could not be fetched") >>
             IO.pure(identity)
       }
 
     fileAttributeModifications.map(_.andThen(setContentUrl(newContentUrl.toString())))
+  }
+
+  private def stripLocationOnUnknownFile(json: Json): Json = {
+    locationPrefixToStripOpt.fold(json) { locationPrefixToStrip =>
+      root.atLocation.location.string.modify { location =>
+        location.replaceFirst(locationPrefixToStrip.toString, "file://")
+      }(json)
+    }
   }
 
   private def createContentUrl(project: ProjectRef, resourceRef: ResourceRef): Uri = {
@@ -76,17 +85,12 @@ final class DistributionPatcher(
     }
   }
 
-  private[resources] def single(json: Json): IO[Json] = {
-    for {
-      ids                    <- extractIds(json)
-      fileBasedModifications <- ids match {
-                                  case Some((project, resource)) => modificationsForFile(project, resource)
-                                  case None                      => IO.pure((json: Json) => json)
-                                }
-    } yield {
-      toS3Location.andThen(fileBasedModifications)(json)
+  private[resources] def single(json: Json): IO[Json] = extractIds(json)
+    .flatMap {
+      case Some((project, resource)) => modificationsForFile(project, resource).map(_(json))
+      case None                      => IO.pure(stripLocationOnUnknownFile(json))
     }
-  }
+    .map(toS3Location)
 
   private def setContentUrl(newContentUrl: String)                = root.contentUrl.string.replace(newContentUrl)
   private def setLocation(newLocation: String)                    = (json: Json) =>
@@ -126,11 +130,11 @@ final class DistributionPatcher(
     IO.fromEither(UriUtils.uri(string).leftMap(new IllegalArgumentException(_)))
 
   implicit private val digestEncoder: Encoder.AsObject[Digest] = Encoder.encodeJsonObject.contramapObject {
-    case ComputedDigest(algorithm, value)                 => JsonObject("algorithm" -> algorithm.asJson, "value" -> value.asJson)
+    case ComputedDigest(algorithm, value)                 => JsonObject("algorithm" := algorithm, "value" := value)
     case MultiPartDigest(algorithm, value, numberOfParts) =>
-      JsonObject("algorithm" -> algorithm.asJson, "value" -> value.asJson, "numberOfParts" -> numberOfParts.asJson)
-    case NotComputedDigest                                => JsonObject("value" -> "".asJson)
-    case NoDigest                                         => JsonObject("value" -> "".asJson)
+      JsonObject("algorithm" := algorithm, "value" := value, "numberOfParts" := numberOfParts)
+    case NotComputedDigest                                => JsonObject("value" := "")
+    case NoDigest                                         => JsonObject("value" := "")
   }
 
 }
