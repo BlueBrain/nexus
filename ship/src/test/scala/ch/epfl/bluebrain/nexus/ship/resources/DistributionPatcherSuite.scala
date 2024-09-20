@@ -89,7 +89,14 @@ class DistributionPatcherSuite extends NexusSuite {
   private val projectMapping = Map(projectWithMapping -> mappedProject)
   private val iriPatcher     = IriPatcher(originalPrefix, targetPrefix, projectMapping)
   private val patcher        =
-    new DistributionPatcher(fileSelf, ProjectMapper(projectMapping), iriPatcher, destinationBaseUri, fileResolver)
+    new DistributionPatcher(
+      fileSelf,
+      ProjectMapper(projectMapping),
+      iriPatcher,
+      destinationBaseUri,
+      Some(uri"file:///location_to_strip"),
+      fileResolver
+    )
 
   test("Do nothing on a distribution payload without fields to patch") {
     val input = json"""{ "anotherField": "XXX" }"""
@@ -270,6 +277,22 @@ class DistributionPatcherSuite extends NexusSuite {
       patchedResource1
     )}" } }] }"""
     patcher.patchAll(input).assertEquals(expected)
+  }
+
+  test("Patch and strip the distribution location when it matches the given prefix") {
+    val input =
+      json"""{
+        "distribution": {
+          "atLocation": {
+            "location": "file:///location_to_strip/project/a/b/c/d/file.txt"
+          }
+        }
+      }"""
+
+    patcher
+      .patchAll(input)
+      .map(distributionLocation)
+      .assertEquals("file:///project/a/b/c/d/file.txt")
   }
 
   private def distributionContentSize(json: Json): JsonObject = {
