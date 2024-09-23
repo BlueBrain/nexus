@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, PipeChain, PipeRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{FailureReason, NoopSink, PipeChain, PipeRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
@@ -186,7 +186,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
       project = Some(project),
       instant = pr.updatedAt,
       offset = Offset.at(1L),
-      new IllegalStateException("Boom"),
+      FailureReason(new IllegalStateException("Boom")),
       rev = 1
     )
 

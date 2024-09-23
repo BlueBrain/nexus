@@ -47,7 +47,7 @@ trait IndexingAction {
                        case s: SuccessElem[CompiledProjection] =>
                          runProjection(s.value, saveErrors).onError { err => saveErrors(List(s.failed(err))) }
                        case _: DroppedElem                     => IO.unit
-                       case f: FailedElem                      => logger.error(f.throwable)(s"Fetching '$f' returned an error.").as(None)
+                       case f: FailedElem                      => logger.error(s"Fetching '$f' returned an error: `${f.reason}`.").as(None)
                      }
                      .compile
                      .toList
@@ -94,7 +94,7 @@ object IndexingAction {
             // We create the GraphResource wrapped in an `Elem`
             elem            <- shift.toGraphResourceElem(project, res)
             errorsPerAction <- internal.parTraverse(_.apply(project, elem))
-            errors           = errorsPerAction.toList.flatMap(_.map(_.throwable))
+            errors           = errorsPerAction.toList.flatMap(_.map(_.reason))
             _               <- IO.raiseWhen(errors.nonEmpty)(IndexingFailed(res.void, errors))
           } yield ()
       }

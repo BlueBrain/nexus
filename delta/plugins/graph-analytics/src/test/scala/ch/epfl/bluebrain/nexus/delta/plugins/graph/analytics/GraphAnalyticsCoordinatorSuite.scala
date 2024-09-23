@@ -42,7 +42,7 @@ class GraphAnalyticsCoordinatorSuite extends NexusSuite with SupervisorSetup.Fix
     DroppedElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), 1)
 
   private def failed[A](ref: ProjectRef, id: Iri, error: Throwable, offset: Long): Elem[A] =
-    FailedElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), error, 1)
+    FailedElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), FailureReason(error), 1)
 
   private val resumeSignal = SignallingRef[IO, Boolean](false).unsafeRunSync()
 

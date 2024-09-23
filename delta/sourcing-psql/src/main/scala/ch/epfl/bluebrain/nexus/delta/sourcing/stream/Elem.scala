@@ -9,10 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import doobie.Read
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
-import io.circe.syntax.EncoderOps
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.{Codec, Decoder}
 
 import java.time.Instant
 
@@ -65,7 +64,15 @@ sealed trait Elem[+A] extends Product with Serializable {
     * @param throwable
     *   the error why the element processing failed
     */
-  def failed(throwable: Throwable): FailedElem = FailedElem(tpe, id, project, instant, offset, throwable, rev)
+  def failed(throwable: Throwable): FailedElem =
+    FailedElem(tpe, id, project, instant, offset, FailureReason(throwable), rev)
+
+  /**
+    * Produces a new [[FailedElem]] with the provided reason copying the common properties
+    * @param reason
+    *   the reason why the element processing failed
+    */
+  def failed(reason: FailureReason): FailedElem = FailedElem(tpe, id, project, instant, offset, reason, rev)
 
   /**
     * Produces a new [[SuccessElem]] with the provided value copying the common properties.
@@ -154,24 +161,6 @@ sealed trait Elem[+A] extends Product with Serializable {
     case _: DroppedElem    => None
   }
 
-  /**
-    * Returns the value as an [[IO]], raising a error on the failed case
-    */
-  def toIO: IO[Option[A]] = this match {
-    case e: SuccessElem[A] => IO.pure(Some(e.value))
-    case f: FailedElem     => IO.raiseError(f.throwable)
-    case _: DroppedElem    => IO.none
-  }
-
-  /**
-    * Returns the underlying error for a [[FailedElem]]
-    */
-  def toThrowable: Option[Throwable] = this match {
-    case _: SuccessElem[A] => None
-    case f: FailedElem     => Some(f.throwable)
-    case _: DroppedElem    => None
-  }
-
   override def toString: String =
     s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$rev]{${offset.value}}"
 }
@@ -205,7 +194,7 @@ object Elem {
       rev: Int
   ): Elem[A] =
     either.fold(
-      err => FailedElem(tpe, id, project, instant, offset, err, rev),
+      err => FailedElem(tpe, id, project, instant, offset, FailureReason(err), rev),
       restart => SuccessElem(tpe, id, project, instant, offset, restart, rev)
     )
 
@@ -279,7 +268,7 @@ object Elem {
       project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
-      throwable: Throwable,
+      reason: FailureReason,
       rev: Int
   ) extends Elem[Nothing]
 
@@ -326,13 +315,6 @@ object Elem {
 
   implicit private val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 
-  implicit val elemUnitEncoder: Encoder.AsObject[Elem[Unit]] = {
-    implicit val throwableEncoder: Encoder[Throwable] = Encoder.instance[Throwable](_.getMessage.asJson)
-    deriveConfiguredEncoder[Elem[Unit]]
-  }
+  implicit val elemUnitEncoder: Codec.AsObject[Elem[Unit]] = deriveConfiguredCodec[Elem[Unit]]
 
-  implicit val elemUnitDecoder: Decoder[Elem[Unit]] = {
-    implicit val throwableDecoder: Decoder[Throwable] = Decoder.decodeString.map(new Exception(_))
-    deriveConfiguredDecoder[Elem[Unit]]
-  }
 }

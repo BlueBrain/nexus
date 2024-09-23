@@ -297,7 +297,7 @@ final class CompositeViews private (
   /**
     * Return all existing views for the given project in a finite stream
     */
-  def currentViews(project: ProjectRef): ElemStream[CompositeViewDef] =
+  def currentViews(project: ProjectRef): SuccessElemStream[CompositeViewDef] =
     log.currentStates(Scope.Project(project)).map(toCompositeViewDef)
 
   /**

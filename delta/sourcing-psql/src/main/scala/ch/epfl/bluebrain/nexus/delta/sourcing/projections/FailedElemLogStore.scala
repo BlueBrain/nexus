@@ -6,7 +6,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ThrowableUtils._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
@@ -153,7 +152,7 @@ object FailedElemLogStore {
            |  rev,
            |  error_type,
            |  message,
-           |  stack_trace,
+           |  details,
            |  instant
            | )
            | VALUES (
@@ -166,9 +165,9 @@ object FailedElemLogStore {
            |  ${failure.id},
            |  ${failure.project},
            |  ${failure.rev},
-           |  ${failure.throwable.getClass.getCanonicalName},
-           |  ${failure.throwable.getMessage},
-           |  ${stackTraceAsString(failure.throwable)},
+           |  ${failure.reason.`type`},
+           |  ${failure.reason.message},
+           |  ${failure.reason.details},
            |  $instant
            | )""".stripMargin.update.run.void
 

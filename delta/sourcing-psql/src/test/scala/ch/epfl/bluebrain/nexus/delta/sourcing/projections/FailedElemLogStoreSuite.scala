@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{FailureReason, ProjectionMetadata}
 import ch.epfl.bluebrain.nexus.testkit.clock.MutableClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.{AnyFixture, Location}
@@ -43,7 +43,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
   private val metadata21 = createMetadata(project2, projection12)
 
   private val id    = nxv + "id"
-  private val error = new RuntimeException("boom")
+  private val error = FailureReason(new RuntimeException("boom"))
   private val rev   = 1
 
   private val entityType                                          = EntityType("Test")
@@ -112,7 +112,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
       _        = assertEquals(r.instant, fail1.instant)
       elem     = r.failedElemData
       _        = assertEquals(elem.offset, Offset.At(1L))
-      _        = assertEquals(elem.errorType, "java.lang.RuntimeException")
+      _        = assertEquals(elem.reason.`type`, "UnexpectedError")
       _        = assertEquals(elem.id, id)
       _        = assertEquals(elem.entityType, entityType)
       _        = assertEquals(elem.rev, rev)

@@ -73,7 +73,7 @@ object PullRequestStream {
         project = Some(projectRef),
         Instant.EPOCH,
         Offset.at(4L),
-        new IllegalStateException("This is an error message"),
+        FailureReason(new IllegalStateException("This is an error message")),
         rev = 1
       )
     )

@@ -7,16 +7,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchA
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, FailureReason}
 import fs2.Chunk
 import io.circe.{Json, JsonObject}
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NoStackTrace
 
 /**
   * Sink that pushes json documents into an Elasticsearch index
@@ -99,16 +99,9 @@ object ElasticSearchSink {
           case element: FailedElem => element
           case element             =>
             items.get(documentId(element)) match {
-              case None                                    =>
-                element.failed(
-                  BulkUpdateException(
-                    JsonObject(
-                      "reason" -> Json.fromString(s"${element.id} was not found in Elasticsearch response")
-                    )
-                  )
-                )
+              case None                                    => element.failed(onMissingInResponse(element.id))
               case Some(MixedOutcomes.Outcome.Success)     => element.void
-              case Some(MixedOutcomes.Outcome.Error(json)) => element.failed(BulkUpdateException(json))
+              case Some(MixedOutcomes.Outcome.Error(json)) => element.failed(onIndexingFailure(element.id, json))
             }
         }
     }
@@ -173,7 +166,15 @@ object ElasticSearchSink {
       refresh
     )
 
-  final case class BulkUpdateException(json: JsonObject)
-      extends Exception("Error updating elasticsearch: " + Json.fromJsonObject(json).noSpaces)
-      with NoStackTrace
+  private def onMissingInResponse(id: Iri) = FailureReason(
+    "MissingInResponse",
+    s"$id was not found in Elasticsearch response",
+    JsonObject.empty
+  )
+
+  private def onIndexingFailure(id: Iri, error: JsonObject) = FailureReason(
+    "IndexingFailure",
+    s"$id could not be indexed",
+    error
+  )
 }

@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, FailureReason}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import io.circe.Json
 
@@ -81,7 +81,16 @@ abstract class ResourceShift[State <: ScopedState, A, M](
   def toGraphResourceElem(project: ProjectRef, resource: ResourceF[A])(implicit
       cr: RemoteContextResolution
   ): IO[Elem[GraphResource]] = toGraphResource(project, resource).redeem(
-    err => FailedElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, err, resource.rev),
+    err =>
+      FailedElem(
+        entityType,
+        resource.id,
+        Some(project),
+        resource.updatedAt,
+        Offset.Start,
+        FailureReason(err),
+        resource.rev
+      ),
     graph => SuccessElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, graph, resource.rev)
   )
 

@@ -5,13 +5,13 @@ import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.BulkUpdateException
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailureReason
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Chunk
@@ -86,7 +86,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
       None,
       Instant.EPOCH,
       Offset.at(1L),
-      new IllegalArgumentException("Boom"),
+      FailureReason(new IllegalArgumentException("Boom")),
       1
     )
     val invalidElement = (nxv + "xxx", json"""{"name": 112, "age": "xxx"}""")
@@ -106,10 +106,12 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
       // The failed elem should be return intact
       _       = assertEquals(Some(failed), result.headOption)
       // The invalid one should hold the Elasticsearch error
-      _       = assert(
-                  result.lift(1).flatMap(_.toThrowable).exists(_.isInstanceOf[BulkUpdateException]),
-                  "We expect a 'BulkUpdateException' as an error here"
-                )
+      _       = result.lift(1) match {
+                  case Some(f: FailedElem) =>
+                    assertEquals(f.reason.`type`, "IndexingFailure")
+                    assertEquals(f.reason.details.asObject, "IndexingFailure")
+                  case other               => fail(s"A failed elem was expected, got '$other'")
+                }
       // The valid one should remain a success and hold a Unit value
       _       = assert(result.lift(2).flatMap(_.toOption).contains(()))
       _      <- client

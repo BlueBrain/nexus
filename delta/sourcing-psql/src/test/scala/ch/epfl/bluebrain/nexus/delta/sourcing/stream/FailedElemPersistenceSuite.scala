@@ -34,7 +34,7 @@ class FailedElemPersistenceSuite extends NexusSuite {
             None,
             Instant.EPOCH,
             Offset.at(value.toLong),
-            new RuntimeException("boom"),
+            FailureReason(new RuntimeException("boom")),
             rev
           )
         }
