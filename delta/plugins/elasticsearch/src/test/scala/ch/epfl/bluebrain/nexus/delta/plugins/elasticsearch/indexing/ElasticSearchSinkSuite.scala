@@ -109,7 +109,8 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
       _       = result.lift(1) match {
                   case Some(f: FailedElem) =>
                     assertEquals(f.reason.`type`, "IndexingFailure")
-                    assertEquals(f.reason.details.asObject, "IndexingFailure")
+                    val detailKeys = f.reason.details.asObject.map(_.keys.toSet)
+                    assertEquals(detailKeys, Some(Set("type", "reason", "caused_by")))
                   case other               => fail(s"A failed elem was expected, got '$other'")
                 }
       // The valid one should remain a success and hold a Unit value
