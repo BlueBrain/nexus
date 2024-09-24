@@ -22,7 +22,7 @@ object FetchActiveOrganization {
 
   def apply(xas: Transactors): FetchActiveOrganization = (org: Label) =>
     GlobalStateGet[Label, OrganizationState](Organizations.entityType, org)
-      .transact(xas.read)
+      .transact(xas.write)
       .flatMap {
         case None                    => IO.raiseError(OrganizationNotFound(org))
         case Some(o) if o.deprecated => IO.raiseError(OrganizationIsDeprecated(org))
