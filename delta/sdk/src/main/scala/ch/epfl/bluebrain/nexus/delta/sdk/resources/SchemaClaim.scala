@@ -15,8 +15,6 @@ sealed trait SchemaClaim {
 
   def project: ProjectRef
 
-  def schemaRefOpt: Option[ResourceRef]
-
 }
 
 object SchemaClaim {
@@ -25,24 +23,18 @@ object SchemaClaim {
 
   sealed trait DefinedSchemaClaim extends SchemaClaim {
     def schemaRef: ResourceRef
-
-    override def schemaRefOpt: Option[ResourceRef] = Some(schemaRef)
-  }
-
-  sealed trait UndefinedSchemaClaim extends SchemaClaim {
-    override def schemaRefOpt: Option[ResourceRef] = None
   }
 
   final case class CreateWithSchema(project: ProjectRef, schemaRef: ResourceRef, caller: Caller)
       extends DefinedSchemaClaim
-  final case class CreateUnconstrained(project: ProjectRef) extends UndefinedSchemaClaim
+  final case class CreateUnconstrained(project: ProjectRef) extends SchemaClaim
 
   final case class UpdateToSchema(project: ProjectRef, schemaRef: ResourceRef, caller: Caller)
       extends DefinedSchemaClaim
 
-  final case class UpdateToUnconstrained(project: ProjectRef) extends UndefinedSchemaClaim
+  final case class UpdateToUnconstrained(project: ProjectRef) extends SchemaClaim
 
-  final case class KeepUnconstrained(project: ProjectRef) extends UndefinedSchemaClaim
+  final case class KeepUnconstrained(project: ProjectRef) extends SchemaClaim
 
   private def isUnconstrained(schema: ResourceRef): Boolean = schema.iri == schemas.resources
 
