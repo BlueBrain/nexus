@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFou
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.implicits._
+import doobie.syntax.all._
 import munit.AnyFixture
 
 import java.time.Instant

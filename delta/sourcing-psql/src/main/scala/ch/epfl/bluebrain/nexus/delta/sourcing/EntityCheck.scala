@@ -5,7 +5,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 
 import cats.implicits._
 

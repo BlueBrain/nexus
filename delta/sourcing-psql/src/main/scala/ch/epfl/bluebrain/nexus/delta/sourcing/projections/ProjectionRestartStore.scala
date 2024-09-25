@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestar
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import io.circe.Json
 import io.circe.syntax.EncoderOps

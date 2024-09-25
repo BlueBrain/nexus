@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Scope, Serializer, Transactors}
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import io.circe.Decoder
 

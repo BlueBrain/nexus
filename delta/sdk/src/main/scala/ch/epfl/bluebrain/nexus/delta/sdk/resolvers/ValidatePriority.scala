@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Priority
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.PriorityAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import doobie.implicits._
+import doobie.syntax.all._
 
 trait ValidatePriority {
 

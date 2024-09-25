@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie.postgres.implicits._
-import doobie.implicits._
+import doobie.syntax.all._
 
 final class DroppedEventStore(xas: Transactors) {
 
@@ -28,7 +28,7 @@ final class DroppedEventStore(xas: Transactors) {
          |  instant
          | )
          | VALUES (
-         |  ${rowEvent.ordering},
+         |  ${rowEvent.ordering.value},
          |  ${rowEvent.`type`},
          |  ${rowEvent.org},
          |  ${rowEvent.project},

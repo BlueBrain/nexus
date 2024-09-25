@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{FragmentEncoder, Transactors}
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import fs2.Stream
 

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
-import doobie.implicits._
+import doobie.syntax.all._
 
 object ScopedStateStoreFixture {
 

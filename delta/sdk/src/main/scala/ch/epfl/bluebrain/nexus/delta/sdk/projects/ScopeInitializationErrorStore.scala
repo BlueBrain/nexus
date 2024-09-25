@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationF
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
-import doobie.implicits._
+import doobie.syntax.all._
+import doobie.generic.auto._
 import doobie.postgres.implicits._
 
 import java.time.Instant

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import io.circe.{Decoder, Json}
 
 /**

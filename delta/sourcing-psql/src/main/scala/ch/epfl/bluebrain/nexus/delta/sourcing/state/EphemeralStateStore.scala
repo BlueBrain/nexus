@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 

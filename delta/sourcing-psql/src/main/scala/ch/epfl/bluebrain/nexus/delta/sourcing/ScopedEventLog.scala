@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFou
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.sqlstate
 import fs2.Stream
 

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 
 import java.time.Instant

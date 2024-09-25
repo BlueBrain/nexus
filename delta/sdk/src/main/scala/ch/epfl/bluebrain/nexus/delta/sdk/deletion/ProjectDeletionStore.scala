@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie.util.fragment.Fragment
 import doobie.ConnectionIO
-import doobie.implicits._
+import doobie.syntax.all._
 import io.circe.syntax.EncoderOps
 
 final private[deletion] class ProjectDeletionStore(xas: Transactors) {

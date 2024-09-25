@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
-import doobie.implicits._
+import doobie.syntax.all._
 
 import java.time.Instant
 

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PartitionInit, Transactors}
-import doobie.implicits._
+import doobie.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie.util.update.Update0
 import doobie.{ConnectionIO, Update}

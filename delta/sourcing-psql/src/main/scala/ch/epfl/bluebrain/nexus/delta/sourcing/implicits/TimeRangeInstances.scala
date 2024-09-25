@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.implicits
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange._
 import ch.epfl.bluebrain.nexus.delta.sourcing.FragmentEncoder
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.util.fragment.Fragment
 import doobie.postgres.implicits._
 

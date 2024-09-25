@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import io.circe.Json
 import io.circe.syntax._
