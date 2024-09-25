@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import ch.epfl.bluebrain.nexus.delta.sourcing.FragmentEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalLabelFormat
 import doobie.Put
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.util.Get
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 import cats.implicits._

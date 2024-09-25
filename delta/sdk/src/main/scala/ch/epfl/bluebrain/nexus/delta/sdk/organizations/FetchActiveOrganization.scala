@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, Orga
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateGet
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.{Get, Put}
 
 trait FetchActiveOrganization {

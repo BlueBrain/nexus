@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAcce
 import com.zaxxer.hikari.HikariDataSource
 import doobie.Fragment
 import doobie.hikari.HikariTransactor
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
 import io.github.classgraph.ClassGraph

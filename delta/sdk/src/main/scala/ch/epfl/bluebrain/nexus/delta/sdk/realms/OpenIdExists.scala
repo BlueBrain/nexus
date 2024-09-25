@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.RealmOpenId
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import doobie.implicits._
+import doobie.syntax.all._
 
 object OpenIdExists {
 

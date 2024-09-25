@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.sqlstate
 import fs2.Stream
 

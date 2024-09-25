@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PurgeElemFailures.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.PurgeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 
 import java.time.Instant

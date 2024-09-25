@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
-import doobie.implicits._
+import doobie.syntax.all._
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax.EncoderOps
 import io.circe.{Codec, Json}

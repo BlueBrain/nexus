@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.implicits._
+import doobie.syntax.all._
 import io.circe.Decoder
 import munit.AnyFixture
 

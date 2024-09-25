@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import io.circe.syntax.EncoderOps

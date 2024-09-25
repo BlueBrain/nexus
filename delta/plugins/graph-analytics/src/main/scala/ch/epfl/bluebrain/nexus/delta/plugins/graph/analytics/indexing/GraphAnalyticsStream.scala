@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import io.circe.Json
 
 trait GraphAnalyticsStream {

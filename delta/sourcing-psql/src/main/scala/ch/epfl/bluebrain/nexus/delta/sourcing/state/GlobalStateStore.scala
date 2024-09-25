@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import fs2.Stream

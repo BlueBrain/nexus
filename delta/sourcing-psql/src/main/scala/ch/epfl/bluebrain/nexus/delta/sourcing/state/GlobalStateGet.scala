@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.{ConnectionIO, Get, Put}
 
 object GlobalStateGet {

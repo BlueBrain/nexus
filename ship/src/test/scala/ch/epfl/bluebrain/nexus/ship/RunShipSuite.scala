@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.Get
-import doobie.implicits._
+import doobie.syntax.all._
 import fs2.Stream
 import fs2.io.file.Path
 import io.circe.Json

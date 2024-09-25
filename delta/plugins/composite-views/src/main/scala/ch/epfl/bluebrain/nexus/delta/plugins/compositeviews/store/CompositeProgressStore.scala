@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 
 import java.time.Instant

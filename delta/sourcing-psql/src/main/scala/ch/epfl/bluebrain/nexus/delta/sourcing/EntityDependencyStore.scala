@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tag}
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.util.Put
 import io.circe.{Decoder, Json}
 

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.{ConnectionIO, Get, Put}
 
 object ScopedStateGet {

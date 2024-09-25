@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import doobie._
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
