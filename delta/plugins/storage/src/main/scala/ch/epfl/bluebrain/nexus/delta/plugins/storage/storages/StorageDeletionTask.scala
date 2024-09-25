@@ -64,8 +64,6 @@ object StorageDeletionTask {
     new StorageDeletionTask(project =>
       storages
         .currentStorages(project)
-        .evalMapFilter {
-          _.map(_.value).toIO
-        }
+        .map(_.value.value)
     )
 }

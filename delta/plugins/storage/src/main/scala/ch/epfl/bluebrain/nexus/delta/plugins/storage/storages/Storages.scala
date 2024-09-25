@@ -29,8 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, SuccessElemStream}
 import fs2.Stream
 import io.circe.Json
 import org.typelevel.log4cats
@@ -254,7 +253,7 @@ final class Storages private (
   /**
     * Return the existing storages in a project in a finite stream
     */
-  def currentStorages(project: ProjectRef): Stream[IO, Elem[StorageState]] =
+  def currentStorages(project: ProjectRef): SuccessElemStream[StorageState] =
     log.currentStates(Scope.Project(project)).map { e =>
       e.withProject(e.value.project)
     }

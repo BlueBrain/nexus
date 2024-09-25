@@ -17,13 +17,11 @@ final class PurgeElemFailures private[sourcing] (xas: Transactors) {
     * Deletes the projection errors that are older than the given instant.
     */
   def apply(instant: Instant): IO[Unit] =
-    for {
-      deleted <- sql"""
-                    | DELETE FROM public.failed_elem_logs
-                    | WHERE instant < $instant
-                    """.stripMargin.update.run.transact(xas.write)
-      _       <- IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted old indexing failures."))
-    } yield ()
+    sql"""DELETE FROM public.failed_elem_logs WHERE instant < $instant""".stripMargin.update.run
+      .transact(xas.write)
+      .flatMap { deleted =>
+        IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted old projection failures."))
+      }
 }
 
 object PurgeElemFailures {

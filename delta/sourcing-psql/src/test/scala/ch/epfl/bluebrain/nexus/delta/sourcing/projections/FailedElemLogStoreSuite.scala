@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{FailureReason, ProjectionMetadata}
 import ch.epfl.bluebrain.nexus.testkit.clock.MutableClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.{AnyFixture, Location}
@@ -31,7 +31,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
   private lazy val store = FailedElemLogStore(xas, QueryConfig(10, RefreshStrategy.Stop), mutableClock)
 
   private def createMetadata(project: ProjectRef, id: Iri) =
-    ProjectionMetadata("test", s"project|$id", Some(project), Some(id))
+    ProjectionMetadata("test", s"$project|$id", Some(project), Some(id))
 
   private val project1     = ProjectRef.unsafe("org", "proj")
   private val projection11 = nxv + "projection11"
@@ -43,7 +43,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
   private val metadata21 = createMetadata(project2, projection12)
 
   private val id    = nxv + "id"
-  private val error = new RuntimeException("boom")
+  private val error = FailureReason(new RuntimeException("boom"))
   private val rev   = 1
 
   private val entityType                                          = EntityType("Test")
@@ -55,6 +55,15 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
   private val fail3 = createFailedElem(project1, 3L)
   private val fail4 = createFailedElem(project1, 4L)
   private val fail5 = createFailedElem(project2, 5L)
+
+  private def populateFailures =
+    for {
+      _ <- saveFailedElem(metadata11, fail1)
+      _ <- saveFailedElem(metadata12, fail2)
+      _ <- saveFailedElem(metadata12, fail3)
+      _ <- saveFailedElem(metadata12, fail4)
+      _ <- saveFailedElem(metadata21, fail5)
+    } yield ()
 
   private def saveFailedElem(metadata: ProjectionMetadata, failed: FailedElem) =
     mutableClock.set(failed.instant) >>
@@ -94,13 +103,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
   }
 
   test("Insert several failures") {
-    for {
-      _ <- saveFailedElem(metadata11, fail1)
-      _ <- saveFailedElem(metadata12, fail2)
-      _ <- saveFailedElem(metadata12, fail3)
-      _ <- saveFailedElem(metadata12, fail4)
-      _ <- saveFailedElem(metadata21, fail5)
-    } yield ()
+    populateFailures
   }
 
   test(s"Get stream of failures for ${metadata11.name}") {
@@ -112,7 +115,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
       _        = assertEquals(r.instant, fail1.instant)
       elem     = r.failedElemData
       _        = assertEquals(elem.offset, Offset.At(1L))
-      _        = assertEquals(elem.errorType, "java.lang.RuntimeException")
+      _        = assertEquals(elem.reason.`type`, "UnexpectedError")
       _        = assertEquals(elem.id, id)
       _        = assertEquals(elem.entityType, entityType)
       _        = assertEquals(elem.rev, rev)
@@ -183,6 +186,17 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
       _ <- purgeElemFailures(start.plusSeconds(10L))
       // all elements were deleted after 14 days
       _ <- store.count.assertEquals(0L)
+    } yield ()
+  }
+
+  test("Delete fixtures for the given projection") {
+    for {
+      _ <- populateFailures
+      _ <- store.count.assertEquals(5L)
+      _ <- store.deleteEntriesForProjection(metadata11.name)
+      _ <- store.count.assertEquals(4L)
+      _ <- store.deleteEntriesForProjection(metadata12.name)
+      _ <- store.count.assertEquals(1L)
     } yield ()
   }
 

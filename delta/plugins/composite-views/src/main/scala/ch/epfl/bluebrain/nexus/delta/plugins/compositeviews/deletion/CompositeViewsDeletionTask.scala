@@ -43,7 +43,7 @@ object CompositeViewsDeletionTask {
 
   def apply(views: CompositeViews) =
     new CompositeViewsDeletionTask(
-      project => views.currentViews(project).evalMapFilter(_.toIO),
+      project => views.currentViews(project).map(_.value),
       (v: ActiveViewDef, subject: Subject) =>
         views
           .internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject)

@@ -2,18 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import cats.effect.{Clock, IO}
 import cats.implicits._
-
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ThrowableUtils._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionStore}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{FailureReason, ProjectionMetadata, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{FragmentEncoder, Transactors}
 import doobie._
 import doobie.syntax.all._
@@ -110,6 +108,13 @@ trait FailedElemLogStore {
       timeRange: TimeRange
   ): IO[List[FailedElemLogRow]]
 
+  /**
+    * Delete the errors related to the given projection
+    * @param projectionName
+    *   the projection name
+    */
+  def deleteEntriesForProjection(projectionName: String): IO[Unit]
+
 }
 
 object FailedElemLogStore {
@@ -139,7 +144,11 @@ object FailedElemLogStore {
           metadata: ProjectionMetadata,
           failure: FailedElem,
           instant: Instant
-      ): ConnectionIO[Unit] =
+      ): ConnectionIO[Unit] = {
+        val failureReason = failure.throwable match {
+          case f: FailureReason => f
+          case t                => FailureReason(t)
+        }
         sql"""
            | INSERT INTO public.failed_elem_logs (
            |  projection_name,
@@ -153,7 +162,7 @@ object FailedElemLogStore {
            |  rev,
            |  error_type,
            |  message,
-           |  stack_trace,
+           |  details,
            |  instant
            | )
            | VALUES (
@@ -166,11 +175,12 @@ object FailedElemLogStore {
            |  ${failure.id},
            |  ${failure.project},
            |  ${failure.rev},
-           |  ${failure.throwable.getClass.getCanonicalName},
-           |  ${failure.throwable.getMessage},
-           |  ${stackTraceAsString(failure.throwable)},
+           |  ${failureReason.`type`},
+           |  ${failureReason.message},
+           |  ${failureReason.details},
            |  $instant
            | )""".stripMargin.update.run.void
+      }
 
       override def stream(
           projectionProject: ProjectRef,
@@ -220,6 +230,13 @@ object FailedElemLogStore {
         Some(fr"projection_id = $projectionId"),
         timeRange.asFragment
       )
+
+      override def deleteEntriesForProjection(projectionName: String): IO[Unit] =
+        sql"""DELETE FROM public.failed_elem_logs WHERE projection_name = $projectionName""".stripMargin.update.run
+          .transact(xas.write)
+          .flatMap { deleted =>
+            IO.whenA(deleted > 0)(logger.info(s"Deleted $deleted projection failures for '$projectionName'."))
+          }
     }
 
 }

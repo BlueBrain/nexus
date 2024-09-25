@@ -21,11 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{FetchResource, Resources, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaDefinition, SchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.{SchemaValidationCoordinator, SchemaValidationStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -36,6 +38,8 @@ object SchemasModule extends ModuleDef {
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
+  make[SchemasConfig].from { config: AppConfig => config.schemas }
+
   make[ValidateShacl].fromEffect { (rcr: RemoteContextResolution @Id("aggregate")) => ValidateShacl(rcr) }
 
   make[ValidateSchema].from { (validateShacl: ValidateShacl, api: JsonLdApi) => ValidateSchema(validateShacl)(api) }
@@ -44,8 +48,8 @@ object SchemasModule extends ModuleDef {
     Schemas.definition(validateSchema, clock)
   }
 
-  make[SchemaLog].from { (scopedDefinition: SchemaDefinition, config: AppConfig, xas: Transactors) =>
-    ScopedEventLog(scopedDefinition, config.schemas.eventLog, xas)
+  make[SchemaLog].from { (scopedDefinition: SchemaDefinition, config: SchemasConfig, xas: Transactors) =>
+    ScopedEventLog(scopedDefinition, config.eventLog, xas)
   }
 
   make[FetchSchema].from { (schemaLog: SchemaLog) =>
@@ -77,6 +81,22 @@ object SchemasModule extends ModuleDef {
         fetchResource: FetchResource
     ) =>
       SchemaImports(aclCheck, resolvers, fetchSchema, fetchResource)
+  }
+
+  make[SchemaValidationStream].fromEffect {
+    (resources: Resources, fetchSchema: FetchSchema, validateResource: ValidateResource, config: SchemasConfig) =>
+      FetchSchema.cached(fetchSchema, config.cache).map { cached =>
+        SchemaValidationStream(
+          resources.currentStates,
+          cached,
+          validateResource
+        )
+      }
+
+  }
+
+  make[SchemaValidationCoordinator].from { (supervisor: Supervisor, schemaValidationStream: SchemaValidationStream) =>
+    SchemaValidationCoordinator(supervisor, schemaValidationStream)
   }
 
   make[SchemasRoutes].from {

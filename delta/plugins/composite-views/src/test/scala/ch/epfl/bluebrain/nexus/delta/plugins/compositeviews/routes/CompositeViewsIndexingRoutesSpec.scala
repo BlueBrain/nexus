@@ -238,7 +238,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     "return failures as a listing" in {
       Get(s"$viewEndpoint/failures") ~> asWriter ~> routes ~> check {
         response.status shouldBe StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("routes/list-indexing-errors.json")
+        response.asJson.removeAllKeys("stacktrace") shouldEqual jsonContentOf("routes/list-indexing-errors.json")
       }
     }
   }

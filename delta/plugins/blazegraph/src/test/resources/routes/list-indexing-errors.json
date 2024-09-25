@@ -7,25 +7,35 @@
   "_total": 2,
   "_results": [
     {
-      "errorType": "java.lang.Exception",
       "id": "https://bluebrain.github.io/nexus/vocabulary/myid",
-      "message": "boom",
       "offset": {
         "@type": "At",
         "value": 42
       },
       "project": "org/proj",
-      "_rev": 1
+      "_rev": 1,
+      "reason": {
+        "type": "UnexpectedError",
+        "message": "boom",
+        "details": {
+          "exception" : "java.lang.Exception"
+        }
+      }
     },
     {
-      "errorType": "java.lang.Exception",
       "id": "https://bluebrain.github.io/nexus/vocabulary/myid",
-      "message": "boom",
       "offset": {
         "@type": "At",
         "value": 42
       },
-      "_rev": 1
+      "_rev": 1,
+      "reason": {
+        "type": "UnexpectedError",
+        "message": "boom",
+        "details": {
+          "exception" : "java.lang.Exception"
+        }
+      }
     }
   ]
 }

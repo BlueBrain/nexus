@@ -81,7 +81,16 @@ abstract class ResourceShift[State <: ScopedState, A, M](
   def toGraphResourceElem(project: ProjectRef, resource: ResourceF[A])(implicit
       cr: RemoteContextResolution
   ): IO[Elem[GraphResource]] = toGraphResource(project, resource).redeem(
-    err => FailedElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, err, resource.rev),
+    err =>
+      FailedElem(
+        entityType,
+        resource.id,
+        Some(project),
+        resource.updatedAt,
+        Offset.Start,
+        err,
+        resource.rev
+      ),
     graph => SuccessElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, graph, resource.rev)
   )
 

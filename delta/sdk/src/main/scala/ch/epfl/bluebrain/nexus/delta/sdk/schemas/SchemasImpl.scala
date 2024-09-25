@@ -139,10 +139,10 @@ final class SchemasImpl private (
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaResource] = {
     for {
-      pc    <- fetchContext.onRead(projectRef)
-      iri   <- expandIri(id.value, pc)
-      state <- FetchSchema(log).stateOrNotFound(id, iri, projectRef)
-    } yield state.toResource
+      pc       <- fetchContext.onRead(projectRef)
+      ref      <- expandIri(id, pc)
+      resource <- FetchSchema(log)(ref, projectRef)
+    } yield resource
   }.span("fetchSchema")
 
   private def eval(cmd: SchemaCommand) =

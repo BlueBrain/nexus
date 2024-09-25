@@ -72,10 +72,9 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
   private val tag               = UserTag.unsafe("tag")
 
   private val fetchContext = FetchContextDummy(Map(project.ref -> project.context), Set(projectDeprecated.ref))
-  private val config       = SchemasConfig(eventLogConfig)
 
   private val schemaDef      = Schemas.definition(ValidateSchema(ValidateShacl(rcr).accepted), clock)
-  private lazy val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
+  private lazy val schemaLog = ScopedEventLog(schemaDef, eventLogConfig, xas)
 
   private lazy val schemas: Schemas =
     SchemasImpl(schemaLog, fetchContext, schemaImports, resolverContextResolution)
