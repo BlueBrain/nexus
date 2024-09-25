@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailureReason
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Chunk
@@ -147,7 +146,7 @@ class GraphAnalyticsSinkSuite extends NexusSuite with ElasticSearchClientSetup.F
         Some(project),
         Instant.EPOCH,
         Offset.start,
-        FailureReason(new IllegalStateException("BOOM")),
+        new IllegalStateException("BOOM"),
         1
       )
     )

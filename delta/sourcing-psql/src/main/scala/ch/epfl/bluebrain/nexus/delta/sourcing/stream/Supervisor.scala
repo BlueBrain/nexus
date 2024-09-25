@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
 import fs2.Stream
@@ -142,7 +142,7 @@ object Supervisor {
         supervision    <- supervisionTask(semaphore, mapRef, signal, cfg).start
         supervisionRef <- Ref.of[IO, Fiber[IO, Throwable, Unit]](supervision)
         supervisor      =
-          new Impl(projections, projectionErrors.saveFailedElems, cfg, semaphore, mapRef, signal, supervisionRef)
+          new Impl(projections, projectionErrors, cfg, semaphore, mapRef, signal, supervisionRef)
         _              <- watchRestarts(supervisor, projections)
         _              <- log.info("Delta supervisor is up")
       } yield supervisor
@@ -250,7 +250,7 @@ object Supervisor {
 
   private class Impl(
       projections: Projections,
-      saveFailedElems: (ProjectionMetadata, List[FailedElem]) => IO[Unit],
+      projectionErrors: ProjectionErrors,
       cfg: ProjectionConfig,
       semaphore: Semaphore[IO],
       mapRef: Ref[IO, Map[String, Supervised]],
@@ -301,10 +301,10 @@ object Supervisor {
           (
             projections.progress(projection.metadata.name),
             projections.save(projection.metadata, _),
-            saveFailedElems(projection.metadata, _)
+            projectionErrors.saveFailedElems(projection.metadata, _)
           )
         case TransientSingleNode | EveryNode =>
-          (IO.none, (_: ProjectionProgress) => IO.unit, saveFailedElems(projection.metadata, _))
+          (IO.none, (_: ProjectionProgress) => IO.unit, projectionErrors.saveFailedElems(projection.metadata, _))
       }
       Projection(projection, fetchProgress, saveProgress, saveErrors)(cfg.batch)
     }
@@ -350,6 +350,7 @@ object Supervisor {
                               _      <- log.info(s"Destroying '${metadata.module}/${metadata.name}'...")
                               _      <- stopProjection(s)
                               _      <- IO.whenA(s.executionStrategy == PersistentSingleNode)(projections.delete(name))
+                              _      <- projectionErrors.deleteEntriesForProjection(name)
                               _      <- onDestroy
                                           .retry(retryStrategy)
                                           .handleError(_ => ())

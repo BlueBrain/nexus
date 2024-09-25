@@ -20,8 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoCh
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Json
 
 final class ResourcesImpl private (
@@ -188,6 +189,9 @@ final class ResourcesImpl private (
            |in project '${cmd.project}', returning the original value.""".stripMargin
       logger.info(message).as(currentState.toResource)
     }
+
+  override def currentStates(project: ProjectRef, offset: Offset): SuccessElemStream[ResourceState] =
+    log.currentStates(Scope(project), offset)
 }
 
 object ResourcesImpl {

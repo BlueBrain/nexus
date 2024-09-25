@@ -40,7 +40,7 @@ object ResourceWiring {
     override def apply(jsonld: JsonLdAssembly, schema: SchemaClaim, enforceSchema: Boolean): IO[ValidationResult] =
       schema match {
         case defined: DefinedSchemaClaim =>
-          fetchSchema.fetch(defined.schemaRef, schema.project).flatMap {
+          fetchSchema.option(defined.schemaRef, schema.project).flatMap {
             case Some(value) =>
               IO.pure {
                 Validated(

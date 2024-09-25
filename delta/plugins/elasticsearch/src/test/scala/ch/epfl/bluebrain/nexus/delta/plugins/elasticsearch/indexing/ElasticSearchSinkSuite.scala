@@ -86,7 +86,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
       None,
       Instant.EPOCH,
       Offset.at(1L),
-      FailureReason(new IllegalArgumentException("Boom")),
+      new IllegalArgumentException("Boom"),
       1
     )
     val invalidElement = (nxv + "xxx", json"""{"name": 112, "age": "xxx"}""")
@@ -108,9 +108,13 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
       // The invalid one should hold the Elasticsearch error
       _       = result.lift(1) match {
                   case Some(f: FailedElem) =>
-                    assertEquals(f.reason.`type`, "IndexingFailure")
-                    val detailKeys = f.reason.details.asObject.map(_.keys.toSet)
-                    assertEquals(detailKeys, Some(Set("type", "reason", "caused_by")))
+                    f.throwable match {
+                      case reason: FailureReason =>
+                        assertEquals(reason.`type`, "IndexingFailure")
+                        val detailKeys = reason.details.asObject.map(_.keys.toSet)
+                        assertEquals(detailKeys, Some(Set("type", "reason", "caused_by")))
+                      case t                     => fail(s"An indexing failure was expected, got '$t'", t)
+                    }
                   case other               => fail(s"A failed elem was expected, got '$other'")
                 }
       // The valid one should remain a success and hold a Unit value

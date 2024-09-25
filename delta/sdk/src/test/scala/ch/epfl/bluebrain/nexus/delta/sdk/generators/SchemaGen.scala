@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
@@ -21,6 +21,22 @@ import scala.concurrent.duration.DurationInt
 object SchemaGen {
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
   implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+
+  def empty(id: Iri, project: ProjectRef) =
+    SchemaState(
+      id,
+      project,
+      Json.obj(),
+      CompactedJsonLd.empty,
+      NonEmptyList.of(ExpandedJsonLd.empty),
+      1,
+      deprecated = false,
+      Tags.empty,
+      Instant.EPOCH,
+      Anonymous,
+      Instant.EPOCH,
+      Anonymous
+    ).toResource
 
   def currentState(
       schema: Schema,

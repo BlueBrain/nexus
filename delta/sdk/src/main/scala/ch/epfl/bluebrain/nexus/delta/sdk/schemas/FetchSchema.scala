@@ -1,44 +1,43 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{RevisionNotFound, SchemaNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLogReadOnly
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 trait FetchSchema {
 
-  /** Fetch the referenced resource in the given project */
-  def fetch(ref: ResourceRef, project: ProjectRef): FetchF[Schema]
+  /** Fetch the referenced schema in the given project */
+  def apply(ref: ResourceRef, project: ProjectRef): IO[SchemaResource]
 
-  def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[SchemaState]
-
+  def option(ref: ResourceRef, project: ProjectRef): FetchF[Schema] = apply(ref, project).option
 }
 
 object FetchSchema {
 
-  def apply(log: ScopedEventLogReadOnly[Iri, SchemaState, SchemaRejection]): FetchSchema = {
-
-    def notFound(iri: Iri, ref: ProjectRef) = SchemaNotFound(iri, ref)
-
-    new FetchSchema {
-      override def fetch(ref: ResourceRef, project: ProjectRef): FetchF[Schema] =
-        stateOrNotFound(IdSegmentRef(ref), ref.iri, project).attempt
-          .map(_.toOption)
-          .map(_.map(_.toResource))
-
-      override def stateOrNotFound(id: IdSegmentRef, iri: Iri, ref: ProjectRef): IO[SchemaState] =
-        id match {
-          case Latest(_)        => log.stateOr(ref, iri, notFound(iri, ref))
-          case Revision(_, rev) => log.stateOr(ref, iri, rev, notFound(iri, ref), RevisionNotFound)
-          case Tag(_, tag)      => log.stateOr(ref, iri, tag, notFound(iri, ref), TagNotFound(tag))
-        }
+  def cached(underlying: FetchSchema, config: CacheConfig): IO[FetchSchema] =
+    LocalCache[(ResourceRef, ProjectRef), SchemaResource](config).map {
+      cache => (ref: ResourceRef, project: ProjectRef) =>
+        cache.getOrElseUpdate((ref, project), underlying(ref, project))
     }
 
-  }
+  def apply(log: ScopedEventLogReadOnly[Iri, SchemaState, SchemaRejection]): FetchSchema = {
 
+    def notFound(iri: Iri, project: ProjectRef) = SchemaNotFound(iri, project)
+
+    (ref: ResourceRef, project: ProjectRef) =>
+      {
+        ref match {
+          case Latest(iri)           => log.stateOr(project, iri, notFound(iri, project))
+          case Revision(_, iri, rev) => log.stateOr(project, iri, rev, notFound(iri, project), RevisionNotFound)
+          case Tag(_, iri, tag)      => log.stateOr(project, iri, tag, notFound(iri, project), TagNotFound(tag))
+        }
+      }.map(_.toResource)
+  }
 }

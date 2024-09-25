@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailureReason
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -66,8 +65,8 @@ object ServiceError {
     */
   final case class FeatureDisabled(override val reason: String) extends ServiceError(reason)
 
-  final case class IndexingFailed(resource: ResourceF[Unit], errors: List[FailureReason])
-      extends ServiceError(errors.map(_.message).mkString("* ", "\n* ", ""))
+  final case class IndexingFailed(resource: ResourceF[Unit], errors: List[Throwable])
+      extends ServiceError(errors.map(_.getMessage).mkString("* ", "\n* ", ""))
 
   /**
     * Signals that the SSE label can't be found

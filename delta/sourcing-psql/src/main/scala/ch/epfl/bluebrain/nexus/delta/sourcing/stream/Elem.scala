@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import doobie.Read
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
-import io.circe.{Codec, Decoder}
+import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
 
@@ -65,14 +65,7 @@ sealed trait Elem[+A] extends Product with Serializable {
     *   the error why the element processing failed
     */
   def failed(throwable: Throwable): FailedElem =
-    FailedElem(tpe, id, project, instant, offset, FailureReason(throwable), rev)
-
-  /**
-    * Produces a new [[FailedElem]] with the provided reason copying the common properties
-    * @param reason
-    *   the reason why the element processing failed
-    */
-  def failed(reason: FailureReason): FailedElem = FailedElem(tpe, id, project, instant, offset, reason, rev)
+    FailedElem(tpe, id, project, instant, offset, throwable, rev)
 
   /**
     * Produces a new [[SuccessElem]] with the provided value copying the common properties.
@@ -194,7 +187,7 @@ object Elem {
       rev: Int
   ): Elem[A] =
     either.fold(
-      err => FailedElem(tpe, id, project, instant, offset, FailureReason(err), rev),
+      err => FailedElem(tpe, id, project, instant, offset, err, rev),
       restart => SuccessElem(tpe, id, project, instant, offset, restart, rev)
     )
 
@@ -268,7 +261,7 @@ object Elem {
       project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
-      reason: FailureReason,
+      throwable: Throwable,
       rev: Int
   ) extends Elem[Nothing]
 
@@ -315,6 +308,11 @@ object Elem {
 
   implicit private val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 
-  implicit val elemUnitEncoder: Codec.AsObject[Elem[Unit]] = deriveConfiguredCodec[Elem[Unit]]
+  implicit val elemUnitEncoder: Codec.AsObject[Elem[Unit]] = {
+    implicit val throwableEncoder: Encoder[Throwable] = FailureReason.failureReasonCodec.contramap(FailureReason(_))
+    implicit val throwableDecoder: Decoder[Throwable] = FailureReason.failureReasonCodec.map(identity)
+
+    deriveConfiguredCodec[Elem[Unit]]
+  }
 
 }

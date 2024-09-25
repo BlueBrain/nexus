@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ValidateShacl, ValidationReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.kamonComponent
@@ -43,10 +44,7 @@ trait ValidateResource {
     * @param schema
     *   the schema to validate against
     */
-  def apply(
-      jsonld: JsonLdAssembly,
-      schema: ResourceF[Schema]
-  ): IO[ValidationResult]
+  def apply(jsonld: JsonLdAssembly, schema: SchemaResource): IO[ValidationResult]
 }
 
 object ValidateResource {

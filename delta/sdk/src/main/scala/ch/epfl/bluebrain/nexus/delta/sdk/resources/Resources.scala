@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 
@@ -260,6 +261,15 @@ trait Resources {
       projectRef: ProjectRef
   ): IO[DataResource] =
     fetch(IdSegmentRef(resourceRef), projectRef, None)
+
+  /**
+    * Return the current states of resources for the given project
+    * @param project
+    *   the project where the resources belong
+    * @param offset
+    *   the offset to start from
+    */
+  def currentStates(project: ProjectRef, offset: Offset): SuccessElemStream[ResourceState]
 }
 
 object Resources {

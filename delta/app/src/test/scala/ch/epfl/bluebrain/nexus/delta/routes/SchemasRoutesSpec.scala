@@ -76,10 +76,8 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
   private val fetchContext    = FetchContextDummy(List(project.value))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
-  private val config = SchemasConfig(eventLogConfig)
-
   private val schemaDef      = Schemas.definition(ValidateSchema(ValidateShacl(rcr).accepted), clock)
-  private lazy val schemaLog = ScopedEventLog(schemaDef, config.eventLog, xas)
+  private lazy val schemaLog = ScopedEventLog(schemaDef, eventLogConfig, xas)
 
   private lazy val routes =
     Route.seal(

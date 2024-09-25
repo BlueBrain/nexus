@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuerySuite.Release
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{FailureReason, RemainingElems}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -209,7 +209,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
           Some(project1),
           Instant.EPOCH,
           Offset.at(3L),
-          FailureReason(decodingFailure(Release.entityType)),
+          decodingFailure(Release.entityType),
           rev
         ),
         SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
@@ -219,7 +219,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
           Some(project1),
           Instant.EPOCH,
           Offset.at(8L),
-          FailureReason(decodingFailure(Release.entityType)),
+          decodingFailure(Release.entityType),
           rev
         ),
         SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)

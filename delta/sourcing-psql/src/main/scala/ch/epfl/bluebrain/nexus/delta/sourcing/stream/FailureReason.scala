@@ -7,7 +7,9 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Codec, Encoder, Json}
 
-case class FailureReason(`type`: String, message: String, details: Json)
+import scala.util.control.NoStackTrace
+
+case class FailureReason(`type`: String, message: String, details: Json) extends Exception with NoStackTrace
 
 object FailureReason {
 

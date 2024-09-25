@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.DefinedSchemaClaim
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.DefinedSchemaClaim
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.InvalidSchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -83,5 +84,28 @@ trait ValidateResourceFixture {
           )
         )
     }
+
+  def validateForResources(validResources: Set[Iri]): ValidateResource = new ValidateResource {
+
+    override def apply(jsonld: JsonLdAssembly, schema: SchemaClaim, enforceSchema: Boolean): IO[ValidationResult] = ???
+
+    override def apply(jsonld: JsonLdAssembly, schema: SchemaResource): IO[ValidationResult] =
+      if (validResources.contains(jsonld.id)) {
+        IO.pure(
+          Validated(
+            schema.value.project,
+            ResourceRef.Revision(schema.id, schema.rev),
+            defaultReport
+          )
+        )
+      } else
+        IO.raiseError(
+          InvalidSchemaRejection(
+            ResourceRef.Revision(schema.id, schema.rev),
+            schema.value.project,
+            ResourceResolutionReport()
+          )
+        )
+  }
 
 }

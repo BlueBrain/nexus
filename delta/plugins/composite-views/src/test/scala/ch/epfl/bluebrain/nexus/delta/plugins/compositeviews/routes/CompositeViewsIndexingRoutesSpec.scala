@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{FailureReason, ProjectionProgress, RemainingElems}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionProgress, RemainingElems}
 import io.circe.Json
 import io.circe.syntax._
 
@@ -91,7 +91,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val error           = FailureReason(new Exception("boom"))
+    val error           = new Exception("boom")
     val rev             = 1
     val fail1           = FailedElem(EntityType("ACL"), myId, Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
     val fail2           = FailedElem(EntityType("Schema"), myId, None, Instant.EPOCH, Offset.At(42L), error, rev)

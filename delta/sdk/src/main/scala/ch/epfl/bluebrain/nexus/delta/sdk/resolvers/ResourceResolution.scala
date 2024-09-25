@@ -110,14 +110,15 @@ object ResourceResolution {
       resolvers: Resolvers,
       fetchSchema: FetchSchema,
       excludeDeprecated: Boolean
-  ): ResourceResolution[Schema] =
+  ): ResourceResolution[Schema] = {
     apply(
       aclCheck,
       resolvers,
-      fetchSchema.fetch _,
+      fetchSchema.option _,
       Permissions.schemas.read,
       excludeDeprecated
     )
+  }
 
   private def deprecationCheck[R](excludeDeprecated: Boolean) =
     DeprecationCheck[ResourceF[R]](excludeDeprecated, _.deprecated)

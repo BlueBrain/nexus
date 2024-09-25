@@ -66,6 +66,13 @@ trait ProjectionErrors {
       timeRange: TimeRange
   ): IO[List[FailedElemLogRow]]
 
+  /**
+    * Delete the errors related to the given projection
+    * @param projectionName
+    *   the projection
+    */
+  def deleteEntriesForProjection(projectionName: String): IO[Unit]
+
 }
 
 object ProjectionErrors {
@@ -90,6 +97,9 @@ object ProjectionErrors {
           pagination: FromPagination,
           timeRange: TimeRange
       ): IO[List[FailedElemLogRow]] = store.list(project, projectionId, pagination, timeRange)
+
+      override def deleteEntriesForProjection(projectionName: String): IO[Unit] =
+        store.deleteEntriesForProjection(projectionName)
     }
 
 }
