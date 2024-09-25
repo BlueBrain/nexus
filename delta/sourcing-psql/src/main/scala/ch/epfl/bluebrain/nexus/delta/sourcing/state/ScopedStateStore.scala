@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Scope, Se
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import io.circe.Decoder
 
 /**
   * Allows to save/fetch [[ScopedState]] from the database
@@ -151,10 +150,9 @@ object ScopedStateStore {
   ): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
 
     import IriInstances._
-    implicit val putId: Put[Id]      = serializer.putId
-    implicit val getValue: Get[S]    = serializer.getValue
-    implicit val putValue: Put[S]    = serializer.putValue
-    implicit val decoder: Decoder[S] = serializer.codec
+    implicit val putId: Put[Id]   = serializer.putId
+    implicit val getValue: Get[S] = serializer.getValue
+    implicit val putValue: Put[S] = serializer.putValue
 
     private def insertState(state: S, tag: Tag) =
       sql"SELECT 1 FROM scoped_states WHERE type = $tpe AND org = ${state.organization} AND project = ${state.project.project}  AND id = ${state.id} AND tag = $tag"
