@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.implicits._
+import doobie.syntax.all._
 import fs2.Stream
 import munit.AnyFixture
 

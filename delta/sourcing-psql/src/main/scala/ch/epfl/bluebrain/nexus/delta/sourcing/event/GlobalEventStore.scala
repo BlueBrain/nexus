@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie._
 import doobie.postgres.implicits._
 
-import doobie.implicits._
+import doobie.syntax.all._
 import fs2.Stream
 
 /**

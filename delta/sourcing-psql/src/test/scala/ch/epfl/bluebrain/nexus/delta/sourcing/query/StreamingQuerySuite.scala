@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.implicits._
+import doobie.syntax.all._
 import fs2.Chunk
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec

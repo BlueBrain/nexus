@@ -63,6 +63,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
         importBucket,
         targetBucket,
         Some(Uri.Path("/prefix")),
+        None,
         skipFileEvents = false,
         MediaTypeDetectorConfig(
           "nwb" -> MediaType.applicationBinary("nwb", NotCompressible)

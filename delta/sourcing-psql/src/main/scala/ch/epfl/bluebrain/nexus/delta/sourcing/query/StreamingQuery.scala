@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import doobie.Fragments
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import doobie.util.fragment.Fragment
 import doobie.util.query.Query0

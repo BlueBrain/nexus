@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import doobie.implicits._
+import doobie.syntax.all._
 
 /**
   * Describes the postgres [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a ''select

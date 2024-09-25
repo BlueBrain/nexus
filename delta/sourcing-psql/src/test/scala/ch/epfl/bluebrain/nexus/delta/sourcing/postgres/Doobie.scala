@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.Fragment
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.sqlstate
 import munit.Location
 import munit.catseffect.IOFixture

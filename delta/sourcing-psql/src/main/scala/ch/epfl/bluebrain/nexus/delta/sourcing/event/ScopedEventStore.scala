@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Serialize
 import doobie._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import fs2.Stream
 

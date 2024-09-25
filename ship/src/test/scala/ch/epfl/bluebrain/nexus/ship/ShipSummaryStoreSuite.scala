@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.ship.ShipCommand.RunCommand
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.postgres.implicits._
 import munit.AnyFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset

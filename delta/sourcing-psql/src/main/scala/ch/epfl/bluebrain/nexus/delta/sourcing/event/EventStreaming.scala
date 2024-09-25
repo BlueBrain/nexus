@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.util.query.Query0
 import doobie.{Fragment, Fragments}
 import io.circe.Json

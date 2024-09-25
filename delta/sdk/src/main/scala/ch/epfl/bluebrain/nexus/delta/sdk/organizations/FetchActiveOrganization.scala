@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, Orga
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateGet
-import doobie.implicits._
+import doobie.syntax.all._
 import doobie.{Get, Put}
 
 trait FetchActiveOrganization {
@@ -22,7 +22,7 @@ object FetchActiveOrganization {
 
   def apply(xas: Transactors): FetchActiveOrganization = (org: Label) =>
     GlobalStateGet[Label, OrganizationState](Organizations.entityType, org)
-      .transact(xas.read)
+      .transact(xas.write)
       .flatMap {
         case None                    => IO.raiseError(OrganizationNotFound(org))
         case Some(o) if o.deprecated => IO.raiseError(OrganizationIsDeprecated(org))
