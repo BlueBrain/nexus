@@ -28,7 +28,7 @@ final class DroppedEventStore(xas: Transactors) {
          |  instant
          | )
          | VALUES (
-         |  ${rowEvent.ordering},
+         |  ${rowEvent.ordering.value},
          |  ${rowEvent.`type`},
          |  ${rowEvent.org},
          |  ${rowEvent.project},
