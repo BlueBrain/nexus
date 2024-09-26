@@ -56,7 +56,9 @@ class ElemRoutes(
                   concat(
                     (get & pathPrefix("continuous")) {
                       operationName(s"$prefixSegment/$project/elems/continuous") {
-                        emit(sseElemStream.continuous(project, SelectFilter(None, types, tag.getOrElse(Latest)), offset))
+                        emit(
+                          sseElemStream.continuous(project, SelectFilter(None, types, tag.getOrElse(Latest)), offset)
+                        )
                       }
                     },
                     (get & pathPrefix("currents")) {
@@ -67,9 +69,11 @@ class ElemRoutes(
                     (get & pathPrefix("remaining")) {
                       operationName(s"$prefixSegment/$project/elems/remaining") {
                         emit(
-                          sseElemStream.remaining(project, SelectFilter(None, types, tag.getOrElse(Latest)), offset).map {
-                            r => r.getOrElse(RemainingElems(0L, Instant.EPOCH))
-                          }
+                          sseElemStream
+                            .remaining(project, SelectFilter(None, types, tag.getOrElse(Latest)), offset)
+                            .map { r =>
+                              r.getOrElse(RemainingElems(0L, Instant.EPOCH))
+                            }
                         )
                       }
                     },

@@ -24,7 +24,7 @@ object FailureReason {
     FailureReason(
       "UnexpectedError",
       Json.obj(
-        "message" := message,
+        "message"    := message,
         "exception"  := errorType,
         "stacktrace" := stackTrace
       )

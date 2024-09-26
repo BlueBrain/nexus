@@ -20,8 +20,8 @@ object SelectFilter {
   val latest: SelectFilter = SelectFilter(None, IriFilter.None, Tag.Latest)
 
   /**
-   * All of given entity with latest tag
-   */
+    * All of given entity with latest tag
+    */
   val latestOfEntity: EntityType => SelectFilter =
     entityType => SelectFilter(Some(entityType), IriFilter.None, Tag.Latest)
 

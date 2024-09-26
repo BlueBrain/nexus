@@ -87,7 +87,8 @@ object FailedElemLogRow {
         val reason = details
           .map { d =>
             FailureReason(errorType, d)
-          }.getOrElse(FailureReason(errorType, message.getOrElse(""), stackTrace))
+          }
+          .getOrElse(FailureReason(errorType, message.getOrElse(""), stackTrace))
 
         FailedElemLogRow(
           ordering,

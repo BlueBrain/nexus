@@ -47,15 +47,15 @@ object SchemaValidationStream {
 
     override def apply(project: ProjectRef, offset: Offset): ElemStream[Unit] = {
       for {
-        _  <- log(s"Starting validation of resources for project '$project'")
+        _      <- log(s"Starting validation of resources for project '$project'")
         stream <- resourceStream(project, offset).evalMap {
-          _.evalMapFilter {
-            case r if r.deprecated                      => IO.none
-            case r if r.schema.iri == schemas.resources => IO.none
-            case r                                      => validateSingle(r)
-          }
-        }
-        _  <- log(s"Validation of resources for project '$project' has been completed.")
+                    _.evalMapFilter {
+                      case r if r.deprecated                      => IO.none
+                      case r if r.schema.iri == schemas.resources => IO.none
+                      case r                                      => validateSingle(r)
+                    }
+                  }
+        _      <- log(s"Validation of resources for project '$project' has been completed.")
       } yield stream
 
     }

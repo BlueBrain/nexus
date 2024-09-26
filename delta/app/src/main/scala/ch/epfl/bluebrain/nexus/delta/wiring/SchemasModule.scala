@@ -123,17 +123,24 @@ object SchemasModule extends ModuleDef {
 
   make[SchemaJobRoutes].from {
     (
-      identities: Identities,
-      aclCheck: AclCheck,
-      fetchContext: FetchContext,
-      schemaValidationCoordinator: SchemaValidationCoordinator,
-      projections: Projections,
-      projectionsErrors: ProjectionErrors,
-      baseUri: BaseUri,
-      cr: RemoteContextResolution @Id("aggregate"),
-      ordering: JsonKeyOrdering
+        identities: Identities,
+        aclCheck: AclCheck,
+        fetchContext: FetchContext,
+        schemaValidationCoordinator: SchemaValidationCoordinator,
+        projections: Projections,
+        projectionsErrors: ProjectionErrors,
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
     ) =>
-      new SchemaJobRoutes(identities, aclCheck, fetchContext, schemaValidationCoordinator, projections, projectionsErrors)(
+      new SchemaJobRoutes(
+        identities,
+        aclCheck,
+        fetchContext,
+        schemaValidationCoordinator,
+        projections,
+        projectionsErrors
+      )(
         baseUri,
         cr,
         ordering

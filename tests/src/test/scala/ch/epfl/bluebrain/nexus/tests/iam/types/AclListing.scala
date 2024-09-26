@@ -124,7 +124,7 @@ object Permission {
   object Schemas {
     val name              = "schemas"
     val Write: Permission = Permission(name, "write")
-    val Run: Permission = Permission(name, "run")
+    val Run: Permission   = Permission(name, "run")
 
     val list: List[Permission] = Write :: Run :: Nil
   }

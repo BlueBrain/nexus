@@ -24,41 +24,41 @@ final class SchemaValidationJobSpec extends BaseIntegrationSpec {
   private def createResource(id: String, tpe: Option[String], schema: String) = {
     for {
       payload <- tpe match {
-        case None => SimpleResource.sourcePayload(id, 42)
-        case Some(tpe) => SimpleResource.sourcePayloadWithType(tpe, 42)
-      }
-      _ <- deltaClient.post[Json](s"/resources/$project/$schema/", payload, Rick) {
-        expectCreated
-      }
+                   case None      => SimpleResource.sourcePayload(id, 42)
+                   case Some(tpe) => SimpleResource.sourcePayloadWithType(tpe, 42)
+                 }
+      _       <- deltaClient.post[Json](s"/resources/$project/$schema/", payload, Rick) {
+                   expectCreated
+                 }
     } yield ()
   }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     val setup = for {
-      _                    <- createOrg(Rick, orgId)
-      _                    <- createProjects(Rick, orgId, projId)
+      _                       <- createOrg(Rick, orgId)
+      _                       <- createProjects(Rick, orgId, projId)
       // Adding the permission to run the schema validation job
-      _ <- aclDsl.addPermission("/", Rick, Schemas.Run)
+      _                       <- aclDsl.addPermission("/", Rick, Schemas.Run)
       // Create schema
-      schemaPayload        <- SchemaPayload.loadSimpleNoId()
-      _                    <- deltaClient.put[Json](s"/schemas/$project/$testSchema", schemaPayload, Rick) { expectCreated }
+      schemaPayload           <- SchemaPayload.loadSimpleNoId()
+      _                       <- deltaClient.put[Json](s"/schemas/$project/$testSchema", schemaPayload, Rick) { expectCreated }
       // Creating a validated resource which will not resist the update of the schema because of its type
-      _                    <- createResource(initiallyValidResource, None, testSchema)
+      _                       <- createResource(initiallyValidResource, None, testSchema)
       // Creating unconstrained resource
-      unconstrainedResource = genId()
-      _                    <- createResource(unconstrainedResource, None, unconstrainedSchema)
+      unconstrainedResource    = genId()
+      _                       <- createResource(unconstrainedResource, None, unconstrainedSchema)
       // Creating deprecated resource
-      deprecatedResource    = genId()
-      _                    <- createResource(deprecatedResource, None, testSchema)
-      _                    <- deltaClient.delete(s"/resources/$project/_/$deprecatedResource?rev=1", Rick) { expectOk }
+      deprecatedResource       = genId()
+      _                       <- createResource(deprecatedResource, None, testSchema)
+      _                       <- deltaClient.delete(s"/resources/$project/_/$deprecatedResource?rev=1", Rick) { expectOk }
       // Updating the schema
-      anotherType = "schema:AnotherType"
-      updatedSchemaPayload <- SchemaPayload.loadSimpleNoId(anotherType)
-      _                    <- deltaClient.put[Json](s"/schemas/$project/$testSchema?rev=1", updatedSchemaPayload, Rick) { expectOk }
+      anotherType              = "schema:AnotherType"
+      updatedSchemaPayload    <- SchemaPayload.loadSimpleNoId(anotherType)
+      _                       <- deltaClient.put[Json](s"/schemas/$project/$testSchema?rev=1", updatedSchemaPayload, Rick) { expectOk }
       // Creating a validated resource with the new type which should succeed the job
       anotherValidatedResource = genId()
-      _                    <- createResource(anotherValidatedResource, Some(anotherType), testSchema)
+      _                       <- createResource(anotherValidatedResource, Some(anotherType), testSchema)
     } yield ()
     setup.accepted
   }
