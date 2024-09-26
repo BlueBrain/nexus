@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
+import ch.epfl.bluebrain.nexus.delta.routes.{SchemaJobRoutes, SchemasRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.{SchemaValidationCoordinator, SchemaValidationStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -120,6 +121,25 @@ object SchemasModule extends ModuleDef {
       )
   }
 
+  make[SchemaJobRoutes].from {
+    (
+      identities: Identities,
+      aclCheck: AclCheck,
+      fetchContext: FetchContext,
+      schemaValidationCoordinator: SchemaValidationCoordinator,
+      projections: Projections,
+      projectionsErrors: ProjectionErrors,
+      baseUri: BaseUri,
+      cr: RemoteContextResolution @Id("aggregate"),
+      ordering: JsonKeyOrdering
+    ) =>
+      new SchemaJobRoutes(identities, aclCheck, fetchContext, schemaValidationCoordinator, projections, projectionsErrors)(
+        baseUri,
+        cr,
+        ordering
+      )
+  }
+
   many[SseEncoder[_]].add { base: BaseUri => SchemaEvent.sseEncoder(base) }
 
   many[ScopedEventMetricEncoder[_]].add { SchemaEvent.schemaEventMetricEncoder }
@@ -141,6 +161,10 @@ object SchemasModule extends ModuleDef {
   )
 
   many[PriorityRoute].add { (route: SchemasRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
+  }
+
+  many[PriorityRoute].add { (route: SchemaJobRoutes) =>
     PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
   }
 

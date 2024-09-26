@@ -161,8 +161,7 @@ object FailedElemLogStore {
            |  elem_project,
            |  rev,
            |  error_type,
-           |  message,
-           |  details,
+           |  reason,
            |  instant
            | )
            | VALUES (
@@ -176,8 +175,7 @@ object FailedElemLogStore {
            |  ${failure.project},
            |  ${failure.rev},
            |  ${failureReason.`type`},
-           |  ${failureReason.message},
-           |  ${failureReason.details},
+           |  ${failureReason.value},
            |  $instant
            | )""".stripMargin.update.run.void
       }

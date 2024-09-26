@@ -54,7 +54,7 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
         FileResponse(
           "file.name",
           contentType,
-          1024,
+          Some(1024L),
           contents
         )
       )

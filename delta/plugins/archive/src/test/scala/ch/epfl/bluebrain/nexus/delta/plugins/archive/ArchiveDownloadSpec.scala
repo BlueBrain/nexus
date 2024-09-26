@@ -123,11 +123,21 @@ class ArchiveDownloadSpec
     val fetchFileContent: (Iri, ProjectRef) => IO[FileResponse] = {
       case (`id1`, `projectRef`) =>
         IO.pure(
-          FileResponse(file1Name, ContentTypes.`text/plain(UTF-8)`, file1Size, Source.single(ByteString(file1Content)))
+          FileResponse(
+            file1Name,
+            ContentTypes.`text/plain(UTF-8)`,
+            Some(file1Size),
+            Source.single(ByteString(file1Content))
+          )
         )
       case (`id2`, `projectRef`) =>
         IO.pure(
-          FileResponse(file2Name, ContentTypes.`text/plain(UTF-8)`, file2Size, Source.single(ByteString(file2Content)))
+          FileResponse(
+            file2Name,
+            ContentTypes.`text/plain(UTF-8)`,
+            Some(file2Size),
+            Source.single(ByteString(file2Content))
+          )
         )
       case (id, ref)             =>
         IO.raiseError(FileNotFound(id, ref))

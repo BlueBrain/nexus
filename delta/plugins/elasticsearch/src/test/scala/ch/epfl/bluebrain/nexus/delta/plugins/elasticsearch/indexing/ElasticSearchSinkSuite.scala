@@ -111,7 +111,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
                     f.throwable match {
                       case reason: FailureReason =>
                         assertEquals(reason.`type`, "IndexingFailure")
-                        val detailKeys = reason.details.asObject.map(_.keys.toSet)
+                        val detailKeys = reason.value.asObject.map(_.keys.toSet)
                         assertEquals(detailKeys, Some(Set("type", "reason", "caused_by")))
                       case t                     => fail(s"An indexing failure was expected, got '$t'", t)
                     }

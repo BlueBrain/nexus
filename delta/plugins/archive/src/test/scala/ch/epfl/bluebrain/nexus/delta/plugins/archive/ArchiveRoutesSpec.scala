@@ -128,7 +128,9 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
       case (_, _, `subjectNoFilePerms`) =>
         IO.raiseError(AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
       case (`fileId`, `projectRef`, _)  =>
-        IO.pure(FileResponse("file.txt", ContentTypes.`text/plain(UTF-8)`, 12L, Source.single(ByteString(fileContent))))
+        IO.pure(
+          FileResponse("file.txt", ContentTypes.`text/plain(UTF-8)`, Some(12L), Source.single(ByteString(fileContent)))
+        )
       case (id, ref, _)                 =>
         IO.raiseError(FileNotFound(id, ref))
     }

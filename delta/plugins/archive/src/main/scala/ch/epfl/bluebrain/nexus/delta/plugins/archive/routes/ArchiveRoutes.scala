@@ -78,7 +78,7 @@ class ArchiveRoutes(
 
   private def emitArchiveFile(source: IO[AkkaSource]) = {
     val response = source.map { s =>
-      FileResponse(s"archive.zip", Zip.contentType, 0L, s)
+      FileResponse(s"archive.zip", Zip.contentType, None, s)
     }
     emit(response.attemptNarrow[ArchiveRejection])
   }

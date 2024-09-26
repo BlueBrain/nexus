@@ -101,7 +101,7 @@ object BlazegraphViewValue {
       * Creates a [[SelectFilter]] for this view
       */
     def selectFilter: SelectFilter =
-      SelectFilter(resourceTypes, resourceTag.getOrElse(Latest))
+      SelectFilter(None, resourceTypes, resourceTag.getOrElse(Latest))
   }
 
   /**

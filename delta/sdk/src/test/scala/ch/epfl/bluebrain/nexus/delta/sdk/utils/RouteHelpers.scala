@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse, RequestEntity, StatusCodes}
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, RequestEntity, StatusCode, StatusCodes}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
@@ -85,9 +85,15 @@ final class HttpResponseOps(private val http: HttpResponse) extends Consumer {
       case Right(value) => value
     }
 
-  def shouldBeForbidden(implicit position: Position, materializer: Materializer): Assertion = {
-    http.status shouldEqual StatusCodes.Forbidden
-    asJsonObject(materializer)("@type") shouldEqual Some("AuthorizationFailed".asJson)
+  def shouldBeForbidden(implicit position: Position, materializer: Materializer): Assertion =
+    shouldFail(StatusCodes.Forbidden, "AuthorizationFailed")
+
+  def shouldFail(statusCode: StatusCode, errorType: String)(implicit
+      position: Position,
+      materializer: Materializer
+  ): Assertion = {
+    http.status shouldEqual statusCode
+    asJsonObject(materializer)("@type") shouldEqual Some(errorType.asJson)
   }
 
 }

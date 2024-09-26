@@ -39,7 +39,7 @@ object FailedElemLogRow {
         Option[ProjectRef],
         Int,
         String,
-        String,
+        Option[String],
         Option[String],
         Instant,
         Option[Json]
@@ -86,9 +86,8 @@ object FailedElemLogRow {
           ) =>
         val reason = details
           .map { d =>
-            FailureReason(errorType, message, d)
-          }
-          .getOrElse(FailureReason(errorType, message, stackTrace))
+            FailureReason(errorType, d)
+          }.getOrElse(FailureReason(errorType, message.getOrElse(""), stackTrace))
 
         FailedElemLogRow(
           ordering,

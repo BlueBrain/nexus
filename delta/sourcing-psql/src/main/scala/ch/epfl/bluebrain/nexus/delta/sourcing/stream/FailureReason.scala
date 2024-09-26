@@ -9,7 +9,7 @@ import io.circe.{Codec, Encoder, Json}
 
 import scala.util.control.NoStackTrace
 
-case class FailureReason(`type`: String, message: String, details: Json) extends Exception with NoStackTrace
+case class FailureReason(`type`: String, value: Json) extends Exception with NoStackTrace
 
 object FailureReason {
 
@@ -23,18 +23,14 @@ object FailureReason {
   def apply(errorType: String, message: String, stackTrace: Option[String]): FailureReason =
     FailureReason(
       "UnexpectedError",
-      message,
       Json.obj(
+        "message" := message,
         "exception"  := errorType,
         "stacktrace" := stackTrace
       )
     )
 
-  def apply[A: Encoder](tpe: String, message: String, value: A): FailureReason =
-    FailureReason(
-      tpe,
-      message,
-      value.asJson
-    )
+  def apply[A: Encoder](tpe: String, value: A): FailureReason =
+    FailureReason(tpe, value.asJson)
 
 }

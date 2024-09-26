@@ -271,6 +271,7 @@ object StreamingQuery {
     val typeFragment =
       selectFilter.types.asRestrictedTo.map(restriction => fr"value -> 'types' ??| ${typesSqlArray(restriction)}")
     Fragments.whereAndOpt(
+      selectFilter.entityType.map { entityType => fr"type = $entityType" },
       Scope(projectRef).asFragment,
       offset.asFragment,
       selectFilter.tag.asFragment,
