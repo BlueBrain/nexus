@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, FailureReason}
 import fs2.Chunk
+import io.circe.syntax.KeyOps
 import io.circe.{Json, JsonObject}
 import shapeless.Typeable
 
@@ -101,7 +102,7 @@ object ElasticSearchSink {
             items.get(documentId(element)) match {
               case None                                    => element.failed(onMissingInResponse(element.id))
               case Some(MixedOutcomes.Outcome.Success)     => element.void
-              case Some(MixedOutcomes.Outcome.Error(json)) => element.failed(onIndexingFailure(element.id, json))
+              case Some(MixedOutcomes.Outcome.Error(json)) => element.failed(onIndexingFailure(json))
             }
         }
     }
@@ -168,13 +169,9 @@ object ElasticSearchSink {
 
   private def onMissingInResponse(id: Iri) = FailureReason(
     "MissingInResponse",
-    s"$id was not found in Elasticsearch response",
-    JsonObject.empty
+    Json.obj("message" := s"$id was not found in Elasticsearch response")
   )
 
-  private def onIndexingFailure(id: Iri, error: JsonObject) = FailureReason(
-    "IndexingFailure",
-    s"$id could not be indexed",
-    error
-  )
+  private def onIndexingFailure(error: JsonObject) =
+    FailureReason("IndexingFailure", error)
 }

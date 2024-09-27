@@ -201,6 +201,7 @@ object Permissions {
   object schemas {
     final val read: Permission  = resources.read
     final val write: Permission = Permission.unsafe("schemas/write")
+    final val run: Permission   = Permission.unsafe("schemas/run")
   }
 
   /**

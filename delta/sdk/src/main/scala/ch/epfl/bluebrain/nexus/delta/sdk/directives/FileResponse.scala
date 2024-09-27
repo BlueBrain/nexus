@@ -33,12 +33,12 @@ object FileResponse {
     * @param bytes
     *   the file size
     */
-  final case class Metadata(filename: String, contentType: ContentType, bytes: Long)
+  final case class Metadata(filename: String, contentType: ContentType, bytes: Option[Long])
 
   def apply[E: JsonLdEncoder: HttpResponseFields](
       filename: String,
       contentType: ContentType,
-      bytes: Long,
+      bytes: Option[Long],
       io: IO[Either[E, AkkaSource]]
   ) =
     new FileResponse(
@@ -50,6 +50,6 @@ object FileResponse {
       }
     )
 
-  def apply(filename: String, contentType: ContentType, bytes: Long, source: AkkaSource): FileResponse =
+  def apply(filename: String, contentType: ContentType, bytes: Option[Long], source: AkkaSource): FileResponse =
     new FileResponse(Metadata(filename, contentType, bytes), IO.pure(Right(source)))
 }

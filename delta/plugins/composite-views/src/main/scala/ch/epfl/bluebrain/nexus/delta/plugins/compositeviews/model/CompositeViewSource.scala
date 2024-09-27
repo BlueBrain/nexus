@@ -58,7 +58,7 @@ sealed trait CompositeViewSource extends Product with Serializable {
     *   the [[SelectFilter]] for the given view; used to filter the data that is indexed
     */
   def selectFilter: SelectFilter =
-    SelectFilter(resourceTypes, resourceTag.getOrElse(Latest))
+    SelectFilter(None, resourceTypes, resourceTag.getOrElse(Latest))
 
   /**
     * @return

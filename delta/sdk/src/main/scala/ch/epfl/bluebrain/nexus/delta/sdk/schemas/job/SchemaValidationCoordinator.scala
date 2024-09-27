@@ -18,7 +18,7 @@ object SchemaValidationCoordinator {
 
   private val logger = Logger[SchemaValidationCoordinator]
 
-  private[job] def projectionMetadata(project: ProjectRef): ProjectionMetadata =
+  def projectionMetadata(project: ProjectRef): ProjectionMetadata =
     ProjectionMetadata("schema", s"schema-$project-validate-resources", Some(project), None)
 
   def apply(supervisor: Supervisor, schemaValidationStream: SchemaValidationStream): SchemaValidationCoordinator =

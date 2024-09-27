@@ -4,6 +4,8 @@ import cats.effect.{IO, Resource}
 import cats.effect.std.Hotswap
 import fs2.io.file.{FileHandle, Files, Flag, Flags, Path, WriteCursor}
 import fs2.{text, Pipe, Pull, Stream}
+import io.circe.Encoder
+import io.circe.syntax.EncoderOps
 
 object StreamingUtils {
 
@@ -12,6 +14,9 @@ object StreamingUtils {
   private val lineSeparator = "\n"
 
   private val newLine = Stream.emit(lineSeparator)
+
+  def ndjson[A: Encoder]: Pipe[IO, A, String] =
+    _.map(_.asJson.noSpaces).intersperse(lineSeparator).append(newLine)
 
   def readLines(path: Path) =
     Files[IO].readUtf8Lines(path).filter(_.nonEmpty)

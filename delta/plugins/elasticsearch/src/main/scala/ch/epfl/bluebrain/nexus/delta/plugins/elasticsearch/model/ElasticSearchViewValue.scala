@@ -110,7 +110,7 @@ object ElasticSearchViewValue {
             filterByTypeConfig.map(_.types).getOrElse(IriFilter.None)
         }
         .getOrElse(IriFilter.None)
-      SelectFilter(types, resourceTag.getOrElse(Latest))
+      SelectFilter(None, types, resourceTag.getOrElse(Latest))
     }
 
     /**

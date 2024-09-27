@@ -31,4 +31,9 @@ class StreamingUtilsSuite extends NexusSuite with TempDirectory.Fixture {
     } yield ()
   }
 
+  test("Create a ndjson stream") {
+    val values = Stream.emits(List(json"""{"a" :  1}""", json"""{"b" :  2}""", json"""{"c" :  3}"""))
+    values.through(StreamingUtils.ndjson).assert("""{"a":1}""", "\n", """{"b":2}""", "\n", """{"c":3}""", "\n")
+  }
+
 }
