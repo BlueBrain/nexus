@@ -473,8 +473,7 @@ object CompositeViewDef {
     }
 
   /**
-    * Complete and compiles the operation for the branch applying a leap depending on the current offset and the final
-    * operation
+    * Complete and compiles the operation for the branch
     *
     * @param progress
     *   the composite progress
@@ -491,7 +490,6 @@ object CompositeViewDef {
       operation: Operation,
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
   ): Either[ProjectionErr, Operation] = {
-    //TODO Add leap on target
     val branchProgress = progress.branches.get(branch)
     Operation
       .merge(operation, closeBranch(branch, branchProgress.getOrElse(ProjectionProgress.NoProgress)))

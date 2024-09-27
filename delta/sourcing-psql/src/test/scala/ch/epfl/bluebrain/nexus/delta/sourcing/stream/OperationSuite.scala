@@ -7,11 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationSuite.{double, half, until}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.GenericPipe
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Stream
-import shapeless.Typeable
 
 import java.time.Instant
 
@@ -65,26 +64,6 @@ class OperationSuite extends NexusSuite {
       _  = assertEquals(sink2.successes.values.toList.sorted, List(0, 1, 2, 3, 4))
     } yield ()
   }
-
-  test("Run the double stream with a leaped part") {
-    val sink = CacheSink.states[Int]
-
-    val first  = double.identityLeap(Offset.at(2L)).rightValue
-    val second = Operation.merge(double, sink).rightValue
-    val all    = Operation.merge(first, second).rightValue
-
-    for {
-      _ <- until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)
-      _  = assert(sink.failed.isEmpty, "No failure should be detected.")
-      _  = assert(sink.dropped.isEmpty, "No dropped should be detected.")
-      _  = assertEquals(sink.successes.values.toList.sorted, List(0, 2, 4, 12, 16))
-    } yield ()
-  }
-
-  test("Leaping is not possible for an operation where in and out are not aligned") {
-    half.identityLeap(Offset.at(2L)).assertLeft(LeapingNotAllowedErr(half, Typeable[Int]))
-  }
-
 }
 
 object OperationSuite {

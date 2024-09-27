@@ -1,8 +1,8 @@
 addSbtPlugin("io.github.davidgregory084" % "sbt-tpolecat" % "0.4.2")
 
 addSbtPlugin("org.scalameta"          % "sbt-scalafmt"              % "2.5.2")
-addSbtPlugin("org.scoverage"          % "sbt-scoverage"             % "2.1.1")
-addSbtPlugin("com.sksamuel.scapegoat" % "sbt-scapegoat"             % "1.2.4")
+addSbtPlugin("org.scoverage"          % "sbt-scoverage"             % "2.2.1")
+addSbtPlugin("com.sksamuel.scapegoat" % "sbt-scapegoat"             % "1.2.5")
 addSbtPlugin("com.github.cb372"       % "sbt-explicit-dependencies" % "0.3.1")
 addSbtPlugin("com.timushev.sbt"       % "sbt-updates"               % "0.6.3")
 
