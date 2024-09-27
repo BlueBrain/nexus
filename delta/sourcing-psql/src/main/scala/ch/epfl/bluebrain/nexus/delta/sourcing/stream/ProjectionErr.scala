@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import shapeless.Typeable
 
 /**
   * Enumeration of recoverable errors for projection/stream definitions and compositions.
@@ -79,14 +78,6 @@ object ProjectionErr {
   final case class OperationInOutMatchErr(self: Operation, that: Operation) extends ProjectionErr {
     override def reason: String =
       s"Unable to match Out type '${self.outType.describe}' of operation '${self.name}' to the In type '${that.inType.describe}' of operation '${that.name}'"
-  }
-
-  /**
-    * Leaping is only possible for an operation when we provide a skip function that aligns to the out type
-    */
-  final case class LeapingNotAllowedErr[A](self: Operation, skip: Typeable[A]) extends ProjectionErr {
-    override def reason: String =
-      s"Unable to leap on operation '${self.name}' as skip type  '${skip.describe}' does not match Out type '${self.outType.describe}'."
   }
 
   /**

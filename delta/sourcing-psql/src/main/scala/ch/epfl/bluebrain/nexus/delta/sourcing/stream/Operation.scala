@@ -5,9 +5,8 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
 import fs2.{Chunk, Pipe, Pull, Stream}
 import shapeless.Typeable
 
@@ -110,60 +109,6 @@ sealed trait Operation { self =>
       _.through(self.asFs2).debug(formatter, logger)
 
   }
-
-  /**
-    * Do not apply the operation until the given offset is reached
-    * @param offset
-    *   the offset to reach before applying the operation
-    * @param mapSkip
-    *   the function to apply when skipping an element
-    */
-  def leap[A](offset: Offset, mapSkip: self.In => A)(implicit ta: Typeable[A]): Either[ProjectionErr, Operation] = {
-    val pipe = new Operation {
-      override type In  = self.In
-      override type Out = self.Out
-
-      override def name: String = "Leap"
-
-      override def inType: Typeable[In] = self.inType
-
-      override def outType: Typeable[Out] = self.outType
-
-      override protected[stream] def asFs2: Pipe[IO, Elem[Operation.this.In], Elem[this.Out]] = {
-        def go(s: fs2.Stream[IO, Elem[In]]): Pull[IO, Elem[this.Out], Unit] = {
-          s.pull.peek.flatMap {
-            case Some((chunk, stream)) =>
-              val (before, after) = chunk.partitionEither { e =>
-                Either.cond(Offset.offsetOrder.gt(e.offset, offset), e, e)
-              }
-              for {
-                evaluated <- Pull.eval(Stream.chunk(after).through(self.asFs2).compile.to(Chunk))
-                all        = Chunk.concat(Seq(before.map(_.map(mapSkip)), evaluated)).map {
-                               _.attempt { value => this.outType.cast(value).toRight(LeapingNotAllowedErr(self, ta)) }
-                             }
-                _         <- Pull.output(all)
-                next      <- go(stream.tail)
-              } yield next
-            case None                  => Pull.done
-          }
-        }
-        in => go(in).stream
-      }
-    }
-
-    Either.cond(
-      ta.describe == self.outType.describe,
-      pipe,
-      LeapingNotAllowedErr(self, ta)
-    )
-  }
-
-  /**
-    * Leap applying the identity function to skipped elements
-    * @param offset
-    *   the offset to reach before applying the operation
-    */
-  def identityLeap(offset: Offset): Either[ProjectionErr, Operation] = leap(offset, identity[self.In])(inType)
 }
 
 object Operation {
