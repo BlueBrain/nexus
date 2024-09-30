@@ -44,21 +44,18 @@ object SchemaValidationStream {
                   }
       } yield (Some(()))
 
-    private def log(message: String) = Stream.eval(logger.info(message))
-
-    override def apply(project: ProjectRef, offset: Offset): ElemStream[Unit] = {
-      for {
-        _      <- log(s"Starting validation of resources for project '$project'")
-        stream <- resourceStream(project, offset).evalMap {
-                    _.evalMapFilter {
-                      case r if r.deprecated                      => IO.none
-                      case r if r.schema.iri == schemas.resources => IO.none
-                      case r                                      => validateSingle(r)
-                    }
-                  }
-        _      <- log(s"Validation of resources for project '$project' has been completed.")
-      } yield stream
-
-    }
+    override def apply(project: ProjectRef, offset: Offset): ElemStream[Unit] =
+      Stream.eval(logger.info(s"Starting validation of resources for project '$project'")) >>
+        resourceStream(project, offset)
+          .evalMap {
+            _.evalMapFilter {
+              case r if r.deprecated                      => IO.none
+              case r if r.schema.iri == schemas.resources => IO.none
+              case r                                      => validateSingle(r)
+            }
+          }
+          .onFinalize {
+            logger.info(s"Validation of resources for project '$project' has been completed.")
+          }
   }
 }
