@@ -16,6 +16,7 @@ import fs2.Stream
 /**
   * Streams the latest version of resources from a project and revalidate them with the latest version of the schema
   * they are currently validated with.
+  *   - Only data resources are evaluated
   *   - Deprecated resources are skipped
   *   - Resources not validated with a schema are skipped too
   */
