@@ -12,7 +12,7 @@ services:
       elasticsearch:
         condition: service_healthy
       blazegraph:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
       storage-service:
@@ -133,6 +133,11 @@ services:
       JAVA_OPTS: "-Dlog4j.configuration=/config/blazegraph/log4j.properties -DjettyXml=/config/blazegraph/jetty.xml -Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
     ports:
       - 9999:9999
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9999/blazegraph/" ]
+      interval: 1s
+      timeout: 2s
+      retries: 60
     volumes:
       - ./config:/config
 
