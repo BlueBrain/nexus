@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests
 
-import akka.http.javadsl.model.headers.{HttpCredentials, LastModified}
+import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -213,11 +213,6 @@ trait BaseIntegrationSpec
 
   private[tests] def contentType(response: HttpResponse): ContentType =
     response.header[`Content-Type`].value.contentType
-
-  private[tests] def expectConditionalCacheHeaders(response: HttpResponse)(implicit position: Position): Assertion = {
-    response.header[ETag] shouldBe defined
-    response.header[LastModified] shouldBe defined
-  }
 
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))

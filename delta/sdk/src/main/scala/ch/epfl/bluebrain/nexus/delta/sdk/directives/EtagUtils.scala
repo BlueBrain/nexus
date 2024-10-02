@@ -14,6 +14,12 @@ object EtagUtils {
       encoding: HttpEncoding
   ) = s"${value}_${mediaType}${jsonldFormat.map { f => s"_$f" }.getOrElse("")}_$encoding"
 
+  /**
+    * Computes a `Etag` value by concatenating and hashing the provided values
+    *
+    * Note that the media type, the jsonld format and the encoding are present because they have an impact on the
+    * resource representation
+    */
   def compute(
       value: String,
       mediaType: MediaType,

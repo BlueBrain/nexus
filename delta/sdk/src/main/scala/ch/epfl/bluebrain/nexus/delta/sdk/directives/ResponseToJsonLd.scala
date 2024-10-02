@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{RouteOutcome, UseLeft, UseRight}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
@@ -149,10 +150,22 @@ object ResponseToJsonLd extends FileBytesInstances {
           case Right(Right((metadata, content))) =>
             headerValueByType(Accept) { accept =>
               if (accept.mediaRanges.exists(_.matches(metadata.contentType.mediaType))) {
-                val encodedFilename = attachmentString(metadata.filename)
-                respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
-                  complete(statusOverride.getOrElse(OK), HttpEntity(metadata.contentType, content))
+                val encodedFilename    = attachmentString(metadata.filename)
+                val contentDisposition =
+                  RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")
+                requestEncoding { encoding =>
+                  conditionalCache(
+                    metadata.entityTag,
+                    metadata.lastModified,
+                    metadata.contentType.mediaType,
+                    encoding
+                  ) {
+                    respondWithHeaders(contentDisposition, metadata.headers: _*) {
+                      complete(statusOverride.getOrElse(OK), HttpEntity(metadata.contentType, content))
+                    }
+                  }
                 }
+
               } else
                 reject(unacceptedMediaTypeRejection(Seq(metadata.contentType.mediaType)))
             }

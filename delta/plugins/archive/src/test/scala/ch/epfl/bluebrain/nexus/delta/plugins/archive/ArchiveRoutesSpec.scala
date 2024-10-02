@@ -4,15 +4,15 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/zip`
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.InvalidPath
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.InvalidPath
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -129,7 +129,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
         IO.raiseError(AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
       case (`fileId`, `projectRef`, _)  =>
         IO.pure(
-          FileResponse("file.txt", ContentTypes.`text/plain(UTF-8)`, Some(12L), Source.single(ByteString(fileContent)))
+          FileResponse.noCache("file.txt", `text/plain(UTF-8)`, Some(12L), Source.single(ByteString(fileContent)))
         )
       case (id, ref, _)                 =>
         IO.raiseError(FileNotFound(id, ref))
