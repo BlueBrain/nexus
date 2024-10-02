@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
@@ -136,5 +137,7 @@ object IdResolutionResponse {
           case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)
         }
     }
+
+  implicit val reultHttpResponseFields: HttpResponseFields[Result] = HttpResponseFields.defaultOk
 
 }

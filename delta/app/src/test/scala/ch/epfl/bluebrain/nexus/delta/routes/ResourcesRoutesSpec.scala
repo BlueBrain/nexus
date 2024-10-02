@@ -464,6 +464,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
           status shouldEqual StatusCodes.OK
           val meta = standardWriterMetadata(id, tpe = "schema:Custom")
           response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
+          response.expectConditionalCacheHeaders
           response.headers should contain(varyHeader)
         }
       }
@@ -483,6 +484,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
+            response.expectConditionalCacheHeaders
             response.headers should contain(varyHeader)
           }
         }

@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
 
+import java.time.Instant
+
 /**
   * Typeclass definition for ''A''s from which the HttpHeaders and StatusCode can be ontained.
   *
@@ -25,6 +27,10 @@ trait HttpResponseFields[A] {
     *   the input value
     */
   def headersFrom(value: A): Seq[HttpHeader]
+
+  def entityTag(value: A): Option[String]
+
+  def lastModified(value: A): Option[Instant]
 }
 
 // $COVERAGE-OFF$
@@ -40,8 +46,10 @@ object HttpResponseFields {
     */
   def apply[A](f: A => StatusCode): HttpResponseFields[A] =
     new HttpResponseFields[A] {
-      override def statusFrom(value: A): StatusCode       = f(value)
-      override def headersFrom(value: A): Seq[HttpHeader] = Seq.empty
+      override def statusFrom(value: A): StatusCode        = f(value)
+      override def headersFrom(value: A): Seq[HttpHeader]  = Seq.empty
+      override def entityTag(value: A): Option[String]     = None
+      override def lastModified(value: A): Option[Instant] = None
     }
 
   /**
@@ -54,11 +62,22 @@ object HttpResponseFields {
     */
   def fromStatusAndHeaders[A](f: A => (StatusCode, Seq[HttpHeader])): HttpResponseFields[A] =
     new HttpResponseFields[A] {
-      override def statusFrom(value: A): StatusCode       = f(value)._1
-      override def headersFrom(value: A): Seq[HttpHeader] = f(value)._2
+      override def statusFrom(value: A): StatusCode        = f(value)._1
+      override def headersFrom(value: A): Seq[HttpHeader]  = f(value)._2
+      override def entityTag(value: A): Option[String]     = None
+      override def lastModified(value: A): Option[Instant] = None
     }
 
-  implicit val responseFieldsUnit: HttpResponseFields[Unit] =
-    HttpResponseFields { _ => StatusCodes.OK }
+  def fromTagAndLastModified[A](f: A => (String, Instant)): HttpResponseFields[A] =
+    new HttpResponseFields[A] {
+      override def statusFrom(value: A): StatusCode        = StatusCodes.OK
+      override def headersFrom(value: A): Seq[HttpHeader]  = Seq.empty
+      override def entityTag(value: A): Option[String]     = Some(f(value)._1)
+      override def lastModified(value: A): Option[Instant] = Some(f(value)._2)
+    }
+
+  def defaultOk[A]: HttpResponseFields[A] = HttpResponseFields { _ => StatusCodes.OK }
+
+  implicit val responseFieldsUnit: HttpResponseFields[Unit] = defaultOk[Unit]
 }
 // $COVERAGE-ON$

@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
@@ -33,7 +34,8 @@ class VersionRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities, aclCheck) {
+) extends AuthDirectives(identities, aclCheck)
+    with RdfMarshalling {
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -75,6 +77,8 @@ object VersionRoutes {
 
     implicit val versionBundleJsonLdEncoder: JsonLdEncoder[VersionBundle] =
       JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.version))
+
+    implicit val versionHttpResponseFields: HttpResponseFields[VersionBundle] = HttpResponseFields.defaultOk
   }
 
   /**

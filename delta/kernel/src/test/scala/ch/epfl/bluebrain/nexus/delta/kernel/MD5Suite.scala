@@ -1,11 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing
+package ch.epfl.bluebrain.nexus.delta.kernel
 
-import cats.effect.IO
-import cats.effect.Ref
+import cats.effect.{IO, Ref}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import munit.CatsEffectSuite
 
-class MD5Suite extends NexusSuite {
+class MD5Suite extends CatsEffectSuite {
 
   test("a string should have the correct MD5 hash") {
     val input        = "bbp/atlas"
@@ -26,12 +25,8 @@ class MD5Suite extends NexusSuite {
       }
     }
 
-    for {
-      _ <- task
-      c <- cache.get
-      _  = c.assertOneElem
-      _  = c.assertContains("3f33bc38009c0cfcda4fa7737f5fac85")
-    } yield ()
+    val expected = Set("3f33bc38009c0cfcda4fa7737f5fac85")
+    task >> cache.get.assertEquals(expected)
   }
 
 }

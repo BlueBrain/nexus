@@ -19,13 +19,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import org.scalatest.Inspectors
 
 import java.time.Instant
 import java.util.UUID
 import scala.util.Random
 
-class UriDirectivesSpec extends RouteHelpers with UriDirectives with Inspectors {
+class UriDirectivesSpec extends BaseSpec with RouteHelpers with UriDirectives with Inspectors {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost/base//", Label.unsafe("v1"))
 

@@ -12,10 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
 import com.typesafe.config.Config
 import io.circe.parser._
-import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.syntax.KeyOps
 import io.circe.{Decoder, Encoder, JsonObject}
 import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert
@@ -42,8 +43,10 @@ object SearchConfig {
     genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
 
   implicit val suiteEncoder: Encoder[NamedSuite]         =
-    Encoder[JsonObject].contramap(s => JsonObject("projects" := s.suite.asJson, "name" := s.name.asJson))
+    Encoder[JsonObject].contramap(s => JsonObject("projects" := s.suite, "name" := s.name))
   implicit val suiteLdEncoder: JsonLdEncoder[NamedSuite] = JsonLdEncoder.computeFromCirce(ContextValue(contexts.suites))
+
+  implicit val namedSuiteHttpResponseFields: HttpResponseFields[NamedSuite] = HttpResponseFields.defaultOk
 
   /**
     * Converts a [[Config]] into an [[SearchConfig]]

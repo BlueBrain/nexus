@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext.StaticContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.ProjectRemoteContextRef.ResourceContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -67,4 +68,7 @@ object RemoteContextRef {
     }
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.remoteContexts))
   }
+
+  implicit val remoteContextRefsHttpResponseFields: HttpResponseFields[Set[RemoteContextRef]] =
+    HttpResponseFields.defaultOk
 }

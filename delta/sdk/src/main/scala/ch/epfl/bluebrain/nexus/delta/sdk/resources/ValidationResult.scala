@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Encoder, JsonObject}
@@ -68,4 +69,6 @@ object ValidationResult {
 
   implicit val resourceRejectionJsonLdEncoder: JsonLdEncoder[ValidationResult] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.validation))
+
+  implicit val validationResultHttpResponseFields: HttpResponseFields[ValidationResult] = HttpResponseFields.defaultOk
 }

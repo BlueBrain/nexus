@@ -21,13 +21,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectSpec, CatsIOValues}
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 
 class ElasticSearchViewsRoutesFixtures
-    extends RouteHelpers
+    extends CatsEffectSpec
+    with RouteHelpers
     with CatsIOValues
     with DoobieScalaTestFixture
     with CirceLiteral

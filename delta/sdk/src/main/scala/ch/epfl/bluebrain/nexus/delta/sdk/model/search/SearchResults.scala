@@ -6,12 +6,13 @@ import cats.Functor
 import cats.effect.IO
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import fs2.Stream
 import io.circe.syntax._
@@ -199,4 +200,5 @@ object SearchResults {
 
   def empty[A]: SearchResults[A] = UnscoredSearchResults(0L, Seq.empty)
 
+  implicit def searchResultsHttpResponseFields[A]: HttpResponseFields[SearchResults[A]] = HttpResponseFields.defaultOk
 }

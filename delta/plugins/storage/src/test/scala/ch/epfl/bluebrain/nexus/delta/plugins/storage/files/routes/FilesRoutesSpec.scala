@@ -711,6 +711,7 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.OK
           val attr = attributes(id)
           response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev)
+          response.expectConditionalCacheHeaders
           response.headers should contain(varyHeader)
         }
       }
@@ -731,6 +732,7 @@ class FilesRoutesSpec
               status shouldEqual StatusCodes.OK
               response.asJson shouldEqual
                 fileMetadata(projectRef, nxv + id, attr, diskIdRev)
+              response.expectConditionalCacheHeaders
               response.headers should contain(varyHeader)
             }
           }

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -38,7 +38,15 @@ object SimpleResource extends CirceLiteral {
     JsonLdEncoder.computeFromCirce(_.id, ContextValue(contextIri))
 
   implicit val simpleResourceHttpResponseFields: HttpResponseFields[SimpleResource] =
-    HttpResponseFields.fromStatusAndHeaders(_ => (StatusCodes.Accepted, Seq(rawHeader)))
+    new HttpResponseFields[SimpleResource] {
+      override def statusFrom(value: SimpleResource): StatusCode = StatusCodes.Accepted
+
+      override def headersFrom(value: SimpleResource): Seq[HttpHeader] = Seq(new RawHeader("Test", "Value"))
+
+      override def entityTag(value: SimpleResource): Option[String] = Some(value.id.toString)
+
+      override def lastModified(value: SimpleResource): Option[Instant] = Some(value.createdAt)
+    }
 
   val rawHeader: RawHeader = new RawHeader("Test", "Value")
 

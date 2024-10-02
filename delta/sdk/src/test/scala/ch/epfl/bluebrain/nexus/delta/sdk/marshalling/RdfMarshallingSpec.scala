@@ -12,14 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.{context, contextIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{BaseSpec, TestMatchers}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 
 class RdfMarshallingSpec
-    extends RouteHelpers
+    extends BaseSpec
+    with RouteHelpers
     with Matchers
     with CirceLiteral
     with RdfMarshalling

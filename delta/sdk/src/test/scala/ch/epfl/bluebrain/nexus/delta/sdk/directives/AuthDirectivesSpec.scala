@@ -22,10 +22,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectSpec, CatsIOValues}
 import org.scalatest.matchers.should.Matchers
 
-class AuthDirectivesSpec extends RouteHelpers with CatsEffectSpec with Matchers with CatsIOValues {
+class AuthDirectivesSpec extends BaseSpec with RouteHelpers with CatsEffectSpec with Matchers with CatsIOValues {
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
