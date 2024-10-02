@@ -43,7 +43,8 @@ import org.scalatest.Inspectors
 import java.time.Instant
 
 class DeltaDirectivesSpec
-    extends BaseSpec with RouteHelpers
+    extends BaseSpec
+    with RouteHelpers
     with CatsEffectSpec
     with CirceMarshalling
     with CirceLiteral
@@ -283,9 +284,9 @@ class DeltaDirectivesSpec
       }
     }
 
-    val expectedCompactedJsonLdTag = EntityTag("9c006d4f8c6456808e399585b7fcf2ab")
+    val expectedCompactedJsonLdTag        = EntityTag("9c006d4f8c6456808e399585b7fcf2ab")
     val expectedCompactedJsonLdGzippedTag = EntityTag("8b95a96128ad09c0cfafdd7874a40618")
-    val expectedExpandedJsonLdTag = EntityTag("353ccd87e58814e947c06e9590320ea1")
+    val expectedExpandedJsonLdTag         = EntityTag("353ccd87e58814e947c06e9590320ea1")
 
     "return the etag and last modified headers" in {
       Get("/io") ~> Accept(`application/ld+json`) ~> route ~> check {
@@ -319,16 +320,16 @@ class DeltaDirectivesSpec
       // The provided etag was computed without gzip compression
       Get("/io") ~> Accept(`application/ld+json`) ~> `Accept-Encoding`(gzip) ~>
         `If-None-Match`(expectedCompactedJsonLdTag) ~> route ~> check {
-        response.status shouldEqual Accepted
-      }
+          response.status shouldEqual Accepted
+        }
     }
 
     "return the resource when providing a invalid tag" in {
       // The provided etag was computed without gzip compression
       Get("/io") ~> Accept(`application/ld+json`) ~>
         `If-None-Match`(expectedExpandedJsonLdTag) ~> route ~> check {
-        response.status shouldEqual Accepted
-      }
+          response.status shouldEqual Accepted
+        }
     }
 
     def lastModified(instant: Instant) = DateTime(instant.toEpochMilli)
@@ -337,18 +338,17 @@ class DeltaDirectivesSpec
       // The provided etag was computed without gzip compression
       Get("/io") ~> Accept(`application/ld+json`) ~>
         `If-Modified-Since`(lastModified(resource.createdAt.minusSeconds(1L))) ~> route ~> check {
-        response.status shouldEqual Accepted
-      }
+          response.status shouldEqual Accepted
+        }
     }
 
     "return not modified if if it was not modified since" in {
       // The provided etag was computed without gzip compression
       Get("/io") ~> Accept(`application/ld+json`) ~>
         `If-Modified-Since`(lastModified(resource.createdAt.plusSeconds(1L))) ~> route ~> check {
-        response.status shouldEqual NotModified
-      }
+          response.status shouldEqual NotModified
+        }
     }
-
 
     "return bad request rejection in compacted JSON-LD format" in {
       val badRequestCompacted = badRequestRejection.toCompactedJsonLd.accepted

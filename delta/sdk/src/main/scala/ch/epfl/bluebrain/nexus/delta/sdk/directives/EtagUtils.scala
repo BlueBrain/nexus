@@ -14,7 +14,12 @@ object EtagUtils {
       encoding: HttpEncoding
   ) = s"${value}_${mediaType}${jsonldFormat.map { f => s"_$f" }.getOrElse("")}_$encoding"
 
-  def compute(value: String, mediaType: MediaType, jsonldFormat: Option[JsonLdFormat], encoding: HttpEncoding): EntityTag = {
+  def compute(
+      value: String,
+      mediaType: MediaType,
+      jsonldFormat: Option[JsonLdFormat],
+      encoding: HttpEncoding
+  ): EntityTag = {
     val rawEtag = computeRawValue(value, mediaType, jsonldFormat, encoding)
     EntityTag(MD5.hash(rawEtag))
   }

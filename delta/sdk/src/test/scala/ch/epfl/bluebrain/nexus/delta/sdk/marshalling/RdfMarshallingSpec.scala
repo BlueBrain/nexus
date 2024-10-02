@@ -20,7 +20,7 @@ import java.time.Instant
 
 class RdfMarshallingSpec
     extends BaseSpec
-      with RouteHelpers
+    with RouteHelpers
     with Matchers
     with CirceLiteral
     with RdfMarshalling

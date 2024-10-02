@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{SparqlLink, schema}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{schema, SparqlLink}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -33,7 +33,7 @@ import java.util.UUID
 
 trait BlazegraphViewRoutesFixtures
     extends CatsEffectSpec
-      with RouteHelpers
+    with RouteHelpers
     with DoobieScalaTestFixture
     with CirceLiteral
     with CirceEq

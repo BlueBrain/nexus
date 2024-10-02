@@ -28,7 +28,11 @@ import io.circe.syntax.EncoderOps
 
 import java.time.Instant
 
-class ElasticSearchViewsDirectivesSpec extends CatsEffectSpec with RouteHelpers with CirceMarshalling with ElasticSearchViewsDirectives {
+class ElasticSearchViewsDirectivesSpec
+    extends CatsEffectSpec
+    with RouteHelpers
+    with CirceMarshalling
+    with ElasticSearchViewsDirectives {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
