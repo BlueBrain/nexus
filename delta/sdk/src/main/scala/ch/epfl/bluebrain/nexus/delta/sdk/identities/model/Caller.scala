@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.IdentityInstances
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -54,5 +55,7 @@ object Caller {
   implicit def callerJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Caller] = {
     JsonLdEncoder.computeFromCirce(context)
   }
+
+  implicit val callerHttpResponseFields: HttpResponseFields[Caller] = HttpResponseFields.defaultOk
 
 }

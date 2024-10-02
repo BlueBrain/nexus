@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
+import akka.http.javadsl.model.headers.LastModified
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.MediaRange._
 import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, `text/*`}
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`, `text/plain`}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Location}
+import akka.http.scaladsl.model.headers.HttpEncodings.gzip
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import cats.effect.IO
@@ -29,10 +31,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -41,11 +43,10 @@ import org.scalatest.Inspectors
 import java.time.Instant
 
 class DeltaDirectivesSpec
-    extends RouteHelpers
+    extends BaseSpec with RouteHelpers
     with CatsEffectSpec
     with CirceMarshalling
     with CirceLiteral
-    with TestMatchers
     with Inspectors {
 
   implicit private val ordering: JsonKeyOrdering =
@@ -91,70 +92,72 @@ class DeltaDirectivesSpec
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
   private val routeUnsealed: Route =
-    get {
-      concat(
-        path("uio") {
-          emit(Accepted, IO.pure(resource))
-        },
-        path("io") {
-          emit(Accepted, ioResource)
-        },
-        path("value") {
-          emit(resource)
-        },
-        path("bad-request") {
-          emit(Accepted, ioBadRequest)
-        },
-        path("conflict") {
-          emit(Accepted, ioConflict)
-        },
-        path("fail") {
-          emit(SimpleResource2(nxv + "myid", 1))
-        },
-        path("throw") {
-          throw new IllegalArgumentException("")
-        },
-        (path("reject") & parameter("failFast" ? false)) { failFast =>
-          val io =
-            if (!failFast) ioBadRequest.rejectOn[BadRequestRejection] else ioBadRequest.rejectOn[ConflictRejection]
-          emit(io)
-        },
-        path("redirectIO") {
-          emitRedirect(StatusCodes.SeeOther, ioRedirect)
-        },
-        pathPrefix("resources") {
-          concat(
-            path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
-            },
-            path("redirectFusionLatest") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
-            },
-            path("redirectFusionRev") {
-              emitOrFusionRedirect(ref, Revision(nxv + "id", 7), emit(resource))
-            },
-            path("redirectFusionTag") {
-              emitOrFusionRedirect(ref, Tag(nxv + "id", UserTag.unsafe("my-tag")), emit(resource))
-            },
-            path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
-            }
-          )
-        },
-        pathPrefix("projects") {
-          concat(
-            path("redirectFusionDisabled") {
-              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false))
-            },
-            path("redirectFusion") {
-              emitOrFusionRedirect(ref, emit(ioProject))
-            }
-          )
-        },
-        path("redirectFail") {
-          emitRedirect(StatusCodes.SeeOther, ioRedirectRejection)
-        }
-      )
+    encodeResponse {
+      get {
+        concat(
+          path("uio") {
+            emit(Accepted, IO.pure(resource))
+          },
+          path("io") {
+            emit(Accepted, ioResource)
+          },
+          path("value") {
+            emit(resource)
+          },
+          path("bad-request") {
+            emit(Accepted, ioBadRequest)
+          },
+          path("conflict") {
+            emit(Accepted, ioConflict)
+          },
+          path("fail") {
+            emit(SimpleResource2(nxv + "myid", 1))
+          },
+          path("throw") {
+            throw new IllegalArgumentException("")
+          },
+          (path("reject") & parameter("failFast" ? false)) { failFast =>
+            val io =
+              if (!failFast) ioBadRequest.rejectOn[BadRequestRejection] else ioBadRequest.rejectOn[ConflictRejection]
+            emit(io)
+          },
+          path("redirectIO") {
+            emitRedirect(StatusCodes.SeeOther, ioRedirect)
+          },
+          pathPrefix("resources") {
+            concat(
+              path("redirectFusionDisabled") {
+                emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
+              },
+              path("redirectFusionLatest") {
+                emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
+              },
+              path("redirectFusionRev") {
+                emitOrFusionRedirect(ref, Revision(nxv + "id", 7), emit(resource))
+              },
+              path("redirectFusionTag") {
+                emitOrFusionRedirect(ref, Tag(nxv + "id", UserTag.unsafe("my-tag")), emit(resource))
+              },
+              path("redirectFusionDisabled") {
+                emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false))
+              }
+            )
+          },
+          pathPrefix("projects") {
+            concat(
+              path("redirectFusionDisabled") {
+                emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false))
+              },
+              path("redirectFusion") {
+                emitOrFusionRedirect(ref, emit(ioProject))
+              }
+            )
+          },
+          path("redirectFail") {
+            emitRedirect(StatusCodes.SeeOther, ioRedirectRejection)
+          }
+        )
+      }
     }
 
   private val route2Unsealed: Route =
@@ -206,32 +209,18 @@ class DeltaDirectivesSpec
 
     "return payload in compacted JSON-LD format" in {
 
-      forAll(List("/uio?format=compacted", "/uio")) { endpoint =>
-        forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
+      val endpoints = List("/uio?format=compacted", "/uio", "/io?format=compacted", "/io")
+      val accepted  = List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))
+
+      forAll(endpoints) { endpoint =>
+        forAll(accepted) { accept =>
           Get(endpoint) ~> accept ~> route ~> check {
             response.asJson shouldEqual compacted.json
             response.status shouldEqual Accepted
+            response.headers.toList should contain(rawHeader)
           }
         }
       }
-
-      forAll(List("/io?format=compacted", "/io")) { endpoint =>
-        forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
-          Get(endpoint) ~> accept ~> route ~> check {
-            response.asJson shouldEqual compacted.json
-            response.status shouldEqual Accepted
-          }
-        }
-      }
-
-      forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
-        Get("/value?format=compacted") ~> accept ~> route ~> check {
-          response.asJson shouldEqual compacted.json
-          response.status shouldEqual Accepted
-          response.headers.toList should contain(rawHeader)
-        }
-      }
-
     }
 
     "return payload in expanded JSON-LD format" in {
@@ -293,6 +282,73 @@ class DeltaDirectivesSpec
         response.status shouldEqual Accepted
       }
     }
+
+    val expectedCompactedJsonLdTag = EntityTag("9c006d4f8c6456808e399585b7fcf2ab")
+    val expectedCompactedJsonLdGzippedTag = EntityTag("8b95a96128ad09c0cfafdd7874a40618")
+    val expectedExpandedJsonLdTag = EntityTag("353ccd87e58814e947c06e9590320ea1")
+
+    "return the etag and last modified headers" in {
+      Get("/io") ~> Accept(`application/ld+json`) ~> route ~> check {
+        response.header[ETag].value shouldEqual ETag(expectedCompactedJsonLdTag)
+        response.header[LastModified].value.date().clicks() shouldEqual resource.createdAt.toEpochMilli
+      }
+    }
+
+    "return the etag and last modified headers accepting gzip" in {
+      Get("/io") ~> Accept(`application/ld+json`) ~> `Accept-Encoding`(gzip) ~> route ~> check {
+        response.header[ETag].value shouldEqual ETag(expectedCompactedJsonLdGzippedTag)
+        response.header[LastModified].value.date().clicks() shouldEqual resource.createdAt.toEpochMilli
+      }
+    }
+
+    "return another etag and last modified headers for the expanded format" in {
+      Get("/io?format=expanded") ~> Accept(`application/ld+json`) ~> route ~> check {
+        response.header[ETag].value shouldEqual ETag(expectedExpandedJsonLdTag)
+        response.header[LastModified].value.date().clicks() shouldEqual resource.createdAt.toEpochMilli
+      }
+    }
+
+    "return not modified when providing the etag" in {
+      Get("/io") ~> Accept(`application/ld+json`) ~> `If-None-Match`(expectedCompactedJsonLdTag) ~> route ~> check {
+        response.status shouldEqual NotModified
+        response.asString shouldEqual ""
+      }
+    }
+
+    "return the resource when providing an invalid tag computed without compression" in {
+      // The provided etag was computed without gzip compression
+      Get("/io") ~> Accept(`application/ld+json`) ~> `Accept-Encoding`(gzip) ~>
+        `If-None-Match`(expectedCompactedJsonLdTag) ~> route ~> check {
+        response.status shouldEqual Accepted
+      }
+    }
+
+    "return the resource when providing a invalid tag" in {
+      // The provided etag was computed without gzip compression
+      Get("/io") ~> Accept(`application/ld+json`) ~>
+        `If-None-Match`(expectedExpandedJsonLdTag) ~> route ~> check {
+        response.status shouldEqual Accepted
+      }
+    }
+
+    def lastModified(instant: Instant) = DateTime(instant.toEpochMilli)
+
+    "return the resource if if it was modified since" in {
+      // The provided etag was computed without gzip compression
+      Get("/io") ~> Accept(`application/ld+json`) ~>
+        `If-Modified-Since`(lastModified(resource.createdAt.minusSeconds(1L))) ~> route ~> check {
+        response.status shouldEqual Accepted
+      }
+    }
+
+    "return not modified if if it was not modified since" in {
+      // The provided etag was computed without gzip compression
+      Get("/io") ~> Accept(`application/ld+json`) ~>
+        `If-Modified-Since`(lastModified(resource.createdAt.plusSeconds(1L))) ~> route ~> check {
+        response.status shouldEqual NotModified
+      }
+    }
+
 
     "return bad request rejection in compacted JSON-LD format" in {
       val badRequestCompacted = badRequestRejection.toCompactedJsonLd.accepted
@@ -417,7 +473,7 @@ class DeltaDirectivesSpec
 
       Get("/reject?failFast=false") ~> Accept(`*/*`) ~> Route.seal(routeUnsealed ~ route2Unsealed) ~> check {
         response.asJson shouldEqual compacted.json
-        response.status shouldEqual OK
+        response.status shouldEqual Accepted
       }
     }
 

@@ -21,8 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.Resou
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, SimpleRejection, SimpleResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcatenation {
+class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyntax with RouteConcatenation {
 
   implicit val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(

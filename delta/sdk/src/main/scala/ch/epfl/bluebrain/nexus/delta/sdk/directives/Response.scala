@@ -12,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
+import java.time.Instant
+
 /**
   * An enumeration of possible Route responses
   */
@@ -22,7 +24,13 @@ object Response {
   /**
     * An response that will be completed immediately
     */
-  final case class Complete[A](status: StatusCode, headers: Seq[HttpHeader], value: A) extends Response[A] {
+  final case class Complete[A](
+      status: StatusCode,
+      headers: Seq[HttpHeader],
+      entityTag: Option[String],
+      lastModified: Option[Instant],
+      value: A
+  ) extends Response[A] {
     def map[B](f: A => B): Complete[B] = copy(value = f(value))
   }
 
@@ -31,7 +39,8 @@ object Response {
     /**
       * A constructor helper for when [[HttpResponseFields]] is present
       */
-    def apply[A: HttpResponseFields](value: A): Complete[A] = Complete(value.status, value.headers, value)
+    def apply[A: HttpResponseFields](value: A): Complete[A] =
+      Complete(value.status, value.headers, value.entityTag, value.lastModified, value)
   }
 
   /**

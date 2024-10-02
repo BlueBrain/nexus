@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{schema, SparqlLink}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{SparqlLink, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral}
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors}
 
@@ -31,7 +32,8 @@ import java.time.Instant
 import java.util.UUID
 
 trait BlazegraphViewRoutesFixtures
-    extends RouteHelpers
+    extends CatsEffectSpec
+      with RouteHelpers
     with DoobieScalaTestFixture
     with CirceLiteral
     with CirceEq

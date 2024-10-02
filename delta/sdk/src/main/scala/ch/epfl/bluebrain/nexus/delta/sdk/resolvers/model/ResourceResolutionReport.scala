@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
@@ -136,6 +137,11 @@ object ResourceResolutionReport {
   implicit final val resolverReportJsonLdEncoder: JsonLdEncoder[ResolverReport] =
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.resolvers))
 
+  implicit val resolverReportHttpResponseFields: HttpResponseFields[ResolverReport] = HttpResponseFields.defaultOk
+
   implicit final val resourceResolutionReportJsonLdEncoder: JsonLdEncoder[ResourceResolutionReport] =
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.resolvers))
+
+  implicit val resourceResolutionReportHttpResponseFields: HttpResponseFields[ResourceResolutionReport] =
+    HttpResponseFields.defaultOk
 }

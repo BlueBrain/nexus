@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.{Inspectors, OptionValues}
 
 class DeltaSchemeDirectivesSpec
-    extends RouteHelpers
-    with CatsEffectSpec
+    extends CatsEffectSpec
+    with RouteHelpers
     with OptionValues
     with CirceLiteral
     with UriDirectives

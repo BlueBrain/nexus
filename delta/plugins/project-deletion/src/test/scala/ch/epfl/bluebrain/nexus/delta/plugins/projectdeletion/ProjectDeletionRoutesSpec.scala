@@ -1,17 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{ProjectDeletionConfig, contexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import scala.concurrent.duration.DurationInt
 
-class ProjectDeletionRoutesSpec extends RouteHelpers {
+class ProjectDeletionRoutesSpec extends CatsEffectSpec with RouteHelpers {
 
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering.default()
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))

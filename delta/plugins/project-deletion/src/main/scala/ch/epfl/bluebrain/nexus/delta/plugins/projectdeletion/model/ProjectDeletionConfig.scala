@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe.{Encoder, Json, JsonObject}
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
@@ -51,16 +52,19 @@ object ProjectDeletionConfig {
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.projectDeletion))
   }
 
+  implicit val projectDeletionConfigHttpResponseFields: HttpResponseFields[ProjectDeletionConfig] =
+    HttpResponseFields.defaultOk
+
   implicit final val projectDeletionConfigReader: ConfigReader[ProjectDeletionConfig] =
     deriveReader[ProjectDeletionConfig].emap { cfg =>
-      if (cfg.idleInterval.toMillis < cfg.idleCheckPeriod.toMillis)
-        Left(
-          CannotConvert(
-            cfg.idleCheckPeriod.toString,
-            classOf[FiniteDuration].getSimpleName,
-            "'idle-interval' cannot be smaller than 'idle-check-period'"
-          )
+      Either.cond(
+        cfg.idleInterval.toMillis > cfg.idleCheckPeriod.toMillis,
+        cfg,
+        CannotConvert(
+          cfg.idleCheckPeriod.toString,
+          classOf[FiniteDuration].getSimpleName,
+          "'idle-interval' cannot be smaller than 'idle-check-period'"
         )
-      else Right(cfg)
+      )
     }
 }

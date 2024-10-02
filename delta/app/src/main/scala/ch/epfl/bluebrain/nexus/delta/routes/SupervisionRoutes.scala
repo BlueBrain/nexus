@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.{baseUriPrefix, projectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectRejection, ProjectsHealth}
@@ -82,6 +82,8 @@ object SupervisionRoutes {
     deriveEncoder
   implicit val runningProjectionsJsonLdEncoder: JsonLdEncoder[SupervisionBundle] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.supervision))
+
+  implicit val versionHttpResponseFields: HttpResponseFields[SupervisionBundle] = HttpResponseFields.defaultOk
 
   private val allProjectsAreHealthy                              =
     Json.obj("status" := "All projects are healthy.")

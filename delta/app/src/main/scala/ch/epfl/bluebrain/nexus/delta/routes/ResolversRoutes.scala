@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{AnnotatedSource, RdfMarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{AnnotatedSource, HttpResponseFields, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
@@ -172,7 +172,7 @@ final class ResolversRoutes(
       output: ResolvedResourceOutputType
   )(implicit baseUri: BaseUri, caller: Caller): Route =
     authorizeFor(project, Permissions.resources.read).apply {
-      def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) = {
+      def emitResult[R: JsonLdEncoder: HttpResponseFields](io: IO[MultiResolutionResult[R]]) = {
         output match {
           case ResolvedResourceOutputType.Report          => emit(io.map(_.report).attemptNarrow[ResolverRejection])
           case ResolvedResourceOutputType.JsonLd          => emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])

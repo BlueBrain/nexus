@@ -46,7 +46,7 @@ object ResponseToMarshaller extends RdfMarshalling {
   implicit def ioEntityMarshaller[A: ToEntityMarshaller](
       io: IO[A]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller =
-    ResponseToMarshaller(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
+    ResponseToMarshaller(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, None, None, v))))
 
   implicit def ioEntityMarshaller[E: JsonLdEncoder: HttpResponseFields, A: ToEntityMarshaller](
       io: IO[Either[E, A]]
@@ -54,7 +54,7 @@ object ResponseToMarshaller extends RdfMarshalling {
     val ioComplete = io.map {
       _.bimap(
         e => Complete(e),
-        a => Complete(OK, Seq.empty, a)
+        a => Complete(OK, Seq.empty, None, None, a)
       )
     }
     ResponseToMarshaller(ioComplete)
@@ -64,7 +64,7 @@ object ResponseToMarshaller extends RdfMarshalling {
       io: IO[Either[Response[E], A]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller = {
     val ioComplete = io.map {
-      _.map(a => Complete(OK, Seq.empty, a))
+      _.map(a => Complete(OK, Seq.empty, None, None, a))
     }
     ResponseToMarshaller(ioComplete)
   }

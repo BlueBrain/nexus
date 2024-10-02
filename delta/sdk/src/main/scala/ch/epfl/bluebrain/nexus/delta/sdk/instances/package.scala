@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInsta
 
 package object instances
     extends CredentialsInstances
+    with HttpResponseFieldsInstances
     with IdentityInstances
     with IriInstances
     with ProjectRefInstances

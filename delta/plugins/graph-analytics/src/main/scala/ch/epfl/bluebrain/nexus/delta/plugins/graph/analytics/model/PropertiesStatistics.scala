@@ -2,17 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{name, toPaths}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-import io.circe._
 import io.circe.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.contexts
 
 import scala.annotation.tailrec
 
@@ -55,6 +56,9 @@ object PropertiesStatistics {
 
   implicit val propertiesJsonLdEncoder: JsonLdEncoder[PropertiesStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.properties))
+
+  implicit val propertiesStatisticsHttpResponseFields: HttpResponseFields[PropertiesStatistics] =
+    HttpResponseFields.defaultOk
 
   implicit def propertiesDecoderFromEsAggregations(tpe: Iri): Decoder[PropertiesStatistics] = {
 

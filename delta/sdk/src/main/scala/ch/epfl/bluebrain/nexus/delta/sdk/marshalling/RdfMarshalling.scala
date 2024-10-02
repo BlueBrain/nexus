@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity, MediaType, MediaTypes}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromStringUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes

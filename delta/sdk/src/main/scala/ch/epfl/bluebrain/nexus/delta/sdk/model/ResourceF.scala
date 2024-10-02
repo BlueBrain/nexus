@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.Functor
 import cats.effect.IO
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -13,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
@@ -254,4 +254,11 @@ object ResourceF {
         } yield idAndTypes.merge(rootId, a.replaceId(rootId)).merge(rootId, metadata.replaceId(rootId))
       }
     }
+
+  implicit def resourceFHttpResponseFields[A]: HttpResponseFields[ResourceF[A]] =
+    HttpResponseFields.fromTagAndLastModified { value =>
+      val etagValue = s"${value.uris.relativeAccessUri}_${value.rev}"
+      (etagValue, value.updatedAt)
+    }
+
 }

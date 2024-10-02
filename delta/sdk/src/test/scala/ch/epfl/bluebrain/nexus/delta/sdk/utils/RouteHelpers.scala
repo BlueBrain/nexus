@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
+import akka.http.javadsl.model.headers.LastModified
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse, RequestEntity, StatusCode, StatusCodes}
+import akka.http.scaladsl.model.headers.ETag
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.testkit.TestDuration
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.parser.parse
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject, Printer}
@@ -21,7 +22,7 @@ import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-trait RouteHelpers extends CatsEffectSpec with ScalatestRouteTest with ScalaFutures {
+trait RouteHelpers extends ScalatestRouteTest with ScalaFutures {
   self: Suite =>
 
   implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
@@ -94,6 +95,11 @@ final class HttpResponseOps(private val http: HttpResponse) extends Consumer {
   ): Assertion = {
     http.status shouldEqual statusCode
     asJsonObject(materializer)("@type") shouldEqual Some(errorType.asJson)
+  }
+
+  def expectConditionalCacheHeaders(implicit position: Position): Assertion = {
+    http.header[ETag] shouldBe defined
+    http.header[LastModified] shouldBe defined
   }
 
 }

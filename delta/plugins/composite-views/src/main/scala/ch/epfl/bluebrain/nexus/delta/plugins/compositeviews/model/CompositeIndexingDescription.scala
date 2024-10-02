@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -51,5 +52,8 @@ object CompositeIndexingDescription {
 
   implicit val compositeIndexingDescriptionJsonLdEncoder: JsonLdEncoder[CompositeIndexingDescription] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.offset).merge(ContextValue(contexts.statistics)))
+
+  implicit val compositeIndexingDescriptionHttpResponseFields: HttpResponseFields[CompositeIndexingDescription] =
+    HttpResponseFields.defaultOk
 
 }

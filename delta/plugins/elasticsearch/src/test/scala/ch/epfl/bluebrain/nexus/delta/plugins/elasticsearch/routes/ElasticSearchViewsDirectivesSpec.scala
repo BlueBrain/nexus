@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -27,7 +28,7 @@ import io.circe.syntax.EncoderOps
 
 import java.time.Instant
 
-class ElasticSearchViewsDirectivesSpec extends RouteHelpers with CirceMarshalling with ElasticSearchViewsDirectives {
+class ElasticSearchViewsDirectivesSpec extends CatsEffectSpec with RouteHelpers with CirceMarshalling with ElasticSearchViewsDirectives {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
+import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Accept-Encoding`, `Last-Event-ID`, Accept, RawHeader}
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -14,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, JsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
@@ -22,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Encoder
 
+import java.time.Instant
 import scala.reflect.ClassTag
 
 object DeltaDirectives extends DeltaDirectives
@@ -113,6 +115,38 @@ trait DeltaDirectives extends UriDirectives {
         case None        => reject(unacceptedMediaTypeRejection(mediaTypes))
       }
     }
+
+  def requestEncoding: Directive1[HttpEncoding] =
+    extractRequest.map { request =>
+      val negotiator                    = EncodingNegotiator(request.headers)
+      val encoders                      = Seq(Coders.NoCoding, Coders.Gzip, Coders.Deflate)
+      val encodings: List[HttpEncoding] = encoders.map(_.encoding).toList
+      negotiator
+        .pickEncoding(encodings)
+        .flatMap(be => encoders.find(_.encoding == be))
+        .map(_.encoding)
+        .getOrElse(HttpEncodings.identity)
+    }
+
+  def conditionalCache(
+      value: Option[String],
+      lastModified: Option[Instant],
+      mediaType: MediaType,
+      encoding: HttpEncoding
+  ): Directive0 =
+    conditionalCache(value, lastModified, mediaType, None, encoding)
+
+  def conditionalCache(
+      value: Option[String],
+      lastModified: Option[Instant],
+      mediaType: MediaType,
+      jsonldFormat: Option[JsonLdFormat],
+      encoding: HttpEncoding
+  ): Directive0 = {
+    val entityTag            = value.map(EtagUtils.compute(_, mediaType, jsonldFormat, encoding))
+    val lastModifiedDateTime = lastModified.map { instant => DateTime(instant.toEpochMilli) }
+    Directives.conditional(entityTag, lastModifiedDateTime)
+  }
 
   /**
     * If the `Accept` header is set to `text/html`, redirect to the matching resource page in fusion if the feature is

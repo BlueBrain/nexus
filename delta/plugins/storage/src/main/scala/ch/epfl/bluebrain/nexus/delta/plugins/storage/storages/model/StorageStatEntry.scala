@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.{Decoder, Encoder}
 
@@ -32,5 +33,7 @@ object StorageStatEntry {
         files <- aggregations.downField("filesCount").get[Long]("value")
       } yield StorageStatEntry(files, size)
     }
+
+  implicit val storageStatEntryHttpResponseFields: HttpResponseFields[StorageStatEntry] = HttpResponseFields.defaultOk
 
 }

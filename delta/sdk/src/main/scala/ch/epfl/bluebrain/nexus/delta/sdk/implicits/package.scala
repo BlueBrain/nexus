@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.instances.ContentTypeInstances
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, IOSyntax, InstantSyntax, KamonSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
-import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, IdentityInstances, IriInstances, ProjectRefInstances}
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, HttpResponseFieldsInstances, IdentityInstances, IriInstances, ProjectRefInstances}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IORejectSyntax, IriEncodingSyntax, ProjectionErrorsSyntax}
 
 /**
@@ -16,6 +16,7 @@ package object implicits
     with UriInstances
     with SecretInstances
     with CredentialsInstances
+    with HttpResponseFieldsInstances
     with IdentityInstances
     with IriInstances
     with ProjectRefInstances

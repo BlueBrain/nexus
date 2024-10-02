@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.QuotasConfig.QuotaConfig
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
@@ -28,5 +29,7 @@ object Quota {
     implicit val enc: Encoder[Quota] = deriveEncoder[Quota].mapJsonObject(_.add(keywords.tpe, nxv.Quota.asJson))
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.quotas))
   }
+
+  implicit val quotaHttpResponseFields: HttpResponseFields[Quota] = HttpResponseFields.defaultOk
 
 }

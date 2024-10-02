@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Accept, RawHeader}
+import akka.http.scaladsl.model.headers.{Accept, HttpEncoding, RawHeader}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
@@ -17,9 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{RouteOutcome, UseLeft, UseRight}
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, jsonLdFormatOrReject, mediaTypes, requestMediaType, unacceptedMediaTypeRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, JsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.JsonLdFormat.{Compacted, Expanded}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
 
@@ -60,37 +60,53 @@ object ResponseToJsonLd extends FileBytesInstances {
           }
         }
 
-        def marshaller[R: ToEntityMarshaller](handle: JsonLdValue => IO[R]): Route = {
+        def marshaller[R: ToEntityMarshaller](
+            handle: JsonLdValue => IO[R],
+            mediaType: MediaType,
+            jsonldFormat: Option[JsonLdFormat],
+            encoding: HttpEncoding
+        ): Route = {
           val ioRoute = ioFinal.flatMap {
-            case RouteOutcome.RouteRejected(rej)                               => IO.pure(reject(rej))
-            case RouteOutcome.RouteFailed(Complete(status, headers, value))    =>
+            case RouteOutcome.RouteRejected(rej)                                                        => IO.pure(reject(rej))
+            case RouteOutcome.RouteFailed(Complete(status, headers, _, _, value))                       =>
               handle(value).map(complete(status, headers, _))
-            case RouteOutcome.RouteCompleted(Complete(status, headers, value)) =>
-              handle(value).map(complete(status, headers, _))
+            case RouteOutcome.RouteCompleted(Complete(status, headers, entityTag, lastModified, value)) =>
+              handle(value).map { r =>
+                conditionalCache(entityTag, lastModified, mediaType, jsonldFormat, encoding) {
+                  complete(status, headers, r)
+                }
+              }
           }
           onSuccess(ioRoute.unsafeToFuture())(identity)
         }
 
-        requestMediaType {
-          case mediaType if mediaType == `application/ld+json` =>
-            jsonLdFormatOrReject {
-              case Expanded  => marshaller(v => v.encoder.expand(v.value))
-              case Compacted => marshaller(v => v.encoder.compact(v.value))
-            }
+        requestEncoding { encoding =>
+          requestMediaType {
+            case mediaType if mediaType == `application/ld+json` =>
+              jsonLdFormatOrReject {
+                case Expanded  => marshaller(v => v.encoder.expand(v.value), mediaType, Some(Expanded), encoding)
+                case Compacted => marshaller(v => v.encoder.compact(v.value), mediaType, Some(Compacted), encoding)
+              }
 
-          case mediaType if mediaType == `application/json` =>
-            jsonLdFormatOrReject {
-              case Expanded  => marshaller(v => v.encoder.expand(v.value).map(_.json))
-              case Compacted => marshaller(v => v.encoder.compact(v.value).map(_.json))
-            }
+            case mediaType if mediaType == `application/json` =>
+              jsonLdFormatOrReject {
+                case Expanded  =>
+                  marshaller(v => v.encoder.expand(v.value).map(_.json), mediaType, Some(Expanded), encoding)
+                case Compacted =>
+                  marshaller(v => v.encoder.compact(v.value).map(_.json), mediaType, Some(Compacted), encoding)
+              }
 
-          case mediaType if mediaType == `application/n-triples` => marshaller(v => v.encoder.ntriples(v.value))
+            case mediaType if mediaType == `application/n-triples` =>
+              marshaller(v => v.encoder.ntriples(v.value), mediaType, None, encoding)
 
-          case mediaType if mediaType == `application/n-quads` => marshaller(v => v.encoder.nquads(v.value))
+            case mediaType if mediaType == `application/n-quads` =>
+              marshaller(v => v.encoder.nquads(v.value), mediaType, None, encoding)
 
-          case mediaType if mediaType == `text/vnd.graphviz` => marshaller(v => v.encoder.dot(v.value))
+            case mediaType if mediaType == `text/vnd.graphviz` =>
+              marshaller(v => v.encoder.dot(v.value), mediaType, None, encoding)
 
-          case _ => reject(unacceptedMediaTypeRejection(mediaTypes))
+            case _ => reject(unacceptedMediaTypeRejection(mediaTypes))
+          }
         }
       }
     }
@@ -175,28 +191,28 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd(io.map[UseLeft[E]](Left(_)))
 
-  implicit def ioValue[A: JsonLdEncoder](
+  implicit def ioValue[A: JsonLdEncoder: HttpResponseFields](
       io: IO[A]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
+    ResponseToJsonLd(io.map[UseRight[A]](v => Right(Complete(v))))
 
-  implicit def ioEitherValueOrReject[E: JsonLdEncoder, A: JsonLdEncoder](
+  implicit def ioEitherValueOrReject[E: JsonLdEncoder, A: JsonLdEncoder: HttpResponseFields](
       io: IO[Either[Response[E], A]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd = {
-    ResponseToJsonLd(io.map(_.map(Complete(OK, Seq.empty, _))))
+    ResponseToJsonLd(io.map(_.map(Complete(_))))
   }
 
-  implicit def ioValueOrError[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
+  implicit def ioValueOrError[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder: HttpResponseFields](
       io: IO[Either[E, A]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(io.map(_.leftMap(Complete(_)).map(Complete(OK, Seq.empty, _))))
+    ResponseToJsonLd(io.map(_.leftMap(Complete(_)).map(Complete(_))))
 
   implicit def ioJsonLdValue[E: JsonLdEncoder: HttpResponseFields](
       io: IO[Either[E, JsonLdValue]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd(io.map[RouteOutcome[E]] {
       case Left(e)      => RouteOutcome.RouteFailed(Complete(e).map[JsonLdValue](JsonLdValue(_)))
-      case Right(value) => RouteOutcome.RouteCompleted(Complete(OK, Seq.empty, value))
+      case Right(value) => RouteOutcome.RouteCompleted(Complete(OK, Seq.empty, None, None, value))
     })
 
   implicit def rejectValue[E: JsonLdEncoder](
@@ -219,5 +235,5 @@ sealed trait LowPriorityValueInstances {
   implicit def valueWithoutHttpResponseFields[A: JsonLdEncoder](
       value: A
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(OK, Seq.empty, value))))
+    ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(OK, Seq.empty, None, None, value))))
 }

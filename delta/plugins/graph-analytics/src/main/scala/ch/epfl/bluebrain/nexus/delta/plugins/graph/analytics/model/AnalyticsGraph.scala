@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
@@ -86,6 +87,8 @@ object AnalyticsGraph {
   }
   implicit val relationshipsJsonLdEncoder: JsonLdEncoder[AnalyticsGraph] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.relationships))
+
+  implicit val relationshipsHttpResponseFields: HttpResponseFields[AnalyticsGraph] = HttpResponseFields.defaultOk
 
   implicit val relationshipsDecoderFromEsAggregations: Decoder[AnalyticsGraph] = {
 

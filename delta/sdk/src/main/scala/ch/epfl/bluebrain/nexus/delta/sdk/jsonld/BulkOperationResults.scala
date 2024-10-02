@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -21,4 +22,8 @@ object BulkOperationResults {
       additionalContext: ContextValue
   ): JsonLdEncoder[BulkOperationResults[A]] =
     JsonLdEncoder.computeFromCirce(context.merge(additionalContext))
+
+  implicit def bulkOperationResultsHttpResponseFields[A]: HttpResponseFields[BulkOperationResults[A]] =
+    HttpResponseFields.defaultOk
+
 }

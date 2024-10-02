@@ -199,6 +199,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
         response.headers should contain(varyHeader)
+        expectConditionalCacheHeaders(response)
       }
     }
 
@@ -325,6 +326,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
       deltaClient.get[Json](s"/resolvers/$project2/test-resolver", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+        expectConditionalCacheHeaders(response)
       }
     }
 

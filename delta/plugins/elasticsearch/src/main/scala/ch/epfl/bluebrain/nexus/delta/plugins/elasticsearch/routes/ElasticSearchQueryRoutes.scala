@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.AggregationResult.aggregationResultJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
@@ -159,6 +160,8 @@ class ElasticSearchQueryRoutes(
     (get & aggregated) {
       implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
         aggregationResultJsonLdEncoder(ContextValue(contexts.aggregations))
+
+      implicit val reultHttpResponseFields: HttpResponseFields[AggregationResult] = HttpResponseFields.defaultOk
 
       emit(request.flatMap(defaultViewsQuery.aggregate).attemptNarrow[ElasticSearchQueryError])
     }

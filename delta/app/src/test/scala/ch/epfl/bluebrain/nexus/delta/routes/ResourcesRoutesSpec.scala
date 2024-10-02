@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaOrg, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas, schema => schemaOrg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -464,6 +464,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
           status shouldEqual StatusCodes.OK
           val meta = standardWriterMetadata(id, tpe = "schema:Custom")
           response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
+          response.expectConditionalCacheHeaders
           response.headers should contain(varyHeader)
         }
       }
@@ -483,6 +484,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
+            response.expectConditionalCacheHeaders
             response.headers should contain(varyHeader)
           }
         }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -38,4 +39,6 @@ object ProjectStatistics {
 
   implicit val projectStatisticsJsonLdEncoder: JsonLdEncoder[ProjectStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
+
+  implicit val projectStatisticsHttpResponseFields: HttpResponseFields[ProjectStatistics] = HttpResponseFields.defaultOk
 }

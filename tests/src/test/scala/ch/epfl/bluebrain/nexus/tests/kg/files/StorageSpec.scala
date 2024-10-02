@@ -154,6 +154,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
           location.getOption(json).value should startWith(l)
         }
         filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
+        expectConditionalCacheHeaders(response)
       }
     }
   }
