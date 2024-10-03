@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{AnnotatedSource, RdfMarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
-import io.circe.{Json, Printer}
 
 /**
   * The resource routes
@@ -208,13 +207,10 @@ final class ResourcesRoutes(
                         resourceRef =>
                           authorizeFor(project, Read).apply {
                             annotateSource { annotate =>
-                              implicit val source: Printer = sourcePrinter
                               emit(
                                 resources
                                   .fetch(resourceRef, project, schemaOpt)
-                                  .map { resource =>
-                                    AnnotatedSource.when(annotate)(resource, resource.value.source)
-                                  }
+                                  .map { resource => OriginalSource(resource, resource.value.source, annotate) }
                                   .attemptNarrow[ResourceRejection]
                                   .rejectOn[ResourceNotFound]
                               )
@@ -308,10 +304,5 @@ object ResourcesRoutes {
       fusionConfig: FusionConfig,
       decodingOption: DecodingOption
   ): Route = new ResourcesRoutes(identities, aclCheck, resources, index).routes
-
-  def asSourceWithMetadata(
-      resource: ResourceF[Resource]
-  )(implicit baseUri: BaseUri): Json =
-    AnnotatedSource(resource, resource.value.source)
 
 }

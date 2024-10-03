@@ -318,6 +318,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
               "id"   -> "nxv:myid2",
               "self" -> ResourceUris.schema(projectRef, myId2).accessUri
             )
+            response.expectConditionalCacheHeaders
           }
         }
       }
@@ -336,6 +337,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
         Get(endpoint) ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payloadNoId
+          response.expectConditionalCacheHeaders
         }
       }
     }

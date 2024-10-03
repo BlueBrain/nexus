@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonLdEncoderSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.OriginalSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{AnnotatedSourceJson, CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Result
@@ -93,7 +93,7 @@ object MultiFetchResponse {
           val source                             = content.source
           repr match {
             case SourceJson          => IO.pure(source.asJson)
-            case AnnotatedSourceJson => IO.pure(AnnotatedSource(value, source))
+            case AnnotatedSourceJson => IO.pure(OriginalSource.annotated(value, source).asJson)
             case CompactedJsonLd     => value.toCompactedJsonLd.map { v => v.json }
             case ExpandedJsonLd      => value.toExpandedJsonLd.map { v => v.json }
             case NTriples            => value.toNTriples.map { v => v.value.asJson }

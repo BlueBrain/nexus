@@ -206,16 +206,24 @@ class ResourcesSpec extends BaseIntegrationSpec {
       }
     }
 
-    "return not modified when passing a valid etag" in {
-      val resourceUrl = s"/resources/$project1/test-schema/test-resource:1"
-      for {
-        response   <- deltaClient.getResponse(resourceUrl, Morty)
-        etag        = response.header[ETag].value.etag
-        ifNoneMatch = `If-None-Match`(etag)
-        _          <- deltaClient.get[ByteString](resourceUrl, Morty, jsonHeaders :+ ifNoneMatch) { (_, response) =>
-                        response.status shouldEqual StatusCodes.NotModified
-                      }
-      } yield succeed
+    "return not modified when fetching the resource or its original payload passing a valid etag" in {
+      val urls = List(
+        s"/resources/$project1/test-schema/test-resource:1",
+        s"/resources/$project1/test-schema/test-resource:1/source"
+      )
+
+      forAll(urls) { url =>
+        eventually {
+          for {
+            response   <- deltaClient.getResponse(url, Morty)
+            etag        = response.header[ETag].value.etag
+            ifNoneMatch = `If-None-Match`(etag)
+            _          <- deltaClient.get[ByteString](url, Morty, jsonHeaders :+ ifNoneMatch) { (_, response) =>
+                            response.status shouldEqual StatusCodes.NotModified
+                          }
+          } yield succeed
+        }
+      }
     }
 
     "fetch the original payload" in {

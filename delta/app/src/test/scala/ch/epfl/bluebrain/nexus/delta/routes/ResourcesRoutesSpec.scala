@@ -496,6 +496,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
         Get(s"/v1/resources/myorg/myproject/_/$id/source") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual simplePayload(id)
+          response.expectConditionalCacheHeaders
         }
       }
     }
@@ -601,6 +602,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual payloadWithMetadata(id)
+            response.expectConditionalCacheHeaders
             response.headers should contain(varyHeader)
           }
         }

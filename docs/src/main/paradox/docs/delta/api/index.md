@@ -1,6 +1,7 @@
 @@@ index
 
 * @ref:[Content Negotiation](content-negotiation.md)
+* @ref:[Conditional requests](conditional-requests.md)
 * @ref:[Error Signaling](error-signaling.md)
 * @ref:[Version](version.md)
 * @ref:[Authentication & Authorization](authentication.md)
