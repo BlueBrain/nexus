@@ -5,6 +5,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.stream.Materializer
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.tests.CacheAssertions.{expectConditionalCacheHeaders, expectNoConditionalCacheHeaders}
+import org.scalactic.source.Position
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -19,8 +21,9 @@ object FilesAssertions extends Matchers with OptionValues with ScalaFutures {
       expectedFilename: String,
       expectedContentType: ContentType,
       expectedContent: String,
-      compressed: Boolean = false
-  )(implicit mat: Materializer, ec: ExecutionContext): (ByteString, HttpResponse) => Assertion =
+      compressed: Boolean = false,
+      cacheable: Boolean = false
+  )(implicit position: Position, mat: Materializer, ec: ExecutionContext): (ByteString, HttpResponse) => Assertion =
     (content: ByteString, response: HttpResponse) => {
       response.status shouldEqual StatusCodes.OK
       dispositionType(response) shouldEqual ContentDispositionTypes.attachment
@@ -31,6 +34,11 @@ object FilesAssertions extends Matchers with OptionValues with ScalaFutures {
         decodeGzip(content) shouldEqual expectedContent
       } else
         content.utf8String shouldEqual expectedContent
+      if (cacheable)
+        expectConditionalCacheHeaders(response)
+      else
+        expectNoConditionalCacheHeaders(response)
+
     }
 
   private def attachmentString(filename: String): String = {

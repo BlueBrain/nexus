@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.headers.{`Content-Length`, Accept}
 import akka.http.scaladsl.model.{ContentType, StatusCodes}
 import akka.http.scaladsl.server.RouteConcatenation
 import akka.stream.scaladsl.Source
@@ -23,6 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, SimpleRejection, SimpleRes
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
+import java.time.Instant
+
 class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyntax with RouteConcatenation {
 
   implicit val rcr: RemoteContextResolution =
@@ -36,7 +38,8 @@ class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyn
   private def responseWithSourceError[E: JsonLdEncoder: HttpResponseFields](error: E) = {
     responseWith(
       `text/plain(UTF-8)`,
-      IO.pure(Left(error))
+      IO.pure(Left(error)),
+      cacheable = false
     )
   }
 
@@ -48,13 +51,16 @@ class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyn
 
   private def responseWith[E: JsonLdEncoder: HttpResponseFields](
       contentType: ContentType,
-      contents: IO[Either[E, AkkaSource]]
+      contents: IO[Either[E, AkkaSource]],
+      cacheable: Boolean
   ) = {
     IO.pure(
       Right(
         FileResponse(
           "file.name",
           contentType,
+          Option.when(cacheable)("test"),
+          Option.when(cacheable)(Instant.EPOCH),
           Some(1024L),
           contents
         )
@@ -70,11 +76,21 @@ class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyn
 
     "Return the contents of a file" in {
       request ~> emit(
-        responseWith(`text/plain(UTF-8)`, fileSourceOfString(FileContents))
+        responseWith(`text/plain(UTF-8)`, fileSourceOfString(FileContents), cacheable = true)
       ) ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual `text/plain(UTF-8)`
         response.asString shouldEqual FileContents
+        response.header[`Content-Length`].value shouldEqual `Content-Length`(1024L)
+        response.expectConditionalCacheHeaders
+      }
+    }
+
+    "Not return the conditional cache headers" in {
+      request ~> emit(
+        responseWith(`text/plain(UTF-8)`, fileSourceOfString(FileContents), cacheable = false)
+      ) ~> check {
+        response.expectNoConditionalCacheHeaders
       }
     }
 

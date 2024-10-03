@@ -138,7 +138,7 @@ class BatchCopySpec extends BaseIntegrationSpec {
     ids.zip(sourceFiles).traverse { case (destId, file) =>
       deltaClient
         .get[ByteString](s"/files/$destProjRef/${UrlUtils.encode(destId)}", Coyote, acceptAll) {
-          expectFileContent(file.filename, file.contentType, file.contents)
+          expectFileContent(file.filename, file.contentType, file.contents, cacheable = true)
         }
     }
 

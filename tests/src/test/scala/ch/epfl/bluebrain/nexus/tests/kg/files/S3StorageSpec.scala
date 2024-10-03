@@ -260,9 +260,8 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
       val filename        = s"${genString()}.txt"
       val originalPath    = s"$id/nexus-logo.png"
       val updatedPath     = s"$id/some/path/$filename"
-      val originalPayload = Json.obj("path" -> Json.fromString(originalPath))
-      val updatedPayload  =
-        Json.obj("path" -> Json.fromString(updatedPath), "mediaType" := "text/plain; charset=UTF-8")
+      val originalPayload = Json.obj("path" := originalPath)
+      val updatedPayload  = Json.obj("path" := updatedPath, "mediaType" := "text/plain; charset=UTF-8")
 
       for {
         _             <- uploadLogoFileToS3(bucket, originalPath)
@@ -273,7 +272,8 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
                            expectFileContent(
                              filename,
                              ContentTypes.`text/plain(UTF-8)`,
-                             fileContent
+                             fileContent,
+                             cacheable = true
                            )
                          }
         expectedDigest = Hex.encodeHexString(Base64.getDecoder.decode(s3Digest))

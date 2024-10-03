@@ -55,7 +55,7 @@ class SchemaJobRoutes(
       )
     }
   }.map { s =>
-    FileResponse("validation.json", ContentTypes.`application/json`, None, s)
+    FileResponse("validation.json", ContentTypes.`application/json`, None, None, None, s)
   }
 
   def routes: Route =

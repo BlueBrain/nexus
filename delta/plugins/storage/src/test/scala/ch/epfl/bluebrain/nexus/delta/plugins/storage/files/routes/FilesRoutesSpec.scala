@@ -658,6 +658,9 @@ class FilesRoutesSpec
               header("Content-Disposition").value.value() shouldEqual
                 s"""attachment; filename="=?UTF-8?B?${base64encode(id)}?=""""
               response.asString shouldEqual content
+              val attr = attributes(id)
+              response.header[`Content-Length`].value shouldEqual `Content-Length`(attr.bytes)
+              response.expectConditionalCacheHeaders
               response.headers should contain(varyHeader)
             }
           }

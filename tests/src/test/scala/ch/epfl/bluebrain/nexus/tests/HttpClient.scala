@@ -185,6 +185,15 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     requestJson(GET, url, None, identity, (a: A, _: HttpResponse) => a, jsonHeaders)
   }
 
+  def getResponse(url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders): IO[HttpResponse] =
+    apply(
+      HttpRequest(
+        method = GET,
+        uri = s"$baseUrl$url",
+        headers = extraHeaders ++ identityHeader(identity)
+      )
+    )
+
   def getJsonAndStatus(url: String, identity: Identity): IO[(Json, StatusCode)] = {
     requestJsonAndStatus(GET, url, None, identity, jsonHeaders)
   }

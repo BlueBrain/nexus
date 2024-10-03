@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{`If-None-Match`, ETag}
 import akka.util.ByteString
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
@@ -73,7 +75,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:empty", Coyote, acceptAll) {
-        expectFileContent("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent)
+        expectFileContent("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent, cacheable = true)
       }
     }
   }
@@ -86,8 +88,20 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
-        expectFileContent("attachment.json", ContentTypes.`application/json`, jsonFileContent)
+        expectFileContent("attachment.json", ContentTypes.`application/json`, jsonFileContent, cacheable = true)
       }
+    }
+
+    "return not modified when passing a valid etag" in {
+      val fileUrl = s"/files/$projectRef/attachment:attachment.json"
+      for {
+        response   <- deltaClient.getResponse(fileUrl, Coyote, acceptAll)
+        etag        = response.header[ETag].value.etag
+        ifNoneMatch = `If-None-Match`(etag)
+        _          <- deltaClient.get[ByteString](fileUrl, Coyote, acceptAll :+ ifNoneMatch) { (_, response) =>
+                        response.status shouldEqual StatusCodes.NotModified
+                      }
+      } yield succeed
     }
 
     "be downloaded as gzip" in {
@@ -96,7 +110,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
           "attachment.json",
           ContentTypes.`application/json`,
           jsonFileContent,
-          compressed = true
+          compressed = true,
+          cacheable = true
         )
       }
     }
@@ -111,7 +126,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         expectFileContent(
           "attachment.json",
           ContentTypes.`application/json`,
-          updatedJsonFileContent
+          updatedJsonFileContent,
+          cacheable = true
         )
       }
     }
@@ -121,7 +137,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         expectFileContent(
           "attachment.json",
           ContentTypes.`application/json`,
-          jsonFileContent
+          jsonFileContent,
+          cacheable = true
         )
       }
     }
@@ -170,7 +187,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         expectFileContent(
           textFileNoContentType.filename,
           ContentTypes.`application/octet-stream`,
-          textFileNoContentType.contents
+          textFileNoContentType.contents,
+          cacheable = true
         )
       }
     }
@@ -345,7 +363,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
                    customBinaryContent.filename,
                    customBinaryContent.contentType,
                    customBinaryContent.contents,
-                   compressed = false // the response should not be compressed despite the gzip headers
+                   compressed = false, // the response should not be compressed despite the gzip headers
+                   cacheable = true
                  )
                }
       } yield succeed

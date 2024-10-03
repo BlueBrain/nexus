@@ -102,6 +102,11 @@ final class HttpResponseOps(private val http: HttpResponse) extends Consumer {
     http.header[LastModified] shouldBe defined
   }
 
+  def expectNoConditionalCacheHeaders(implicit position: Position): Assertion = {
+    http.header[ETag] shouldBe empty
+    http.header[LastModified] shouldBe empty
+  }
+
 }
 
 final class HttpChunksOps(private val chunks: Source[ChunkStreamPart, Any]) extends Consumer {

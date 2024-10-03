@@ -116,6 +116,13 @@ trait DeltaDirectives extends UriDirectives {
       }
     }
 
+  /**
+    * Returns the best of the given encoding alternatives given the preferences the client indicated in the request's
+    * `Accept-Encoding` headers.
+    *
+    * This implementation is based on the akka internal implemetation in
+    * `akka.http.scaladsl.server.directives.CodingDirectives#_encodeResponse`
+    */
   def requestEncoding: Directive1[HttpEncoding] =
     extractRequest.map { request =>
       val negotiator                    = EncodingNegotiator(request.headers)
@@ -136,6 +143,12 @@ trait DeltaDirectives extends UriDirectives {
   ): Directive0 =
     conditionalCache(value, lastModified, mediaType, None, encoding)
 
+  /**
+    * Wraps its inner route with support for Conditional Requests as defined by http://tools.ietf.org/html/rfc7232
+    *
+    * Supports `Etag` and `Last-Modified` headers:
+    * https://doc.akka.io/docs/akka-http/10.0/routing-dsl/directives/cache-condition-directives/conditional.html
+    */
   def conditionalCache(
       value: Option[String],
       lastModified: Option[Instant],
