@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, RawHeader}
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
+import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
+import ch.epfl.bluebrain.nexus.tests.HttpClient.jsonHeaders
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
@@ -193,7 +195,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
         }
     }
 
-    "fetch the resource wih metadata" in {
+    "fetch the resource with metadata" in {
       val expected = resource1Response(1, 5).accepted
 
       deltaClient.get[Json](s"/resources/$project1/test-schema/test-resource:1", Morty) { (json, response) =>
@@ -202,6 +204,18 @@ class ResourcesSpec extends BaseIntegrationSpec {
         response.headers should contain(varyHeader)
         expectConditionalCacheHeaders(response)
       }
+    }
+
+    "return not modified when passing a valid etag" in {
+      val resourceUrl = s"/resources/$project1/test-schema/test-resource:1"
+      for {
+        response   <- deltaClient.getResponse(resourceUrl, Morty)
+        etag        = response.header[ETag].value.etag
+        ifNoneMatch = `If-None-Match`(etag)
+        _          <- deltaClient.get[ByteString](resourceUrl, Morty, jsonHeaders :+ ifNoneMatch) { (_, response) =>
+                        response.status shouldEqual StatusCodes.NotModified
+                      }
+      } yield succeed
     }
 
     "fetch the original payload" in {
@@ -435,7 +449,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     "allow to change the schema" in {
       val payload = SimpleResource.sourcePayload(4).accepted
 
-      def updateResourceAndSchema: (String, String) => ((Json, HttpResponse) => Assertion) => IO[Assertion] =
+      val updateResourceAndSchema: (String, String) => ((Json, HttpResponse) => Assertion) => IO[Assertion] =
         (id, schema) =>
           deltaClient.put[Json](s"/resources/$project1/$schema/$id?rev=1", payload, Rick) {
             expectOk

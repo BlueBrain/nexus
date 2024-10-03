@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{`If-None-Match`, ETag}
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
@@ -89,6 +90,18 @@ abstract class StorageSpec extends BaseIntegrationSpec {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:attachment.json", Coyote, acceptAll) {
         expectFileContent("attachment.json", ContentTypes.`application/json`, jsonFileContent, cacheable = true)
       }
+    }
+
+    "return not modified when passing a valid etag" in {
+      val fileUrl = s"/files/$projectRef/attachment:attachment.json"
+      for {
+        response   <- deltaClient.getResponse(fileUrl, Coyote, acceptAll)
+        etag        = response.header[ETag].value.etag
+        ifNoneMatch = `If-None-Match`(etag)
+        _          <- deltaClient.get[ByteString](fileUrl, Coyote, acceptAll :+ ifNoneMatch) { (_, response) =>
+                        response.status shouldEqual StatusCodes.NotModified
+                      }
+      } yield succeed
     }
 
     "be downloaded as gzip" in {
