@@ -12,4 +12,12 @@ The client can then use those values to set up caches and save bandwidth by usin
 @link[conditional headers](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-p4-conditional-26#section-3)
 as Delta can immediately answer with a `304 Not Modified` and not resend the full response. 
 
+@@@ note { .tip title="Content negotiation and encoding" }
+
+Nexus will return different etags for the same resource depending on the `Accept` header
+(more about content negotiation @ref[here](content-negotiation.md)) and the `Accept-Encoding` header.
+
+@@@
+
+
 
