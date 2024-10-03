@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaScheme
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -153,13 +153,11 @@ final class StoragesRoutes(
                   },
                   // Fetch a storage original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                    operationName(s"$prefixSegment/storages/{org}/{project}/{id}/source") {
-                      authorizeFor(project, Read).apply {
-                        val sourceIO = storages
-                          .fetch(id, project)
-                          .map(res => res.value.source)
-                        emit(sourceIO.attemptNarrow[StorageRejection].rejectOn[StorageNotFound])
-                      }
+                    authorizeFor(project, Read).apply {
+                      val sourceIO = storages
+                        .fetch(id, project)
+                        .map { resource => OriginalSource(resource, resource.value.source) }
+                      emit(sourceIO.attemptNarrow[StorageRejection].rejectOn[StorageNotFound])
                     }
                   },
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {

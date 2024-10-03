@@ -22,8 +22,7 @@ trait ResponseToMarshaller {
 
 object ResponseToMarshaller extends RdfMarshalling {
 
-  // Some resources may not have been created in the system with a strict configuration
-  // (and if they are, there is no need to check them again)
+  // To serialize errors to compacted json-ld
   implicit val api: JsonLdApi = JsonLdJavaApi.lenient
 
   private[directives] def apply[E: JsonLdEncoder, A: ToEntityMarshaller](

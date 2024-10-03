@@ -21,10 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, InvalidJsonLdFormat}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import io.circe.syntax.EncoderOps
-import io.circe.{Json, JsonObject, Printer}
+import io.circe.{Json, JsonObject}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
@@ -82,10 +82,12 @@ final class ElasticSearchViewsRoutes(
   private def emitFetch(io: IO[ViewResource]): Route =
     emit(io.attemptNarrow[ElasticSearchViewRejection].rejectOn[ViewNotFound])
 
-  private def emitSource(io: IO[ViewResource]): Route = {
-    implicit val source: Printer = sourcePrinter
-    emit(io.map(_.value.source).attemptNarrow[ElasticSearchViewRejection].rejectOn[ViewNotFound])
-  }
+  private def emitSource(io: IO[ViewResource]): Route =
+    emit(
+      io.map { resource => OriginalSource(resource, resource.value.source) }
+        .attemptNarrow[ElasticSearchViewRejection]
+        .rejectOn[ViewNotFound]
+    )
 
   def routes: Route =
     pathPrefix("views") {

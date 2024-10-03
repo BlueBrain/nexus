@@ -27,13 +27,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.OriginalSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.{Json, Printer}
+import io.circe.syntax.EncoderOps
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -243,8 +244,8 @@ object ArchiveDownload {
         repr match {
           case SourceJson          => IO.pure(ByteString(prettyPrintSource(value.source)))
           case AnnotatedSourceJson =>
-            val annotatedSource = AnnotatedSource(value.resource, value.source)
-            IO.pure(ByteString(prettyPrintSource(annotatedSource)))
+            val originalSource = OriginalSource.annotated(value.resource, value.source)
+            IO.pure(ByteString(prettyPrintSource(originalSource.asJson)))
           case CompactedJsonLd     => value.resource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
           case ExpandedJsonLd      => value.resource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
           case NTriples            => value.resource.toNTriples.map(v => ByteString(v.value))

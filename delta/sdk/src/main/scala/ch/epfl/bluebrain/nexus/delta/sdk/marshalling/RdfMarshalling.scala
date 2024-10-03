@@ -23,8 +23,8 @@ trait RdfMarshalling {
   val defaultPrinter: Printer = Printer(dropNullValues = true, indent = "")
   val sourcePrinter: Printer  = Printer(dropNullValues = false, indent = "")
 
-  private val ntriplesMediaTypes = List(`application/n-triples`, `text/plain`)
-  private val jsonMediaTypes     = List(`application/json`, `application/ld+json`.toContentType)
+  private val ntriplesMediaTypes                        = List(`application/n-triples`, `text/plain`)
+  val jsonMediaTypes: Seq[ContentType.WithFixedCharset] = List(`application/json`, `application/ld+json`.toContentType)
 
   /**
     * JsonLd -> HttpEntity

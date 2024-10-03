@@ -23,12 +23,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, InvalidJsonLdFormat}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.{Json, Printer}
+import io.circe.Json
 
 /**
   * The Blazegraph views routes
@@ -83,10 +83,12 @@ class BlazegraphViewsRoutes(
   private def emitFetch(io: IO[ViewResource]): Route =
     emit(io.attemptNarrow[BlazegraphViewRejection].rejectOn[ViewNotFound])
 
-  private def emitSource(io: IO[ViewResource]): Route = {
-    implicit val source: Printer = sourcePrinter
-    emit(io.map(_.value.source).attemptNarrow[BlazegraphViewRejection].rejectOn[ViewNotFound])
-  }
+  private def emitSource(io: IO[ViewResource]): Route =
+    emit(
+      io.map { resource => OriginalSource(resource, resource.value.source) }
+        .attemptNarrow[BlazegraphViewRejection]
+        .rejectOn[ViewNotFound]
+    )
 
   def routes: Route =
     concat(

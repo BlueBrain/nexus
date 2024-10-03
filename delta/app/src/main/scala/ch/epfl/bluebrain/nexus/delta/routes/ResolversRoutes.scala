@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{AnnotatedSource, HttpResponseFields, RdfMarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.Resol
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, Resolver, ResolverRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{MultiResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.{Json, Printer}
+import io.circe.Json
 
 /**
   * The resolver routes
@@ -74,10 +74,13 @@ final class ResolversRoutes(
   private def emitMetadataOrReject(io: IO[ResolverResource]): Route =
     emit(io.map(_.void).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
 
-  private def emitSource(io: IO[ResolverResource]): Route = {
-    implicit val source: Printer = sourcePrinter
-    emit(io.map(_.value.source).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
-  }
+  private def emitSource(io: IO[ResolverResource]): Route =
+    emit(
+      io
+        .map { resource => OriginalSource(resource, resource.value.source) }
+        .attemptNarrow[ResolverRejection]
+        .rejectOn[ResolverNotFound]
+    )
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
@@ -179,7 +182,7 @@ final class ResolversRoutes(
           case ResolvedResourceOutputType.Source          =>
             emit(io.map(_.value.source).attemptNarrow[ResolverRejection])
           case ResolvedResourceOutputType.AnnotatedSource =>
-            val annotatedSourceIO = io.map { r => AnnotatedSource(r.value.resource, r.value.source) }
+            val annotatedSourceIO = io.map { r => OriginalSource.annotated(r.value.resource, r.value.source) }
             emit(annotatedSourceIO.attemptNarrow[ResolverRejection])
         }
       }

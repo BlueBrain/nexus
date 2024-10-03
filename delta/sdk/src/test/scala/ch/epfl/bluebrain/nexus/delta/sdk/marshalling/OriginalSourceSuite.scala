@@ -15,7 +15,7 @@ import munit.Location
 
 import java.time.Instant
 
-class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
+class OriginalSourceSuite extends NexusSuite with CirceLiteral {
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
@@ -52,13 +52,13 @@ class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
            }"""
 
   private def assertResult(
-      result: Json,
+      result: OriginalSource,
       expectedId: String,
       expectedType: String,
       expectedContext: ContextValue,
       payloadFields: (String, Json)*
-  )(implicit l: Location) = {
-    def onObject(obj: JsonObject) = {
+  )(implicit l: Location): Unit = {
+    def onObject(obj: JsonObject): Unit = {
       assertEquals(obj("@id"), Some(expectedId.asJson))
       assertEquals(obj("@type"), Some(expectedType.asJson))
       assertEquals(obj("@context"), Some(expectedContext.asJson))
@@ -68,7 +68,7 @@ class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
       assertEquals(payloadData, JsonObject(payloadFields: _*))
     }
 
-    result.arrayOrObject(
+    result.asJson.arrayOrObject(
       fail("We expected an object, we got a literal"),
       _ => fail("We expected an object, we got an array"),
       onObject
@@ -78,7 +78,7 @@ class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
   test("Merge metadata and source for a resource without an id, type or context") {
     val source = json"""{"source": "original payload" }"""
     assertResult(
-      AnnotatedSource(resource, source),
+      OriginalSource.annotated(resource, source),
       id.toString,
       resource.types.mkString,
       ContextRemoteIri(contexts.metadata),
@@ -89,7 +89,7 @@ class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
   test("Exclude invalid metadata at the root level") {
     val source = json"""{"source": "original payload", "_rev": 42, "_other": "xxx", "nested": { "_rev": 5} }"""
     assertResult(
-      AnnotatedSource(resource, source),
+      OriginalSource.annotated(resource, source),
       id.toString,
       resource.types.mkString,
       ContextRemoteIri(contexts.metadata),
@@ -103,7 +103,7 @@ class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
     val sourceType = "Type"
     val source     = json"""{ "@id": "$sourceId", "@type": "$sourceType", "source": "original payload" }"""
     assertResult(
-      AnnotatedSource(resource, source),
+      OriginalSource.annotated(resource, source),
       "id",
       "Type",
       ContextRemoteIri(contexts.metadata),
@@ -123,7 +123,7 @@ class AnnotatedSourceSuite extends NexusSuite with CirceLiteral {
             "source": "original payload"
       }"""
     assertResult(
-      AnnotatedSource(resource, source),
+      OriginalSource.annotated(resource, source),
       "id",
       "Type",
       ContextValue(sourceContext, contexts.metadata),
