@@ -4,18 +4,16 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionRestartStore.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import doobie.syntax.all._
 import doobie.postgres.implicits._
-import io.circe.Json
 import io.circe.syntax.EncoderOps
+
+import fs2.Stream
 
 import java.time.Instant
 
@@ -46,21 +44,18 @@ final class ProjectionRestartStore(xas: Transactors, config: QueryConfig) {
       }
       .void
 
-  def stream(offset: Offset): ElemStream[ProjectionRestart] =
+  def stream(offset: Offset): Stream[IO, (Offset, ProjectionRestart)] =
     StreamingQuery
-      .apply[(Offset, Json, Instant)](
+      .apply[(Offset, ProjectionRestart)](
         offset,
         o => sql"""SELECT ordering, value, instant from public.projection_restarts
                   |WHERE ordering > $o and acknowledged = false
                   |ORDER BY ordering ASC
-                  |LIMIT ${config.batchSize}""".stripMargin.query[(Offset, Json, Instant)],
+                  |LIMIT ${config.batchSize}""".stripMargin.query[(Offset, ProjectionRestart)],
         _._1,
         config,
         xas
       )
-      .map { case (id, json, instant) =>
-        Elem.fromEither(entityType, restartId(id), None, instant, id, json.as[ProjectionRestart], 1)
-      }
 }
 
 object ProjectionRestartStore {

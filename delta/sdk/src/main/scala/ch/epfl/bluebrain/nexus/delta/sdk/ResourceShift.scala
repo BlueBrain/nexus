@@ -85,13 +85,13 @@ abstract class ResourceShift[State <: ScopedState, A, M](
       FailedElem(
         entityType,
         resource.id,
-        Some(project),
+        project,
         resource.updatedAt,
         Offset.Start,
         err,
         resource.rev
       ),
-    graph => SuccessElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, graph, resource.rev)
+    graph => SuccessElem(entityType, resource.id, project, resource.updatedAt, Offset.Start, graph, resource.rev)
   )
 
   private def toGraphResource(project: ProjectRef, resource: ResourceF[A])(implicit

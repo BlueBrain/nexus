@@ -5,7 +5,7 @@ import cats.implicits.{toFoldableOps, toFunctorOps, toTraverseOps}
 import cats.{Applicative, Eval, Traverse}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import doobie.Read
@@ -39,7 +39,7 @@ sealed trait Elem[+A] extends Product with Serializable {
     * @return
     *   the underlying project if there is one
     */
-  def project: Option[ProjectRef]
+  def project: ProjectRef
 
   /**
     * @return
@@ -110,8 +110,8 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   /**
-    * Like `[[Elem#map]]`, but accepts a function returning a [[Task]]. If the task failed, the [[Elem.SuccessElem]]
-    * will become a [[Elem.FailedElem]]
+    * Like `[[Elem#map]]`, but accepts a function returning a [[IO]]. If the io failed, the [[Elem.SuccessElem]] will
+    * become a [[Elem.FailedElem]]
     * @param f
     *   the mapping function
     */
@@ -155,7 +155,7 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   override def toString: String =
-    s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$rev]{${offset.value}}"
+    s"${this.getClass.getSimpleName}[$project/$id:$rev]{${offset.value}}"
 }
 
 object Elem {
@@ -180,7 +180,7 @@ object Elem {
   def fromEither[A](
       tpe: EntityType,
       id: Iri,
-      project: Option[ProjectRef],
+      project: ProjectRef,
       instant: Instant,
       offset: Offset,
       either: Either[Throwable, A],
@@ -209,15 +209,13 @@ object Elem {
   final case class SuccessElem[+A](
       tpe: EntityType,
       id: Iri,
-      project: Option[ProjectRef],
+      project: ProjectRef,
       instant: Instant,
       offset: Offset,
       value: A,
       rev: Int
   ) extends Elem[A] {
     def mapValue[B](f: A => B): Elem.SuccessElem[B] = copy(value = f(value))
-
-    def withProject(project: ProjectRef): Elem.SuccessElem[A] = this.copy(project = Some(project))
   }
 
   object SuccessElem {
@@ -226,9 +224,9 @@ object Elem {
       import doobie.postgres.implicits._
       import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
       implicit val v: Get[Value] = pgDecoderGetT[Value]
-      Read[(EntityType, Iri, Value, Int, Instant, Long, String, String)].map {
+      Read[(EntityType, Iri, Value, Int, Instant, Long, Label, Label)].map {
         case (tpe, id, value, rev, instant, offset, org, proj) =>
-          SuccessElem(tpe, id, Some(ProjectRef.unsafe(org, proj)), instant, Offset.at(offset), value, rev)
+          SuccessElem(tpe, id, ProjectRef(org, proj), instant, Offset.at(offset), value, rev)
       }
     }
 
@@ -258,7 +256,7 @@ object Elem {
   final case class FailedElem(
       tpe: EntityType,
       id: Iri,
-      project: Option[ProjectRef],
+      project: ProjectRef,
       instant: Instant,
       offset: Offset,
       throwable: Throwable,
@@ -279,7 +277,7 @@ object Elem {
   final case class DroppedElem(
       tpe: EntityType,
       id: Iri,
-      project: Option[ProjectRef],
+      project: ProjectRef,
       instant: Instant,
       offset: Offset,
       rev: Int

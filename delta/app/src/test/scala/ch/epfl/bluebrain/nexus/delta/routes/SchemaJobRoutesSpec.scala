@@ -67,9 +67,8 @@ class SchemaJobRoutesSpec extends BaseRouteSpec {
     val projectionMetadata = SchemaValidationCoordinator.projectionMetadata(project.ref)
 
     val reason = FailureReason("ValidationFail", json"""{ "details":  "..." }""")
-    val fail1  = FailedElem(EntityType("ACL"), resourceId, Some(project.ref), Instant.EPOCH, Offset.At(42L), reason, rev)
-    val fail2  =
-      FailedElem(EntityType("Schema"), resourceId, Some(project.ref), Instant.EPOCH, Offset.At(42L), reason, rev)
+    val fail1  = FailedElem(EntityType("ACL"), resourceId, project.ref, Instant.EPOCH, Offset.At(42L), reason, rev)
+    val fail2  = FailedElem(EntityType("Schema"), resourceId, project.ref, Instant.EPOCH, Offset.At(42L), reason, rev)
 
     (
       projections.save(projectionMetadata, progress) >>

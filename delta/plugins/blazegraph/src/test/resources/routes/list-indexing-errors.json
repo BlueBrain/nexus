@@ -23,11 +23,12 @@
       }
     },
     {
-      "id": "https://bluebrain.github.io/nexus/vocabulary/myid",
+      "id": "https://bluebrain.github.io/nexus/vocabulary/myid2",
       "offset": {
         "@type": "At",
-        "value": 42
+        "value": 43
       },
+      "project": "org/proj",
       "_rev": 1,
       "reason": {
         "type": "UnexpectedError",

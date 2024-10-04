@@ -16,7 +16,7 @@ class SseElemStreamSuite extends FunSuite {
     val elem = SuccessElem(
       Resources.entityType,
       iri"https://bbp.epfl.ch/my-resource",
-      Some(ProjectRef.unsafe("org", "proj")),
+      ProjectRef.unsafe("org", "proj"),
       Instant.EPOCH,
       Offset.at(42L),
       (),

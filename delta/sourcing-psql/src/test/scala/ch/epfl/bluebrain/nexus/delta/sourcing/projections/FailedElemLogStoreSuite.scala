@@ -48,7 +48,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
 
   private val entityType                                          = EntityType("Test")
   private def createFailedElem(project: ProjectRef, offset: Long) =
-    FailedElem(entityType, id, Some(project), start.plusSeconds(offset), Offset.at(offset), error, rev)
+    FailedElem(entityType, id, project, start.plusSeconds(offset), Offset.at(offset), error, rev)
 
   private val fail1 = createFailedElem(project1, 1L)
   private val fail2 = createFailedElem(project1, 2L)

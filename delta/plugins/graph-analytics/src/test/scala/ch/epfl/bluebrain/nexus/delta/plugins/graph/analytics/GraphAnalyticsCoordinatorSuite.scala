@@ -35,14 +35,14 @@ class GraphAnalyticsCoordinatorSuite extends NexusSuite with SupervisorSetup.Fix
   private val project2   = ProjectRef.unsafe("org", "proj2")
   private val project2Id = Projects.encodeId(project1)
 
-  private def success[A](ref: ProjectRef, id: Iri, value: A, offset: Long): Elem[A] =
-    SuccessElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), value, 1)
+  private def success[A](project: ProjectRef, id: Iri, value: A, offset: Long): Elem[A] =
+    SuccessElem(tpe = Projects.entityType, id, project, Instant.EPOCH, Offset.at(offset), value, 1)
 
-  private def dropped[A](ref: ProjectRef, id: Iri, offset: Long): Elem[A] =
-    DroppedElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), 1)
+  private def dropped[A](project: ProjectRef, id: Iri, offset: Long): Elem[A] =
+    DroppedElem(tpe = Projects.entityType, id, project, Instant.EPOCH, Offset.at(offset), 1)
 
-  private def failed[A](ref: ProjectRef, id: Iri, error: Throwable, offset: Long): Elem[A] =
-    FailedElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), error, 1)
+  private def failed[A](project: ProjectRef, id: Iri, error: Throwable, offset: Long): Elem[A] =
+    FailedElem(tpe = Projects.entityType, id, project, Instant.EPOCH, Offset.at(offset), error, 1)
 
   private val resumeSignal = SignallingRef[IO, Boolean](false).unsafeRunSync()
 

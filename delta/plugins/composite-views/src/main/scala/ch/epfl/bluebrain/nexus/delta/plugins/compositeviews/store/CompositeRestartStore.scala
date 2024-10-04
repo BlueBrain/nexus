@@ -81,7 +81,7 @@ final class CompositeRestartStore(xas: Transactors) {
          |LIMIT 1""".stripMargin
       .query[(Offset, ProjectRef, Iri, Json, Instant)]
       .map { case (offset, project, id, json, instant) =>
-        Elem.fromEither(entityType, id, Some(project), instant, offset, json.as[CompositeRestart], 1)
+        Elem.fromEither(entityType, id, project, instant, offset, json.as[CompositeRestart], 1)
       }
       .option
       .transact(xas.read)

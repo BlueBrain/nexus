@@ -99,9 +99,9 @@ object StreamingQuery {
            |LIMIT ${cfg.batchSize}
            |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Instant, Long, Int)].map {
         case (`newState`, entityType, id, org, project, instant, offset, rev) =>
-          SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), (), rev)
+          SuccessElem(entityType, id, ProjectRef(org, project), instant, Offset.at(offset), (), rev)
         case (_, entityType, id, org, project, instant, offset, rev)          =>
-          DroppedElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), rev)
+          DroppedElem(entityType, id, ProjectRef(org, project), instant, Offset.at(offset), rev)
       }
     }
     StreamingQuery[Elem[Unit], Iri](start, query, _.offset, _.id, cfg, xas)
@@ -154,9 +154,9 @@ object StreamingQuery {
            |LIMIT ${cfg.batchSize}
            |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Option[Json], Instant, Long, Int)].map {
         case (`newState`, entityType, id, org, project, Some(json), instant, offset, rev) =>
-          SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), json, rev)
+          SuccessElem(entityType, id, ProjectRef(org, project), instant, Offset.at(offset), json, rev)
         case (_, entityType, id, org, project, _, instant, offset, rev)                   =>
-          DroppedElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), rev)
+          DroppedElem(entityType, id, ProjectRef(org, project), instant, Offset.at(offset), rev)
       }
     }
     StreamingQuery[Elem[Json], Iri](start, query, _.offset, _.id, cfg, xas)

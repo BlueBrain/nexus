@@ -92,7 +92,7 @@ class SchemaValidationCoordinatorSuite
       SuccessElem(
         Resources.entityType,
         resource.id,
-        Some(resource.project),
+        resource.project,
         resource.updatedAt,
         Offset.at(index.toLong + 1),
         resource,

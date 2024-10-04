@@ -38,6 +38,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
   private val nowPlus5 = now.plusSeconds(5)
 
   private val myId         = nxv + "myid"
+  private val myId2        = nxv + "myid2"
   private val view         = CompositeViewsGen.resourceFor(projectRef, myId, uuid, viewValue, source = Json.obj())
   private val indexingView = ActiveViewDef(
     ViewRef(view.value.project, view.id),
@@ -93,8 +94,8 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     super.beforeAll()
     val error           = new Exception("boom")
     val rev             = 1
-    val fail1           = FailedElem(EntityType("ACL"), myId, Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
-    val fail2           = FailedElem(EntityType("Schema"), myId, None, Instant.EPOCH, Offset.At(42L), error, rev)
+    val fail1           = FailedElem(EntityType("ACL"), myId, projectRef, Instant.EPOCH, Offset.At(42L), error, rev)
+    val fail2           = FailedElem(EntityType("Schema"), myId2, projectRef, Instant.EPOCH, Offset.At(43L), error, rev)
     val saveFailedElems = projectionErrors.saveFailedElems(indexingView.metadata, List(fail1, fail2))
 
     saveFailedElems.accepted

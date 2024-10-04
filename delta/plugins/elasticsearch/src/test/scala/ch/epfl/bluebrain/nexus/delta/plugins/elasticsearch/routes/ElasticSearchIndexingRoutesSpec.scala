@@ -40,6 +40,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   implicit private val fetchContext: FetchContext = FetchContextDummy(Map(project.value.ref -> project.value.context))
 
   private val myId         = nxv + "myid"
+  private val myId2        = nxv + "myid2"
   private val indexingView = ActiveViewDef(
     ViewRef(projectRef, myId),
     "projection",
@@ -104,8 +105,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     super.beforeAll()
     val error = new Exception("boom")
     val rev   = 1
-    val fail1 = FailedElem(EntityType("ACL"), myId, Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
-    val fail2 = FailedElem(EntityType("Schema"), myId, None, Instant.EPOCH, Offset.At(42L), error, rev)
+    val fail1 = FailedElem(EntityType("ACL"), myId, projectRef, Instant.EPOCH, Offset.At(42L), error, rev)
+    val fail2 = FailedElem(EntityType("Schema"), myId2, projectRef, Instant.EPOCH, Offset.At(43L), error, rev)
     val save  = for {
       _ <- projections.save(indexingView.projectionMetadata, progress)
       _ <- projectionErrors.saveFailedElems(indexingView.projectionMetadata, List(fail1, fail2))

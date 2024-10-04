@@ -3,13 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{PurgeConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ProgressStatistics, Transactors}
+import fs2.Stream
 
 import java.time.Instant
 
@@ -69,7 +70,7 @@ trait Projections {
     * @param offset
     *   the offset to start from
     */
-  def restarts(offset: Offset): ElemStream[ProjectionRestart]
+  def restarts(offset: Offset): Stream[IO, (Offset, ProjectionRestart)]
 
   /**
     * Acknowledge that a restart has been performed
@@ -119,7 +120,8 @@ object Projections {
         }
       }
 
-      override def restarts(offset: Offset): ElemStream[ProjectionRestart] = projectionRestartStore.stream(offset)
+      override def restarts(offset: Offset): Stream[IO, (Offset, ProjectionRestart)] =
+        projectionRestartStore.stream(offset)
 
       override def acknowledgeRestart(id: Offset): IO[Unit] = projectionRestartStore.acknowledge(id)
 

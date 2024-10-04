@@ -63,18 +63,19 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
   private val customTag = UserTag.unsafe("v0.1")
   private val rev       = 1
 
-  private val prState11 = PullRequestActive(id1, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val prState12 = PullRequestActive(id2, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val prState13 =
-    PullRequestActive(id3, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice, Set(nxv + "Fix"))
-  private val prState14 =
-    PullRequestActive(id4, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice, Set(nxv + "Feature"))
-  private val prState21 = PullRequestActive(id1, project2, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val prState34 = PullRequestActive(id4, project3, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val epoch: Instant = Instant.EPOCH
+  private val prState11      = PullRequestActive(id1, project1, rev, epoch, Anonymous, epoch, alice)
+  private val prState12      = PullRequestActive(id2, project1, rev, epoch, Anonymous, epoch, alice)
+  private val prState13      =
+    PullRequestActive(id3, project1, rev, epoch, Anonymous, epoch, alice, Set(nxv + "Fix"))
+  private val prState14      =
+    PullRequestActive(id4, project1, rev, epoch, Anonymous, epoch, alice, Set(nxv + "Feature"))
+  private val prState21      = PullRequestActive(id1, project2, rev, epoch, Anonymous, epoch, alice)
+  private val prState34      = PullRequestActive(id4, project3, rev, epoch, Anonymous, epoch, alice)
 
-  private val release11 = Release(nxv + "a", project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val release12 = Release(nxv + "b", project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val release21 = Release(nxv + "c", project2, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val release11 = Release(nxv + "a", project1, rev, epoch, Anonymous, epoch, alice)
+  private val release12 = Release(nxv + "b", project1, rev, epoch, Anonymous, epoch, alice)
+  private val release21 = Release(nxv + "c", project2, rev, epoch, Anonymous, epoch, alice)
 
   private def decodeValue(entityType: EntityType, json: Json) =
     IO.fromEither {
@@ -119,12 +120,12 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
     val (iri, void) = stream(project1, Offset.start, SelectFilter.latest)
 
     val expected = List(
-      SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), id1, rev),
-      SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(2L), id2, rev),
-      SuccessElem(Release.entityType, release11.id, Some(project1), Instant.EPOCH, Offset.at(3L), release11.id, rev),
-      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
-      SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
-      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
+      SuccessElem(PullRequest.entityType, id1, project1, epoch, Offset.at(1L), id1, rev),
+      SuccessElem(PullRequest.entityType, id2, project1, epoch, Offset.at(2L), id2, rev),
+      SuccessElem(Release.entityType, release11.id, project1, epoch, Offset.at(3L), release11.id, rev),
+      SuccessElem(PullRequest.entityType, id3, project1, epoch, Offset.at(7L), id3, rev),
+      SuccessElem(Release.entityType, release12.id, project1, epoch, Offset.at(8L), release12.id, rev),
+      SuccessElem(PullRequest.entityType, id4, project1, epoch, Offset.at(15L), id4, rev)
     )
 
     iri.compile.toList.assertEquals(expected)
@@ -135,9 +136,9 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
     val (iri, void) = stream(project1, Offset.at(3L), SelectFilter.latest)
 
     val expected = List(
-      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
-      SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
-      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
+      SuccessElem(PullRequest.entityType, id3, project1, epoch, Offset.at(7L), id3, rev),
+      SuccessElem(Release.entityType, release12.id, project1, epoch, Offset.at(8L), release12.id, rev),
+      SuccessElem(PullRequest.entityType, id4, project1, epoch, Offset.at(15L), id4, rev)
     )
 
     iri.compile.toList.assertEquals(expected)
@@ -149,8 +150,8 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
     val (iri, void)      = stream(project1, Offset.start, SelectFilter(None, allowedViewTypes, Tag.Latest))
 
     val expected = List(
-      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
-      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
+      SuccessElem(PullRequest.entityType, id3, project1, epoch, Offset.at(7L), id3, rev),
+      SuccessElem(PullRequest.entityType, id4, project1, epoch, Offset.at(15L), id4, rev)
     )
 
     iri.compile.toList.assertEquals(expected)
@@ -161,13 +162,13 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
     val (iri, void) = stream(project1, Offset.start, SelectFilter.tag(customTag))
 
     val expected = List(
-      SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(6L), id1, rev),
-      SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(9L), release12.id, rev),
-      DroppedElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(11L), -1),
-      SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
-      DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
-      DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
-      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
+      SuccessElem(PullRequest.entityType, id1, project1, epoch, Offset.at(6L), id1, rev),
+      SuccessElem(Release.entityType, release12.id, project1, epoch, Offset.at(9L), release12.id, rev),
+      DroppedElem(PullRequest.entityType, id3, project1, epoch, Offset.at(11L), -1),
+      SuccessElem(PullRequest.entityType, id2, project1, epoch, Offset.at(12L), id2, rev),
+      DroppedElem(PullRequest.entityType, id1, project1, epoch, Offset.at(14L), -1),
+      DroppedElem(Release.entityType, release12.id, project1, epoch, Offset.at(16L), -1),
+      SuccessElem(PullRequest.entityType, id4, project1, epoch, Offset.at(17L), id4, rev)
     )
 
     iri.compile.toList.assertEquals(expected)
@@ -177,10 +178,10 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
   test(s"Running a stream on states with tag '${customTag.value}' on project 1 from offset 11") {
     val (iri, void) = stream(project1, Offset.at(11L), SelectFilter.tag(customTag))
     val expected    = List(
-      SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
-      DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
-      DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
-      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
+      SuccessElem(PullRequest.entityType, id2, project1, epoch, Offset.at(12L), id2, rev),
+      DroppedElem(PullRequest.entityType, id1, project1, epoch, Offset.at(14L), -1),
+      DroppedElem(Release.entityType, release12.id, project1, epoch, Offset.at(16L), -1),
+      SuccessElem(PullRequest.entityType, id4, project1, epoch, Offset.at(17L), id4, rev)
     )
 
     iri.compile.toList.assertEquals(expected)
@@ -198,31 +199,16 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
         }
       }
 
-    val result = StreamingQuery.elems[Iri](project1, Offset.start, SelectFilter.latest, qc, xas, incompleteDecode)
+    val result                 = StreamingQuery.elems[Iri](project1, Offset.start, SelectFilter.latest, qc, xas, incompleteDecode)
+    val releaseDecodingFailure = decodingFailure(Release.entityType)
     result.compile.toList.assertEquals(
       List(
-        SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), id1, rev),
-        SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(2L), id2, rev),
-        FailedElem(
-          Release.entityType,
-          release11.id,
-          Some(project1),
-          Instant.EPOCH,
-          Offset.at(3L),
-          decodingFailure(Release.entityType),
-          rev
-        ),
-        SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
-        FailedElem(
-          Release.entityType,
-          release12.id,
-          Some(project1),
-          Instant.EPOCH,
-          Offset.at(8L),
-          decodingFailure(Release.entityType),
-          rev
-        ),
-        SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
+        SuccessElem(PullRequest.entityType, id1, project1, epoch, Offset.at(1L), id1, rev),
+        SuccessElem(PullRequest.entityType, id2, project1, epoch, Offset.at(2L), id2, rev),
+        FailedElem(Release.entityType, release11.id, project1, epoch, Offset.at(3L), releaseDecodingFailure, rev),
+        SuccessElem(PullRequest.entityType, id3, project1, epoch, Offset.at(7L), id3, rev),
+        FailedElem(Release.entityType, release12.id, project1, epoch, Offset.at(8L), releaseDecodingFailure, rev),
+        SuccessElem(PullRequest.entityType, id4, project1, epoch, Offset.at(15L), id4, rev)
       )
     )
   }
@@ -232,7 +218,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
       .remaining(project1, SelectFilter.latest, Offset.start, xas)
       .assertEquals(
         Some(
-          RemainingElems(6L, Instant.EPOCH)
+          RemainingElems(6L, epoch)
         )
       )
   }
@@ -242,7 +228,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
       .remaining(project1, SelectFilter.latestOfEntity(PullRequest.entityType), Offset.start, xas)
       .assertEquals(
         Some(
-          RemainingElems(4L, Instant.EPOCH)
+          RemainingElems(4L, epoch)
         )
       )
   }
@@ -252,7 +238,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
       .remaining(project1, SelectFilter.latest, Offset.at(6L), xas)
       .assertEquals(
         Some(
-          RemainingElems(3L, Instant.EPOCH)
+          RemainingElems(3L, epoch)
         )
       )
   }
@@ -262,7 +248,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
       .remaining(project1, SelectFilter.tag(customTag), Offset.at(6L), xas)
       .assertEquals(
         Some(
-          RemainingElems(4L, Instant.EPOCH)
+          RemainingElems(4L, epoch)
         )
       )
   }

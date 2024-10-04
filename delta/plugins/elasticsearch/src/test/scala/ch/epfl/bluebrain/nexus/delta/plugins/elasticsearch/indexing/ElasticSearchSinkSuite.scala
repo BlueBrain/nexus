@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, Q
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailureReason
@@ -39,17 +39,19 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
   private val brian = (nxv + "brian", json"""{"name": "Brian", "age": 19 }""")
   private val judy  = (nxv + "judy", json"""{"name": "Judy", "age": 47 }""")
 
+  private val project = ProjectRef.unsafe("bbp", "members")
+
   private val members = Set(alice, bob, brian, judy)
 
   val rev = 1
 
   private def asChunk(values: Iterable[(Iri, Json)]) =
     Chunk.from(values).zipWithIndex.map { case ((id, json), index) =>
-      SuccessElem(membersEntity, id, None, Instant.EPOCH, Offset.at(index.toLong + 1), json, rev)
+      SuccessElem(membersEntity, id, project, Instant.EPOCH, Offset.at(index.toLong + 1), json, rev)
     }
 
   private def dropped(id: Iri, offset: Offset) =
-    DroppedElem(membersEntity, id, None, Instant.EPOCH, offset, rev)
+    DroppedElem(membersEntity, id, project, Instant.EPOCH, offset, rev)
 
   test("Create the index") {
     client.createIndex(index, None, None).assertEquals(true)
@@ -83,7 +85,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
     val failed         = FailedElem(
       membersEntity,
       nxv + "fail",
-      None,
+      project,
       Instant.EPOCH,
       Offset.at(1L),
       new IllegalArgumentException("Boom"),
@@ -94,7 +96,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
       Seq(
         Chunk.singleton(failed),
         Chunk(invalidElement, alice).map { case (id, json) =>
-          SuccessElem(membersEntity, id, None, Instant.EPOCH, Offset.at(members.size.toLong + 1), json, rev)
+          SuccessElem(membersEntity, id, project, Instant.EPOCH, Offset.at(members.size.toLong + 1), json, rev)
         }
       )
     )

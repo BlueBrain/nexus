@@ -77,11 +77,8 @@ object ElasticSearchSink {
     * @return
     *   a function that maps an elem to a documentId based on the project (if available), the elem id, and the revision
     */
-  private val eventDocumentId: Elem[_] => String = elem =>
-    elem.project match {
-      case Some(project) => s"$project/${elem.id}:${elem.rev}"
-      case None          => s"${elem.id}/${elem.rev}"
-    }
+  private val eventDocumentId: Elem[_] => String =
+    elem => s"${elem.project}/${elem.id}:${elem.rev}"
 
   /**
     * Mark and update the elements according to the elasticsearch response

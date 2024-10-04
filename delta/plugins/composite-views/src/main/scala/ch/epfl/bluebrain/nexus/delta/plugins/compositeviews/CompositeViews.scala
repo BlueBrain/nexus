@@ -303,13 +303,11 @@ final class CompositeViews private (
   /**
     * Return the indexing views in a non-ending stream
     */
-  def views(start: Offset): ElemStream[CompositeViewDef] =
+  def views(start: Offset): SuccessElemStream[CompositeViewDef] =
     log.states(Scope.Root, start).map(toCompositeViewDef)
 
   private def toCompositeViewDef(elem: Elem.SuccessElem[CompositeViewState]) =
-    elem.withProject(elem.value.project).mapValue { v =>
-      CompositeViewDef(v)
-    }
+    elem.mapValue { v => CompositeViewDef(v) }
 
   private def eval(cmd: CompositeViewCommand): IO[ViewResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)

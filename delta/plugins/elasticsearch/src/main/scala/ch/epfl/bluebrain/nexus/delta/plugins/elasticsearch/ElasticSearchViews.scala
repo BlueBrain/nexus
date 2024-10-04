@@ -364,7 +364,7 @@ final class ElasticSearchViews private (
       }
 
   private def toIndexViewDef(elem: Elem.SuccessElem[ElasticSearchViewState]) =
-    elem.withProject(elem.value.project).traverse { v =>
+    elem.traverse { v =>
       IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
     }
 

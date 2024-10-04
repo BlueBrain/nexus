@@ -37,7 +37,7 @@ class CompositeRestartStoreSuite extends NexusSuite with Doobie.Fixture with Doo
   private val cr3        = PartialRebuild(viewRef, projection, Instant.EPOCH.plusSeconds(5L), Anonymous)
 
   private def toElem(offset: Offset, restart: CompositeRestart) =
-    SuccessElem(entityType, restart.id, Some(restart.project), restart.instant, offset, restart, 1)
+    SuccessElem(entityType, restart.id, restart.project, restart.instant, offset, restart, 1)
 
   test("Save composite restarts") {
     for {

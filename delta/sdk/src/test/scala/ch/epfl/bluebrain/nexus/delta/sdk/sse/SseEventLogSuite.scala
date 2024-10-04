@@ -18,12 +18,12 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
 
   implicit private val jo: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 
-  private val ref = ProjectRef.unsafe("org", "proj")
+  private val project = ProjectRef.unsafe("org", "proj")
 
   private def makeSuccessElem(sseData: SseData) = Elem.SuccessElem(
     EntityType("Person"),
     nxv + "1",
-    None,
+    project,
     Instant.now(),
     Offset.at(5L),
     sseData,
@@ -44,7 +44,7 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
     val elem = Elem.SuccessElem(
       EntityType("Person"),
       nxv + "1",
-      None,
+      project,
       Instant.now(),
       Offset.at(5L),
       SseData("Person", Some(ProjectRef.unsafe("xxx", "xxx")), JsonObject("name" -> "John Doe".asJson)),
@@ -60,10 +60,10 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
     val elem = Elem.SuccessElem(
       EntityType("Person"),
       nxv + "1",
-      None,
+      project,
       Instant.now(),
       Offset.at(5L),
-      SseData("Person", Some(ref), JsonObject("name" -> "John Doe".asJson)),
+      SseData("Person", Some(project), JsonObject("name" -> "John Doe".asJson)),
       4
     )
     assertEquals(
