@@ -254,9 +254,7 @@ final class Storages private (
     * Return the existing storages in a project in a finite stream
     */
   def currentStorages(project: ProjectRef): SuccessElemStream[StorageState] =
-    log.currentStates(Scope.Project(project)).map { e =>
-      e.withProject(e.value.project)
-    }
+    log.currentStates(Scope.Project(project))
 
   private def unsetPreviousDefaultIfRequired(
       project: ProjectRef,

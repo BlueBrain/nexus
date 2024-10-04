@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem._
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -20,6 +20,7 @@ class FailedElemPersistenceSuite extends NexusSuite {
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
 
   private val projection1 = ProjectionMetadata("test", "name1", None, None)
+  private val project     = ProjectRef.unsafe("org", "proj")
   private val id          = nxv + "id"
   private val rev         = 1
 
@@ -31,7 +32,7 @@ class FailedElemPersistenceSuite extends NexusSuite {
           FailedElem(
             EntityType("entity"),
             id,
-            None,
+            project,
             Instant.EPOCH,
             Offset.at(value.toLong),
             new RuntimeException("boom"),
@@ -43,7 +44,9 @@ class FailedElemPersistenceSuite extends NexusSuite {
     (_: Offset) =>
       Stream
         .range(1, 11)
-        .map { value => SuccessElem(EntityType("entity"), id, None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
+        .map { value =>
+          SuccessElem(EntityType("entity"), id, project, Instant.EPOCH, Offset.at(value.toLong), (), rev)
+        }
 
   private val saveFailedElems: MutableSet[FailedElem] => List[FailedElem] => IO[Unit] =
     failedElemStore => failedElems => IO.delay { failedElems.foreach(failedElemStore.add) }

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -31,6 +31,8 @@ class BlazegraphSinkSuite extends NexusSuite with BlazegraphClientSetup.Fixture 
   def createSink(namespace: String) = new BlazegraphSink(client, 2, 50.millis, namespace)
 
   private lazy val sink = createSink(namespace)
+
+  private val project = ProjectRef.unsafe("org", "project")
 
   private val resource1Id              = iri"https://bbp.epfl.ch/resource1"
   private val resource1Ntriples        = NTriples(contentOf("sparql/resource1.ntriples"), resource1Id)
@@ -54,14 +56,14 @@ class BlazegraphSinkSuite extends NexusSuite with BlazegraphClientSetup.Fixture 
 
   private def asElems(chunk: Chunk[(Iri, NTriples)]) =
     chunk.zipWithIndex.map { case ((id, ntriples), index) =>
-      SuccessElem(entityType, id, None, Instant.EPOCH, Offset.at(index.toLong + 1), ntriples, 1)
+      SuccessElem(entityType, id, project, Instant.EPOCH, Offset.at(index.toLong + 1), ntriples, 1)
     }
 
   private def createGraph(chunk: Chunk[(Iri, NTriples)]) = chunk.foldLeft(Graph.empty) { case (acc, (_, ntriples)) =>
     acc ++ Graph(ntriples).getOrElse(Graph.empty)
   }
 
-  private def dropped(id: Iri, offset: Offset) = DroppedElem(entityType, id, None, Instant.EPOCH, offset, 1)
+  private def dropped(id: Iri, offset: Offset) = DroppedElem(entityType, id, project, Instant.EPOCH, offset, 1)
 
   private def query(namespace: String) =
     client
@@ -96,7 +98,7 @@ class BlazegraphSinkSuite extends NexusSuite with BlazegraphClientSetup.Fixture 
 
   test("Report errors when the id is not a valid absolute iri") {
     val chunk    = Chunk(
-      SuccessElem(entityType, nxv + "é-wrong", None, Instant.EPOCH, Offset.at(5L), resource1Ntriples, 1)
+      SuccessElem(entityType, nxv + "é-wrong", project, Instant.EPOCH, Offset.at(5L), resource1Ntriples, 1)
     )
     val expected = createGraph(Chunk(resource1Id -> resource1Ntriples, resource3Id -> resource3Ntriples))
 

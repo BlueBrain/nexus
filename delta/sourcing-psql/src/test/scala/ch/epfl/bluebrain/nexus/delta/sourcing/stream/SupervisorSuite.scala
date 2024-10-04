@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -36,6 +36,8 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
   private val ignoredByNode1            = ProjectionMetadata("test", "name2", None, None)
   private val random                    = ProjectionMetadata("test", "name3", None, None)
 
+  private val project = ProjectRef.unsafe("org", "proj")
+
   private val rev = 1
 
   private def evalStream(start: IO[Unit]) =
@@ -43,7 +45,7 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
       Stream.eval(start) >> Stream
         .range(1, 21)
         .map { value =>
-          SuccessElem(EntityType("entity"), nxv + "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev)
+          SuccessElem(EntityType("entity"), nxv + "id", project, Instant.EPOCH, Offset.at(value.toLong), (), rev)
         }
 
   private val expectedProgress = ProjectionProgress(Offset.at(20L), Instant.EPOCH, 20, 0, 0)
@@ -94,7 +96,7 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
 
   private def assertWatchRestarts(offset: Offset, processed: Long, discarded: Long)(implicit loc: Location) = {
     val progress = ProjectionProgress(offset, Instant.EPOCH, processed, discarded, 0)
-    assertDescribe(Supervisor.watchRestartMetadata, EveryNode, 0, Running, progress)
+    assertDescribe(WatchRestarts.projectionMetadata, EveryNode, 0, Running, progress)
   }
 
   test("Watching restart projection restarts should be running") {
@@ -137,7 +139,7 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
       .assertEquals(
         List(
           SupervisedDescription(
-            metadata = Supervisor.watchRestartMetadata,
+            metadata = WatchRestarts.projectionMetadata,
             EveryNode,
             0,
             Running,
@@ -247,7 +249,7 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
              .assertEquals(
                List(
                  SupervisedDescription(
-                   metadata = Supervisor.watchRestartMetadata,
+                   WatchRestarts.projectionMetadata,
                    EveryNode,
                    restarts = 0,
                    Running,

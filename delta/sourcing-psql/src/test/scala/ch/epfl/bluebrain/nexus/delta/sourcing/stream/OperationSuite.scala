@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
@@ -70,9 +70,11 @@ object OperationSuite {
 
   private val numberType = EntityType("number")
 
+  private val project = ProjectRef.unsafe("org", "proj")
+
   private def until(n: Int): Source = Source(offset =>
     Stream.range(offset.value.toInt, n).covary[IO].map { i =>
-      SuccessElem(numberType, nxv + i.toString, None, Instant.EPOCH, Offset.at(i.toLong), i, 1)
+      SuccessElem(numberType, nxv + i.toString, project, Instant.EPOCH, Offset.at(i.toLong), i, 1)
     }
   )
 

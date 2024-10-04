@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import fs2.Stream
 
@@ -89,10 +89,7 @@ final class ProjectsImpl private (
   override def currentRefs: Stream[IO, ProjectRef] =
     log.currentStates(Scope.root).map(_.value.project)
 
-  override def states(offset: Offset): ElemStream[ProjectState] =
-    log.states(Scope.root, offset).map { e =>
-      e.withProject { e.value.project }
-    }
+  override def states(offset: Offset): SuccessElemStream[ProjectState] = log.states(Scope.root, offset)
 
   private def eval(cmd: ProjectCommand): IO[ProjectResource] =
     log.evaluate(cmd.ref, cmd.ref, cmd).map(_._2.toResource(defaultApiMappings))

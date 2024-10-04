@@ -40,7 +40,7 @@ class DataConstructQuerySuite extends NexusSuite {
     SuccessElem(
       tpe = PullRequest.entityType,
       id = base / "id",
-      project = Some(project),
+      project = project,
       instant = instant,
       offset = Offset.at(1L),
       value = graph,

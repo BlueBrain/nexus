@@ -80,7 +80,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = view1.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
         value = view1,
@@ -89,7 +89,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = view2.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(2L),
         value = view2,
@@ -98,7 +98,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = view3.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(3L),
         value = view3,
@@ -107,7 +107,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = view4.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
         value = view4,
@@ -141,7 +141,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
   private val elem = SuccessElem(
     tpe = PullRequest.entityType,
     id = pr.id,
-    project = Some(project),
+    project = project,
     instant = pr.updatedAt,
     offset = Offset.at(1L),
     value = PullRequestState.toGraphResource(pr, base),
@@ -171,7 +171,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
     val failed = FailedElem(
       tpe = PullRequest.entityType,
       id = pr.id,
-      project = Some(project),
+      project = project,
       instant = pr.updatedAt,
       offset = Offset.at(1L),
       new IllegalStateException("Boom"),

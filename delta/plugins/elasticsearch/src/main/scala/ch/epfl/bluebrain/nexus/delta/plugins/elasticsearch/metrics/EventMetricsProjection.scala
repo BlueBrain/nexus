@@ -100,9 +100,7 @@ object EventMetricsProjection {
       init: IO[Unit]
   ): IO[EventMetricsProjection] = {
 
-    val source = Source { (offset: Offset) =>
-      metrics(offset).map(e => e.withProject(e.value.project))
-    }
+    val source = Source { (offset: Offset) => metrics(offset) }
 
     val compiledProjection =
       CompiledProjection.compile(

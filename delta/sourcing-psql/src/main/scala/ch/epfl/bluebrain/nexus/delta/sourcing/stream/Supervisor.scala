@@ -6,10 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
 import fs2.Stream
@@ -116,8 +113,6 @@ object Supervisor {
     stop = IO.unit
   )
 
-  private[sourcing] val watchRestartMetadata = ProjectionMetadata("system", "watch-restarts", None, None)
-
   /**
     * Constructs a new [[Supervisor]] instance using the provided `store` and `cfg`.
     *
@@ -143,7 +138,7 @@ object Supervisor {
         supervisionRef <- Ref.of[IO, Fiber[IO, Throwable, Unit]](supervision)
         supervisor      =
           new Impl(projections, projectionErrors, cfg, semaphore, mapRef, signal, supervisionRef)
-        _              <- watchRestarts(supervisor, projections)
+        _              <- WatchRestarts(supervisor, projections)
         _              <- log.info("Delta supervisor is up")
       } yield supervisor
 
@@ -198,28 +193,6 @@ object Supervisor {
         _.updatedWith(metadata.name)(_.map(_.copy(restarts = supervised.restarts + 1, control = control)))
       )
     }
-  }
-
-  private def watchRestarts(supervisor: Supervisor, projections: Projections) = {
-    supervisor.run(
-      CompiledProjection.fromStream(
-        watchRestartMetadata,
-        ExecutionStrategy.EveryNode,
-        (offset: Offset) =>
-          projections
-            .restarts(offset)
-            .evalMap {
-              case s: SuccessElem[ProjectionRestart] =>
-                supervisor.restart(s.value.name).flatMap { status =>
-                  if (status.exists(_ != ExecutionStatus.Ignored))
-                    projections.acknowledgeRestart(s.offset).as(s.void)
-                  else
-                    IO.pure(s.dropped)
-                }
-              case other                             => IO.pure(other.void)
-            }
-      )
-    )
   }
 
   final private case class Supervised(

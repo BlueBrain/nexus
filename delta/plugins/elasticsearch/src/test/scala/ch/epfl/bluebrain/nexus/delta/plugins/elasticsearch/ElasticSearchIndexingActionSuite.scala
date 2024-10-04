@@ -92,7 +92,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view1.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
         value = view1,
@@ -101,7 +101,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view2.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(2L),
         value = view2,
@@ -110,7 +110,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view3.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(3L),
         value = view3,
@@ -119,7 +119,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view4.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
         value = view4,
@@ -153,7 +153,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
   private val elem = SuccessElem(
     tpe = PullRequest.entityType,
     id = pr.id,
-    project = Some(project),
+    project = project,
     instant = pr.updatedAt,
     offset = Offset.at(1L),
     value = PullRequestState.toGraphResource(pr, base),
@@ -183,7 +183,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
     val failed = FailedElem(
       tpe = PullRequest.entityType,
       id = pr.id,
-      project = Some(project),
+      project = project,
       instant = pr.updatedAt,
       offset = Offset.at(1L),
       new IllegalStateException("Boom"),

@@ -93,7 +93,7 @@ class GraphAnalyticsSinkSuite extends NexusSuite with ElasticSearchClientSetup.F
   }
 
   private def success(id: Iri, result: GraphAnalyticsResult) =
-    SuccessElem(Resources.entityType, id, Some(project), Instant.EPOCH, Offset.start, result, 1)
+    SuccessElem(Resources.entityType, id, project, Instant.EPOCH, Offset.start, result, 1)
 
   test("Push index results") {
     def indexActive(id: Iri, expanded: ExpandedJsonLd) = {
@@ -137,18 +137,11 @@ class GraphAnalyticsSinkSuite extends NexusSuite with ElasticSearchClientSetup.F
   }
 
   test("Push update by query result results") {
+    val error = new IllegalStateException("BOOM")
     val chunk = Chunk(
       success(file1, GraphAnalyticsResult.UpdateByQuery(file1, Set(nxvFile))),
       success(resource3, GraphAnalyticsResult.Noop),
-      FailedElem(
-        Resources.entityType,
-        resource3,
-        Some(project),
-        Instant.EPOCH,
-        Offset.start,
-        new IllegalStateException("BOOM"),
-        1
-      )
+      FailedElem(Resources.entityType, resource3, project, Instant.EPOCH, Offset.start, error, 1)
     )
 
     for {

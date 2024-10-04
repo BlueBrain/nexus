@@ -73,15 +73,7 @@ class DeltaClientSpec
   private val invalidTag = Some(UserTag.unsafe("unknowntag"))
 
   private def elem(i: Int): Elem[Unit] =
-    SuccessElem(
-      EntityType("test"),
-      iri"https://bbp.epfl.ch/$i",
-      Some(project),
-      Instant.EPOCH,
-      Offset.at(i.toLong),
-      (),
-      1
-    )
+    SuccessElem(EntityType("test"), iri"https://bbp.epfl.ch/$i", project, Instant.EPOCH, Offset.at(i.toLong), (), 1)
 
   override def beforeAll(): Unit = {
     super.beforeAll()

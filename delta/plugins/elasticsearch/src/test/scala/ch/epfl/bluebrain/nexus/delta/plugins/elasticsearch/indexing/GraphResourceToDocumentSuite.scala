@@ -130,7 +130,7 @@ class GraphResourceToDocumentSuite extends NexusSuite with Fixtures with JsonAss
       metadataGraph,
       source
     )
-    SuccessElem(entityType, id, Some(project), Instant.EPOCH, Offset.start, graphResource, 1)
+    SuccessElem(entityType, id, project, Instant.EPOCH, Offset.start, graphResource, 1)
   }
 
 }

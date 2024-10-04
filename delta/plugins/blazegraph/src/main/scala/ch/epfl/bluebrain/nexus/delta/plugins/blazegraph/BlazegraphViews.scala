@@ -299,9 +299,7 @@ final class BlazegraphViews(
     }
 
   private def toIndexViewDef(elem: Elem.SuccessElem[BlazegraphViewState]) =
-    elem.withProject(elem.value.project).traverse { v =>
-      IndexingViewDef(v, prefix)
-    }
+    elem.traverse { v => IndexingViewDef(v, prefix) }
 
   private def eval(cmd: BlazegraphViewCommand): IO[ViewResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)

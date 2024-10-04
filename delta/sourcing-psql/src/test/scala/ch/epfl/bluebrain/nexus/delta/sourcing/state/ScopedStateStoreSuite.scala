@@ -5,13 +5,13 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{entityType, PullRequestState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
@@ -31,8 +31,9 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   private lazy val xas = doobie()
 
-  private lazy val store = ScopedStateStore[Iri, PullRequestState](
-    PullRequest.entityType,
+  private val entityType: EntityType = PullRequest.entityType
+  private lazy val store             = ScopedStateStore[Iri, PullRequestState](
+    entityType,
     PullRequestState.serializer,
     QueryConfig(1, RefreshStrategy.Delay(500.millis)),
     xas
@@ -50,27 +51,21 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   private val customTag = UserTag.unsafe("v0.1")
 
-  private val state1        = PullRequestActive(id1, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val state2        = PullRequestActive(id2, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val updatedState1 = PullRequestClosed(id1, project1, 2, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val epoch: Instant = Instant.EPOCH
+  private val state1         = PullRequestActive(id1, project1, 1, epoch, Anonymous, epoch, alice)
+  private val state2         = PullRequestActive(id2, project1, 1, epoch, Anonymous, epoch, alice)
+  private val updatedState1  = PullRequestClosed(id1, project1, 2, epoch, Anonymous, epoch, alice)
 
-  private val state3 = PullRequestActive(id1, project2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val state4 = PullRequestActive(id4, project3, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val state3 = PullRequestActive(id1, project2, 1, epoch, Anonymous, epoch, alice)
+  private val state4 = PullRequestActive(id4, project3, 1, epoch, Anonymous, epoch, alice)
 
-  private val elem1        =
-    Elem.SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), state1, 1)
-  private val elem2        =
-    Elem.SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(2L), state2, 1)
-  private val elem3        =
-    Elem.SuccessElem(PullRequest.entityType, id1, Some(project2), Instant.EPOCH, Offset.at(3L), state3, 1)
-  private val elem4        =
-    Elem.SuccessElem(PullRequest.entityType, id4, Some(project3), Instant.EPOCH, Offset.at(4L), state4, 1)
-  private val elem1Tagged  =
-    Elem.SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(5L), state1, 1)
-  private val elem3Tagged  =
-    Elem.SuccessElem(PullRequest.entityType, id1, Some(project2), Instant.EPOCH, Offset.at(6L), state3, 1)
-  private val elem1Updated =
-    Elem.SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(7L), updatedState1, 2)
+  private val elem1        = Elem.SuccessElem(entityType, id1, project1, epoch, Offset.at(1L), state1, 1)
+  private val elem2        = Elem.SuccessElem(entityType, id2, project1, epoch, Offset.at(2L), state2, 1)
+  private val elem3        = Elem.SuccessElem(entityType, id1, project2, epoch, Offset.at(3L), state3, 1)
+  private val elem4        = Elem.SuccessElem(entityType, id4, project3, epoch, Offset.at(4L), state4, 1)
+  private val elem1Tagged  = Elem.SuccessElem(entityType, id1, project1, epoch, Offset.at(5L), state1, 1)
+  private val elem3Tagged  = Elem.SuccessElem(entityType, id1, project2, epoch, Offset.at(6L), state3, 1)
+  private val elem1Updated = Elem.SuccessElem(entityType, id1, project1, epoch, Offset.at(7L), updatedState1, 2)
 
   private def assertCount(expected: Int) =
     sql"select count(*) from scoped_states".query[Int].unique.transact(xas.read).assertEquals(expected)
@@ -183,7 +178,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
         project1,
         xas
       )
-      .assertEquals(Some(PullRequest.entityType))
+      .assertEquals(Some(entityType))
   }
 
   test("Get no entity type for an unknown id") {

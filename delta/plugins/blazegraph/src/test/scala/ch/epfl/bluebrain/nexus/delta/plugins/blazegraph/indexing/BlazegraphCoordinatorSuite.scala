@@ -92,7 +92,7 @@ class BlazegraphCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = view1.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
         value = view1,
@@ -101,7 +101,7 @@ class BlazegraphCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = view2.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(2L),
         value = view2,
@@ -110,7 +110,7 @@ class BlazegraphCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = view3.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(3L),
         value = view3,
@@ -120,7 +120,7 @@ class BlazegraphCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = deprecatedView1.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
         value = deprecatedView1,
@@ -129,7 +129,7 @@ class BlazegraphCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = updatedView2.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(5L),
         value = updatedView2,
@@ -139,7 +139,7 @@ class BlazegraphCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture
       SuccessElem(
         tpe = BlazegraphViews.entityType,
         id = updatedView2.ref.viewId,
-        project = Some(project),
+        project = project,
         instant = Instant.EPOCH,
         offset = Offset.at(6L),
         value = updatedView2,

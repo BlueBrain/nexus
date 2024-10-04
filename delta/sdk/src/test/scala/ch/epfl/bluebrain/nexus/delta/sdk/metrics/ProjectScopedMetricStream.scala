@@ -17,6 +17,6 @@ object ProjectScopedMetricStream {
     )
 
   private def elem(entityType: EntityType, metric: ProjectScopedMetric, offset: Long) =
-    Elem.SuccessElem(entityType, metric.id, Some(metric.project), metric.instant, Offset.At(offset), metric, metric.rev)
+    Elem.SuccessElem(entityType, metric.id, metric.project, metric.instant, Offset.At(offset), metric, metric.rev)
 
 }

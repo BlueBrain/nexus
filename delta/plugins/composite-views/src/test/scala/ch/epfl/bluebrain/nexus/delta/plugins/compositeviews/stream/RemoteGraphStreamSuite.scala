@@ -36,7 +36,7 @@ class RemoteGraphStreamSuite extends NexusSuite {
   private val id = iri"https://example.com/testresource"
 
   private val project = ProjectRef.unsafe("org", "proj")
-  private val elem    = SuccessElem(EntityType("test"), id, Some(project), Instant.EPOCH, Offset.Start, (), 1)
+  private val elem    = SuccessElem(EntityType("test"), id, project, Instant.EPOCH, Offset.Start, (), 1)
   private val nQuads  = NQuads(contentOf("remote/resource.nq"), id)
 
   test("Metadata should be filtered correctly") {

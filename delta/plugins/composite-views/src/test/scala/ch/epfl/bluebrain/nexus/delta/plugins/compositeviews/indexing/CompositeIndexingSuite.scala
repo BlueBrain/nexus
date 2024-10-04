@@ -166,7 +166,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     } yield SuccessElem(
       entityType,
       value.id,
-      Some(project),
+      project,
       Instant.EPOCH,
       Offset.at(offset),
       resource,
