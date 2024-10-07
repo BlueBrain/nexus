@@ -33,22 +33,22 @@ object StreamingQuery {
 
   /**
     * Get information about the remaining elements to stream
-    * @param project
-    *   the project of the states / tombstones
+    * @param scope
+    *   the scope for the query
     * @param selectFilter
     *   what to filter for
     * @param xas
     *   the transactors
     */
   def remaining(
-      project: ProjectRef,
+      scope: Scope,
       selectFilter: SelectFilter,
       start: Offset,
       xas: Transactors
   ): IO[Option[RemainingElems]] = {
     sql"""SELECT count(ordering), max(instant)
          |FROM public.scoped_states
-         |${stateFilter(project, start, selectFilter)}
+         |${stateFilter(scope, start, selectFilter)}
          |""".stripMargin
       .query[(Long, Option[Instant])]
       .map { case (count, maxInstant) =>
@@ -77,7 +77,7 @@ object StreamingQuery {
     *   the transactors
     */
   def elems(
-      project: ProjectRef,
+      scope: Scope,
       start: Offset,
       selectFilter: SelectFilter,
       cfg: QueryConfig,
@@ -86,13 +86,13 @@ object StreamingQuery {
     def query(offset: Offset): Query0[Elem[Unit]] = {
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
-           |${stateFilter(project, offset, selectFilter)}
+           |${stateFilter(scope, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |UNION ALL
            |(SELECT 'tombstone', type, id, org, project, instant, ordering, -1
            |FROM public.scoped_tombstones
-           |${tombstoneFilter(project, offset, selectFilter)}
+           |${tombstoneFilter(scope, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)
@@ -117,8 +117,8 @@ object StreamingQuery {
     *
     * The stream termination depends on the provided [[QueryConfig]]
     *
-    * @param project
-    *   the project of the states / tombstones
+    * @param scope
+    *   the scope for the query
     * @param start
     *   the offset to start with
     * @param selectFilter
@@ -131,7 +131,7 @@ object StreamingQuery {
     *   the function to decode states
     */
   def elems[A](
-      project: ProjectRef,
+      scope: Scope,
       start: Offset,
       selectFilter: SelectFilter,
       cfg: QueryConfig,
@@ -141,13 +141,13 @@ object StreamingQuery {
     def query(offset: Offset): Query0[Elem[Json]] = {
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
-           |${stateFilter(project, offset, selectFilter)}
+           |${stateFilter(scope, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |UNION ALL
            |(SELECT 'tombstone', type, id, org, project, null, instant, ordering, -1
            |FROM public.scoped_tombstones
-           |${tombstoneFilter(project, offset, selectFilter)}
+           |${tombstoneFilter(scope, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)
@@ -164,7 +164,7 @@ object StreamingQuery {
         e.evalMap { value =>
           decodeValue(e.tpe, value).onError { err =>
             logger.error(err)(
-              s"An error occurred while decoding value with id '${e.id}' of type '${e.tpe}' in '$project'."
+              s"An error occurred while decoding value with id '${e.id}' of type '${e.tpe}' in '$scope'."
             )
           }
         }
@@ -267,24 +267,24 @@ object StreamingQuery {
       logger.debug(s"Reached the end of the single evaluation of query '${query.sql}'.")
   }
 
-  private def stateFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
+  private def stateFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter) = {
     val typeFragment =
       selectFilter.types.asRestrictedTo.map(restriction => fr"value -> 'types' ??| ${typesSqlArray(restriction)}")
     Fragments.whereAndOpt(
       selectFilter.entityType.map { entityType => fr"type = $entityType" },
-      Scope(projectRef).asFragment,
+      scope.asFragment,
       offset.asFragment,
       selectFilter.tag.asFragment,
       typeFragment
     )
   }
 
-  private def tombstoneFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
+  private def tombstoneFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter) = {
     val typeFragment  =
       selectFilter.types.asRestrictedTo.map(includedTypes => fr"cause -> 'types' ??| ${typesSqlArray(includedTypes)}")
     val causeFragment = Fragments.orOpt(Some(fr"cause->>'deleted' = 'true'"), typeFragment)
     Fragments.whereAndOpt(
-      Scope(projectRef).asFragment,
+      scope.asFragment,
       offset.asFragment,
       selectFilter.tag.asFragment,
       causeFragment

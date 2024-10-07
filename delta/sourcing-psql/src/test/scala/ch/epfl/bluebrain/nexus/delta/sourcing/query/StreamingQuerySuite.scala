@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Serializer}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.syntax.all._
 import fs2.Chunk
@@ -112,8 +112,8 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   /** Returns streams that returns elems of Iri and elem of unit */
   private def stream(project: ProjectRef, start: Offset, selectFilter: SelectFilter) = (
-    StreamingQuery.elems[Iri](project, start, selectFilter, qc, xas, decodeValue),
-    StreamingQuery.elems(project, start, selectFilter, qc, xas)
+    StreamingQuery.elems[Iri](Scope(project), start, selectFilter, qc, xas, decodeValue),
+    StreamingQuery.elems(Scope(project), start, selectFilter, qc, xas)
   )
 
   test("Running a stream on latest states on project 1 from the beginning") {
@@ -199,7 +199,8 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
         }
       }
 
-    val result                 = StreamingQuery.elems[Iri](project1, Offset.start, SelectFilter.latest, qc, xas, incompleteDecode)
+    val result                 =
+      StreamingQuery.elems[Iri](Scope(project1), Offset.start, SelectFilter.latest, qc, xas, incompleteDecode)
     val releaseDecodingFailure = decodingFailure(Release.entityType)
     result.compile.toList.assertEquals(
       List(
@@ -215,7 +216,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   test("Get the remaining elems for project 1 on latest from the beginning") {
     StreamingQuery
-      .remaining(project1, SelectFilter.latest, Offset.start, xas)
+      .remaining(Scope(project1), SelectFilter.latest, Offset.start, xas)
       .assertEquals(
         Some(
           RemainingElems(6L, epoch)
@@ -225,7 +226,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   test("Get the remaining elems for project 1 for the PullRequest type on latest from the beginning") {
     StreamingQuery
-      .remaining(project1, SelectFilter.latestOfEntity(PullRequest.entityType), Offset.start, xas)
+      .remaining(Scope(project1), SelectFilter.latestOfEntity(PullRequest.entityType), Offset.start, xas)
       .assertEquals(
         Some(
           RemainingElems(4L, epoch)
@@ -235,7 +236,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   test("Get the remaining elems for project 1 on latest from offset 6") {
     StreamingQuery
-      .remaining(project1, SelectFilter.latest, Offset.at(6L), xas)
+      .remaining(Scope(project1), SelectFilter.latest, Offset.at(6L), xas)
       .assertEquals(
         Some(
           RemainingElems(3L, epoch)
@@ -245,7 +246,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   test(s"Get the remaining elems for project 1 on tag $customTag from the beginning") {
     StreamingQuery
-      .remaining(project1, SelectFilter.tag(customTag), Offset.at(6L), xas)
+      .remaining(Scope(project1), SelectFilter.tag(customTag), Offset.at(6L), xas)
       .assertEquals(
         Some(
           RemainingElems(4L, epoch)
@@ -255,7 +256,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   test(s"Get no remaining for an unknown project") {
     StreamingQuery
-      .remaining(ProjectRef.unsafe("xxx", "xxx"), SelectFilter.latest, Offset.at(6L), xas)
+      .remaining(Scope(ProjectRef.unsafe("xxx", "xxx")), SelectFilter.latest, Offset.at(6L), xas)
       .assertEquals(None)
   }
 

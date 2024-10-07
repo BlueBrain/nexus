@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.sse
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -59,12 +59,12 @@ object SseElemStream {
   def apply(qc: QueryConfig, xas: Transactors): SseElemStream = new SseElemStream {
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
-      StreamingQuery.elems(project, start, selectFilter, qc, xas).map(toServerSentEvent)
+      StreamingQuery.elems(Scope(project), start, selectFilter, qc, xas).map(toServerSentEvent)
 
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
       StreamingQuery
         .elems(
-          project,
+          Scope(project),
           start,
           selectFilter,
           qc.copy(refreshStrategy = RefreshStrategy.Stop),
@@ -77,7 +77,7 @@ object SseElemStream {
         selectFilter: SelectFilter,
         start: Offset
     ): IO[Option[RemainingElems]] =
-      StreamingQuery.remaining(project, selectFilter, start, xas)
+      StreamingQuery.remaining(Scope(project), selectFilter, start, xas)
   }
 
   private[sse] def toServerSentEvent(elem: Elem[Unit]): ServerSentEvent = {

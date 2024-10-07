@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceState
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
@@ -102,7 +102,7 @@ object GraphAnalyticsStream {
           case _                    => IO.pure(Noop)
         }
 
-      StreamingQuery.elems(project, start, SelectFilter.latest, qc, xas, decode)
+      StreamingQuery.elems(Scope(project), start, SelectFilter.latest, qc, xas, decode)
     }
   // $COVERAGE-ON$
 
