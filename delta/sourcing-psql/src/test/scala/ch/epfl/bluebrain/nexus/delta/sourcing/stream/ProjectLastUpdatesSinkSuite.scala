@@ -13,6 +13,7 @@ import fs2.Chunk
 import munit.AnyFixture
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.DurationInt
 
 class ProjectLastUpdatesSinkSuite extends NexusSuite with Doobie.Fixture {
@@ -22,7 +23,7 @@ class ProjectLastUpdatesSinkSuite extends NexusSuite with Doobie.Fixture {
   private lazy val xas   = doobie()
   private lazy val store = ProjectLastUpdateStore(xas)
 
-  private val now = Instant.now()
+  private val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
 
   test("Process the incoming updates and update the values in database accordingly") {
     val project1        = ProjectRef.unsafe("org", "project1")

@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class ProjectLastUpdateStoreSuite extends NexusSuite with Doobie.Fixture {
 
@@ -16,7 +17,7 @@ class ProjectLastUpdateStoreSuite extends NexusSuite with Doobie.Fixture {
   private lazy val xas   = doobie()
   private lazy val store = ProjectLastUpdateStore(xas)
 
-  private val now = Instant.now()
+  private val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
 
   test("Save, fetch, update and fetch again and delete and fetch one last time") {
     val project1            = ProjectRef.unsafe("org", "proj1")
