@@ -95,6 +95,7 @@ object Transactors {
       username,
       Secret(password),
       tablesAutocreate = false,
+      rewriteBatchInserts = true,
       5.seconds,
       CacheConfig(500, 10.minutes)
     )
@@ -105,12 +106,20 @@ object Transactors {
       config: DatabaseConfig
   ): Resource[IO, Transactors] = {
 
+    def jdbcUrl(access: DatabaseAccess, readOnly: Boolean) = {
+      val baseUrl = s"jdbc:postgresql://${access.host}:${access.port}/${config.name}"
+      if (!readOnly && config.rewriteBatchInserts)
+        s"$baseUrl?reWriteBatchedInserts=true"
+      else
+        baseUrl
+    }
+
     def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String): Resource[IO, HikariTransactor[IO]] = {
       for {
         ec         <- ExecutionContexts.fixedThreadPool[IO](access.poolSize)
         dataSource <- Resource.make[IO, HikariDataSource](IO.delay {
                         val ds = new HikariDataSource
-                        ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/${config.name}")
+                        ds.setJdbcUrl(jdbcUrl(access, readOnly))
                         ds.setUsername(config.username)
                         ds.setPassword(config.password.value)
                         ds.setDriverClassName("org.postgresql.Driver")
