@@ -24,6 +24,8 @@ import scala.concurrent.duration.FiniteDuration
   *   The database password
   * @param tablesAutocreate
   *   When true it creates the tables on service boot
+  * @param rewriteBatchInserts
+  *   When true it creates the tables on service boot
   * @param slowQueryThreshold
   *   Threshold allowing to trigger a warning log when a query execution time reaches this limit
   * @param cache
@@ -37,6 +39,7 @@ final case class DatabaseConfig(
     username: String,
     password: Secret[String],
     tablesAutocreate: Boolean,
+    rewriteBatchInserts: Boolean,
     slowQueryThreshold: FiniteDuration,
     cache: CacheConfig
 )
