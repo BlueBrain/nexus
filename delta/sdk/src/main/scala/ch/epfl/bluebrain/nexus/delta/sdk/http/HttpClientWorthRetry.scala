@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.http.scaladsl.model.StatusCodes.GatewayTimeout
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpServerStatusError, HttpTimeoutError, HttpUnexpectedError}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpConnectError, HttpServerStatusError, HttpTimeoutError, HttpUnexpectedError}
 
 trait HttpClientWorthRetry extends (HttpClientError => Boolean)
 
@@ -22,6 +22,7 @@ object HttpClientWorthRetry {
     */
   val onServerError: HttpClientWorthRetry = {
     case HttpServerStatusError(_, code, _) if code != GatewayTimeout             => true
+    case _: HttpConnectError                                                     => true
     case _: HttpTimeoutError                                                     => true
     case err: HttpUnexpectedError if !err.message.contains("Connection refused") => true
     case _                                                                       => false
