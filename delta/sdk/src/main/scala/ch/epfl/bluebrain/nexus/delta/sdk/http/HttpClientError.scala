@@ -69,6 +69,16 @@ object HttpClientError {
   }
 
   /**
+    * A connection error (ex: connection refused).
+    */
+  final case class HttpConnectError(req: HttpRequest, message: String) extends HttpClientError {
+    override val reason: String                =
+      s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' resulted in a connect error"
+    override val details: Option[String]       = Some(s"the request failed due to '$message'")
+    override val errorCode: Option[StatusCode] = None
+  }
+
+  /**
     * A timeout error.
     */
   final case class HttpTimeoutError(req: HttpRequest, message: String) extends HttpClientError {
