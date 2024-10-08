@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -77,11 +77,11 @@ object GraphResourceStream {
   ): GraphResourceStream = new GraphResourceStream {
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
-      StreamingQuery.elems(project, start, selectFilter, qc, xas, shifts.decodeGraphResource(_, _))
+      StreamingQuery.elems(Scope(project), start, selectFilter, qc, xas, shifts.decodeGraphResource(_, _))
 
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
       StreamingQuery.elems(
-        project,
+        Scope(project),
         start,
         selectFilter,
         qc.copy(refreshStrategy = RefreshStrategy.Stop),
@@ -94,7 +94,7 @@ object GraphResourceStream {
         selectFilter: SelectFilter,
         start: Offset
     ): IO[Option[RemainingElems]] =
-      StreamingQuery.remaining(project, selectFilter, start, xas)
+      StreamingQuery.remaining(Scope(project), selectFilter, start, xas)
   }
 
   /**

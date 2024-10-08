@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.{Clock, IO, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectLastUpdateConfig, ProjectionConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
@@ -18,13 +18,8 @@ import izumi.distage.model.definition.ModuleDef
 object StreamModule extends ModuleDef {
   addImplicit[Sync[IO]]
 
-  make[GraphResourceStream].from {
-    (
-        qc: QueryConfig,
-        xas: Transactors,
-        shifts: ResourceShifts
-    ) =>
-      GraphResourceStream(qc, xas, shifts)
+  make[GraphResourceStream].from { (qc: QueryConfig, xas: Transactors, shifts: ResourceShifts) =>
+    GraphResourceStream(qc, xas, shifts)
   }
 
   many[PipeDef].add(DiscardMetadata)
@@ -56,6 +51,13 @@ object StreamModule extends ModuleDef {
         projectionErrors: ProjectionErrors,
         cfg: ProjectionConfig
     ) => Supervisor(projections, projectionErrors, cfg)
+  }
+
+  make[ProjectLastUpdateStore].from { (xas: Transactors) => ProjectLastUpdateStore(xas) }
+
+  make[ProjectLastUpdateProjection].fromEffect {
+    (supervisor: Supervisor, store: ProjectLastUpdateStore, xas: Transactors, config: ProjectLastUpdateConfig) =>
+      ProjectLastUpdateProjection(supervisor, store, xas, config.batch, config.query)
   }
 
   make[PurgeProjectionCoordinator.type].fromEffect {

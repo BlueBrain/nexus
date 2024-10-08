@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestar
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ProgressStatistics, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ProgressStatistics, Scope, Transactors}
 import fs2.Stream
 
 import java.time.Instant
@@ -135,11 +135,12 @@ object Projections {
         for {
           current   <- progress(projectionId)
           remaining <-
-            StreamingQuery.remaining(project, selectFilter, current.fold(Offset.start)(_.offset), xas)
+            StreamingQuery.remaining(Scope(project), selectFilter, current.fold(Offset.start)(_.offset), xas)
         } yield ProgressStatistics(current, remaining)
     }
 
-  val purgeRestartMetadata                                                                 = ProjectionMetadata("system", "purge-projection-restarts", None, None)
+  private val purgeRestartMetadata = ProjectionMetadata("system", "purge-projection-restarts", None, None)
+
   def purgeExpiredRestarts(projections: Projections, config: PurgeConfig): PurgeProjection =
     PurgeProjection(purgeRestartMetadata, config, projections.deleteExpiredRestarts)
 }
