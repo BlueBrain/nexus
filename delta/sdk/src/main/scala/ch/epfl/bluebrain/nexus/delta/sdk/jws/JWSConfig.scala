@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jws
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.jws.RSAUtils
 import com.nimbusds.jose.jwk.RSAKey
 import pureconfig.generic.auto._
 import pureconfig.generic.semiauto.deriveReader
