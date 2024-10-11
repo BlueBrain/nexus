@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilter, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{ElemStreaming, SelectFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import fs2.Stream
@@ -70,32 +69,32 @@ object GraphResourceStream {
   /**
     * Create a graph resource stream
     */
-  def apply(
-      qc: QueryConfig,
-      xas: Transactors,
-      shifts: ResourceShifts
-  ): GraphResourceStream = new GraphResourceStream {
+  def apply(elemStreaming: ElemStreaming, shifts: ResourceShifts): GraphResourceStream =
+    new GraphResourceStream {
 
-    override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
-      StreamingQuery.elems(Scope(project), start, selectFilter, qc, xas, shifts.decodeGraphResource(_, _))
+      val stopping = elemStreaming.stopping
 
-    override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
-      StreamingQuery.elems(
-        Scope(project),
-        start,
-        selectFilter,
-        qc.copy(refreshStrategy = RefreshStrategy.Stop),
-        xas,
-        shifts.decodeGraphResource(_, _)
-      )
+      override def continuous(
+          project: ProjectRef,
+          selectFilter: SelectFilter,
+          start: Offset
+      ): ElemStream[GraphResource] =
+        elemStreaming(Scope(project), start, selectFilter, shifts.decodeGraphResource(_, _))
 
-    override def remaining(
-        project: ProjectRef,
-        selectFilter: SelectFilter,
-        start: Offset
-    ): IO[Option[RemainingElems]] =
-      StreamingQuery.remaining(Scope(project), selectFilter, start, xas)
-  }
+      override def currents(
+          project: ProjectRef,
+          selectFilter: SelectFilter,
+          start: Offset
+      ): ElemStream[GraphResource] =
+        stopping(Scope(project), start, selectFilter, shifts.decodeGraphResource(_, _))
+
+      override def remaining(
+          project: ProjectRef,
+          selectFilter: SelectFilter,
+          start: Offset
+      ): IO[Option[RemainingElems]] =
+        elemStreaming.remaining(Scope(project), selectFilter, start)
+    }
 
   /**
     * Constructs a GraphResourceStream from an existing stream without assuring the termination of the operations.

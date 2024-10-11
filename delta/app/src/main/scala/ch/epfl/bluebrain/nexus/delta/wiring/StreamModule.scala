@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.{Clock, IO, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectLastUpdateConfig, ProjectionConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectionErrors, Projections}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ElemQueryConfig, ProjectLastUpdateConfig, ProjectionConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectLastUpdateStream, ProjectionErrors, Projections}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
@@ -18,8 +19,13 @@ import izumi.distage.model.definition.ModuleDef
 object StreamModule extends ModuleDef {
   addImplicit[Sync[IO]]
 
-  make[GraphResourceStream].from { (qc: QueryConfig, xas: Transactors, shifts: ResourceShifts) =>
-    GraphResourceStream(qc, xas, shifts)
+  make[ElemStreaming].from {
+    (xas: Transactors, queryConfig: ElemQueryConfig, activitySignals: ProjectActivitySignals) =>
+      new ElemStreaming(xas, queryConfig, activitySignals)
+  }
+
+  make[GraphResourceStream].from { (elemStreaming: ElemStreaming, shifts: ResourceShifts) =>
+    GraphResourceStream(elemStreaming, shifts)
   }
 
   many[PipeDef].add(DiscardMetadata)
@@ -54,10 +60,18 @@ object StreamModule extends ModuleDef {
   }
 
   make[ProjectLastUpdateStore].from { (xas: Transactors) => ProjectLastUpdateStore(xas) }
+  make[ProjectLastUpdateStream].from { (xas: Transactors, config: ProjectLastUpdateConfig) =>
+    ProjectLastUpdateStream(xas, config.query)
+  }
 
-  make[ProjectLastUpdateProjection].fromEffect {
+  make[ProjectLastUpdateWrites].fromEffect {
     (supervisor: Supervisor, store: ProjectLastUpdateStore, xas: Transactors, config: ProjectLastUpdateConfig) =>
-      ProjectLastUpdateProjection(supervisor, store, xas, config.batch, config.query)
+      ProjectLastUpdateWrites(supervisor, store, xas, config.batch)
+  }
+
+  make[ProjectActivitySignals].fromEffect {
+    (supervisor: Supervisor, stream: ProjectLastUpdateStream, clock: Clock[IO], config: ProjectLastUpdateConfig) =>
+      ProjectActivitySignals(supervisor, stream, clock, config.inactiveInterval)
   }
 
   make[PurgeProjectionCoordinator.type].fromEffect {

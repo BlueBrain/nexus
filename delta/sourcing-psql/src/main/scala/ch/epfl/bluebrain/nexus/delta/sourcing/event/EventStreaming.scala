@@ -83,7 +83,7 @@ object EventStreaming {
       cfg: QueryConfig,
       decode: (EntityType, Json) => IO[Option[A]]
   ): SuccessElemStream[A]           =
-    StreamingQuery[Elem.SuccessElem[Json]](start, query, _.offset, cfg, xas)
+    StreamingQuery[Elem.SuccessElem[Json]](start, query, _.offset, cfg.refreshStrategy, xas)
       // evalMapFilter re-chunks to 1, the following 2 statements do the same but preserve the chunks
       .evalMapChunk(e => decode(e.tpe, e.value).map(_.map(a => e.copy(value = a))))
       .collect { case Some(e) => e }

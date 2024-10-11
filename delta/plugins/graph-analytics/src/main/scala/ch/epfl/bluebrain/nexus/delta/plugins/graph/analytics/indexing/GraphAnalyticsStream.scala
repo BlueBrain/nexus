@@ -10,12 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceState
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{ElemStreaming, SelectFilter}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import doobie._
 import doobie.syntax.all._
 import io.circe.Json
@@ -77,7 +76,7 @@ object GraphAnalyticsStream {
   }
 
   // $COVERAGE-OFF$
-  def apply(qc: QueryConfig, xas: Transactors): GraphAnalyticsStream =
+  def apply(elemStreaming: ElemStreaming, xas: Transactors): GraphAnalyticsStream =
     (project: ProjectRef, start: Offset) => {
 
       // This seems a reasonable value to batch relationship resolution for resources with a lot
@@ -102,7 +101,7 @@ object GraphAnalyticsStream {
           case _                    => IO.pure(Noop)
         }
 
-      StreamingQuery.elems(Scope(project), start, SelectFilter.latest, qc, xas, decode)
+      elemStreaming(Scope(project), start, SelectFilter.latest, decode)
     }
   // $COVERAGE-ON$
 

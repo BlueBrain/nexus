@@ -13,9 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{ElemStreaming, SelectFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -33,8 +32,8 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       GraphAnalytics(client, fetchContext, config.prefix, config.termAggregations)
     }
 
-  make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors) =>
-    GraphAnalyticsStream(qc, xas)
+  make[GraphAnalyticsStream].from { (elemStreaming: ElemStreaming, xas: Transactors) =>
+    GraphAnalyticsStream(elemStreaming, xas)
   }
 
   make[GraphAnalyticsCoordinator].fromEffect {

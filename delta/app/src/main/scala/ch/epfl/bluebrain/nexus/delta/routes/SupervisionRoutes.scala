@@ -21,9 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectRejection, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisedDescription
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectActivitySignals, SupervisedDescription}
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax.KeyOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Encoder, Json}
 
 class SupervisionRoutes(
@@ -31,7 +31,8 @@ class SupervisionRoutes(
     aclCheck: AclCheck,
     supervised: IO[List[SupervisedDescription]],
     projectsHealth: ProjectsHealth,
-    projectHealer: ProjectHealer
+    projectHealer: ProjectHealer,
+    activitySignals: ProjectActivitySignals
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -54,6 +55,9 @@ class SupervisionRoutes(
                     if (projects.isEmpty) emit(StatusCodes.OK, IO.pure(allProjectsAreHealthy))
                     else emit(StatusCodes.InternalServerError, IO.pure(unhealthyProjectsEncoder(projects)))
                   }
+                },
+                (pathPrefix("activity") & pathPrefix("projects") & get & pathEndOrSingleSlash) {
+                  emit(activitySignals.activityMap.map(_.asJson))
                 }
               )
             },

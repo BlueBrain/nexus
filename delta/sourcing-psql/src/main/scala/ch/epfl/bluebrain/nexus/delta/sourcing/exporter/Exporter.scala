@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.std.Semaphore
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.Exporter.ExportResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -36,7 +35,6 @@ object Exporter {
 
   private class ExporterImpl(config: ExportConfig, semaphore: Semaphore[IO], xas: Transactors) extends Exporter {
 
-    private val queryConfig = QueryConfig(config.batchSize, RefreshStrategy.Stop)
     override def events(query: ExportEventQuery): IO[ExportResult] = {
       val projectFilter     = Fragments.orOpt(
         query.projects.map { project => sql"(org = ${project.organization} and project = ${project.project})" }
@@ -73,7 +71,7 @@ object Exporter {
             targetDirectory / s"${paddedOffset(o)}.json"
           }
 
-          StreamingQuery[RowEvent](start, query, _.ordering, queryConfig, xas)
+          StreamingQuery[RowEvent](start, query, _.ordering, RefreshStrategy.Stop, xas)
             .evalTap { rowEvent => offsetRef.set(rowEvent.ordering) }
             .map(_.asJson.noSpaces)
             .through(StreamingUtils.writeRotate(computePath, config.limitPerFile))

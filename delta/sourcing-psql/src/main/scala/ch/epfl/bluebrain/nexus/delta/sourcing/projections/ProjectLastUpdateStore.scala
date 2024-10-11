@@ -5,12 +5,8 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate.ProjectLastUpdateMap
-import doobie.Fragments
 import doobie.syntax.all._
 import doobie.postgres.implicits._
-
-import java.time.Instant
 
 /**
   * Keeps track of the last update on a given project
@@ -26,16 +22,6 @@ trait ProjectLastUpdateStore {
     * Inserts/updates a list of updates
     */
   def save(updates: List[ProjectLastUpdate]): IO[Unit]
-
-  /**
-    * Fetch all updates from the database
-    */
-  def fetchAll: IO[ProjectLastUpdateMap]
-
-  /**
-    * Fetch updates older than the given instant
-    */
-  def fetchUpdates(after: Instant): IO[ProjectLastUpdateMap]
 
 }
 
@@ -55,26 +41,13 @@ object ProjectLastUpdateStore {
         .void
 
     private def saveOne(p: ProjectLastUpdate) =
-      sql"""INSERT INTO project_last_updates (org, project, last_instant, last_state_ordering)
+      sql"""INSERT INTO project_last_updates (org, project, last_instant, last_ordering)
            |VALUES (${p.project.organization}, ${p.project.project} ,${p.lastInstant}, ${p.lastOrdering})
            |ON CONFLICT (org, project)
            |DO UPDATE set
            |  last_instant = EXCLUDED.last_instant,
-           |  last_state_ordering = EXCLUDED.last_state_ordering;
+           |  last_ordering = EXCLUDED.last_ordering;
            |""".stripMargin.update.run
-
-    override def fetchAll: IO[ProjectLastUpdateMap] = fetch(None)
-
-    override def fetchUpdates(after: Instant): IO[ProjectLastUpdateMap] = fetch(Some(after))
-
-    private def fetch(after: Option[Instant]) = {
-      val afterFragment = after.map { a => fr"last_instant > $a" }
-      sql"""SELECT * from project_last_updates ${Fragments.whereAndOpt(afterFragment)}"""
-        .query[ProjectLastUpdate]
-        .map { plu => plu.project -> plu }
-        .toMap
-        .transact(xas.read)
-    }
   }
 
 }

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuerySuite.Release
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreamingSuite.Release
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -22,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.syntax.all._
-import fs2.Chunk
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, DecodingFailure, Json}
@@ -30,13 +29,14 @@ import munit.AnyFixture
 
 import java.time.Instant
 
-class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
+class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private val qc = QueryConfig(2, RefreshStrategy.Stop)
 
-  private lazy val xas = doobie()
+  private lazy val xas           = doobie()
+  private lazy val elemStreaming = ElemStreaming.stopping(xas, 2)
 
   private lazy val prStore = ScopedStateStore[Iri, PullRequestState](
     PullRequest.entityType,
@@ -112,8 +112,8 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
 
   /** Returns streams that returns elems of Iri and elem of unit */
   private def stream(project: ProjectRef, start: Offset, selectFilter: SelectFilter) = (
-    StreamingQuery.elems[Iri](Scope(project), start, selectFilter, qc, xas, decodeValue),
-    StreamingQuery.elems(Scope(project), start, selectFilter, qc, xas)
+    elemStreaming(Scope(project), start, selectFilter, decodeValue),
+    elemStreaming(Scope(project), start, selectFilter)
   )
 
   test("Running a stream on latest states on project 1 from the beginning") {
@@ -199,8 +199,7 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
         }
       }
 
-    val result                 =
-      StreamingQuery.elems[Iri](Scope(project1), Offset.start, SelectFilter.latest, qc, xas, incompleteDecode)
+    val result                 = elemStreaming(Scope(project1), Offset.start, SelectFilter.latest, incompleteDecode)
     val releaseDecodingFailure = decodingFailure(Release.entityType)
     result.compile.toList.assertEquals(
       List(
@@ -259,16 +258,9 @@ class StreamingQuerySuite extends NexusSuite with Doobie.Fixture {
       .remaining(Scope(ProjectRef.unsafe("xxx", "xxx")), SelectFilter.latest, Offset.at(6L), xas)
       .assertEquals(None)
   }
-
-  test("Should only keep the last elem when elems with the same id appear several times") {
-    val input    = List(1 -> "A", 2 -> "B", 3 -> "C", 1 -> "D", 2 -> "E", 1 -> "F")
-    val expected = Chunk(3 -> "C", 2 -> "E", 1 -> "F")
-    val obtained = StreamingQuery.dropDuplicates[(Int, String), Int](input, _._1)
-    assertEquals(obtained, expected)
-  }
 }
 
-object StreamingQuerySuite {
+object ElemStreamingSuite {
 
   final private case class Release(
       id: Iri,

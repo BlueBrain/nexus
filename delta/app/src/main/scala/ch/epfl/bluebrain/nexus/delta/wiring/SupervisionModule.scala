@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectHealer, ProjectsHealth}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectActivitySignals, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
 
 /**
@@ -31,14 +31,16 @@ object SupervisionModule extends ModuleDef {
         rc: RemoteContextResolution @Id("aggregate"),
         jo: JsonKeyOrdering,
         projectsHealth: ProjectsHealth,
-        projectHealer: ProjectHealer
+        projectHealer: ProjectHealer,
+        projectActivitySignals: ProjectActivitySignals
     ) =>
       new SupervisionRoutes(
         identities,
         aclCheck,
         supervisor.getRunningProjections(),
         projectsHealth,
-        projectHealer
+        projectHealer,
+        projectActivitySignals
       )(baseUri, rc, jo)
   }
 

@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.Stream
 
@@ -38,6 +39,7 @@ object ProjectDeletionCoordinator {
       deletionTasks: List[ProjectDeletionTask],
       deletionConfig: DeletionConfig,
       serviceAccount: ServiceAccount,
+      projectLastUpdateStore: ProjectLastUpdateStore,
       deletionStore: ProjectDeletionStore,
       clock: Clock[IO]
   ) extends ProjectDeletionCoordinator {
@@ -72,6 +74,8 @@ object ProjectDeletionCoordinator {
                        }
         // Waiting for events issued by deletion tasks to be taken into account
         _         <- IO.sleep(deletionConfig.propagationDelay)
+        // Delete the last updates for this project
+        _         <- projectLastUpdateStore.delete(project.project)
         // Delete the events and states and save the deletion report
         _         <- deletionStore.deleteAndSaveReport(report)
         _         <- logger.info(s"Project ${project.project} has been successfully deleted.")
@@ -89,6 +93,7 @@ object ProjectDeletionCoordinator {
       deletionTasks: Set[ProjectDeletionTask],
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
+      projectLastUpdateStore: ProjectLastUpdateStore,
       xas: Transactors,
       clock: Clock[IO]
   ): ProjectDeletionCoordinator =
@@ -98,6 +103,7 @@ object ProjectDeletionCoordinator {
         deletionTasks.toList,
         deletionConfig,
         serviceAccount,
+        projectLastUpdateStore,
         new ProjectDeletionStore(xas),
         clock
       )
@@ -114,10 +120,11 @@ object ProjectDeletionCoordinator {
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
       supervisor: Supervisor,
+      projectLastUpdateStore: ProjectLastUpdateStore,
       xas: Transactors,
       clock: Clock[IO]
   ): IO[ProjectDeletionCoordinator] = {
-    val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, xas, clock)
+    val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, projectLastUpdateStore, xas, clock)
     stream match {
       case Noop           => logger.info("Projection deletion is disabled.").as(Noop)
       case active: Active =>

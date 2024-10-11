@@ -17,28 +17,29 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import fs2.concurrent.SignallingRef
 import org.scalatest.Assertion
 
 import java.time.Instant
 
 class SupervisionRoutesSpec extends BaseRouteSpec {
 
-  private val superviser = User("superviser", realm)
+  private val supervisor = User("supervisor", realm)
 
-  implicit private val callerSuperviser: Caller =
-    Caller(superviser, Set(superviser, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val callerSupervisor: Caller =
+    Caller(supervisor, Set(supervisor, Anonymous, Authenticated(realm), Group("group", realm)))
 
-  private val asSuperviser = addCredentials(OAuth2BearerToken("superviser"))
+  private val asSupervisor = addCredentials(OAuth2BearerToken("supervisor"))
 
-  private val identities = IdentitiesDummy(callerSuperviser)
+  private val identities = IdentitiesDummy(callerSupervisor)
   private val aclCheck   = AclSimpleCheck().accepted
 
-  private val projectRef  = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
-  private val projectRef2 = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject2"))
+  private val project  = ProjectRef.unsafe("myorg", "myproject")
+  private val project2 = ProjectRef.unsafe("myorg", "myproject2")
 
-  private val unhealthyProjects = Set(projectRef, projectRef2)
+  private val unhealthyProjects = Set(project, project2)
 
-  private val metadata     = ProjectionMetadata("module", "name", Some(projectRef), None)
+  private val metadata     = ProjectionMetadata("module", "name", Some(project), None)
   private val progress     = ProjectionProgress(Offset.start, Instant.EPOCH, 1L, 1L, 1L)
   private val description1 =
     SupervisedDescription(metadata, ExecutionStrategy.PersistentSingleNode, 1, ExecutionStatus.Running, progress)
@@ -69,13 +70,19 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     override def heal(project: ProjectRef): IO[Unit] = IO.unit
   }
 
+  private val activitySignals = new ProjectActivitySignals {
+    override def apply(project: ProjectRef): IO[Option[SignallingRef[IO, Boolean]]] = IO.none
+    override def activityMap: IO[Map[ProjectRef, Boolean]]                          = IO.pure(Map(project -> true, project2 -> false))
+  }
+
   private def routesTemplate(unhealthyProjects: Set[ProjectRef], healer: ProjectHealer) = Route.seal(
     new SupervisionRoutes(
       identities,
       aclCheck,
       IO.pure { List(description1, description2) },
       projectsHealth(unhealthyProjects),
-      healer
+      healer,
+      activitySignals
     ).routes
   )
 
@@ -83,7 +90,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    aclCheck.append(AclAddress.Root, superviser -> Set(supervision.read, projects.write)).accepted
+    aclCheck.append(AclAddress.Root, supervisor -> Set(supervision.read, projects.write)).accepted
   }
 
   "The supervision projection endpoint" should {
@@ -95,7 +102,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     }
 
     "be accessible with supervision/read permission and return expected payload" in {
-      Get("/v1/supervision/projections") ~> asSuperviser ~> routes ~> check {
+      Get("/v1/supervision/projections") ~> asSupervisor ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("supervision/supervision-running-proj-response.json")
       }
@@ -113,14 +120,14 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
     "return a successful http code when there are no unhealthy projects" in {
       val routesWithHealthyProjects = routesTemplate(Set.empty, noopHealer)
-      Get("/v1/supervision/projects") ~> asSuperviser ~> routesWithHealthyProjects ~> check {
+      Get("/v1/supervision/projects") ~> asSupervisor ~> routesWithHealthyProjects ~> check {
         response.status shouldEqual StatusCodes.OK
       }
     }
 
     "return an error code when there are unhealthy projects" in {
       val routesWithUnhealthyProjects = routesTemplate(unhealthyProjects, noopHealer)
-      Get("/v1/supervision/projects") ~> asSuperviser ~> routesWithUnhealthyProjects ~> check {
+      Get("/v1/supervision/projects") ~> asSupervisor ~> routesWithUnhealthyProjects ~> check {
         response.status shouldEqual StatusCodes.InternalServerError
         response.asJson shouldEqual
           json"""
@@ -154,7 +161,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       val project          = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
       val routesWithHealer = routesTemplate(Set.empty, projectHealer)
 
-      Post(s"/v1/supervision/projects/$project/heal") ~> asSuperviser ~> routesWithHealer ~> check {
+      Post(s"/v1/supervision/projects/$project/heal") ~> asSupervisor ~> routesWithHealer ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""
@@ -168,7 +175,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
     "return an error if the healing failed" in {
       val routesWithFailingHealer = routesTemplate(Set.empty, failingHealer)
-      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSuperviser ~> routesWithFailingHealer ~> check {
+      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSupervisor ~> routesWithFailingHealer ~> check {
         response.status shouldEqual StatusCodes.InternalServerError
         response.asJson shouldEqual
           json"""
@@ -179,6 +186,23 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
               "details" : "failure details"
             }
               """
+      }
+    }
+
+  }
+
+  "The supervision project activity endpoint" should {
+
+    "be forbidden without supervision/read permission" in {
+      Get("/v1/supervision/activity/projects") ~> routes ~> check {
+        response.shouldBeForbidden
+      }
+    }
+
+    "be accessible with supervision/read permission and return expected payload" in {
+      Get("/v1/supervision/activity/projects") ~> asSupervisor ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{ "$project": true, "$project2": false }"""
       }
     }
 

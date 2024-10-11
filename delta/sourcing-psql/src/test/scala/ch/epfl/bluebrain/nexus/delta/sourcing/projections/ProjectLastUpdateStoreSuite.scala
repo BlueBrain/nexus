@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
@@ -14,8 +16,9 @@ class ProjectLastUpdateStoreSuite extends NexusSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
-  private lazy val xas   = doobie()
-  private lazy val store = ProjectLastUpdateStore(xas)
+  private lazy val xas    = doobie()
+  private lazy val store  = ProjectLastUpdateStore(xas)
+  private lazy val stream = ProjectLastUpdateStream(xas, QueryConfig(10, RefreshStrategy.Stop))
 
   private val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
 
@@ -26,23 +29,22 @@ class ProjectLastUpdateStoreSuite extends NexusSuite with Doobie.Fixture {
     val project2            = ProjectRef.unsafe("org", "proj2")
     val lastProject2        = ProjectLastUpdate(project2, now.minusSeconds(2L), Offset.at(123L))
 
-    val threshold = now.minusSeconds(10L)
-
     for {
       // Init
       _                    <- store.save(List(lastProject1, lastProject2))
-      expectedAll           = Map(project1 -> lastProject1, project2 -> lastProject2)
-      _                    <- store.fetchAll.assertEquals(expectedAll)
-      expectedAfter         = Map(project2 -> lastProject2)
-      _                    <- store.fetchUpdates(threshold).assertEquals(expectedAfter)
+      expectedAll           = List(lastProject1, lastProject2)
+      _                    <- stream(Offset.start).assert(expectedAll)
+      offset42              = Offset.at(42L)
+      expectedAfter42       = List(lastProject2)
+      _                    <- stream(offset42).assert(expectedAfter42)
       // Update
       _                    <- store.save(List(lastProject1Updated))
-      expectedAfterUpdate   = Map(project1 -> lastProject1Updated, project2 -> lastProject2)
-      _                    <- store.fetchUpdates(threshold).assertEquals(expectedAfterUpdate)
+      expectedAfterUpdate   = List(lastProject1Updated, lastProject2)
+      _                    <- stream(offset42).assert(expectedAfterUpdate)
       // Deletion
       _                    <- store.delete(project1)
-      expectedAfterDeletion = Map(project2 -> lastProject2)
-      _                    <- store.fetchUpdates(threshold).assertEquals(expectedAfterDeletion)
+      expectedAfterDeletion = List(lastProject2)
+      _                    <- stream(offset42).assert(expectedAfterDeletion)
     } yield ()
   }
 
