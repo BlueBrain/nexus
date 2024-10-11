@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.jws
+package ch.epfl.bluebrain.nexus.delta.sdk.jws
 
 import com.nimbusds.jose.jwk.RSAKey
 

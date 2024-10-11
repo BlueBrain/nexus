@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jws
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.jws.RSAUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSError.JWSSignatureExpired
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper.JWSPayloadHelperImpl
 import ch.epfl.bluebrain.nexus.testkit.Generators
