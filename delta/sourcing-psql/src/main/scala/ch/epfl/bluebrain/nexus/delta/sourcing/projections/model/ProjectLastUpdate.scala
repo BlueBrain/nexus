@@ -11,8 +11,6 @@ final case class ProjectLastUpdate(project: ProjectRef, lastInstant: Instant, la
 
 object ProjectLastUpdate {
 
-  type ProjectLastUpdateMap = Map[ProjectRef, ProjectLastUpdate]
-
   implicit val projectLastUpdateRead: Read[ProjectLastUpdate] =
     Read[(Label, Label, Instant, Offset)].map { case (org, project, instant, offset) =>
       ProjectLastUpdate(ProjectRef(org, project), instant, offset)

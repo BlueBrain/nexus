@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchyConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectLastUpdateConfig, ProjectionConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ElemQueryConfig, ProjectLastUpdateConfig, ProjectionConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportConfig
 import com.typesafe.config.Config
 import pureconfig.ConfigReader
@@ -50,6 +50,7 @@ final case class AppConfig(
     schemas: SchemasConfig,
     typeHierarchy: TypeHierarchyConfig,
     serviceAccount: ServiceAccountConfig,
+    elemQuery: ElemQueryConfig,
     sse: SseConfig,
     projections: ProjectionConfig,
     projectLastUpdate: ProjectLastUpdateConfig,

@@ -247,7 +247,7 @@ object ScopedStateStore {
                |ORDER BY ordering
                |LIMIT ${config.batchSize}""".stripMargin.query[Elem.SuccessElem[S]],
         _.offset,
-        config.copy(refreshStrategy = strategy),
+        strategy,
         xas
       )
 

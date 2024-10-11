@@ -13,13 +13,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param refreshStrategy
   *   complete the stream when all the rows have been consumed or delay and re-execute the query
   */
-final case class QueryConfig(batchSize: Int, refreshStrategy: RefreshStrategy) {
-
-  /**
-    * Stop the existing query when all rows have been consumed
-    */
-  def stop: QueryConfig = copy(refreshStrategy = RefreshStrategy.Stop)
-}
+final case class QueryConfig(batchSize: Int, refreshStrategy: RefreshStrategy)
 
 object QueryConfig {
   implicit final val queryConfig: ConfigReader[QueryConfig] =

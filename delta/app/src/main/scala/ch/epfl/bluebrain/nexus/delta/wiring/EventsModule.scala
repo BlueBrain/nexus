@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseElemStream, SseEncoder, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming
 import izumi.distage.model.definition.{Id, ModuleDef}
 
 /**
@@ -40,9 +40,7 @@ object EventsModule extends ModuleDef {
       )(jo)
   }
 
-  make[SseElemStream].from { (qc: QueryConfig, xas: Transactors) =>
-    SseElemStream(qc, xas)
-  }
+  make[SseElemStream].from { (elemStreaming: ElemStreaming) => SseElemStream(elemStreaming) }
 
   make[EventsRoutes].from {
     (

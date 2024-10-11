@@ -45,17 +45,16 @@ final class ProjectionRestartStore(xas: Transactors, config: QueryConfig) {
       .void
 
   def stream(offset: Offset): Stream[IO, (Offset, ProjectionRestart)] =
-    StreamingQuery
-      .apply[(Offset, ProjectionRestart)](
-        offset,
-        o => sql"""SELECT ordering, value, instant from public.projection_restarts
+    StreamingQuery[(Offset, ProjectionRestart)](
+      offset,
+      o => sql"""SELECT ordering, value, instant from public.projection_restarts
                   |WHERE ordering > $o and acknowledged = false
                   |ORDER BY ordering ASC
                   |LIMIT ${config.batchSize}""".stripMargin.query[(Offset, ProjectionRestart)],
-        _._1,
-        config,
-        xas
-      )
+      _._1,
+      config.refreshStrategy,
+      xas
+    )
 }
 
 object ProjectionRestartStore {

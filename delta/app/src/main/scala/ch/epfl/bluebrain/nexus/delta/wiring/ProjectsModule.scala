@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -100,6 +101,7 @@ object ProjectsModule extends ModuleDef {
         config: AppConfig,
         serviceAccount: ServiceAccount,
         supervisor: Supervisor,
+        projectLastUpdateStore: ProjectLastUpdateStore,
         xas: Transactors,
         clock: Clock[IO]
     ) =>
@@ -109,6 +111,7 @@ object ProjectsModule extends ModuleDef {
         config.projects.deletion,
         serviceAccount,
         supervisor,
+        projectLastUpdateStore,
         xas,
         clock
       )

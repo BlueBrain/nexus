@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.sse
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilter, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{ElemStreaming, SelectFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import io.circe.syntax.EncoderOps
@@ -56,28 +55,18 @@ object SseElemStream {
   /**
     * Create a [[SseElemStream]]
     */
-  def apply(qc: QueryConfig, xas: Transactors): SseElemStream = new SseElemStream {
+  def apply(elemStreaming: ElemStreaming): SseElemStream = new SseElemStream {
+
+    val stopping = elemStreaming.stopping
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
-      StreamingQuery.elems(Scope(project), start, selectFilter, qc, xas).map(toServerSentEvent)
+      elemStreaming(Scope(project), start, selectFilter).map(toServerSentEvent)
 
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
-      StreamingQuery
-        .elems(
-          Scope(project),
-          start,
-          selectFilter,
-          qc.copy(refreshStrategy = RefreshStrategy.Stop),
-          xas
-        )
-        .map(toServerSentEvent)
+      stopping(Scope(project), start, selectFilter).map(toServerSentEvent)
 
-    override def remaining(
-        project: ProjectRef,
-        selectFilter: SelectFilter,
-        start: Offset
-    ): IO[Option[RemainingElems]] =
-      StreamingQuery.remaining(Scope(project), selectFilter, start, xas)
+    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): IO[Option[RemainingElems]] =
+      elemStreaming.remaining(Scope(project), selectFilter, start)
   }
 
   private[sse] def toServerSentEvent(elem: Elem[Unit]): ServerSentEvent = {

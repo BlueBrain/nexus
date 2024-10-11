@@ -122,7 +122,7 @@ object GlobalStateStore {
                        |ORDER BY ordering
                        |LIMIT ${config.batchSize}""".stripMargin.query[(S, Long)],
         { case (_, offset: Long) => Offset.at(offset) },
-        config.copy(refreshStrategy = strategy),
+        refreshStrategy = strategy,
         xas
       ).map { case (value, _) => value }
 

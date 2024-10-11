@@ -22,6 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectLastUpdateStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.syntax.all._
 import munit.AnyFixture
@@ -51,7 +53,9 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(projectFixture)
 
-  private lazy val (xas, projects) = projectFixture()
+  private lazy val (xas, projects)         = projectFixture()
+  private lazy val projectLastUpdateStore  = ProjectLastUpdateStore(xas)
+  private lazy val projectLastUpdateStream = ProjectLastUpdateStream(xas, queryConfig)
 
   private val active          = ProjectRef.unsafe("org", "active")
   private val deprecated      = ProjectRef.unsafe("org", "deprecated")
@@ -78,7 +82,18 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
         ): IO[ProjectDeletionReport.Stage] =
           deleted.update(_ + project).as(taskStage)
       }
-      (deleted, ProjectDeletionCoordinator(projects, Set(deletionTask), config, serviceAccount, xas, clock))
+      (
+        deleted,
+        ProjectDeletionCoordinator(
+          projects,
+          Set(deletionTask),
+          config,
+          serviceAccount,
+          projectLastUpdateStore,
+          xas,
+          clock
+        )
+      )
     }
 
   // Asserting partition number for both events and states
@@ -102,6 +117,9 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
       _ <- projects.deprecate(deprecated, 1)
       _ <- projects.create(markedAsDeleted, fields)
       _ <- projects.delete(markedAsDeleted, 1)
+      _ <- projectLastUpdateStore.save(
+             List(ProjectLastUpdate(markedAsDeleted, Instant.EPOCH, Offset.start))
+           )
     } yield ()
   }
 
@@ -147,6 +165,10 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
       _                 <- EntityDependencyStore
                              .directDependencies(markedAsDeleted, entityToDelete, xas)
                              .assertEquals(Set.empty[DependsOn])
+      // Checking that the last updates have been cleared
+      _                 <- projectLastUpdateStream(Offset.start)
+                             .filter(_.project == markedAsDeleted)
+                             .assertEmpty
     } yield ()
   }
 
