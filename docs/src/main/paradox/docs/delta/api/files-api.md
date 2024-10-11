@@ -319,7 +319,7 @@ Response
 
 Using the bucket and path from the previous step, the file should be uploaded to S3 by whatever means are appropriate. The only restriction is that this must be finished before the expiry datetime of the signed payload.
 
-Here are some tutorials in both @link:[Java with AWS SDK](https://docs.aws.amazon.com/AmazonS3/latest/userguide/example_s3_Scenario_MultipartUpload_section.html){ open=new } and
+Here are some tutorials in both @link:[Java with AWS SDK](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-upload-object.html#mpu-upload-low-level){ open=new } and
 @link:[Python with Boto3](https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11){ open=new } that illustrate the process of doing a multipart upload to S3.
 
 #### 3. Create/update delegated file resource
