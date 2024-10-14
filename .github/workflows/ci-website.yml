@@ -19,6 +19,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           check-latest: true
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
       - name: Checkout
         uses: actions/checkout@v4
         with:
