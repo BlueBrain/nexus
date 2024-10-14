@@ -30,6 +30,8 @@ jobs:
           java-version: '21'
           cache: 'sbt'
           check-latest: true
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
       - name: Add hosts to /etc/hosts
         run: |
           sudo echo "127.0.0.1 other.my-domain.com" | sudo tee -a /etc/hosts
