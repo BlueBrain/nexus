@@ -24,5 +24,7 @@ jobs:
           java-version: '21'
           cache: 'sbt'
           check-latest: true
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
       - name: Review
         run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateInternalLinks

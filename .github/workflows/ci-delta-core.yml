@@ -29,6 +29,8 @@ jobs:
           java-version: '21'
           cache: 'sbt'
           check-latest: true
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
