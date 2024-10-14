@@ -252,6 +252,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Outdated version</div>
+<p>
+You are browsing the docs for Nexus v1.8.x,
+the latest release is available <a href="" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#v1-2-to-v1-3-migration" name="v1-2-to-v1-3-migration" class="anchor"><span class="anchor-link"></span></a>v1.2 To v1.3 Migration</h1>
 <p>As part of the v1.3 release <a href="../delta/api/views/composite-view-api.html">CompositeViews</a> were introduced requiring a change in the data model used to record the indexing progress of a View. The change is not backwards compatible, it requires dropping two Cassandra tables and a rebuilding all indices. Additionally, in order to benefit from the new ElasticSearch index configuration, a migration of the default ElasticSearchView of each project is required.</p>

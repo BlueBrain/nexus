@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -190,6 +191,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/index.html" class="page">API Reference</a>
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../../docs/delta/api/conditional-requests.html" class="page">Conditional requests</a></li>
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
       <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
@@ -805,7 +807,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </dl>
 <h4><a href="#2-upload-file-to-s3" name="2-upload-file-to-s3" class="anchor"><span class="anchor-link"></span></a>2. Upload file to S3</h4>
 <p>Using the bucket and path from the previous step, the file should be uploaded to S3 by whatever means are appropriate. The only restriction is that this must be finished before the expiry datetime of the signed payload.</p>
-<p>Here are some tutorials in both <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/example_s3_Scenario_MultipartUpload_section.html" title="Java with AWS SDK" target="_blank" rel="noopener noreferrer">Java with AWS SDK</a> and <a href="https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11" title="Python with Boto3" target="_blank" rel="noopener noreferrer">Python with Boto3</a> that illustrate the process of doing a multipart upload to S3.</p>
+<p>Here are some tutorials in both <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-upload-object.html#mpu-upload-low-level" title="Java with AWS SDK" target="_blank" rel="noopener noreferrer">Java with AWS SDK</a> and <a href="https://medium.com/analytics-vidhya/aws-s3-multipart-upload-download-using-boto3-python-sdk-2dedb0945f11" title="Python with Boto3" target="_blank" rel="noopener noreferrer">Python with Boto3</a> that illustrate the process of doing a multipart upload to S3.</p>
 <h4><a href="#3-create-update-delegated-file-resource" name="3-create-update-delegated-file-resource" class="anchor"><span class="anchor-link"></span></a>3. Create/update delegated file resource</h4>
 <p>Once the file has been uploaded to S3 at the specified path, the file resource can be created in the knowledge graph. The payload can be passed back exactly as it was returned in the previous step.</p>
 <pre><code>POST /v1/delegate/files/submit

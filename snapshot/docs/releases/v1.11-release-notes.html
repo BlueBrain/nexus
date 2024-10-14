@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Older releases · Blue Brain Nexus</title>
+<title>v1.11 Release Notes · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Older releases
+v1.11 Release Notes
 </span>
 </div>
 </div>
@@ -154,7 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.11-release-notes.html" class="active page">v1.11 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -165,7 +165,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
-    <li><a href="../../docs/releases/older-releases.html" class="active page">Older releases</a></li>
+    <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -240,6 +240,18 @@ BlueBrain/nexus
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.11-release-notes.html#v1-11-release-notes" class="header">v1.11 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.11-release-notes.html#nexus-delta" class="header">Nexus Delta</a></li>
+    <li><a href="../../docs/releases/v1.11-release-notes.html#conditional-requests" class="header">Conditional requests</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.11-release-notes.html#remote-storage-server" class="header">Remote storage server</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.11-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -253,6 +265,27 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.11-release-notes.html#v1-11-release-notes" class="header">v1.11 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.11-release-notes.html#nexus-delta" class="header">Nexus Delta</a></li>
+    <li><a href="../../docs/releases/v1.11-release-notes.html#conditional-requests" class="header">Conditional requests</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.11-release-notes.html#remote-storage-server" class="header">Remote storage server</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.11-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
@@ -263,11 +296,23 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#older-releases" name="older-releases" class="anchor"><span class="anchor-link"></span></a>Older releases</h1>
-<p>For archival purposes, the release notes of older versions are available <a href="https://bluebrainnexus.io/v1.6.x/docs/releases/index.html" title="here">here</a>.</p>
+<h1><a href="#v1-11-release-notes" name="v1-11-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.11 Release Notes</h1>
+<blockquote>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible with v1.10 except for creating and updating S3 storages</p>
+</blockquote>
+<p>// TODO: update date For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2024-09-17..2024-12-31+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.10.</p>
+<h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
+<h2><a href="#conditional-requests" name="conditional-requests" class="anchor"><span class="anchor-link"></span></a>Conditional requests</h2>
+<p>Nexus now supports conditional requests</p>
+<p>More <a href="../delta/api/conditional-requests.html">here</a></p>
+<h3><a href="#remote-storage-server" name="remote-storage-server" class="anchor"><span class="anchor-link"></span></a>Remote storage server</h3>
+<p>The remote storage server part has been removed.</p>
+<p>The client is deprecated and remains with <a href="https://hub.docker.com/r/bluebrain/nexus-storage/tags" title="the remote storage in 1.10">the remote storage in 1.10</a>.</p>
+<h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
+<p>// TODO: update date See the <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+created%3A2024-09-17..2024-12-31+label%3Afusion+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.10.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/older-releases.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.11-release-notes.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -283,7 +328,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/v1.5-to-v1.6-migration.html" title="v1.5 To v1.6 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -292,17 +337,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-v1.5 To v1.6 Migration
+Releases
 </span>
 </div>
 </a>
-<a href="../../docs/roadmap.html" title="Roadmap" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.10-release-notes.html" title="v1.10 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Roadmap
+v1.10 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
