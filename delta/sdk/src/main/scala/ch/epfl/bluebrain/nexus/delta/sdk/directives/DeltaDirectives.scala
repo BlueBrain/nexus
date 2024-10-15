@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Encoder
 
-import java.time.Instant
 import scala.reflect.ClassTag
 
 object DeltaDirectives extends DeltaDirectives
@@ -140,30 +139,23 @@ trait DeltaDirectives extends UriDirectives {
         .getOrElse(HttpEncodings.identity)
     }
 
-  def conditionalCache(
-      value: Option[String],
-      lastModified: Option[Instant],
-      mediaType: MediaType,
-      encoding: HttpEncoding
-  ): Directive0 =
-    conditionalCache(value, lastModified, mediaType, None, encoding)
+  def conditionalCache(value: Option[String], mediaType: MediaType, encoding: HttpEncoding): Directive0 =
+    conditionalCache(value, mediaType, None, encoding)
 
   /**
     * Wraps its inner route with support for Conditional Requests as defined by http://tools.ietf.org/html/rfc7232
     *
-    * Supports `Etag` and `Last-Modified` headers:
+    * Supports `Etag` header:
     * https://doc.akka.io/docs/akka-http/10.0/routing-dsl/directives/cache-condition-directives/conditional.html
     */
   def conditionalCache(
       value: Option[String],
-      lastModified: Option[Instant],
       mediaType: MediaType,
       jsonldFormat: Option[JsonLdFormat],
       encoding: HttpEncoding
   ): Directive0 = {
-    val entityTag            = value.map(EtagUtils.compute(_, mediaType, jsonldFormat, encoding))
-    val lastModifiedDateTime = lastModified.map { instant => DateTime(instant.toEpochMilli) }
-    Directives.conditional(entityTag, lastModifiedDateTime)
+    val entityTag = value.map(EtagUtils.compute(_, mediaType, jsonldFormat, encoding))
+    Directives.conditional(entityTag, None)
   }
 
   /**

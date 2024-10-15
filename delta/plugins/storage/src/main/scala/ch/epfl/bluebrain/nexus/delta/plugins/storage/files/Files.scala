@@ -469,7 +469,6 @@ final class Files(
       attributes.filename,
       mediaType,
       Some(ResourceF.etagValue(file)),
-      Some(file.updatedAt),
       Some(attributes.bytes),
       s.attemptNarrow[FileRejection]
     )
