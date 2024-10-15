@@ -44,7 +44,7 @@ object ResponseToOriginalSource extends RdfMarshalling {
         case Right(v: Complete[OriginalSource]) =>
           IO.pure {
             requestEncoding { encoding =>
-              conditionalCache(v.entityTag, v.lastModified, MediaTypes.`application/json`, encoding) {
+              conditionalCache(v.entityTag, MediaTypes.`application/json`, encoding) {
                 complete(v.status, v.headers, v.value)
               }
             }
