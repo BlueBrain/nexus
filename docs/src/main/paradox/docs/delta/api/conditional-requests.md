@@ -6,9 +6,9 @@ for the different operations:
 * Fetch original payloads for the different types of resources
 * Fetching the file contents
 
-The response for those operations are augmented with respective `ETag` and `Last-Modified` response headers.
+The response for those operations are augmented with a `ETag` response header.
 
-The client can then use those values to set up caches and save bandwidth by using the 
+The client can then use this value to set up caches and save bandwidth by using the 
 @link[conditional headers](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-p4-conditional-26#section-3)
 as Delta can immediately answer with a `304 Not Modified` and not resend the full response. 
 

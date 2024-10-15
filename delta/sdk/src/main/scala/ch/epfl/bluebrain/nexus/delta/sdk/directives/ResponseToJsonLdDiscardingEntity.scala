@@ -29,9 +29,9 @@ object ResponseToJsonLdDiscardingEntity extends DiscardValueInstances {
     new ResponseToJsonLdDiscardingEntity {
 
       private def fallbackAsPlainJson =
-        onSuccess(io.unsafeToFuture()) { case Complete(status, headers, entityTag, lastModified, value) =>
+        onSuccess(io.unsafeToFuture()) { case Complete(status, headers, entityTag, value) =>
           requestEncoding { encoding =>
-            conditionalCache(entityTag, lastModified, MediaTypes.`application/json`, encoding) {
+            conditionalCache(entityTag, MediaTypes.`application/json`, encoding) {
               complete(status, headers, value.asJson)
             }
           }
@@ -53,7 +53,7 @@ sealed trait DiscardValueInstances extends DiscardLowPriorityValueInstances {
   implicit def ioValue[A: JsonLdEncoder: Encoder](
       io: IO[A]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLdDiscardingEntity =
-    ResponseToJsonLdDiscardingEntity(io.map(Complete(OK, Seq.empty, None, None, _)))
+    ResponseToJsonLdDiscardingEntity(io.map(Complete(OK, Seq.empty, None, _)))
 
   implicit def valueWithHttpResponseFields[A: JsonLdEncoder: HttpResponseFields: Encoder](
       value: A
@@ -66,6 +66,6 @@ sealed trait DiscardLowPriorityValueInstances {
   implicit def valueWithoutHttpResponseFields[A: JsonLdEncoder: Encoder](
       value: A
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLdDiscardingEntity =
-    ResponseToJsonLdDiscardingEntity(IO.pure(Complete(OK, Seq.empty, None, None, value)))
+    ResponseToJsonLdDiscardingEntity(IO.pure(Complete(OK, Seq.empty, None, value)))
 
 }

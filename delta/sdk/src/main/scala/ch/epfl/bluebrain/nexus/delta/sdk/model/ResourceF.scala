@@ -258,6 +258,6 @@ object ResourceF {
   def etagValue[A](value: ResourceF[A]) = s"${value.uris.relativeAccessUri}_${value.rev}"
 
   implicit def resourceFHttpResponseFields[A]: HttpResponseFields[ResourceF[A]] =
-    HttpResponseFields.fromTagAndLastModified { value => (etagValue(value), value.updatedAt) }
+    HttpResponseFields.fromTag { value => etagValue(value) }
 
 }
