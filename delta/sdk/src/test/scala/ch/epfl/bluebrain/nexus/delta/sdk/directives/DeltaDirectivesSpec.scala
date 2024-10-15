@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.javadsl.model.headers.LastModified
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.MediaRange._
 import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, `text/*`}
@@ -291,21 +290,18 @@ class DeltaDirectivesSpec
     "return the etag and last modified headers" in {
       Get("/io") ~> Accept(`application/ld+json`) ~> route ~> check {
         response.header[ETag].value shouldEqual ETag(expectedCompactedJsonLdTag)
-        response.header[LastModified].value.date().clicks() shouldEqual resource.createdAt.toEpochMilli
       }
     }
 
     "return the etag and last modified headers accepting gzip" in {
       Get("/io") ~> Accept(`application/ld+json`) ~> `Accept-Encoding`(gzip) ~> route ~> check {
         response.header[ETag].value shouldEqual ETag(expectedCompactedJsonLdGzippedTag)
-        response.header[LastModified].value.date().clicks() shouldEqual resource.createdAt.toEpochMilli
       }
     }
 
     "return another etag and last modified headers for the expanded format" in {
       Get("/io?format=expanded") ~> Accept(`application/ld+json`) ~> route ~> check {
         response.header[ETag].value shouldEqual ETag(expectedExpandedJsonLdTag)
-        response.header[LastModified].value.date().clicks() shouldEqual resource.createdAt.toEpochMilli
       }
     }
 
@@ -329,24 +325,6 @@ class DeltaDirectivesSpec
       Get("/io") ~> Accept(`application/ld+json`) ~>
         `If-None-Match`(expectedExpandedJsonLdTag) ~> route ~> check {
           response.status shouldEqual Accepted
-        }
-    }
-
-    def lastModified(instant: Instant) = DateTime(instant.toEpochMilli)
-
-    "return the resource if if it was modified since" in {
-      // The provided etag was computed without gzip compression
-      Get("/io") ~> Accept(`application/ld+json`) ~>
-        `If-Modified-Since`(lastModified(resource.createdAt.minusSeconds(1L))) ~> route ~> check {
-          response.status shouldEqual Accepted
-        }
-    }
-
-    "return not modified if if it was not modified since" in {
-      // The provided etag was computed without gzip compression
-      Get("/io") ~> Accept(`application/ld+json`) ~>
-        `If-Modified-Since`(lastModified(resource.createdAt.plusSeconds(1L))) ~> route ~> check {
-          response.status shouldEqual NotModified
         }
     }
 

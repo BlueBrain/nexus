@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
-import akka.http.javadsl.model.headers.LastModified
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.headers.ETag
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.ETag
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
@@ -97,15 +96,11 @@ final class HttpResponseOps(private val http: HttpResponse) extends Consumer {
     asJsonObject(materializer)("@type") shouldEqual Some(errorType.asJson)
   }
 
-  def expectConditionalCacheHeaders(implicit position: Position): Assertion = {
+  def expectConditionalCacheHeaders(implicit position: Position): Assertion =
     http.header[ETag] shouldBe defined
-    http.header[LastModified] shouldBe defined
-  }
 
-  def expectNoConditionalCacheHeaders(implicit position: Position): Assertion = {
+  def expectNoConditionalCacheHeaders(implicit position: Position): Assertion =
     http.header[ETag] shouldBe empty
-    http.header[LastModified] shouldBe empty
-  }
 
 }
 

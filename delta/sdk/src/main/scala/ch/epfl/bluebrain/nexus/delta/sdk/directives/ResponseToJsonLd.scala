@@ -68,12 +68,12 @@ object ResponseToJsonLd extends FileBytesInstances {
             encoding: HttpEncoding
         ): Route = {
           val ioRoute = ioFinal.flatMap {
-            case RouteOutcome.RouteRejected(rej)                                                        => IO.pure(reject(rej))
-            case RouteOutcome.RouteFailed(Complete(status, headers, _, _, value))                       =>
+            case RouteOutcome.RouteRejected(rej)                                          => IO.pure(reject(rej))
+            case RouteOutcome.RouteFailed(Complete(status, headers, _, value))            =>
               handle(value).map(complete(status, headers, _))
-            case RouteOutcome.RouteCompleted(Complete(status, headers, entityTag, lastModified, value)) =>
+            case RouteOutcome.RouteCompleted(Complete(status, headers, entityTag, value)) =>
               handle(value).map { r =>
-                conditionalCache(entityTag, lastModified, mediaType, jsonldFormat, encoding) {
+                conditionalCache(entityTag, mediaType, jsonldFormat, encoding) {
                   complete(status, headers, r)
                 }
               }
@@ -154,12 +154,7 @@ object ResponseToJsonLd extends FileBytesInstances {
                 val contentDisposition =
                   RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")
                 requestEncoding { encoding =>
-                  conditionalCache(
-                    metadata.entityTag,
-                    metadata.lastModified,
-                    metadata.contentType.mediaType,
-                    encoding
-                  ) {
+                  conditionalCache(metadata.entityTag, metadata.contentType.mediaType, encoding) {
                     respondWithHeaders(contentDisposition, metadata.headers: _*) {
                       complete(statusOverride.getOrElse(OK), HttpEntity(metadata.contentType, content))
                     }
@@ -225,7 +220,7 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd(io.map[RouteOutcome[E]] {
       case Left(e)      => RouteOutcome.RouteFailed(Complete(e).map[JsonLdValue](JsonLdValue(_)))
-      case Right(value) => RouteOutcome.RouteCompleted(Complete(OK, Seq.empty, None, None, value))
+      case Right(value) => RouteOutcome.RouteCompleted(Complete(OK, Seq.empty, None, value))
     })
 
   implicit def rejectValue[E: JsonLdEncoder](
@@ -248,5 +243,5 @@ sealed trait LowPriorityValueInstances {
   implicit def valueWithoutHttpResponseFields[A: JsonLdEncoder](
       value: A
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(OK, Seq.empty, None, None, value))))
+    ResponseToJsonLd(IO.pure[UseRight[A]](Right(Complete(OK, Seq.empty, None, value))))
 }

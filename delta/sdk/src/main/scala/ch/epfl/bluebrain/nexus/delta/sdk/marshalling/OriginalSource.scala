@@ -8,8 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
-import java.time.Instant
-
 /**
   * Defines an original source (what has been provided by clients during the api call)
   *
@@ -69,14 +67,12 @@ object OriginalSource {
   implicit val originalSourceHttpResponseFields: HttpResponseFields[OriginalSource] = {
     val resourceFHttpResponseField = ResourceF.resourceFHttpResponseFields[Unit]
     new HttpResponseFields[OriginalSource] {
-      override def statusFrom(value: OriginalSource): StatusCode        =
+      override def statusFrom(value: OriginalSource): StatusCode       =
         resourceFHttpResponseField.statusFrom(value.resourceF)
-      override def headersFrom(value: OriginalSource): Seq[HttpHeader]  =
+      override def headersFrom(value: OriginalSource): Seq[HttpHeader] =
         resourceFHttpResponseField.headersFrom(value.resourceF)
-      override def entityTag(value: OriginalSource): Option[String]     =
+      override def entityTag(value: OriginalSource): Option[String]    =
         resourceFHttpResponseField.entityTag(value.resourceF)
-      override def lastModified(value: OriginalSource): Option[Instant] =
-        resourceFHttpResponseField.lastModified(value.resourceF)
     }
   }
 

@@ -44,8 +44,6 @@ object SimpleResource extends CirceLiteral {
       override def headersFrom(value: SimpleResource): Seq[HttpHeader] = Seq(new RawHeader("Test", "Value"))
 
       override def entityTag(value: SimpleResource): Option[String] = Some(value.id.toString)
-
-      override def lastModified(value: SimpleResource): Option[Instant] = Some(value.createdAt)
     }
 
   val rawHeader: RawHeader = new RawHeader("Test", "Value")

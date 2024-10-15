@@ -10,8 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
 
-import java.time.Instant
-
 /**
   * A file response content
   *
@@ -40,7 +38,6 @@ object FileResponse {
       filename: String,
       contentType: ContentType,
       etag: Option[String],
-      lastModified: Option[Instant],
       bytes: Option[Long]
   )
 
@@ -52,8 +49,6 @@ object FileResponse {
           value.bytes.map { bytes => `Content-Length`(bytes) }.toSeq
 
         override def entityTag(value: Metadata): Option[String] = value.etag
-
-        override def lastModified(value: Metadata): Option[Instant] = value.lastModified
       }
   }
 
@@ -61,12 +56,11 @@ object FileResponse {
       filename: String,
       contentType: ContentType,
       etag: Option[String],
-      lastModified: Option[Instant],
       bytes: Option[Long],
       io: IO[Either[E, AkkaSource]]
   ) =
     new FileResponse(
-      Metadata(filename, contentType, etag, lastModified, bytes),
+      Metadata(filename, contentType, etag, bytes),
       io.map { r =>
         r.leftMap { e =>
           Complete(e).map(JsonLdValue(_))
@@ -78,13 +72,12 @@ object FileResponse {
       filename: String,
       contentType: ContentType,
       etag: Option[String],
-      lastModified: Option[Instant],
       bytes: Option[Long],
       source: AkkaSource
   ): FileResponse =
-    new FileResponse(Metadata(filename, contentType, etag, lastModified, bytes), IO.pure(Right(source)))
+    new FileResponse(Metadata(filename, contentType, etag, bytes), IO.pure(Right(source)))
 
   def noCache(filename: String, contentType: ContentType, bytes: Option[Long], source: AkkaSource): FileResponse =
-    new FileResponse(Metadata(filename, contentType, None, None, bytes), IO.pure(Right(source)))
+    new FileResponse(Metadata(filename, contentType, None, bytes), IO.pure(Right(source)))
 
 }

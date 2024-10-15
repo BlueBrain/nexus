@@ -23,8 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, SimpleRejection, SimpleRes
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-import java.time.Instant
-
 class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyntax with RouteConcatenation {
 
   implicit val rcr: RemoteContextResolution =
@@ -54,16 +52,10 @@ class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyn
       contents: IO[Either[E, AkkaSource]],
       cacheable: Boolean
   ) = {
+    val etag = Option.when(cacheable)("test")
     IO.pure(
       Right(
-        FileResponse(
-          "file.name",
-          contentType,
-          Option.when(cacheable)("test"),
-          Option.when(cacheable)(Instant.EPOCH),
-          Some(1024L),
-          contents
-        )
+        FileResponse("file.name", contentType, etag, Some(1024L), contents)
       )
     )
   }
