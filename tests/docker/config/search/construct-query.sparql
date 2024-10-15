@@ -511,19 +511,21 @@ CONSTRUCT {
 
   # Subject
   OPTIONAL {
-    ?id  nsg:subject / nsg:age  ?age .
-    OPTIONAL { ?age schema:value     ?subjectAgeValue . }    .
-    OPTIONAL { ?age schema:minValue  ?subjectAgeMinValue . } .
-    OPTIONAL { ?age schema:maxValue  ?subjectAgeMaxValue . } .
-               ?age schema:unitCode  ?subjectAgeUnit         .
-               ?age nsg:period       ?subjectAgePeriod       .
-    BIND(
-      IF(
-        BOUND(?subjectAgeValue),
-        CONCAT(STR(?subjectAgeValue), " ", STR(?subjectAgeUnit), " ", STR(?subjectAgePeriod)),
-        CONCAT(STR(?subjectAgeMinValue), " to ", STR(?subjectAgeMaxValue), " ", STR(?subjectAgeUnit), " ", STR(?subjectAgePeriod))
-      ) as ?subjectAgeLabel ) .
-  } .
+      GRAPH ?id {
+          BIND(BNODE(CONCAT(STR(?id), '/age')) as ?age ) .
+          OPTIONAL { ?id  nsg:subject / nsg:age /  schema:value     ?subjectAgeValue . }   .
+          OPTIONAL { ?id  nsg:subject / nsg:age / schema:minValue  ?subjectAgeMinValue . } .
+          OPTIONAL { ?id  nsg:subject / nsg:age / schema:maxValue  ?subjectAgeMaxValue . } .
+                     ?id  nsg:subject / nsg:age / schema:unitCode  ?subjectAgeUnit         .
+                     ?id  nsg:subject / nsg:age /  nsg:period       ?subjectAgePeriod      .
+          BIND(
+            IF(
+              BOUND(?subjectAgeValue),
+              CONCAT(STR(?subjectAgeValue), " ", STR(?subjectAgeUnit), " ", STR(?subjectAgePeriod)),
+              CONCAT(STR(?subjectAgeMinValue), " to ", STR(?subjectAgeMaxValue), " ", STR(?subjectAgeUnit), " ", STR(?subjectAgePeriod))
+            ) as ?subjectAgeLabel ) .
+      }
+   } .
 
   OPTIONAL {
     ?id  nsg:subject / schema:weight  ?weight .
