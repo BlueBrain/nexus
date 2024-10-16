@@ -11,13 +11,14 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.{fileDescriptionFromRequest, linkFileDecoder}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragePluginExceptionHandler.handleStorageExceptions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import FileUriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -28,8 +29,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{parser, Decoder}
@@ -67,7 +68,7 @@ final class FilesRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
-      pathPrefix("files") {
+      (handleStorageExceptions & pathPrefix("files")) {
         extractCaller { implicit caller =>
           projectRef { project =>
             implicit class IndexOps(io: IO[FileResource]) {
@@ -86,14 +87,13 @@ final class FilesRoutes(
                             .createLegacyLink(storage, project, desc, linkRequest.path, tag)
                             .index(mode)
                         }
-                        .attemptNarrow[FileRejection]
                     )
                   },
                   // Create a file without id segment
                   uploadRequest { request =>
                     emit(
                       Created,
-                      files.create(storage, project, request, tag).index(mode).attemptNarrow[FileRejection]
+                      files.create(storage, project, request, tag).index(mode)
                     )
                   }
                 )
@@ -123,7 +123,6 @@ final class FilesRoutes(
                                         )
                                         .index(mode)
                                     }
-                                    .attemptNarrow[FileRejection]
                                 )
                               },
                               // Update a file
@@ -132,22 +131,14 @@ final class FilesRoutes(
                                   files
                                     .update(fileId, storage, rev, request, tag)
                                     .index(mode)
-                                    .attemptNarrow[FileRejection]
                                 )
                               },
                               // Update custom metadata
                               (requestEntityEmpty & extractFileMetadata & authorizeFor(project, Write)) {
                                 case Some(FileCustomMetadata.empty) =>
-                                  emit(
-                                    IO.raiseError[FileResource](EmptyCustomMetadata).attemptNarrow[FileRejection]
-                                  )
+                                  emit(IO.raiseError[FileResource](EmptyCustomMetadata))
                                 case Some(metadata)                 =>
-                                  emit(
-                                    files
-                                      .updateMetadata(fileId, rev, metadata, tag)
-                                      .index(mode)
-                                      .attemptNarrow[FileRejection]
-                                  )
+                                  emit(files.updateMetadata(fileId, rev, metadata, tag).index(mode))
                                 case None                           => reject
                               }
                             )
@@ -164,7 +155,6 @@ final class FilesRoutes(
                                         .createLegacyLink(fileId, storage, description, linkRequest.path, tag)
                                         .index(mode)
                                     }
-                                    .attemptNarrow[FileRejection]
                                 )
                               },
                               // Create a file with id segment
@@ -174,7 +164,6 @@ final class FilesRoutes(
                                   files
                                     .create(fileId, storage, request, tag)
                                     .index(mode)
-                                    .attemptNarrow[FileRejection]
                                 )
                               }
                             )
@@ -215,10 +204,7 @@ final class FilesRoutes(
                       (post & revParam & pathEndOrSingleSlash) { rev =>
                         authorizeFor(project, Write).apply {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
-                            emit(
-                              Created,
-                              files.tag(fileId, tag, tagRev, rev).index(mode).attemptNarrow[FileRejection]
-                            )
+                            emit(Created, files.tag(fileId, tag, tagRev, rev).index(mode))
                           }
                         }
                       },

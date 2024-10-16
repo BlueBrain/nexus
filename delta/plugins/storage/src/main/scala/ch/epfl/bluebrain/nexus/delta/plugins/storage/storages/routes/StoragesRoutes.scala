@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragePluginExceptionHandler.handleStorageExceptions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection}
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.Json
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 /**
   * The storages routes
@@ -52,26 +52,21 @@ final class StoragesRoutes(
     with CirceUnmarshalling
     with RdfMarshalling {
 
-  import baseUri.prefixSegment
   import schemeDirectives._
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage)) {
-      pathPrefix("storages") {
+      (handleStorageExceptions & pathPrefix("storages")) {
         extractCaller { implicit caller =>
           projectRef { project =>
             concat(
-              (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
+              pathEndOrSingleSlash {
                 // Create a storage without id segment
                 (post & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
                   authorizeFor(project, Write).apply {
                     emit(
                       Created,
-                      storages
-                        .create(project, source)
-                        .flatTap(index(project, _, mode))
-                        .mapValue(_.metadata)
-                        .attemptNarrow[StorageRejection]
+                      storages.create(project, source).flatTap(index(project, _, mode)).mapValue(_.metadata)
                     )
                   }
                 }
@@ -79,64 +74,60 @@ final class StoragesRoutes(
               (idSegment & indexingMode) { (id, mode) =>
                 concat(
                   pathEndOrSingleSlash {
-                    operationName(s"$prefixSegment/storages/{org}/{project}/{id}") {
-                      concat(
-                        // Create or update a storage
-                        put {
-                          authorizeFor(project, Write).apply {
-                            (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                              case (None, source)      =>
-                                // Create a storage with id segment
-                                emit(
-                                  Created,
-                                  storages
-                                    .create(id, project, source)
-                                    .flatTap(index(project, _, mode))
-                                    .mapValue(_.metadata)
-                                    .attemptNarrow[StorageRejection]
-                                )
-                              case (Some(rev), source) =>
-                                // Update a storage
-                                emit(
-                                  storages
-                                    .update(id, project, rev, source)
-                                    .flatTap(index(project, _, mode))
-                                    .mapValue(_.metadata)
-                                    .attemptNarrow[StorageRejection]
-                                )
-                            }
+                    concat(
+                      // Create or update a storage
+                      put {
+                        authorizeFor(project, Write).apply {
+                          (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            case (None, source)      =>
+                              // Create a storage with id segment
+                              emit(
+                                Created,
+                                storages
+                                  .create(id, project, source)
+                                  .flatTap(index(project, _, mode))
+                                  .mapValue(_.metadata)
+                              )
+                            case (Some(rev), source) =>
+                              // Update a storage
+                              emit(
+                                storages
+                                  .update(id, project, rev, source)
+                                  .flatTap(index(project, _, mode))
+                                  .mapValue(_.metadata)
+                              )
                           }
-                        },
-                        // Deprecate a storage
-                        (delete & parameter("rev".as[Int])) { rev =>
-                          authorizeFor(project, Write).apply {
+                        }
+                      },
+                      // Deprecate a storage
+                      (delete & parameter("rev".as[Int])) { rev =>
+                        authorizeFor(project, Write).apply {
+                          emit(
+                            storages
+                              .deprecate(id, project, rev)
+                              .flatTap(index(project, _, mode))
+                              .mapValue(_.metadata)
+                              .attemptNarrow[StorageRejection]
+                              .rejectOn[StorageNotFound]
+                          )
+                        }
+                      },
+                      // Fetch a storage
+                      (get & idSegmentRef(id)) { id =>
+                        emitOrFusionRedirect(
+                          project,
+                          id,
+                          authorizeFor(project, Read).apply {
                             emit(
                               storages
-                                .deprecate(id, project, rev)
-                                .flatTap(index(project, _, mode))
-                                .mapValue(_.metadata)
+                                .fetch(id, project)
                                 .attemptNarrow[StorageRejection]
                                 .rejectOn[StorageNotFound]
                             )
                           }
-                        },
-                        // Fetch a storage
-                        (get & idSegmentRef(id)) { id =>
-                          emitOrFusionRedirect(
-                            project,
-                            id,
-                            authorizeFor(project, Read).apply {
-                              emit(
-                                storages
-                                  .fetch(id, project)
-                                  .attemptNarrow[StorageRejection]
-                                  .rejectOn[StorageNotFound]
-                              )
-                            }
-                          )
-                        }
-                      )
-                    }
+                        )
+                      }
+                    )
                   },
                   // Undeprecate a storage
                   (pathPrefix("undeprecate") & pathEndOrSingleSlash & put & parameter("rev".as[Int])) { rev =>
@@ -162,7 +153,7 @@ final class StoragesRoutes(
                   },
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(project, Read).apply {
-                      emit(storagesStatistics.get(id, project).attemptNarrow[StorageRejection])
+                      emit(storagesStatistics.get(id, project))
                     }
                   }
                 )

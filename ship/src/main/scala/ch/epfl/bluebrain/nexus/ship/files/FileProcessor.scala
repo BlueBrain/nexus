@@ -11,18 +11,19 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.Can
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileNotFound, IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.FetchStorage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageResource}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.ship._
-import ch.epfl.bluebrain.nexus.ship.acls.AclWiring.alwaysAuthorize
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult.{FileCopySkipped, FileCopySuccess}
 import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{forceMediaType, logger, patchMediaType}
@@ -163,12 +164,23 @@ object FileProcessor {
 
     val storages = StorageWiring.storages(fetchContext, rcr, config, clock, xas)
 
-    val fe         = new FetchStorage {
-      override def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource] =
-        storages.flatMap(_.fetch(id, project))
+    val fs         = new FetchStorage {
+      override def onRead(id: ResourceRef, project: ProjectRef)(implicit caller: Caller): IO[Storage] =
+        storages.flatMap(_.fetch(id, project).map(_.value))
 
-      override def fetchDefault(project: ProjectRef): IO[StorageResource] =
-        storages.flatMap(_.fetchDefault(project))
+      /**
+        * Attempts to fetch the provided storage or the default one in a write context
+        */
+      override def onWrite(id: Option[IriOrBNode.Iri], project: ProjectRef)(implicit
+          caller: Caller
+      ): IO[(ResourceRef.Revision, Storage)] =
+        for {
+          s       <- storages
+          storage <- id match {
+                       case Some(id) => s.fetch(Latest(id), project)
+                       case None     => s.fetchDefault(project)
+                     }
+        } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
     val fileCopier = FileCopier(s3Client, config.files)
 
@@ -176,9 +188,8 @@ object FileProcessor {
       new Files(
         failingFormDataExtractor,
         ScopedEventLog(definition(clock), config.eventLog, xas),
-        alwaysAuthorize,
         fetchContext,
-        fe,
+        fs,
         linkOperationOnly(s3Client)
       )(FailingUUID)
 

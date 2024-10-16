@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.NexusHeaders
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 
 /**
   * Enumeration of Storage rejections related to file operations.
@@ -68,43 +65,6 @@ object StorageFileRejection {
       */
     final case class WrappedFetchRejection(rejection: FetchFileRejection)
         extends FetchAttributeRejection(rejection.loggedDetails)
-  }
-
-  sealed abstract class CopyFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
-
-  object CopyFileRejection {
-    final case class UnsupportedOperation(tpe: StorageType)
-        extends CopyFileRejection(
-          s"Copying a file attributes is not supported for storages of type '${tpe.iri}'"
-        )
-
-    final case class SourceFileTooLarge(maxSize: Long, storageId: Iri)
-        extends CopyFileRejection(
-          s"Source file size exceeds maximum $maxSize on destination storage $storageId"
-        )
-
-    final case class TotalCopySizeTooLarge(totalSize: Long, spaceLeft: Long, storageId: Iri)
-        extends CopyFileRejection(
-          s"Combined size of source files ($totalSize) exceeds space ($spaceLeft) on destination storage $storageId"
-        )
-
-    final case class RemoteDiskClientError(underlying: HttpClientError)
-        extends CopyFileRejection(
-          s"Error from remote disk storage client: ${underlying.asString}"
-        )
-
-    final case class DifferentStorageTypes(id: Iri, source: StorageType, dest: StorageType)
-        extends CopyFileRejection(
-          s"Source storage $id of type $source cannot be different to the destination storage type $dest"
-        )
-
-    implicit val statusCodes: HttpResponseFields[CopyFileRejection] = HttpResponseFields {
-      case _: UnsupportedOperation  => StatusCodes.BadRequest
-      case _: SourceFileTooLarge    => StatusCodes.BadRequest
-      case _: TotalCopySizeTooLarge => StatusCodes.BadRequest
-      case _: DifferentStorageTypes => StatusCodes.BadRequest
-      case _: RemoteDiskClientError => StatusCodes.InternalServerError
-    }
   }
 
   /**

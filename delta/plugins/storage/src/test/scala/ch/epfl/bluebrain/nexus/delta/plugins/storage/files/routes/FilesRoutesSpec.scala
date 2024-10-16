@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -108,7 +108,7 @@ class FilesRoutesSpec
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  lazy val storages: Storages                              = Storages(
+  lazy val storages: Storages         = Storages(
     fetchContext,
     ResolverContextResolution(rcr),
     IO.pure(allowedPerms.toSet),
@@ -118,17 +118,11 @@ class FilesRoutesSpec
     ServiceAccount(User("nexus-sa", Label.unsafe("sa"))),
     clock
   ).accepted
-  lazy val fileOps: FileOperations                         = FileOperationsMock.disabled
-  lazy val files: Files                                    =
-    Files(
-      fetchContext,
-      aclCheck,
-      storages,
-      xas,
-      FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      fileOps,
-      clock
-    )(uuidF, typedSystem)
+  lazy val fileOps: FileOperations    = FileOperationsMock.disabled
+  lazy val fetchStorage: FetchStorage = FetchStorage(storages, aclCheck)
+
+  private val filesConfig                                  = FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty)
+  lazy val files: Files                                    = Files(fetchContext, fetchStorage, xas, filesConfig, fileOps, clock)(uuidF, typedSystem)
   private val groupDirectives                              = DeltaSchemeDirectives(fetchContext)
   private lazy val routes                                  = routesWithIdentities(identities)
   private def routesWithIdentities(identities: Identities) =

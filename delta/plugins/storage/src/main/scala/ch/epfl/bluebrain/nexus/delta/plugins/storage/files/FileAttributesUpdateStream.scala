@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.RemoteDiskStorageConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -85,9 +84,6 @@ object FileAttributesUpdateStream {
               storages
                 .fetch(IdSegmentRef(id), project)
                 .map(_.value)
-                .adaptError { case e: StorageRejection =>
-                  WrappedStorageRejection(e)
-                }
             )
 
           new Impl(

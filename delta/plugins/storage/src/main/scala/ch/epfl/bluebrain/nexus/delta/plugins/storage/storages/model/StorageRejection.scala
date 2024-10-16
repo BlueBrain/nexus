@@ -9,9 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -42,9 +41,9 @@ object StorageRejection {
   final case class RevisionNotFound(provided: Int, current: Int)
       extends StorageFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
-  final case class FetchByTagNotSupported(tag: IdSegmentRef.Tag)
+  final case class FetchByTagNotSupported(tag: ResourceRef.Tag)
       extends StorageFetchRejection(
-        s"Fetching storages by tag is no longer supported. Id ${tag.value.asString} and tag ${tag.tag.value}"
+        s"Fetching storages by tag is no longer supported. Id ${tag.iri} and tag ${tag.tag.value}"
       )
 
   /**

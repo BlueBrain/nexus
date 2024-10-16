@@ -1,31 +1,30 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.server.Directives.concat
 import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.server.Directives.concat
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, TransactionalFileCopier, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.batch.{BatchCopy, BatchFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{BatchFilesRoutes, DelegateFilesRoutes, FilesRoutes, LinkFilesRoutes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{DelegateFilesRoutes, FilesRoutes, LinkFilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskFileOperations, DiskStorageCopyFiles}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskFileOperations, RemoteDiskStorageCopyFiles}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTask, StoragePermissionProviderImpl, Storages, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -108,6 +107,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         )
     }
 
+  make[FetchStorage].from { (storages: Storages, aclCheck: AclCheck) =>
+    FetchStorage(storages, aclCheck)
+  }
+
   make[StoragePermissionProvider].from { (storages: Storages) =>
     new StoragePermissionProviderImpl(storages)
   }
@@ -186,9 +189,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[Files].from {
     (
         cfg: StoragePluginConfig,
-        aclCheck: AclCheck,
         fetchContext: FetchContext,
-        storages: Storages,
+        fetchStorage: FetchStorage,
         xas: Transactors,
         clock: Clock[IO],
         uuidF: UUIDF,
@@ -197,8 +199,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       Files(
         fetchContext,
-        aclCheck,
-        storages,
+        fetchStorage,
         xas,
         cfg.files,
         fileOps,
@@ -212,42 +213,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[FileAttributesUpdateStream].fromEffect {
     (files: Files, storages: Storages, storageTypeConfig: StorageTypeConfig, supervisor: Supervisor) =>
       FileAttributesUpdateStream.start(files, storages, storageTypeConfig.remoteDisk, supervisor)
-  }
-
-  make[TransactionalFileCopier].fromValue(TransactionalFileCopier.mk())
-
-  make[DiskStorageCopyFiles].from { (copier: TransactionalFileCopier, uuidf: UUIDF) =>
-    DiskStorageCopyFiles.mk(copier, uuidf)
-  }
-
-  make[RemoteDiskStorageCopyFiles].from { client: RemoteDiskStorageClient => RemoteDiskStorageCopyFiles.mk(client) }
-
-  make[BatchCopy].from {
-    (
-        files: Files,
-        storages: Storages,
-        aclCheck: AclCheck,
-        diskCopy: DiskStorageCopyFiles,
-        remoteDiskCopy: RemoteDiskStorageCopyFiles,
-        uuidF: UUIDF
-    ) =>
-      BatchCopy.mk(files, storages, aclCheck, diskCopy, remoteDiskCopy)(uuidF)
-  }
-
-  make[BatchFiles].from {
-    (
-        fetchContext: FetchContext,
-        files: Files,
-        filesLog: FilesLog,
-        batchCopy: BatchCopy,
-        uuidF: UUIDF
-    ) =>
-      BatchFiles.mk(
-        files,
-        fetchContext,
-        FilesLog.eval(filesLog),
-        batchCopy
-      )(uuidF)
   }
 
   make[FilesRoutes].from {
@@ -313,26 +278,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         jwsPayloadHelper,
         indexingAction(_, _, _)(shift)
       )(baseUri, cr, ordering, showLocation)
-  }
-
-  make[BatchFilesRoutes].from {
-    (
-        showLocation: ShowFileLocation,
-        identities: Identities,
-        aclCheck: AclCheck,
-        batchFiles: BatchFiles,
-        indexingAction: AggregateIndexingAction,
-        shift: File.Shift,
-        baseUri: BaseUri,
-        cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
-    ) =>
-      new BatchFilesRoutes(identities, aclCheck, batchFiles, indexingAction(_, _, _)(shift))(
-        baseUri,
-        showLocation,
-        cr,
-        ordering
-      )
   }
 
   make[File.Shift].from { (files: Files, base: BaseUri, showLocation: ShowFileLocation) =>
@@ -403,13 +348,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[PriorityRoute].add {
     (
         fileRoutes: FilesRoutes,
-        batchFileRoutes: BatchFilesRoutes,
         linkFileRoutes: LinkFilesRoutes,
         delegationRoutes: DelegateFilesRoutes
     ) =>
       PriorityRoute(
         priority,
-        concat(fileRoutes.routes, linkFileRoutes.routes, batchFileRoutes.routes, delegationRoutes.routes),
+        concat(fileRoutes.routes, linkFileRoutes.routes, delegationRoutes.routes),
         requiresStrictEntity = false
       )
   }

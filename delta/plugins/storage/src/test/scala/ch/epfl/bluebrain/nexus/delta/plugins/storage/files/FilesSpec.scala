@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
@@ -137,17 +138,11 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       clock
     ).accepted
 
+    lazy val fetchStorage            = FetchStorage(storages, aclCheck)
     lazy val fileOps: FileOperations = FileOperationsMock.forDiskAndRemoteDisk(remoteDiskStorageClient)
 
-    lazy val files: Files = Files(
-      fetchContext,
-      aclCheck,
-      storages,
-      xas,
-      FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-      fileOps,
-      clock
-    )
+    val filesConfig       = FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty)
+    lazy val files: Files = Files(fetchContext, fetchStorage, xas, filesConfig, fileOps, clock)
 
     def fileId(file: String): FileId = FileId(file, projectRef)
     def fileIdIri(iri: Iri): FileId  = FileId(iri, projectRef)
@@ -163,6 +158,15 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         tags: Tags = Tags.empty
     ): FileResource =
       FileGen.resourceFor(id, project, storage, attributes, storageType, rev, deprecated, tags, bob, bob)
+
+    def updateAttributes(file: Iri) = {
+      val aliceCaller = Caller(alice, Set(alice, Group("mygroup", realm), Authenticated(realm)))
+      for {
+        file    <- files.fetchState(Latest(file), projectRef)
+        storage <- fetchStorage.onRead(file.storage, projectRef)(aliceCaller)
+        _       <- files.updateAttributes(file, storage)
+      } yield ()
+    }
 
     "creating a file" should {
 
@@ -269,7 +273,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if storage does not exist" in {
         val request       = FileUploadRequest.from(entity())
-        val expectedError = WrappedStorageRejection(StorageNotFound(storageIri, projectRef))
+        val expectedError = StorageNotFound(storageIri, projectRef)
         files.create(fileId("file2"), Some(storage), request, None).rejected shouldEqual expectedError
       }
 
@@ -340,8 +344,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       "reject if storage does not exist" in {
         files
           .createLegacyLink(fileId("file3"), Some(storage), description("myfile.txt"), Uri.Path.Empty, None)
-          .rejected shouldEqual
-          WrappedStorageRejection(StorageNotFound(storageIri, projectRef))
+          .rejected shouldEqual StorageNotFound(storageIri, projectRef)
       }
 
       "reject if project does not exist" in {
@@ -385,8 +388,10 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if storage does not exist" in {
         val request = FileUploadRequest.from(entity())
-        files.update(fileId("file1"), Some(storage), 2, request, None).rejected shouldEqual
-          WrappedStorageRejection(StorageNotFound(storageIri, projectRef))
+        files.update(fileId("file1"), Some(storage), 2, request, None).rejected shouldEqual StorageNotFound(
+          storageIri,
+          projectRef
+        )
       }
 
       "reject if project does not exist" in {
@@ -470,14 +475,10 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
     "updating remote disk file attributes" should {
 
-      "reject if digest is already computed" in {
-        files.updateAttributes(file1, projectRef).rejectedWith[DigestAlreadyComputed]
-      }
-
       "succeed" in {
-        val tempAttr  = attributes("myfile.txt")
-        val attr      = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
-        val expected  = mkResource(
+        val tempAttr = attributes("myfile.txt")
+        val attr     = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
+        val expected = mkResource(
           file2,
           projectRef,
           remoteRev,
@@ -486,12 +487,13 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
           rev = 2,
           tags = Tags(tag -> 1)
         )
-        val updatedF2 = for {
-          _ <- files.updateAttributes(file2, projectRef)
-          f <- files.fetch(fileIdIri(file2))
-        } yield f
-        updatedF2.accepted shouldEqual expected
+
+        (updateAttributes(file2) >> files.fetch(fileIdIri(file2))).accepted shouldEqual expected
       }
+    }
+
+    "reject if digest is already computed" in {
+      updateAttributes(file2).rejectedWith[DigestAlreadyComputed]
     }
 
     "updating a file linking" should {
@@ -534,14 +536,8 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val (name, desc, keywords) = (genString(), genString(), genKeywords())
 
         val originalFileDescription = description("file-6.txt")
-        val updatedFileDescription  = descriptionWithMetadata("file-6.txt", name, desc, keywords)
 
         files.createLegacyLink(id, Some(remoteId), originalFileDescription, path, None).accepted
-
-        val fetched = files.fetch(id).accepted
-        files.updateAttributes(fetched.id, projectRef).accepted
-        files.updateLegacyLink(id, Some(remoteId), updatedFileDescription, path, 2, None)
-
         eventually {
           files.fetch(id).map { fetched =>
             fetched.value.attributes.name should contain(name)
@@ -568,8 +564,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val storage = nxv + "other-storage"
         files
           .updateLegacyLink(fileId("file1"), Some(storage), description("myfile.txt"), Uri.Path.Empty, 2, None)
-          .rejected shouldEqual
-          WrappedStorageRejection(StorageNotFound(storage, projectRef))
+          .rejected shouldEqual StorageNotFound(storage, projectRef)
       }
 
       "reject if project does not exist" in {
