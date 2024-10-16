@@ -9,8 +9,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
 
-class S3StorageAccessSuite extends NexusSuite
-  with LocalStackS3StorageClient.Fixture with S3Helpers {
+class S3StorageAccessSuite extends NexusSuite with LocalStackS3StorageClient.Fixture with S3Helpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
 
@@ -29,4 +28,3 @@ class S3StorageAccessSuite extends NexusSuite
     s3Access.checkBucketExists(genString()).intercept[StorageNotAccessible]
   }
 }
-

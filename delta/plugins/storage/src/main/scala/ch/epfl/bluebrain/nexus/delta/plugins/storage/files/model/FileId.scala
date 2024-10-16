@@ -17,7 +17,6 @@ final case class FileId(id: IdSegmentRef, project: ProjectRef) {
   def expandRef(fetchContext: ProjectRef => IO[ProjectContext]): IO[ResourceRef] =
     fetchContext(project).flatMap { pc =>
       iriExpander(id.value, pc).map { iri =>
-        (iri, pc)
         id match {
           case IdSegmentRef.Latest(_)        => ResourceRef.Latest(iri)
           case IdSegmentRef.Revision(_, rev) => ResourceRef.Revision(iri, rev)
