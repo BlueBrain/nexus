@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.scaladsl.model.headers.`Content-Length`
 import akka.http.scaladsl.model.{ContentType, HttpHeader, StatusCode, StatusCodes}
 import cats.effect.IO
 import cats.syntax.all._
@@ -45,8 +44,7 @@ object FileResponse {
     implicit def fileResponseMetadataHttpResponseFields: HttpResponseFields[Metadata] =
       new HttpResponseFields[Metadata] {
         override def statusFrom(value: Metadata): StatusCode       = StatusCodes.OK
-        override def headersFrom(value: Metadata): Seq[HttpHeader] =
-          value.bytes.map { bytes => `Content-Length`(bytes) }.toSeq
+        override def headersFrom(value: Metadata): Seq[HttpHeader] = Seq.empty
 
         override def entityTag(value: Metadata): Option[String] = value.etag
       }

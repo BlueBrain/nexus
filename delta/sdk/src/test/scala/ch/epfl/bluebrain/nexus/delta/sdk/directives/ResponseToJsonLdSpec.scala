@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.headers.{`Content-Length`, Accept}
+import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ContentType, StatusCodes}
 import akka.http.scaladsl.server.RouteConcatenation
 import akka.stream.scaladsl.Source
@@ -73,7 +73,6 @@ class ResponseToJsonLdSpec extends CatsEffectSpec with RouteHelpers with JsonSyn
         status shouldEqual StatusCodes.OK
         contentType shouldEqual `text/plain(UTF-8)`
         response.asString shouldEqual FileContents
-        response.header[`Content-Length`].value shouldEqual `Content-Length`(1024L)
         response.expectConditionalCacheHeaders
       }
     }
