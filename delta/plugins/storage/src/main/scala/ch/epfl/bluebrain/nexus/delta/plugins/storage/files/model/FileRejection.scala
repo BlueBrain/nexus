@@ -135,8 +135,8 @@ object FileRejection {
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
     * contain a ''file'' fieldName
     */
-  final case class InvalidMultipartFieldName(id: Iri)
-      extends FileRejection(s"File '$id' payload a Multipart/Form-Data without a 'file' part.")
+  final case object InvalidMultipartFieldName
+      extends FileRejection(s"Multipart/Form-Data payload does not contain a 'file' part.")
 
   final case object EmptyCustomMetadata extends FileRejection(s"No metadata was provided")
 

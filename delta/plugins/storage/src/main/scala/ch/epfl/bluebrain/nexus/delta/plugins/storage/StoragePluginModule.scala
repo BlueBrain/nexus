@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3F
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.{RemoteStorageAccess, S3StorageAccess, StorageAccess}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -78,12 +79,16 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     new S3LocationGenerator(prefix)
   }
 
+  make[StorageAccess].from { (remoteClient: RemoteDiskStorageClient, s3Client: S3StorageClient) =>
+    StorageAccess(RemoteStorageAccess(remoteClient), S3StorageAccess(s3Client))
+  }
+
   make[Storages]
     .fromEffect {
       (
           fetchContext: FetchContext,
           contextResolution: ResolverContextResolution,
-          fileOperations: FileOperations,
+          storageAccess: StorageAccess,
           permissions: Permissions,
           xas: Transactors,
           cfg: StoragePluginConfig,
@@ -96,7 +101,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           fetchContext,
           contextResolution,
           permissions.fetchPermissionSet,
-          fileOperations,
+          storageAccess,
           xas,
           cfg.storages,
           serviceAccount,
@@ -183,7 +188,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[FileOperations].from { (disk: DiskFileOperations, remoteDisk: RemoteDiskFileOperations, s3: S3FileOperations) =>
-    FileOperations.mk(disk, remoteDisk, s3)
+    FileOperations.apply(disk, remoteDisk, s3)
   }
 
   make[Files].from {

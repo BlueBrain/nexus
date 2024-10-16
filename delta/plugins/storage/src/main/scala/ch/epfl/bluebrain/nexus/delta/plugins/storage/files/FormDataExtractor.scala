@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -25,8 +24,6 @@ trait FormDataExtractor {
     * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData. Any other part is
     * discarded.
     *
-    * @param id
-    *   the file id
     * @param entity
     *   the Multipart/FormData payload
     * @param maxFileSize
@@ -34,11 +31,7 @@ trait FormDataExtractor {
     * @return
     *   the file metadata. plus the entity with the file content
     */
-  def apply(
-      id: Iri,
-      entity: HttpEntity,
-      maxFileSize: Long
-  ): IO[UploadedFileInformation]
+  def apply(entity: HttpEntity, maxFileSize: Long): IO[UploadedFileInformation]
 }
 
 case class UploadedFileInformation(
@@ -74,15 +67,11 @@ object FormDataExtractor {
     new FormDataExtractor {
       implicit val ec: ExecutionContext = as.getDispatcher
 
-      override def apply(
-          id: Iri,
-          entity: HttpEntity,
-          maxFileSize: Long
-      ): IO[UploadedFileInformation] = {
+      override def apply(entity: HttpEntity, maxFileSize: Long): IO[UploadedFileInformation] = {
         for {
           formData <- unmarshall(entity, maxFileSize)
           fileOpt  <- extractFile(formData, maxFileSize)
-          file     <- IO.fromOption(fileOpt)(InvalidMultipartFieldName(id))
+          file     <- IO.fromOption(fileOpt)(InvalidMultipartFieldName)
         } yield file
       }
 

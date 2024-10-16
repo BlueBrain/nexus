@@ -4,13 +4,13 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen.storageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, UndeprecateStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, IncorrectRev, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, StorageIsDeprecated, StorageIsNotDeprecated, StorageNotAccessible, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag

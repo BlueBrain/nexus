@@ -4,9 +4,8 @@ import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileDelegationRequest, FileStorageMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{DelegateFileOperation, FetchAttributeRejection, LinkFileRejection, MoveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile, S3UploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
@@ -18,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 import java.util.UUID
 
-trait FileOperations extends StorageAccess {
+trait FileOperations {
   def save(
       storage: Storage,
       info: UploadedFileInformation,
@@ -37,17 +36,11 @@ trait FileOperations extends StorageAccess {
 }
 
 object FileOperations {
-  def mk(
+  def apply(
       diskFileOps: DiskFileOperations,
       remoteDiskFileOps: RemoteDiskFileOperations,
       s3FileOps: S3FileOperations
   ): FileOperations = new FileOperations {
-
-    override def validateStorageAccess(storage: StorageValue): IO[Unit] = storage match {
-      case s: DiskStorageValue       => diskFileOps.checkVolumeExists(s.volume)
-      case s: S3StorageValue         => s3FileOps.checkBucketExists(s.bucket)
-      case s: RemoteDiskStorageValue => remoteDiskFileOps.checkFolderExists(s.folder)
-    }
 
     override def save(
         storage: Storage,

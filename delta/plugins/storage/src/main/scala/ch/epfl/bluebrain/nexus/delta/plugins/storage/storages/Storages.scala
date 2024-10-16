@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi

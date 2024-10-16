@@ -513,7 +513,7 @@ final class Files(
 
   private def saveFileToStorage(iri: Iri, storage: Storage, uploadRequest: FileUploadRequest): IO[FileAttributes] = {
     for {
-      info            <- formDataExtractor(iri, uploadRequest.entity, storage.storageValue.maxFileSize)
+      info            <- formDataExtractor(uploadRequest.entity, storage.storageValue.maxFileSize)
       description      = FileDescription.from(info, uploadRequest.metadata)
       storageMetadata <- fileOperations.save(storage, info, uploadRequest.contentLength)
     } yield FileAttributes.from(description, storageMetadata)
