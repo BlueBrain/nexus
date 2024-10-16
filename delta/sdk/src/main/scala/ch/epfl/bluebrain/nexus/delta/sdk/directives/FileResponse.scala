@@ -45,8 +45,7 @@ object FileResponse {
     implicit def fileResponseMetadataHttpResponseFields: HttpResponseFields[Metadata] =
       new HttpResponseFields[Metadata] {
         override def statusFrom(value: Metadata): StatusCode       = StatusCodes.OK
-        override def headersFrom(value: Metadata): Seq[HttpHeader] =
-          value.bytes.map { bytes => `Content-Length`(bytes) }.toSeq
+        override def headersFrom(value: Metadata): Seq[HttpHeader] = Seq.empty
 
         override def entityTag(value: Metadata): Option[String] = value.etag
       }
