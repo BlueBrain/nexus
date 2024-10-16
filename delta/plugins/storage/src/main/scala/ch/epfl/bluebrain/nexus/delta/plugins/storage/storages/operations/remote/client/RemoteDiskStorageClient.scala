@@ -2,20 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding._
+import akka.http.scaladsl.model.BodyPartEntity
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
-import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.RemoteDiskStorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{CopyFileRejection, FetchFileRejection, MoveFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskCopyPaths, RemoteDiskStorageFileAttributes}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits.uriDecoder
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
@@ -106,20 +104,6 @@ trait RemoteDiskStorageClient {
       sourceRelativePath: Path,
       destRelativePath: Path
   ): IO[RemoteDiskStorageFileAttributes]
-
-  /**
-    * Copies files to a destination bucket. Source files can be located within different buckets. File attributes are
-    * not recomputed, so only the file paths will change.
-    *
-    * If any copies fail the whole operation will be aborted and the remote storage service will return an error.
-    *
-    * @return
-    *   Absolute locations of the created files, preserving the input order.
-    */
-  def copyFiles(
-      destBucket: Label,
-      files: NonEmptyList[RemoteDiskCopyPaths]
-  ): IO[NonEmptyList[Uri]]
 }
 
 object RemoteDiskStorageClient {
@@ -226,21 +210,6 @@ object RemoteDiskStorageClient {
       }
     }
 
-    def copyFiles(
-        destBucket: Label,
-        files: NonEmptyList[RemoteDiskCopyPaths]
-    ): IO[NonEmptyList[Uri]] =
-      getAuthToken(credentials).flatMap { authToken =>
-        val endpoint = baseUri.endpoint / "buckets" / destBucket.value / "files"
-
-        implicit val dec: Decoder[NonEmptyList[Uri]] = Decoder[NonEmptyList[Json]].emap { nel =>
-          nel.traverse(_.hcursor.get[Uri]("absoluteDestinationLocation").leftMap(_.toString()))
-        }
-        client
-          .fromJsonTo[NonEmptyList[Uri]](Post(endpoint, files.asJson).withCredentials(authToken))
-          .adaptError { case error: HttpClientError => CopyFileRejection.RemoteDiskClientError(error) }
-      }
-
     private def bucketNotFoundType(error: HttpClientError): Boolean =
       error.jsonBody.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("BucketNotFound"))
 
@@ -275,9 +244,6 @@ object RemoteDiskStorageClient {
         sourceRelativePath: Path,
         destRelativePath: Path
     ): IO[RemoteDiskStorageFileAttributes] = disabledError
-
-    override def copyFiles(destBucket: Label, files: NonEmptyList[RemoteDiskCopyPaths]): IO[NonEmptyList[Uri]] =
-      disabledError
   }
 
   def apply(client: HttpClient, authTokenProvider: AuthTokenProvider, configOpt: Option[RemoteDiskStorageConfig])(

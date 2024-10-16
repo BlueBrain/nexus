@@ -4,9 +4,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Rejection => AkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{CopyFileRejection, FetchFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -154,14 +153,6 @@ object FileRejection {
   final case class WrappedAkkaRejection(rejection: AkkaRejection) extends FileRejection(rejection.toString)
 
   /**
-    * Rejection returned when interacting with the storage operations bundle to fetch a storage
-    *
-    * @param rejection
-    *   the rejection which occurred with the storage
-    */
-  final case class WrappedStorageRejection(rejection: StorageRejection) extends FileRejection(rejection.reason)
-
-  /**
     * Rejection returned when interacting with the storage operations bundle to fetch a file from a storage
     *
     * @param id
@@ -231,23 +222,12 @@ object FileRejection {
         s"Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
       )
 
-  final case class CopyRejection(
-      sourceProj: ProjectRef,
-      destProject: ProjectRef,
-      destStorageId: Iri,
-      rejection: CopyFileRejection
-  ) extends FileRejection(
-        s"Failed to copy files from $sourceProj to storage $destStorageId in project $destProject",
-        Some(rejection.loggedDetails)
-      )
-
   implicit val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
         case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
-        case WrappedStorageRejection(rejection)        => rejection.asJsonObject
         case SaveRejection(_, _, rejection)            =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case FetchRejection(_, _, rejection)           =>
@@ -255,8 +235,6 @@ object FileRejection {
         case FetchAttributesRejection(_, _, rejection) =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case LinkRejection(_, _, rejection)            =>
-          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case CopyRejection(_, _, _, rejection)         =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _: FileNotFound                           => obj.add(keywords.tpe, "ResourceNotFound".asJson)
@@ -276,13 +254,11 @@ object FileRejection {
       case IncorrectRev(_, _)                                                 => (StatusCodes.Conflict, Seq.empty)
       case FileTooLarge(_)                                                    => (StatusCodes.PayloadTooLarge, Seq.empty)
       case WrappedAkkaRejection(rej)                                          => (rej.status, rej.headers)
-      case WrappedStorageRejection(rej)                                       => (rej.status, rej.headers)
       // If this happens it signifies a system problem rather than the user having made a mistake
       case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))           => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_))    => (StatusCodes.Conflict, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.BucketAccessDenied(_, _, _)) => (StatusCodes.Forbidden, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.FileContentLengthIsMissing)  => (StatusCodes.BadRequest, Seq.empty)
-      case CopyRejection(_, _, _, rejection)                                  => (rejection.status, Seq.empty)
       case FetchRejection(_, _, _)                                            => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                             => (StatusCodes.InternalServerError, Seq.empty)
       case _                                                                  => (StatusCodes.BadRequest, Seq.empty)

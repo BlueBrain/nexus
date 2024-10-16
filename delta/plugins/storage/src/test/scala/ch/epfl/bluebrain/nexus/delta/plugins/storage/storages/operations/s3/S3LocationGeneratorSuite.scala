@@ -11,7 +11,6 @@ class S3LocationGeneratorSuite extends NexusSuite {
 
   test("Generate the expected uri") {
     val prefix   = Path("/prefix")
-    println(prefix)
     val project  = ProjectRef.unsafe("org", "project")
     val uuid     = UUID.fromString("12345678-b2e3-40b9-93de-c809415d7640")
     val filename = "cat.gif"

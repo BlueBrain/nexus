@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccoun
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -29,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, SuccessElemStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef, SuccessElemStream}
 import fs2.Stream
 import io.circe.Json
 import org.typelevel.log4cats
@@ -44,7 +43,7 @@ final class Storages private (
     fetchContext: FetchContext,
     sourceDecoder: JsonLdSourceResolvingDecoder[StorageFields],
     serviceAccount: ServiceAccount
-) extends FetchStorage {
+) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -225,25 +224,34 @@ final class Storages private (
     } yield res
   }.span("undeprecateStorage")
 
-  override def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource] = {
+  def fetch(idSegment: IdSegmentRef, project: ProjectRef): IO[StorageResource] = {
     for {
-      pc      <- fetchContext.onRead(project)
-      iri     <- expandIri(id.value, pc)
-      notFound = StorageNotFound(iri, project)
-      state   <- id match {
-                   case Latest(_)        => log.stateOr(project, iri, notFound)
-                   case Revision(_, rev) => log.stateOr(project, iri, rev, notFound, RevisionNotFound)
-                   case t: Tag           => IO.raiseError(FetchByTagNotSupported(t))
-                 }
-    } yield state.toResource
-  }.span("fetchStorage")
+      pc         <- fetchContext.onRead(project)
+      id         <- expandIri(idSegment.value, pc)
+      resourceRef = idSegment match {
+                      case IdSegmentRef.Latest(_)        => ResourceRef.Latest(id)
+                      case IdSegmentRef.Revision(_, rev) => ResourceRef.Revision(id, rev)
+                      case IdSegmentRef.Tag(_, tag)      => ResourceRef.Tag(id, tag)
+                    }
+      storage    <- fetch(resourceRef, project)
+    } yield storage
+  }
+
+  def fetch(resourceRef: ResourceRef, project: ProjectRef): IO[StorageResource] = {
+    resourceRef match {
+      case ResourceRef.Latest(id)           => log.stateOr(project, id, StorageNotFound(id, project))
+      case ResourceRef.Revision(_, id, rev) =>
+        log.stateOr(project, id, rev, StorageNotFound(id, project), RevisionNotFound)
+      case t: ResourceRef.Tag               => IO.raiseError(FetchByTagNotSupported(t))
+    }
+  }.map(_.toResource).span("fetchStorage")
 
   private def fetchDefaults(project: ProjectRef): Stream[IO, StorageResource] =
     log
       .currentStates(Scope.Project(project), _.toResource)
       .filter(_.value.default)
 
-  override def fetchDefault(project: ProjectRef): IO[StorageResource] = {
+  def fetchDefault(project: ProjectRef): IO[StorageResource] = {
     for {
       defaultOpt <- fetchDefaults(project).reduce(updatedByDesc.min(_, _)).head.compile.last
       default    <- IO.fromOption(defaultOpt)(DefaultStorageNotFound(project))

@@ -1,45 +1,54 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxMonadError
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.WrappedStorageRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 trait FetchStorage {
 
   /**
-    * Fetch the storage using the ''resourceRef''
-    *
-    * @param resourceRef
-    *   the storage reference (Latest, Revision or Tag)
-    * @param project
-    *   the project where the storage belongs
+    * Attempts to fetch the storage in a read context and validates if the current user has access to it
     */
-  final def fetch[R <: Throwable](
-      resourceRef: ResourceRef,
-      project: ProjectRef
-  ): IO[StorageResource] =
-    fetch(IdSegmentRef(resourceRef), project).adaptError { case err: StorageFetchRejection =>
-      WrappedStorageRejection(err)
-    }
+  def onRead(id: ResourceRef, project: ProjectRef)(implicit caller: Caller): IO[Storage]
 
   /**
-    * Fetch the last version of a storage
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the storage with its optional rev/tag
-    * @param project
-    *   the project where the storage belongs
+    * Attempts to fetch the provided storage or the default one in a write context
     */
-  def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource]
+  def onWrite(id: Option[Iri], project: ProjectRef)(implicit
+      caller: Caller
+  ): IO[(ResourceRef.Revision, Storage)]
+}
 
-  /**
-    * Fetches the default storage for a project.
-    *
-    * @param project
-    *   the project where to look for the default storage
-    */
-  def fetchDefault(project: ProjectRef): IO[StorageResource]
+object FetchStorage {
+
+  def apply(storages: Storages, aclCheck: AclCheck): FetchStorage = new FetchStorage {
+
+    override def onRead(id: ResourceRef, project: ProjectRef)(implicit caller: Caller): IO[Storage] =
+      storages.fetch(id, project).map(_.value).flatTap { storage =>
+        validateAuth(project, storage.storageValue.readPermission)
+      }
+
+    override def onWrite(id: Option[Iri], project: ProjectRef)(implicit
+        caller: Caller
+    ): IO[(ResourceRef.Revision, Storage)]                                                              =
+      for {
+        storage <- id match {
+                     case Some(id) => storages.fetch(Latest(id), project)
+                     case None     => storages.fetchDefault(project)
+                   }
+        _       <- IO.raiseWhen(storage.deprecated)(StorageIsDeprecated(storage.id))
+        _       <- validateAuth(project, storage.value.storageValue.writePermission)
+      } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
+
+    private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
+      aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
+  }
+
 }

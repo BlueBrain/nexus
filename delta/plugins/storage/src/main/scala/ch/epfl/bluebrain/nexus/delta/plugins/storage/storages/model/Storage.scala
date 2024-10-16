@@ -18,7 +18,7 @@ sealed trait Storage extends Product with Serializable {
 
   /**
     * @return
-    *   the view id
+    *   the storage id
     */
   def id: Iri
 
