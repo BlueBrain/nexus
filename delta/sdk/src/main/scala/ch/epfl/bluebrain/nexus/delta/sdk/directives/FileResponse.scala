@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.scaladsl.model.headers.`Content-Length`
 import akka.http.scaladsl.model.{ContentType, HttpHeader, StatusCode, StatusCodes}
 import cats.effect.IO
 import cats.syntax.all._
