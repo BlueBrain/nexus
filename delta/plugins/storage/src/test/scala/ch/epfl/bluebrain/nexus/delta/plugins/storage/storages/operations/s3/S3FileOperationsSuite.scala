@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
@@ -56,16 +55,6 @@ class S3FileOperationsSuite
 
   private def expectedLocation(proj: ProjectRef, filename: String): Uri =
     Uri.Empty / conf.prefixPath / expectedPath(proj, filename)
-
-  test("List objects in an existing bucket") {
-    givenAnS3Bucket { bucket =>
-      fileOps.checkBucketExists(bucket)
-    }
-  }
-
-  test("Fail to list objects when bucket doesn't exist") {
-    fileOps.checkBucketExists(genString()).intercept[StorageNotAccessible]
-  }
 
   test("Save and fetch an object in a bucket") {
     givenAnS3Bucket { bucket =>

@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.StorageScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.S3StorageFields
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile, S3UploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
@@ -84,9 +84,6 @@ object StorageWiring {
   }
 
   def failingDiskFileOperations: DiskFileOperations = new DiskFileOperations {
-    override def checkVolumeExists(path: AbsolutePath): IO[Unit] =
-      IO.raiseError(new IllegalArgumentException("DiskFileOperations should not be called"))
-
     override def fetch(path: Uri.Path): IO[AkkaSource] =
       IO.raiseError(new IllegalArgumentException("DiskFileOperations should not be called"))
 
@@ -95,8 +92,6 @@ object StorageWiring {
   }
 
   def failingRemoteDiskFileOperations: RemoteDiskFileOperations = new RemoteDiskFileOperations {
-    override def checkFolderExists(folder: Label): IO[Unit] =
-      IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
 
     override def fetch(folder: Label, path: Uri.Path): IO[AkkaSource] =
       IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
@@ -116,8 +111,6 @@ object StorageWiring {
   }
 
   def linkS3FileOperationOnly(s3Client: S3StorageClient): S3FileOperations = new S3FileOperations {
-    override def checkBucketExists(bucket: String): IO[Unit] =
-      IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))
 
     override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] =
       IO.raiseError(new IllegalArgumentException("S3FileOperations should not be called"))

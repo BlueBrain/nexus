@@ -20,7 +20,6 @@ class FormDataExtractorSpec
   "A Form Data HttpEntity" should {
 
     val content = "file content"
-    val iri     = iri"http://localhost/file"
 
     val customMediaType   = MediaType.parse("application/custom").rightValue
     val customContentType = ContentType(customMediaType, () => HttpCharsets.`UTF-8`)
@@ -69,7 +68,7 @@ class FormDataExtractorSpec
       val entity = createEntity("file", NoContentType, Some("filename"))
 
       val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 250).accepted
+        extractor(entity, 250).accepted
 
       filename shouldEqual "filename"
       contentType shouldEqual `application/octet-stream`
@@ -78,8 +77,7 @@ class FormDataExtractorSpec
 
     "be extracted with the custom media type from the config" in {
       val entity                                                   = createEntity("file", NoContentType, Some("file.custom"))
-      val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 2000).accepted
+      val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 2000).accepted
 
       filename shouldEqual "file.custom"
       contentType shouldEqual customContentType
@@ -89,8 +87,7 @@ class FormDataExtractorSpec
     "be extracted with the akka detection from the extension" in {
       val entity = createEntity("file", NoContentType, Some("file.txt"))
 
-      val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 250).accepted
+      val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 250).accepted
       filename shouldEqual "file.txt"
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
@@ -99,21 +96,20 @@ class FormDataExtractorSpec
     "be extracted with the default filename when none is provided" in {
       val entity = createEntity("file", NoContentType, None)
 
-      val filename = extractor(iri, entity, 250).accepted.filename
+      val filename = extractor(entity, 250).accepted.filename
       filename shouldEqual "file"
     }
 
     "be extracted with the default filename when an empty string is provided" in {
       val entity = createEntity("file", NoContentType, Some(""))
 
-      val filename = extractor(iri, entity, 250).accepted.filename
+      val filename = extractor(entity, 250).accepted.filename
       filename shouldEqual "file"
     }
 
     "be extracted with the provided content type header" in {
       val entity                                                   = createEntity("file", `text/plain(UTF-8)`, Some("file.custom"))
-      val UploadedFileInformation(filename, contentType, contents) =
-        extractor(iri, entity, 2000).accepted
+      val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 2000).accepted
       filename shouldEqual "file.custom"
       contentType shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
@@ -121,12 +117,12 @@ class FormDataExtractorSpec
 
     "fail to be extracted if no file part exists found" in {
       val entity = createEntity("other", NoContentType, None)
-      extractor(iri, entity, 250).rejectedWith[InvalidMultipartFieldName]
+      extractor(entity, 250).rejectedWith[InvalidMultipartFieldName.type]
     }
 
     "fail to be extracted if payload size is too large" in {
       val entity = createEntity("other", `text/plain(UTF-8)`, None)
-      extractor(iri, entity, 10).rejected shouldEqual FileTooLarge(10L)
+      extractor(entity, 10).rejected shouldEqual FileTooLarge(10L)
     }
   }
 }

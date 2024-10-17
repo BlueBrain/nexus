@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
@@ -21,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
 trait S3FileOperations {
-  def checkBucketExists(bucket: String): IO[Unit]
 
   def fetch(bucket: String, path: Uri.Path): IO[AkkaSource]
 
@@ -44,12 +42,6 @@ object S3FileOperations {
   ): S3FileOperations = new S3FileOperations {
 
     private lazy val saveFile = new S3StorageSaveFile(client, locationGenerator)
-
-    override def checkBucketExists(bucket: String): IO[Unit] = {
-      client.bucketExists(bucket).flatMap { exists =>
-        IO.raiseUnless(exists)(StorageNotAccessible(s"Bucket $bucket does not exist"))
-      }
-    }
 
     override def fetch(bucket: String, path: Uri.Path): IO[AkkaSource] =
       IO.delay {
