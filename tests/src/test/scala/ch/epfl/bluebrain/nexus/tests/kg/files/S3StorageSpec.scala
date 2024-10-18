@@ -44,7 +44,6 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
 
   override def afterAll(): Unit = {
     cleanupBucket(bucket).accepted
-
     super.afterAll()
   }
 
@@ -250,6 +249,21 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
                        json should have(mediaTypeField("image/dan"))
+                     }
+      } yield assertion
+    }
+
+    "succeed with media-type detection" in {
+      val id      = genId()
+      val path    = s"$id/nexus-logo.custom"
+      val payload = Json.obj("path" := path)
+
+      for {
+        _         <- uploadLogoFileToS3(bucket, path)
+        _         <- createFileLink(id, storageId, payload)
+        assertion <- deltaClient.get[Json](s"/files/$projectRef/$id", Coyote) { (json, response) =>
+                       response.status shouldEqual StatusCodes.OK
+                       json should have(mediaTypeField("application/custom"))
                      }
       } yield assertion
     }

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{ContentType, Uri}
 import akka.testkit.TestKit
@@ -13,12 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsM
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata, FileDescription, FileId, FileUploadRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -83,9 +82,8 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     FileDescription(filename, None, Some(FileCustomMetadata(Some(name), Some(description), Some(keywords))))
 
   "The Files operations bundle" when {
-    implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-    implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    lazy val remoteDiskStorageClient                     = fixture.init
+    implicit val caller: Caller      = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+    lazy val remoteDiskStorageClient = fixture.init
 
     val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")
@@ -100,11 +98,11 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
     val remoteIdIri         = nxv + "remote"
     val remoteId: IdSegment = remoteIdIri
-    val remoteRev           = ResourceRef.Revision(iri"$remoteIdIri?rev=1", remoteIdIri, 1)
+    val remoteRev           = ResourceRef.Revision(remoteIdIri, 1)
 
     val diskIdIri         = nxv + "disk"
     val diskId: IdSegment = nxv + "disk"
-    val diskRev           = ResourceRef.Revision(iri"$diskId?rev=1", diskIdIri, 1)
+    val diskRev           = ResourceRef.Revision(diskIdIri, 1)
 
     val storageIri         = nxv + "other-storage"
     val storage: IdSegment = nxv + "other-storage"
@@ -141,8 +139,11 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     lazy val fetchStorage            = FetchStorage(storages, aclCheck)
     lazy val fileOps: FileOperations = FileOperationsMock.forDiskAndRemoteDisk(remoteDiskStorageClient)
 
-    val filesConfig       = FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty)
-    lazy val files: Files = Files(fetchContext, fetchStorage, xas, filesConfig, fileOps, clock)
+    val mediaTypeDetector = new MediaTypeDetector(MediaTypeDetectorConfig.Empty)
+    val dataExtractor     = FormDataExtractor(mediaTypeDetector)(system)
+    val linkAction        = LinkFileAction.alwaysFails
+    lazy val files: Files =
+      Files(fetchContext, fetchStorage, dataExtractor, xas, eventLogConfig, fileOps, linkAction, clock)
 
     def fileId(file: String): FileId = FileId(file, projectRef)
     def fileIdIri(iri: Iri): FileId  = FileId(iri, projectRef)

@@ -5,9 +5,9 @@ import akka.http.scaladsl.model.{ContentType, Uri}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.{Decoder, Encoder}
 
 import java.util.UUID
 
@@ -44,31 +44,23 @@ final case class FileAttributes(
     bytes: Long,
     digest: Digest,
     origin: FileAttributesOrigin
-) extends LimitedFileAttributes
-
-trait LimitedFileAttributes {
-  def location: Uri
-  def path: Path
-  def filename: String
-  def mediaType: Option[ContentType]
-  def keywords: Map[Label, String]
-  def description: Option[String]
-  def name: Option[String]
-  def bytes: Long
-  def digest: Digest
-  def origin: FileAttributesOrigin
-}
+)
 
 object FileAttributes {
 
-  def from(description: FileDescription, storageMetadata: FileStorageMetadata): FileAttributes = {
-    val customMetadata = description.metadata.getOrElse(FileCustomMetadata.empty)
+  def from(
+      filename: String,
+      contentType: Option[ContentType],
+      metadata: Option[FileCustomMetadata],
+      storageMetadata: FileStorageMetadata
+  ): FileAttributes = {
+    val customMetadata = metadata.getOrElse(FileCustomMetadata.empty)
     FileAttributes(
       storageMetadata.uuid,
       storageMetadata.location,
       storageMetadata.path,
-      description.filename,
-      description.mediaType,
+      filename,
+      contentType,
       customMetadata.keywords.getOrElse(Map.empty),
       customMetadata.description,
       customMetadata.name,

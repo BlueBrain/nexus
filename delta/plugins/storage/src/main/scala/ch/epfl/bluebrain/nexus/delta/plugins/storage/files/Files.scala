@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.actor.typed.ActorSystem
-import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
@@ -32,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef, SuccessElemStream}
@@ -47,7 +46,8 @@ final class Files(
     log: FilesLog,
     fetchContext: FetchContext,
     fetchStorage: FetchStorage,
-    fileOperations: FileOperations
+    fileOperations: FileOperations,
+    linkFile: LinkFileAction
 )(implicit uuidF: UUIDF) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -280,17 +280,11 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      projectContext        <- fetchContext.onCreate(project)
-      iri                   <- id.fold(generateId(projectContext)) { FileId.iriExpander(_, projectContext) }
-      storageIri            <- storageId.traverse(expandStorageIri(_, projectContext))
-      (storageRef, storage) <- fetchStorage.onWrite(storageIri, project)
-      s3Metadata            <- fileOperations.link(storage, linkRequest.path)
-      filename              <- IO.fromOption(linkRequest.path.lastSegment)(InvalidFilePath)
-      attr                   = FileAttributes.from(
-                                 FileDescription(filename, linkRequest.mediaType.orElse(s3Metadata.contentType), linkRequest.metadata),
-                                 s3Metadata.metadata
-                               )
-      res                   <- eval(CreateFile(iri, project, storageRef, storage.tpe, attr, caller.subject, tag))
+      projectContext <- fetchContext.onCreate(project)
+      iri            <- id.fold(generateId(projectContext)) { FileId.iriExpander(_, projectContext) }
+      storageIri     <- storageId.traverse(expandStorageIri(_, projectContext))
+      storageWrite   <- linkFile(storageIri, project, linkRequest)
+      res            <- eval(CreateFile(iri, project, storageWrite, caller.subject, tag))
     } yield res
   }.span("linkFile")
 
@@ -302,28 +296,12 @@ final class Files(
       tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
-      (iri, pc)             <- id.expandIri(fetchContext.onModify)
-      storageIri            <- storageId.traverse(expandStorageIri(_, pc))
-      _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
-      (storageRef, storage) <- fetchStorage.onWrite(storageIri, id.project)
-      s3Metadata            <- fileOperations.link(storage, linkRequest.path)
-      filename              <- IO.fromOption(linkRequest.path.lastSegment)(InvalidFilePath)
-      attr                   = FileAttributes.from(
-                                 FileDescription(filename, linkRequest.mediaType.orElse(s3Metadata.contentType), linkRequest.metadata),
-                                 s3Metadata.metadata
-                               )
-      res                   <- eval(
-                                 UpdateFile(
-                                   iri,
-                                   id.project,
-                                   storageRef,
-                                   storage.tpe,
-                                   attr,
-                                   rev,
-                                   caller.subject,
-                                   tag
-                                 )
-                               )
+      (iri, pc)    <- id.expandIri(fetchContext.onModify)
+      project       = id.project
+      storageIri   <- storageId.traverse(expandStorageIri(_, pc))
+      _            <- test(UpdateFile(iri, project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
+      storageWrite <- linkFile(storageIri, project, linkRequest)
+      res          <- eval(UpdateFile(iri, project, storageWrite, rev, caller.subject, tag))
     } yield res
   }.span("updateLinkedFile")
 
@@ -353,7 +331,7 @@ final class Files(
       _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchStorage.onWrite(storageIri, id.project)
       metadata              <- legacyLinkFile(storage, path, description.filename, iri)
-      attributes             = FileAttributes.from(description, metadata)
+      attributes             = FileAttributes.from(description.filename, description.mediaType, description.metadata, metadata)
       res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
   }.span("updateLink")
@@ -493,7 +471,8 @@ final class Files(
       _                     <- test(CreateFile(iri, project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchStorage.onWrite(storageIri, project)
       storageMetadata       <- legacyLinkFile(storage, path, description.filename, iri)
-      fileAttributes         = FileAttributes.from(description, storageMetadata)
+      fileAttributes         =
+        FileAttributes.from(description.filename, description.mediaType, description.metadata, storageMetadata)
       res                   <- eval(CreateFile(iri, project, storageRef, storage.tpe, fileAttributes, caller.subject, tag))
     } yield res
 
@@ -514,9 +493,8 @@ final class Files(
   private def saveFileToStorage(iri: Iri, storage: Storage, uploadRequest: FileUploadRequest): IO[FileAttributes] = {
     for {
       info            <- formDataExtractor(uploadRequest.entity, storage.storageValue.maxFileSize)
-      description      = FileDescription.from(info, uploadRequest.metadata)
       storageMetadata <- fileOperations.save(storage, info, uploadRequest.contentLength)
-    } yield FileAttributes.from(description, storageMetadata)
+    } yield FileAttributes.from(info.filename, info.contentType, uploadRequest.metadata, storageMetadata)
   }.adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
   private def generateId(pc: ProjectContext): IO[Iri]                                                             =
@@ -776,21 +754,21 @@ object Files {
   def apply(
       fetchContext: FetchContext,
       fetchStorage: FetchStorage,
+      formDataExtractor: FormDataExtractor,
       xas: Transactors,
-      config: FilesConfig,
+      eventLogConfig: EventLogConfig,
       fileOps: FileOperations,
+      linkFile: LinkFileAction,
       clock: Clock[IO]
   )(implicit
-      uuidF: UUIDF,
-      as: ActorSystem[Nothing]
-  ): Files = {
-    implicit val classicAs: ClassicActorSystem = as.classicSystem
+      uuidF: UUIDF
+  ): Files =
     new Files(
-      FormDataExtractor(config.mediaTypeDetector),
-      ScopedEventLog(definition(clock), config.eventLog, xas),
+      formDataExtractor,
+      ScopedEventLog(definition(clock), eventLogConfig, xas),
       fetchContext,
       fetchStorage,
-      fileOps
+      fileOps,
+      linkFile
     )
-  }
 }

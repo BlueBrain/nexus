@@ -61,7 +61,7 @@ class RunShipSuite
 
   private def uploadFile(path: String) = {
     val contentAsBuffer = StandardCharsets.UTF_8.encode(fileContent).asReadOnlyBuffer()
-    val put             = PutObjectRequest(importBucket, path, ContentTypes.`application/octet-stream`, contentLength)
+    val put             = PutObjectRequest(importBucket, path, Some(ContentTypes.`application/octet-stream`), contentLength)
     s3Client.uploadFile(put, Stream.emit(contentAsBuffer))
   }
 

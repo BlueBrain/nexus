@@ -8,6 +8,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.InvalidFilePath
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
@@ -15,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Uploadi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations.{S3DelegationMetadata, S3FileMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
@@ -31,7 +33,10 @@ trait S3FileOperations {
 }
 
 object S3FileOperations {
-  final case class S3FileMetadata(contentType: Option[ContentType], metadata: FileStorageMetadata)
+
+  type S3FileLink = (String, Uri.Path) => IO[S3FileMetadata]
+
+  final case class S3FileMetadata(filename: String, contentType: Option[ContentType], metadata: FileStorageMetadata)
   final case class S3DelegationMetadata(bucket: String, path: Uri)
 
   private val log = Logger[S3FileOperations]
@@ -84,8 +89,10 @@ object S3FileOperations {
       uuidf: UUIDF
   ) =
     for {
-      uuid <- uuidf()
+      uuid     <- uuidf()
+      filename <- IO.fromOption(path.lastSegment)(InvalidFilePath)
     } yield S3FileMetadata(
+      filename,
       resp.contentType,
       FileStorageMetadata(
         uuid,
