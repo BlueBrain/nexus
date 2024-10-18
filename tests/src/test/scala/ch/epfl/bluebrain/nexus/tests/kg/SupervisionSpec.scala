@@ -2,23 +2,22 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.supervision.Mickey
+import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKeys, projections}
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Supervision}
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
 import io.circe._
 
 class SupervisionSpec extends BaseIntegrationSpec {
 
   "The supervision endpoint" should {
     s"reject calls without ${Supervision.Read.value} permission" in {
-      deltaClient.get[Json]("/supervision/projections", Mickey) { (_, response) =>
+      deltaClient.get[Json]("/supervision/projections", Anonymous) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
     s"accept calls with ${Supervision.Read.value}" in {
-      aclDsl.addPermission("/", Mickey, Supervision.Read).accepted
-      deltaClient.get[Json]("/supervision/projections", Mickey) { (_, response) =>
+      deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (_, response) =>
         response.status shouldEqual StatusCodes.OK
       }
     }
@@ -29,16 +28,11 @@ class SupervisionSpec extends BaseIntegrationSpec {
   private val fullId = s"$orgId/$projId"
 
   "creating projects" should {
-    "add necessary permissions for user" in {
-      for {
-        _ <- aclDsl.addPermissions("/", Mickey, Set(Organizations.Create, Events.Read))
-      } yield succeed
-    }
 
     "succeed in creating an org and project" in {
       for {
-        _ <- adminDsl.createOrganization(orgId, orgId, Mickey)
-        _ <- adminDsl.createProjectWithName(orgId, projId, name = fullId, Mickey)
+        _ <- adminDsl.createOrganization(orgId, orgId, ServiceAccount)
+        _ <- adminDsl.createProjectWithName(orgId, projId, name = fullId, ServiceAccount)
       } yield succeed
     }
   }
@@ -57,16 +51,16 @@ class SupervisionSpec extends BaseIntegrationSpec {
       metadataJson(module, projectionName, fullId, viewId, revision, restarts)
 
     "not exist before project is created" in {
-      deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+      deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
         val viewMetaDataJson = elasticsearchProjectionMetadata(revision = 1, restarts = 0)
         assert(!metadataExists(viewMetaDataJson)(json))
       }
     }
 
     "exist after a project is created" in {
-      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createEsViewPayload, Mickey) { (_, _) =>
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createEsViewPayload, ServiceAccount) { (_, _) =>
         eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+          deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
             val expected = elasticsearchProjectionMetadata(revision = 1, restarts = 0)
             assert(metadataExists(expected)(json))
           }
@@ -75,20 +69,21 @@ class SupervisionSpec extends BaseIntegrationSpec {
     }
 
     "reflects a view update" in {
-      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName?rev=1", updateEsViewPayload, Mickey) { (_, _) =>
-        eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
-            val expected = elasticsearchProjectionMetadata(revision = 2, restarts = 0)
-            assert(metadataExists(expected)(json))
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName?rev=1", updateEsViewPayload, ServiceAccount) {
+        (_, _) =>
+          eventually {
+            deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
+              val expected = elasticsearchProjectionMetadata(revision = 2, restarts = 0)
+              assert(metadataExists(expected)(json))
+            }
           }
-        }
       }
     }
 
     "reflects a view restart" in {
-      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName/offset", Mickey) { (_, _) =>
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName/offset", ServiceAccount) { (_, _) =>
         eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+          deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
             val expected = elasticsearchProjectionMetadata(revision = 2, restarts = 1)
             assert(metadataExists(expected)(json))
           }
@@ -97,9 +92,9 @@ class SupervisionSpec extends BaseIntegrationSpec {
     }
 
     "reflect a view deprecation" in {
-      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName?rev=2", Mickey) { (_, _) =>
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName?rev=2", ServiceAccount) { (_, _) =>
         eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+          deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
             val expected = elasticsearchProjectionMetadata(revision = 2, restarts = 1)
             assert(!metadataExists(expected)(json))
           }
@@ -123,16 +118,16 @@ class SupervisionSpec extends BaseIntegrationSpec {
       metadataJson(module, projectionName, fullId, viewId, revision, restarts)
 
     "not exist before project is created" in {
-      deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+      deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
         val viewMetaDataJson = blazegraphProjectionMetadata(revision = 1, restarts = 0)
         assert(!metadataExists(viewMetaDataJson)(json))
       }
     }
 
     "exist after a project is created" in {
-      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createBgViewPayload, Mickey) { (_, _) =>
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createBgViewPayload, ServiceAccount) { (_, _) =>
         eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+          deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
             val expected = blazegraphProjectionMetadata(revision = 1, restarts = 0)
             assert(metadataExists(expected)(json))
           }
@@ -141,20 +136,21 @@ class SupervisionSpec extends BaseIntegrationSpec {
     }
 
     "reflects a view update" in {
-      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName?rev=1", updateBgViewPayload, Mickey) { (_, _) =>
-        eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
-            val expected = blazegraphProjectionMetadata(revision = 2, restarts = 0)
-            assert(metadataExists(expected)(json))
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName?rev=1", updateBgViewPayload, ServiceAccount) {
+        (_, _) =>
+          eventually {
+            deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
+              val expected = blazegraphProjectionMetadata(revision = 2, restarts = 0)
+              assert(metadataExists(expected)(json))
+            }
           }
-        }
       }
     }
 
     "reflects a view restart" in {
-      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName/offset", Mickey) { (_, _) =>
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName/offset", ServiceAccount) { (_, _) =>
         eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+          deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
             val expected = blazegraphProjectionMetadata(revision = 2, restarts = 1)
             assert(metadataExists(expected)(json))
           }
@@ -163,9 +159,9 @@ class SupervisionSpec extends BaseIntegrationSpec {
     }
 
     "reflect a view deprecation" in {
-      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName?rev=2", Mickey) { (_, _) =>
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName?rev=2", ServiceAccount) { (_, _) =>
         eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+          deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
             val expected = blazegraphProjectionMetadata(revision = 2, restarts = 1)
             assert(!metadataExists(expected)(json))
           }
@@ -196,28 +192,17 @@ class SupervisionSpec extends BaseIntegrationSpec {
       metadataJson(module, projectionName, fullId, viewId, revision, restart)
 
     "not exist before project is created" in {
-      deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+      deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
         val viewMetaDataJson = compositeProjectionMetadata(revision = 1, restart = 0)
         assert(!metadataExists(viewMetaDataJson)(json))
       }
     }
 
     "exist after a project is created" in {
-      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createCompositeViewPayload, Mickey) { (_, _) =>
-        eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
-            val expected = compositeProjectionMetadata(revision = 1, restart = 0)
-            assert(metadataExists(expected)(json))
-          }
-        }
-      }
-    }
-
-    "reflects a view update" in {
-      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName?rev=1", updateCompositeViewPayload, Mickey) {
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createCompositeViewPayload, ServiceAccount) {
         (_, _) =>
           eventually {
-            deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+            deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
               val expected = compositeProjectionMetadata(revision = 1, restart = 0)
               assert(metadataExists(expected)(json))
             }
@@ -225,10 +210,23 @@ class SupervisionSpec extends BaseIntegrationSpec {
       }
     }
 
+    "reflects a view update" in {
+      deltaClient
+        .put[Json](s"/views/$fullId/test-resource:$viewName?rev=1", updateCompositeViewPayload, ServiceAccount) {
+          (_, _) =>
+            eventually {
+              deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
+                val expected = compositeProjectionMetadata(revision = 1, restart = 0)
+                assert(metadataExists(expected)(json))
+              }
+            }
+        }
+    }
+
     "reflect a view deprecation" in {
-      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName?rev=2", Mickey) { (_, _) =>
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName?rev=2", ServiceAccount) { (_, _) =>
         eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+          deltaClient.get[Json]("/supervision/projections", ServiceAccount) { (json, _) =>
             val expected = compositeProjectionMetadata(revision = 2, restart = 1)
             assert(!metadataExists(expected)(json))
           }

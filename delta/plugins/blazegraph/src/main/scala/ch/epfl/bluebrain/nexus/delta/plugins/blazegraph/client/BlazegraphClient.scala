@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post}
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials, RawHeader}
 import akka.http.scaladsl.model.{HttpEntity, HttpHeader, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
@@ -135,6 +136,25 @@ class BlazegraphClient(
 
         IO.fromOption(count)(InvalidCountRequest(index, sparqlQuery.value))
       }
+  }
+
+  /**
+    * List all namespaces in the blazegraph instance
+    */
+  def listNamespaces: IO[Vector[String]] = {
+    val namespacePredicate = "http://www.bigdata.com/rdf#/features/KB/Namespace"
+    val describeEndpoint   = (endpoint / "namespace").withQuery(Query("describe-each-named-graph" -> "false"))
+    val request            = Get(describeEndpoint).withHeaders(accept(SparqlResultsJson.mediaTypes.toList))
+    client.fromJsonTo[SparqlResults](request).map { response =>
+      response.results.bindings.foldLeft(Vector.empty[String]) { case (acc, binding) =>
+        val isNamespace   = binding.get("predicate").exists(_.value == namespacePredicate)
+        val namespaceName = binding.get("object").map(_.value)
+        if (isNamespace)
+          acc ++ namespaceName
+        else
+          acc
+      }
+    }
   }
 
   implicit private val resolvedServiceDescriptionDecoder: FromEntityUnmarshaller[ResolvedServiceDescription] =
