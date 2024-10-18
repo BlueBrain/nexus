@@ -256,6 +256,6 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
         case None       => SparqlRdfXmlResponse(NodeSeq.Empty)
       }
 
-  private def accept(mediaType: Seq[MediaType]): Accept =
+  protected def accept(mediaType: Seq[MediaType]): Accept =
     Accept(mediaType.map(MediaRange.One(_, 1f)))
 }

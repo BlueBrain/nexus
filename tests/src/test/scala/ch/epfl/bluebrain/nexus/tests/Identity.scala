@@ -96,10 +96,6 @@ object Identity extends Generators {
     val Radar = UserCredentials(genString(), genString(), testRealm)
   }
 
-  object supervision {
-    val Mickey = UserCredentials(genString(), genString(), testRealm)
-  }
-
   object files {
     val Writer = UserCredentials(genString(), genString(), testRealm)
   }
@@ -109,6 +105,6 @@ object Identity extends Generators {
   }
 
   lazy val allUsers =
-    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: files.Writer :: typehierarchy.Writer :: writer :: Nil
+    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: files.Writer :: typehierarchy.Writer :: writer :: Nil
 
 }

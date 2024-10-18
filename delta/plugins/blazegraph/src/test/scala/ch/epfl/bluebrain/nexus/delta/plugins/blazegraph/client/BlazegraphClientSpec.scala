@@ -125,6 +125,10 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
       client.createNamespace("some").accepted shouldEqual true
     }
 
+    "list namespaces" in {
+      client.listNamespaces.accepted shouldEqual Vector("kb", "some")
+    }
+
     "attempt to create namespace a second time" in {
       client.createNamespace("some", Map.empty).accepted shouldEqual false
     }
