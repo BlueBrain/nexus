@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageWrite
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -69,6 +70,17 @@ object FileCommand {
     override def rev: Int = 0
   }
 
+  object CreateFile {
+    def apply(
+        id: Iri,
+        project: ProjectRef,
+        storageWrite: StorageWrite[FileAttributes],
+        subject: Subject,
+        tag: Option[UserTag]
+    ): CreateFile =
+      CreateFile(id, project, storageWrite.storage, storageWrite.tpe, storageWrite.value, subject, tag)
+  }
+
   /**
     * Command to update an existing file
     *
@@ -97,6 +109,26 @@ object FileCommand {
       subject: Subject,
       tag: Option[UserTag]
   ) extends FileCommand
+
+  object UpdateFile {
+    def apply(
+        id: Iri,
+        project: ProjectRef,
+        storageWrite: StorageWrite[FileAttributes],
+        rev: Int,
+        subject: Subject,
+        tag: Option[UserTag]
+    ): UpdateFile = UpdateFile(
+      id,
+      project,
+      storageWrite.storage,
+      storageWrite.tpe,
+      storageWrite.value,
+      rev,
+      subject,
+      tag
+    )
+  }
 
   /**
     * Command to update the custom metadata of a file

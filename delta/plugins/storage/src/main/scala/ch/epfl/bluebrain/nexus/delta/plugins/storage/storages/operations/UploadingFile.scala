@@ -49,7 +49,7 @@ object UploadingFile {
       project: ProjectRef,
       bucket: String,
       filename: String,
-      contentType: ContentType,
+      contentType: Option[ContentType],
       contentLength: Long,
       entity: BodyPartEntity
   ) extends UploadingFile
@@ -70,7 +70,7 @@ object UploadingFile {
             s.project,
             s.value.bucket,
             info.filename,
-            info.suppliedContentType,
+            info.contentType,
             contentLength,
             info.contents
           )

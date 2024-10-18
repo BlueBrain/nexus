@@ -66,7 +66,7 @@ class S3FileOperationsSuite
       val contentLength = content.length.toLong
       val digest        = makeDigest(content)
       val entity        = HttpEntity(content)
-      val uploading     = S3UploadingFile(project, bucket, filename, contentType, contentLength, entity)
+      val uploading     = S3UploadingFile(project, bucket, filename, Some(contentType), contentLength, entity)
 
       val location         = expectedLocation(project, filename)
       val expectedMetadata =

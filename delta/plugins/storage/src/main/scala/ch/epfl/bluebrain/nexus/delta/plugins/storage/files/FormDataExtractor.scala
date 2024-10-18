@@ -11,12 +11,9 @@ import akka.stream.scaladsl.{Keep, Sink}
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
-import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 trait FormDataExtractor {
 
@@ -34,9 +31,9 @@ trait FormDataExtractor {
   def apply(entity: HttpEntity, maxFileSize: Long): IO[UploadedFileInformation]
 }
 
-case class UploadedFileInformation(
+final case class UploadedFileInformation(
     filename: String,
-    suppliedContentType: ContentType,
+    contentType: Option[ContentType],
     contents: BodyPartEntity
 )
 
@@ -61,9 +58,7 @@ object FormDataExtractor {
         createStrict = (_, parts) => Multipart.FormData.Strict(parts)
       )
 
-  def apply(
-      mediaTypeDetector: MediaTypeDetectorConfig
-  )(implicit as: ActorSystem): FormDataExtractor =
+  def apply(mediaTypeDetector: MediaTypeDetector)(implicit as: ActorSystem): FormDataExtractor =
     new FormDataExtractor {
       implicit val ec: ExecutionContext = as.getDispatcher
 
@@ -115,40 +110,19 @@ object FormDataExtractor {
 
       private def extractFile(part: FormData.BodyPart): Future[Option[UploadedFileInformation]] = part match {
         case part if part.name == FileFieldName =>
-          val filename    = part.filename.filterNot(_.isEmpty).getOrElse(defaultFilename)
-          val contentType = detectContentType(filename, part.entity.contentType)
+          val filename               = part.filename.filterNot(_.isEmpty).getOrElse(defaultFilename)
+          val contentTypeFromRequest = part.entity.contentType
+          val suppliedContentType    = Option.when(contentTypeFromRequest != defaultContentType)(contentTypeFromRequest)
 
           Future(
             UploadedFileInformation(
               filename,
-              contentType,
+              mediaTypeDetector(filename, suppliedContentType, Some(contentTypeFromRequest)),
               part.entity
             ).some
           )
         case part                               =>
           part.entity.discardBytes().future.as(None)
       }
-
-      private def detectContentType(filename: String, contentTypeFromRequest: ContentType) = {
-        val bodyDefinedContentType = Option.when(contentTypeFromRequest != defaultContentType)(contentTypeFromRequest)
-
-        val extensionOpt = FileUtils.extension(filename)
-
-        def detectFromConfig = for {
-          extension       <- extensionOpt
-          customMediaType <- mediaTypeDetector.find(extension)
-        } yield contentType(customMediaType)
-
-        def detectAkkaFromExtension = extensionOpt.flatMap { e =>
-          Try(MediaTypes.forExtension(e)).map(contentType).toOption
-        }
-
-        bodyDefinedContentType
-          .orElse(detectFromConfig)
-          .orElse(detectAkkaFromExtension)
-          .getOrElse(contentTypeFromRequest)
-      }
-
-      private def contentType(mediaType: MediaType) = ContentType(mediaType, () => HttpCharsets.`UTF-8`)
     }
 }

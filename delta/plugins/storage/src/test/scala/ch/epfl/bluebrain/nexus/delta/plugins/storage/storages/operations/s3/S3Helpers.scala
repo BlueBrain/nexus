@@ -42,7 +42,7 @@ trait S3Helpers { self: Generators =>
   )(implicit client: S3StorageClient): IO[Unit] = {
     val bytes = contents.getBytes(StandardCharsets.UTF_8)
     val key   = genString()
-    val put   = PutObjectRequest(bucket, key, ContentTypes.`text/plain(UTF-8)`, bytes.length.toLong)
+    val put   = PutObjectRequest(bucket, key, Some(ContentTypes.`text/plain(UTF-8)`), bytes.length.toLong)
     client.uploadFile(put, Stream.emit(ByteBuffer.wrap(bytes))) >> test(key)
   }
 
@@ -51,10 +51,10 @@ trait S3Helpers { self: Generators =>
   )(implicit client: S3StorageClient): IO[Unit] = {
     val bytes1 = contents1.getBytes(StandardCharsets.UTF_8)
     val key1   = genString()
-    val put1   = PutObjectRequest(bucket, key1, ContentTypes.`text/plain(UTF-8)`, bytes1.length.toLong)
+    val put1   = PutObjectRequest(bucket, key1, Some(ContentTypes.`text/plain(UTF-8)`), bytes1.length.toLong)
     val bytes2 = contents2.getBytes(StandardCharsets.UTF_8)
     val key2   = genString()
-    val put2   = PutObjectRequest(bucket, key2, ContentTypes.`text/plain(UTF-8)`, bytes2.length.toLong)
+    val put2   = PutObjectRequest(bucket, key2, Some(ContentTypes.`text/plain(UTF-8)`), bytes2.length.toLong)
     for {
       _ <- client.uploadFile(put1, Stream.emit(ByteBuffer.wrap(bytes1)))
       _ <- client.uploadFile(put2, Stream.emit(ByteBuffer.wrap(bytes2)))

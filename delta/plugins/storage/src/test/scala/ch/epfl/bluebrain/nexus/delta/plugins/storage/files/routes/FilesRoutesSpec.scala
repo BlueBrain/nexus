@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
-import akka.actor.typed
 import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UTF-8)`}
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.{`multipart/form-data`, `text/html`}
@@ -12,16 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FormDataExtractor, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, NexusHeaders}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -34,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, NexusHeaders}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
@@ -53,9 +52,6 @@ class FilesRoutesSpec
     with StorageFixtures
     with FileFixtures
     with CatsIOValues {
-
-  import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =
@@ -121,10 +117,14 @@ class FilesRoutesSpec
   lazy val fileOps: FileOperations    = FileOperationsMock.disabled
   lazy val fetchStorage: FetchStorage = FetchStorage(storages, aclCheck)
 
-  private val filesConfig                                  = FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty)
-  lazy val files: Files                                    = Files(fetchContext, fetchStorage, xas, filesConfig, fileOps, clock)(uuidF, typedSystem)
-  private val groupDirectives                              = DeltaSchemeDirectives(fetchContext)
-  private lazy val routes                                  = routesWithIdentities(identities)
+  private val mediaTypeDetector = new MediaTypeDetector(MediaTypeDetectorConfig.Empty)
+  private val dataExtractor     = FormDataExtractor(mediaTypeDetector)(system)
+  private val linkAction        = LinkFileAction.alwaysFails
+  lazy val files: Files         =
+    Files(fetchContext, fetchStorage, dataExtractor, xas, eventLogConfig, fileOps, linkAction, clock)(uuidF)
+  private val groupDirectives   = DeltaSchemeDirectives(fetchContext)
+  private lazy val routes       = routesWithIdentities(identities)
+
   private def routesWithIdentities(identities: Identities) =
     Route.seal(FilesRoutes(identities, aclCheck, files, groupDirectives, IndexingAction.noop))
 

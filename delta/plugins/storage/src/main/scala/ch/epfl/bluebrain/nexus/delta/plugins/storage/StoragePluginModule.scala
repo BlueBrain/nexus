@@ -12,11 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{DelegateFilesRoutes, FilesRoutes, LinkFilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files, FormDataExtractor, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
@@ -191,6 +191,15 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     FileOperations.apply(disk, remoteDisk, s3)
   }
 
+  make[MediaTypeDetector].from { (cfg: StoragePluginConfig) =>
+    new MediaTypeDetector(cfg.files.mediaTypeDetector)
+  }
+
+  make[LinkFileAction].from {
+    (fetchStorage: FetchStorage, mediaTypeDetector: MediaTypeDetector, s3FileOps: S3FileOperations) =>
+      LinkFileAction(fetchStorage, mediaTypeDetector, s3FileOps)
+  }
+
   make[Files].from {
     (
         cfg: StoragePluginConfig,
@@ -200,19 +209,20 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         clock: Clock[IO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing],
-        fileOps: FileOperations
+        fileOps: FileOperations,
+        mediaTypeDetector: MediaTypeDetector,
+        linkFileAction: LinkFileAction
     ) =>
       Files(
         fetchContext,
         fetchStorage,
+        FormDataExtractor(mediaTypeDetector)(as.classicSystem),
         xas,
-        cfg.files,
+        cfg.files.eventLog,
         fileOps,
+        linkFileAction,
         clock
-      )(
-        uuidF,
-        as
-      )
+      )(uuidF)
   }
 
   make[FileAttributesUpdateStream].fromEffect {

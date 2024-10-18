@@ -5,7 +5,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.definition
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CancelEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.FetchStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.LinkFileAction
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -29,6 +30,7 @@ import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult.{FileCopySki
 import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{forceMediaType, logger, patchMediaType}
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
+import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring.linkS3FileOperationOnly
 import io.circe.Decoder
 
 class FileProcessor private (
@@ -184,13 +186,19 @@ object FileProcessor {
     }
     val fileCopier = FileCopier(s3Client, config.files)
 
+    // This part is done during the patchMediaType part which also takes care of setting
+    // the content type on the S3 object
+    val mediaTypeDetector = new MediaTypeDetector(MediaTypeDetectorConfig.Empty)
+    val linkFile          = LinkFileAction(fs, mediaTypeDetector, linkS3FileOperationOnly(s3Client))
+
     val files =
       new Files(
         failingFormDataExtractor,
         ScopedEventLog(definition(clock), config.eventLog, xas),
         fetchContext,
         fs,
-        linkOperationOnly(s3Client)
+        noFileOperations,
+        linkFile
       )(FailingUUID)
 
     new FileProcessor(files, projectMapper, fileCopier, clock)(config.files.mediaTypeDetector)

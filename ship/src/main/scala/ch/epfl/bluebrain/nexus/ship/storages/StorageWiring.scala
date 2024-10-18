@@ -4,16 +4,13 @@ import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.StorageScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileStorageMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.S3StorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, RemoteUploadingFile, S3UploadingFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -21,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.ship.EventClock
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 
@@ -81,33 +78,6 @@ object StorageWiring {
       writePermission = Some(config.defaultWritePermission),
       maxFileSize = Some(config.defaultMaxFileSize)
     )
-  }
-
-  def failingDiskFileOperations: DiskFileOperations = new DiskFileOperations {
-    override def fetch(path: Uri.Path): IO[AkkaSource] =
-      IO.raiseError(new IllegalArgumentException("DiskFileOperations should not be called"))
-
-    override def save(uploading: DiskUploadingFile): IO[FileStorageMetadata] =
-      IO.raiseError(new IllegalArgumentException("DiskFileOperations should not be called"))
-  }
-
-  def failingRemoteDiskFileOperations: RemoteDiskFileOperations = new RemoteDiskFileOperations {
-
-    override def fetch(folder: Label, path: Uri.Path): IO[AkkaSource] =
-      IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
-
-    override def save(uploading: RemoteUploadingFile): IO[FileStorageMetadata] =
-      IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
-
-    override def legacyLink(
-        storage: RemoteDiskStorage,
-        sourcePath: Uri.Path,
-        filename: String
-    ): IO[FileStorageMetadata] =
-      IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
-
-    override def fetchAttributes(folder: Label, path: Uri.Path): IO[ComputedFileAttributes] =
-      IO.raiseError(new IllegalArgumentException("RemoteDiskFileOperations should not be called"))
   }
 
   def linkS3FileOperationOnly(s3Client: S3StorageClient): S3FileOperations = new S3FileOperations {

@@ -24,7 +24,7 @@ class FormDataExtractorSpec
     val customMediaType   = MediaType.parse("application/custom").rightValue
     val customContentType = ContentType(customMediaType, () => HttpCharsets.`UTF-8`)
     val mediaTypeDetector = MediaTypeDetectorConfig(Map("custom" -> customMediaType))
-    val extractor         = FormDataExtractor(mediaTypeDetector)
+    val extractor         = FormDataExtractor(new MediaTypeDetector(mediaTypeDetector))
 
     def createEntity(
         bodyPart: String,
@@ -71,16 +71,16 @@ class FormDataExtractorSpec
         extractor(entity, 250).accepted
 
       filename shouldEqual "filename"
-      contentType shouldEqual `application/octet-stream`
+      contentType.value shouldEqual `application/octet-stream`
       consume(contents.dataBytes) shouldEqual content
     }
 
-    "be extracted with the custom media type from the config" in {
+    "be extracted with the custom media type from the detector" in {
       val entity                                                   = createEntity("file", NoContentType, Some("file.custom"))
       val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 2000).accepted
 
       filename shouldEqual "file.custom"
-      contentType shouldEqual customContentType
+      contentType.value shouldEqual customContentType
       consume(contents.dataBytes) shouldEqual content
     }
 
@@ -89,7 +89,7 @@ class FormDataExtractorSpec
 
       val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 250).accepted
       filename shouldEqual "file.txt"
-      contentType shouldEqual `text/plain(UTF-8)`
+      contentType.value shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
     }
 
@@ -111,7 +111,7 @@ class FormDataExtractorSpec
       val entity                                                   = createEntity("file", `text/plain(UTF-8)`, Some("file.custom"))
       val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 2000).accepted
       filename shouldEqual "file.custom"
-      contentType shouldEqual `text/plain(UTF-8)`
+      contentType.value shouldEqual `text/plain(UTF-8)`
       consume(contents.dataBytes) shouldEqual content
     }
 

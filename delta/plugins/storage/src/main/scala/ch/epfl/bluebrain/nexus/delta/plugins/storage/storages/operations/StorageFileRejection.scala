@@ -167,11 +167,13 @@ object StorageFileRejection {
 
   object LinkFileRejection {
 
+    final case object Disabled extends LinkFileRejection(s"Linking a file is disabled")
+
     final case class InvalidPath(path: Uri.Path)
         extends LinkFileRejection(s"An S3 path must contain at least the filename. Path was $path")
 
     final case class UnsupportedOperation(tpe: StorageType)
-        extends MoveFileRejection(s"Linking a file in-place is not supported for storages of type '${tpe.iri}'")
+        extends MoveFileRejection(s"Linking a file is not supported for storages of type '${tpe.iri}'")
   }
 
   sealed abstract class DelegateFileOperation(loggedDetails: String) extends StorageFileRejection(loggedDetails)
