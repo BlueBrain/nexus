@@ -138,7 +138,7 @@ lazy val docs = project
   .enablePlugins(ParadoxMaterialThemePlugin, SitePreviewPlugin, ParadoxSitePlugin)
   .disablePlugins(ScapegoatSbtPlugin)
   .settings(shared, compilation, assertJavaVersion, noPublish)
-  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Compile))
+  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings)
   .settings(
     name                             := "docs",
     moduleName                       := "docs",
