@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent, DefaultProperties}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphSupervisionRoutes, BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -241,6 +241,18 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[BlazegraphSupervisionRoutes].from {
+    (
+        views: BlazegraphViews,
+        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        identities: Identities,
+        aclCheck: AclCheck,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) =>
+      BlazegraphSupervisionRoutes(views, client, identities, aclCheck)(cr, ordering)
+  }
+
   make[BlazegraphScopeInitialization].from {
     (views: BlazegraphViews, serviceAccount: ServiceAccount, config: BlazegraphViewsConfig) =>
       new BlazegraphScopeInitialization(views, serviceAccount, config.defaults)
@@ -275,6 +287,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     (
         bg: BlazegraphViewsRoutes,
         indexing: BlazegraphViewsIndexingRoutes,
+        supervision: BlazegraphSupervisionRoutes,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri
     ) =>
@@ -283,7 +296,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         BlazegraphViewsRoutesHandler(
           schemeDirectives,
           bg.routes,
-          indexing.routes
+          indexing.routes,
+          supervision.routes
         )(baseUri),
         requiresStrictEntity = true
       )

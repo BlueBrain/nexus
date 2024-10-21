@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.{CompositeViewsIndexingRoutes, CompositeViewsRoutes, CompositeViewsRoutesHandler}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.{CompositeSupervisionRoutes, CompositeViewsIndexingRoutes, CompositeViewsRoutes, CompositeViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeGraphStream, RemoteGraphStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -322,6 +322,19 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )(baseUri, config.pagination, cr, ordering)
   }
 
+  make[CompositeSupervisionRoutes].from {
+    (
+        views: CompositeViews,
+        client: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
+        identities: Identities,
+        aclCheck: AclCheck,
+        config: CompositeViewsConfig,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) =>
+      CompositeSupervisionRoutes(views, client, identities, aclCheck, config.prefix)(cr, ordering)
+  }
+
   make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri) =>
     CompositeView.shift(views)(base)
   }
@@ -336,6 +349,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         cv: CompositeViewsRoutes,
         indexing: CompositeViewsIndexingRoutes,
+        supervision: CompositeSupervisionRoutes,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri
     ) =>
@@ -344,7 +358,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         CompositeViewsRoutesHandler(
           schemeDirectives,
           cv.routes,
-          indexing.routes
+          indexing.routes,
+          supervision.routes
         )(baseUri),
         requiresStrictEntity = true
       )
