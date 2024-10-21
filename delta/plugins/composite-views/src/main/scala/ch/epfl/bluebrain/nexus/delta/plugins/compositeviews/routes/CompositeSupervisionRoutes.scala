@@ -1,9 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.{BlazegraphSupervision, BlazegraphViewByNamespace}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.BlazegraphSupervision
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.supervision.CompositeViewsByNamespace
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -15,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
 import io.circe.syntax.EncoderOps
 
-class BlazegraphSupervisionRoutes(
+class CompositeSupervisionRoutes(
     blazegraphSupervision: BlazegraphSupervision,
     identities: Identities,
     aclCheck: AclCheck
@@ -27,7 +28,7 @@ class BlazegraphSupervisionRoutes(
     pathPrefix("supervision") {
       extractCaller { implicit caller =>
         authorizeFor(AclAddress.Root, supervision.read).apply {
-          (pathPrefix("blazegraph") & get & pathEndOrSingleSlash) {
+          (pathPrefix("composite-views") & get & pathEndOrSingleSlash) {
             emit(blazegraphSupervision.get.map(_.asJson))
           }
         }
@@ -35,15 +36,16 @@ class BlazegraphSupervisionRoutes(
     }
 }
 
-object BlazegraphSupervisionRoutes {
-
-  def apply(views: BlazegraphViews, client: BlazegraphClient, identities: Identities, aclCheck: AclCheck)(implicit
-      cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
-  ): BlazegraphSupervisionRoutes = {
-    val viewsByNameSpace      = BlazegraphViewByNamespace(views)
-    val blazegraphSupervision = BlazegraphSupervision(client, viewsByNameSpace)
-    new BlazegraphSupervisionRoutes(blazegraphSupervision, identities, aclCheck)
+object CompositeSupervisionRoutes {
+  def apply(
+      views: CompositeViews,
+      client: BlazegraphClient,
+      identities: Identities,
+      aclCheck: AclCheck,
+      prefix: String
+  )(implicit cr: RemoteContextResolution, ordering: JsonKeyOrdering): CompositeSupervisionRoutes = {
+    val viewsByNameSpace     = CompositeViewsByNamespace(views, prefix)
+    val compositeSupervision = BlazegraphSupervision(client, viewsByNameSpace)
+    new CompositeSupervisionRoutes(compositeSupervision, identities, aclCheck)
   }
-
 }

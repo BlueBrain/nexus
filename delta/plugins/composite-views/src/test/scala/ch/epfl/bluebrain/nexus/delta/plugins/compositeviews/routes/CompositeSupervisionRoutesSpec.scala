@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
-class BlazegraphSupervisionRoutesSpec extends BaseRouteSpec {
+class CompositeSupervisionRoutesSpec extends BaseRouteSpec {
 
   private val supervisor = User("supervisor", realm)
 
@@ -45,11 +45,11 @@ class BlazegraphSupervisionRoutesSpec extends BaseRouteSpec {
     )
   }
 
-  private val routes = Route.seal(new BlazegraphSupervisionRoutes(blazegraphSupervision, identities, aclCheck).routes)
+  private val routes = Route.seal(new CompositeSupervisionRoutes(blazegraphSupervision, identities, aclCheck).routes)
 
-  "The blazegraph supervision endpoint" should {
+  "The composite views supervision endpoint" should {
     "be forbidden without supervision/read permission" in {
-      Get("/supervision/blazegraph") ~> routes ~> check {
+      Get("/supervision/composite-views") ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
@@ -83,7 +83,7 @@ class BlazegraphSupervisionRoutesSpec extends BaseRouteSpec {
            ]
          }"""
 
-      Get("/supervision/blazegraph") ~> asSupervisor ~> routes ~> check {
+      Get("/supervision/composite-views") ~> asSupervisor ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual expected
       }

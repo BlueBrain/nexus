@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.BlazegraphSupervision.BlazegraphNamespaces
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.BlazegraphSupervision.BlazegraphNamespaceTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -25,7 +25,8 @@ class BlazegraphSupervisionSuite extends NexusSuite with BlazegraphClientSetup.F
   private lazy val supervision = BlazegraphSupervision(client, viewsByNamespace)
 
   test("Return the supervision for the different namespaces") {
-    val expected = BlazegraphNamespaces(
+    val expected = BlazegraphNamespaceTriples(
+      0L,
       Map(first -> 0L, second    -> 0L),
       Map("kb"  -> 0L, "unknown" -> 0L)
     )
