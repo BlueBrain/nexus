@@ -84,21 +84,20 @@ object MainSuite {
         )
 
         Map(
-          "app.defaults.database.access.host"                  -> postgres.getHost,
-          "app.defaults.database.access.port"                  -> postgres.getMappedPort(5432).toString,
-          "app.database.tables-autocreate"                     -> "true",
-          "app.defaults.database.access.username"              -> PostgresUser,
-          "app.default.database.access.password"               -> PostgresPassword,
-          "akka.actor.testkit.typed.throw-on-shutdown-timeout" -> "false",
-          "plugins.elasticsearch.indexing-enabled"             -> "false",
+          "app.defaults.database.access.host"                -> postgres.getHost,
+          "app.defaults.database.access.port"                -> postgres.getMappedPort(5432).toString,
+          "app.database.tables-autocreate"                   -> "true",
+          "app.defaults.database.access.username"            -> PostgresUser,
+          "app.default.database.access.password"             -> PostgresPassword,
+          "plugins.elasticsearch.indexing-enabled"           -> "false",
           //TODO Investigate how to remove this property from the config
-          "plugins.elasticsearch.disable-metrics-projection"   -> "true",
-          "plugins.graph-analytics.enabled"                    -> "true",
-          "plugins.graph-analytics.indexing-enabled"           -> "false",
-          "plugins.search.enabled"                             -> "true",
-          "plugins.search.indexing.resource-types"             -> resourceTypesFile.toString,
-          "plugins.search.indexing.mapping"                    -> mappingFile.toString,
-          "plugins.search.indexing.query"                      -> queryFile.toString
+          "plugins.elasticsearch.disable-metrics-projection" -> "true",
+          "plugins.graph-analytics.enabled"                  -> "true",
+          "plugins.graph-analytics.indexing-enabled"         -> "false",
+          "plugins.search.enabled"                           -> "true",
+          "plugins.search.indexing.resource-types"           -> resourceTypesFile.toString,
+          "plugins.search.indexing.mapping"                  -> mappingFile.toString,
+          "plugins.search.indexing.query"                    -> queryFile.toString
         )
       }
 

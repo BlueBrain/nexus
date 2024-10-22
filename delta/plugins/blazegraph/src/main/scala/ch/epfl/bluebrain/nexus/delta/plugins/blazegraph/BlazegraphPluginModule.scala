@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import akka.actor.typed.ActorSystem
+import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -48,12 +48,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     loader.propertiesOf("blazegraph/index.properties").map(DefaultProperties)
   }
 
-  make[HttpClient].named("http-indexing-client").from {
-    (
-        cfg: BlazegraphViewsConfig,
-        as: ActorSystem[Nothing]
-    ) =>
-      HttpClient()(cfg.indexingClient, as.classicSystem)
+  make[HttpClient].named("http-indexing-client").from { (cfg: BlazegraphViewsConfig, as: ActorSystem) =>
+    HttpClient()(cfg.indexingClient, as)
   }
 
   make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
@@ -82,29 +78,25 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-indexing-client"),
-        as: ActorSystem[Nothing],
+        as: ActorSystem,
         properties: DefaultProperties
     ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(
-        as.classicSystem
-      )
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as)
   }
 
-  make[HttpClient].named("http-query-client").from { (as: ActorSystem[Nothing]) =>
+  make[HttpClient].named("http-query-client").from { (as: ActorSystem) =>
     val httpConfig = HttpClientConfig.noRetry(false)
-    HttpClient()(httpConfig, as.classicSystem)
+    HttpClient()(httpConfig, as)
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
     (
         cfg: BlazegraphViewsConfig,
         client: HttpClient @Id("http-query-client"),
-        as: ActorSystem[Nothing],
+        as: ActorSystem,
         properties: DefaultProperties
     ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(
-        as.classicSystem
-      )
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as)
   }
 
   make[ValidateBlazegraphView].from {

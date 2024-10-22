@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{ActorSystem => ActorSystemClassic}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
@@ -151,8 +149,8 @@ object Main extends IOApp {
   }
 
   private def bootstrap(locator: Locator, plugins: List[Plugin]): Resource[IO, Unit] = {
-    implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
-    implicit val cfg: AppConfig         = locator.get[AppConfig]
+    implicit val as: ActorSystem = locator.get[ActorSystem]
+    implicit val cfg: AppConfig  = locator.get[AppConfig]
 
     val startHttpServer = IOFuture.defaultCancelable(
       IO(

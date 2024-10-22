@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
@@ -38,11 +37,7 @@ class ElasticSearchViewsRoutesFixtures
     with CirceMarshalling
     with Fixtures {
 
-  import akka.actor.typed.scaladsl.adapter._
-
   val uuid: UUID = UUID.randomUUID()
-
-  implicit val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   implicit val ordering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =

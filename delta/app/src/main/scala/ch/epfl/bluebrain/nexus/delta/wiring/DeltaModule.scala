@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.BootstrapSetup
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.{ActorSystem, BootstrapSetup}
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
@@ -134,21 +132,19 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     JWSPayloadHelper(config.jws)
   }
 
-  make[ActorSystem[Nothing]].fromResource { () =>
+  make[ActorSystem].fromResource { () =>
     val make    = IO.delay(
-      ActorSystem[Nothing](
-        Behaviors.empty,
+      ActorSystem(
         appCfg.description.fullName,
         BootstrapSetup().withConfig(config).withClassloader(classLoader)
       )
     )
-    val release = (as: ActorSystem[Nothing]) => {
-      import akka.actor.typed.scaladsl.adapter._
-      IOFuture.defaultCancelable(IO(as.toClassic.terminate()).timeout(15.seconds)).void
+    val release = (as: ActorSystem) => {
+      IOFuture.defaultCancelable(IO(as.terminate()).timeout(15.seconds)).void
     }
     Resource.make(make)(release)
   }
-  make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
+  make[Materializer].from((as: ActorSystem) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
   make[RejectionHandler].from { (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
     RdfRejectionHandler(cr, ordering)
