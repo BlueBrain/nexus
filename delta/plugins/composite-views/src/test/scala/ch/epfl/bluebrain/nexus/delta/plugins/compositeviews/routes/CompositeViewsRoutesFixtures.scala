@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViewsFixture, Fixtures}
@@ -36,10 +35,6 @@ trait CompositeViewsRoutesFixtures
     with CancelAfterFailure
     with CompositeViewsFixture
     with Fixtures {
-
-  import akka.actor.typed.scaladsl.adapter._
-
-  implicit val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   implicit val ordering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =

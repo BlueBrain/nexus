@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures
@@ -43,10 +42,7 @@ trait BlazegraphViewRoutesFixtures
     with BeforeAndAfterAll
     with Fixtures {
 
-  import akka.actor.typed.scaladsl.adapter._
-
-  implicit val typedSystem: ActorSystem[Nothing] = system.toTyped
-  implicit val baseUri: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit val ordering: JsonKeyOrdering          =
     JsonKeyOrdering.default(topKeys =

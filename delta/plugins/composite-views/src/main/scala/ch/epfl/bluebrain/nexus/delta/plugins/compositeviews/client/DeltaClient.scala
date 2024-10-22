@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 
-import akka.actor.typed.ActorSystem
+import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Get, Head}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.Uri.Query
@@ -84,9 +84,8 @@ object DeltaClient {
       authTokenProvider: AuthTokenProvider,
       credentials: Credentials,
       retryDelay: FiniteDuration
-  )(implicit
-      as: ActorSystem[Nothing]
-  ) extends DeltaClient {
+  )(implicit as: ActorSystem)
+      extends DeltaClient {
 
     override def projectStatistics(source: RemoteProjectSource): IO[ProjectStatistics] = {
       for {
@@ -184,6 +183,6 @@ object DeltaClient {
       authTokenProvider: AuthTokenProvider,
       credentials: Credentials,
       retryDelay: FiniteDuration
-  )(implicit as: ActorSystem[Nothing]): DeltaClient =
+  )(implicit as: ActorSystem): DeltaClient =
     new DeltaClientImpl(client, authTokenProvider, credentials, retryDelay)
 }

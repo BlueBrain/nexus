@@ -20,7 +20,7 @@ val akkaHttpCirceVersion       = "1.39.2"
 val akkaCorsVersion            = "1.2.0"
 val akkaVersion                = "2.6.21"
 val alpakkaVersion             = "3.0.4"
-val awsSdkVersion              = "2.28.21"
+val awsSdkVersion              = "2.28.27"
 val betterMonadicForVersion    = "0.3.1"
 val caffeineVersion            = "3.1.8"
 val catsEffectVersion          = "3.5.4"
@@ -44,7 +44,7 @@ val kamonVersion               = "2.7.5"
 val kanelaAgentVersion         = "1.0.18"
 val kindProjectorVersion       = "0.13.3"
 val log4catsVersion            = "2.7.0"
-val logbackVersion             = "1.5.10"
+val logbackVersion             = "1.5.11"
 val magnoliaVersion            = "1.1.10"
 val munitVersion               = "1.0.2"
 val munitCatsEffectVersion     = "2.0.0"
@@ -57,8 +57,6 @@ val topBraidVersion            = "1.4.3"
 val testContainersVersion      = "1.20.2"
 val testContainersScalaVersion = "0.41.4"
 
-lazy val akkaActorTyped = "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
-
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
 lazy val akkaHttpCore    = "com.typesafe.akka" %% "akka-http-core"    % akkaHttpVersion
 lazy val akkaHttpCirce   = "de.heikoseeberger" %% "akka-http-circe"   % akkaHttpCirceVersion
@@ -69,7 +67,6 @@ lazy val akkaHttpXml     = "com.typesafe.akka" %% "akka-http-xml"     % akkaHttp
 lazy val akkaSlf4j                     = "com.typesafe.akka"            %% "akka-slf4j"                         % akkaVersion
 lazy val akkaStream                    = "com.typesafe.akka"            %% "akka-stream"                        % akkaVersion
 lazy val akkaTestKit                   = "com.typesafe.akka"            %% "akka-testkit"                       % akkaVersion
-lazy val akkaTestKitTyped              = "com.typesafe.akka"            %% "akka-actor-testkit-typed"           % akkaVersion
 lazy val alpakkaFile                   = "com.lightbend.akka"           %% "akka-stream-alpakka-file"           % alpakkaVersion
 lazy val alpakkaSse                    = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"            % alpakkaVersion
 lazy val awsSdk                        = "software.amazon.awssdk"        % "s3"                                 % awsSdkVersion
@@ -204,7 +201,7 @@ lazy val kernel = project
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
     libraryDependencies  ++= Seq(
-      akkaActorTyped, // Needed to create content type
+      akkaStream, // Needed to create content type
       akkaHttpCore,
       caffeine,
       catsCore,
@@ -237,9 +234,6 @@ lazy val testkit = project
   .settings(
     coverageMinimumStmtTotal := 0,
     libraryDependencies     ++= Seq(
-      akkaActorTyped, // Needed to create Uri
-      akkaHttpCore,
-      akkaStream,
       alpakkaFile excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
       ),
@@ -291,8 +285,6 @@ lazy val rdf = project
   )
   .settings(
     libraryDependencies ++= Seq(
-      akkaActorTyped, // Needed to create Uri
-      akkaHttpCore,
       catsCore,
       circeParser,
       circeGeneric,
@@ -302,10 +294,7 @@ lazy val rdf = project
       magnolia,
       scalaReflect,
       topBraidShacl,
-      akkaSlf4j   % Test,
-      akkaTestKit % Test,
-      logback     % Test,
-      scalaTest   % Test
+      logback % Test
     ),
     Test / fork          := true,
     addCompilerPlugin(betterMonadicFor)
@@ -322,18 +311,14 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
-      akkaStream,
-      akkaHttp,
       akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
       scalaXml,
       circeLiteral,
       circeGenericExtras,
       distageCore,
-      akkaTestKitTyped % Test,
-      akkaHttpTestKit  % Test,
-      munit            % Test,
-      munitCatsEffect  % Test,
-      scalaTest        % Test
+      akkaSlf4j       % Test,
+      akkaTestKit     % Test,
+      akkaHttpTestKit % Test
     ),
     addCompilerPlugin(kindProjector),
     addCompilerPlugin(betterMonadicFor)
@@ -354,9 +339,7 @@ lazy val app = project
       akkaHttpCors,
       akkaSlf4j,
       classgraph,
-      logback,
-      akkaHttpTestKit % Test,
-      scalaTest       % Test
+      logback
     ),
     addCompilerPlugin(betterMonadicFor),
     run / fork            := true,
@@ -451,11 +434,8 @@ lazy val elasticsearchPlugin = project
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp    % Provided,
-      akkaTestKitTyped % Test,
-      akkaSlf4j        % Test,
-      logback          % Test,
-      scalaTest        % Test
+      kamonAkkaHttp % Provided,
+      logback       % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch",
@@ -478,9 +458,7 @@ lazy val blazegraphPlugin = project
     moduleName                 := "delta-blazegraph-plugin",
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
-      akkaSlf4j     % Test,
-      logback       % Test,
-      scalaTest     % Test
+      logback       % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.blazegraph",
@@ -510,9 +488,7 @@ lazy val compositeViewsPlugin = project
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
       ),
       kamonAkkaHttp % Provided,
-      akkaSlf4j     % Test,
-      logback       % Test,
-      scalaTest     % Test
+      logback       % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
@@ -540,9 +516,7 @@ lazy val searchPlugin = project
     moduleName                 := "delta-search-plugin",
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
-      akkaSlf4j     % Test,
-      logback       % Test,
-      scalaTest     % Test
+      logback       % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.search",
@@ -568,11 +542,8 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp    % Provided,
-      akkaSlf4j        % Test,
-      akkaTestKitTyped % Test,
-      akkaHttpTestKit  % Test,
-      logback          % Test
+      kamonAkkaHttp % Provided,
+      logback       % Test
     ) ++ Seq(
       fs2ReactiveStreams,
       fs2Aws,
@@ -615,9 +586,7 @@ lazy val archivePlugin = project
       alpakkaFile excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
       ),
-      akkaSlf4j     % Test,
-      logback       % Test,
-      scalaTest     % Test
+      logback       % Test
     ),
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
@@ -640,8 +609,7 @@ lazy val projectDeletionPlugin = project
     name                       := "delta-project-deletion-plugin",
     moduleName                 := "delta-project-deletion-plugin",
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided,
-      scalaTest     % Test
+      kamonAkkaHttp % Provided
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion",
@@ -668,9 +636,7 @@ lazy val graphAnalyticsPlugin = project
     moduleName                 := "delta-graph-analytics-plugin",
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
-      akkaSlf4j     % Test,
-      logback       % Test,
-      scalaTest     % Test
+      logback       % Test
     ),
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
@@ -695,8 +661,7 @@ lazy val jiraPlugin = project
     moduleName                 := "delta-jira-plugin",
     libraryDependencies       ++= Seq(
       googleAuthClient,
-      kamonAkkaHttp % Provided,
-      scalaTest     % Test
+      kamonAkkaHttp % Provided
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.jira",

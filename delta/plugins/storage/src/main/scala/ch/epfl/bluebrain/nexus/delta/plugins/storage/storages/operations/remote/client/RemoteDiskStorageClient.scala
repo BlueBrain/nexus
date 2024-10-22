@@ -256,7 +256,7 @@ object RemoteDiskStorageClient {
           authTokenProvider,
           config.defaultEndpoint,
           config.credentials
-        )(as.classicSystem)
+        )(as)
       }
       .getOrElse(RemoteDiskStorageClientDisabled)
 }

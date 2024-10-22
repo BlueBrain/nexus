@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
@@ -36,9 +35,6 @@ import io.circe.Json
 import org.scalatest.Assertion
 
 class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFixtures.Random {
-
-  import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =

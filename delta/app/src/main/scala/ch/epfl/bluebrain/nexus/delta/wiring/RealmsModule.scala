@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.typed.ActorSystem
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
@@ -50,8 +50,8 @@ object RealmsModule extends ModuleDef {
       new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
   }
 
-  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing]) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem)
+  make[HttpClient].named("realm").from { (as: ActorSystem) =>
+    HttpClient.noRetry(compression = false)(as)
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/realms-metadata.json"))

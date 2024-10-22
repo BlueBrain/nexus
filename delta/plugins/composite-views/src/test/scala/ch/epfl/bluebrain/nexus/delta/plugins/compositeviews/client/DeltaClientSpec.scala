@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model._
@@ -43,8 +42,6 @@ class DeltaClientSpec
     with ConfigFixtures
     with BeforeAndAfterAll
     with QueryParamsUnmarshalling {
-
-  implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
   var server: Option[Http.ServerBinding] = None
 

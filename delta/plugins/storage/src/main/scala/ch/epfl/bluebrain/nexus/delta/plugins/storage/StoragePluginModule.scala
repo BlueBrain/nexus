@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
-import akka.actor.typed.ActorSystem
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives.concat
 import cats.effect.{Clock, IO}
@@ -66,8 +66,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[ShowFileLocation].from { cfg: StorageTypeConfig => cfg.showFileLocation }
 
-  make[HttpClient].named("storage").from { (as: ActorSystem[Nothing]) =>
-    HttpClient.noRetry(compression = false)(as.classicSystem)
+  make[HttpClient].named("storage").from { (as: ActorSystem) =>
+    HttpClient.noRetry(compression = false)(as)
   }
 
   make[S3StorageClient].fromResource { (cfg: StoragePluginConfig) =>
@@ -174,8 +174,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
   }
 
-  make[DiskFileOperations].from { (uuidF: UUIDF, as: ActorSystem[Nothing]) =>
-    DiskFileOperations.mk(as.classicSystem, uuidF)
+  make[DiskFileOperations].from { (uuidF: UUIDF, as: ActorSystem) =>
+    DiskFileOperations.mk(as, uuidF)
   }
 
   make[RemoteDiskFileOperations].from { (client: RemoteDiskStorageClient, uuidF: UUIDF) =>
@@ -183,8 +183,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[S3FileOperations].from {
-    (client: S3StorageClient, locationGenerator: S3LocationGenerator, uuidF: UUIDF, as: ActorSystem[Nothing]) =>
-      S3FileOperations.mk(client, locationGenerator)(as.classicSystem, uuidF)
+    (client: S3StorageClient, locationGenerator: S3LocationGenerator, uuidF: UUIDF, as: ActorSystem) =>
+      S3FileOperations.mk(client, locationGenerator)(as, uuidF)
   }
 
   make[FileOperations].from { (disk: DiskFileOperations, remoteDisk: RemoteDiskFileOperations, s3: S3FileOperations) =>
@@ -208,7 +208,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         clock: Clock[IO],
         uuidF: UUIDF,
-        as: ActorSystem[Nothing],
+        as: ActorSystem,
         fileOps: FileOperations,
         mediaTypeDetector: MediaTypeDetector,
         linkFileAction: LinkFileAction
@@ -216,7 +216,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       Files(
         fetchContext,
         fetchStorage,
-        FormDataExtractor(mediaTypeDetector)(as.classicSystem),
+        FormDataExtractor(mediaTypeDetector)(as),
         xas,
         cfg.files.eventLog,
         fileOps,
@@ -304,11 +304,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[RemoteDiskStorageClient].from {
     (
         client: HttpClient @Id("storage"),
-        as: ActorSystem[Nothing],
+        as: ActorSystem,
         authTokenProvider: AuthTokenProvider,
         cfg: StorageTypeConfig
     ) =>
-      RemoteDiskStorageClient(client, authTokenProvider, cfg.remoteDisk)(as.classicSystem)
+      RemoteDiskStorageClient(client, authTokenProvider, cfg.remoteDisk)(as)
   }
 
   many[ServiceDependency].addSet {
