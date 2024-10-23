@@ -130,7 +130,6 @@ class BlazegraphClient(
       .flatMap { response =>
         val count = for {
           head          <- response.value.results.bindings.headOption
-          _ = println(response)
           countAsString <- head.get("count")
           count         <- countAsString.value.toLongOption
         } yield count
