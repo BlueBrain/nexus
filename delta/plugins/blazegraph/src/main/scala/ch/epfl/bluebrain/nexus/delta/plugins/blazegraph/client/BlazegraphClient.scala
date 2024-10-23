@@ -125,11 +125,12 @@ class BlazegraphClient(
     * Count all the triples on an index
     */
   def count(index: String): IO[Long] = {
-    val sparqlQuery = SparqlConstructQuery.unsafe("SELECT (COUNT(?s) AS ?count) WHERE { ?s ?p ?o }")
+    val sparqlQuery = SparqlConstructQuery.unsafe("SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }")
     query(Set(index), sparqlQuery, SparqlResultsJson)
       .flatMap { response =>
         val count = for {
           head          <- response.value.results.bindings.headOption
+          _ = println(response)
           countAsString <- head.get("count")
           count         <- countAsString.value.toLongOption
         } yield count
