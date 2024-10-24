@@ -60,3 +60,5 @@ to monitoring and purchase a license to have access to some monitoring and alert
 
 Another option allowing to push data in Prometheus is
 @link:[elasticsearch_exporter](https://github.com/prometheus-community/elasticsearch_exporter).
+
+// TODO add some link to Elasticsearch recommendations

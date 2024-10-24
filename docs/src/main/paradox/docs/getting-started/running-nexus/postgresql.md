@@ -11,7 +11,7 @@ mere indexing systems.
 ## Tables
 
 ### Description
-//TODO
+//TODO Describe the different tables and their usage
 
 ### PostgreSQL partitioning
 

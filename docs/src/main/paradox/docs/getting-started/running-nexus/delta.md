@@ -25,6 +25,8 @@ Nexus Delta relies on @link:[Kamon](https://kamon.io/) to also collect metrics a
 
 To enable Kamon in Delta, the `KAMON_ENABLED` env variable must be set to true.
 
+// TODO add mentions to the Kibana dashboard
+
 **Logs:**
 Nexus Delta relies on @link:[Logback](https://logback.qos.ch/) for logs which one of the popular logginhg
 frameworks on the JVM.

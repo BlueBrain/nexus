@@ -255,3 +255,5 @@ While different approaches are possible depending on how and where Nexus is depl
 
 Prometheus has been the historical solution for monitoring Nexus at BBP for its popularity and its versatility as it allows to
 monitor all components.
+
+// TODO add a diagram of how the Prometheus ecosystem work.
