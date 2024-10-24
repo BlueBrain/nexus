@@ -10,8 +10,86 @@ mere indexing systems.
 
 ## Tables
 
+### Initializing the schema
+
+The different scripts are available @link:[here](https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init)
+They must be run in the alphabetical order.
+
 ### Description
-//TODO Describe the different tables and their usage
+
+**global_events/global_states:**
+Stores the events and the current states for entities which do not belong to a project (ex: realm, acl).
+
+The events and states are structured as logs and can be ordered via the `ordering` column.
+
+**scoped_events/scoped_states:**
+Stores the events and the tagged and current states for entities which belong to a project (ex: resource, file 
+and project itself).
+
+The events and states are structured as logs and can be ordered via the `ordering` column.
+
+The indexing routines rely heavily on the `scoped_states` table,
+
+Those tables are partitioned as described in the @ref:[following section](#postgresql-partitioning).
+
+**scoped_tombstones:**
+This table allows to notify the indexing routines that a resource state has lost a properly like a type or a tags so that they can
+on their end delete the indexed resource from Elasticsearch for example
+
+The rows in this table are short-lived and are only as their notify purpose is temporary.
+
+**ephemeral_states:**
+Stores the states for entities which are immutable and short-lived (ex: archives).
+
+**entity_dependencies:**
+Stores the relationship of some entities in a project with entities living in other project preventing to delete projects
+when other resources from other project still point to it (ex: cross-project resolver, aggregate views).
+
+**projection_offsets:**
+Stores the progress and statistics of the indexing processes related to the different views (except for composite views)
+and some of the internal projections.
+
+**composite_offsets:**
+Stores the progress and statistics of the indexing processes related to composite views.
+
+**projection_restarts:**
+Allows to notify projections related to indexing views (except composite views) must be restarted.
+
+The rows in this table are short-lived and are only as their notify purpose is temporary.
+
+**composite_restarts:**
+Same but for the composite views.
+
+They are stored separately as more restart options are available for those views,
+
+**failed_elem_logs:**
+Stores errors which occured during the processing of some elements by projections (ex: a resource has been rejected by
+Elasticsearch as it does not respect the mapping).
+
+The rows in this table are short-lived and are only as their purpose is temporary.
+
+**deleted_project_reports:**
+Stores the result of project deletions as a report
+
+**blazegraph_queries:**
+Stores slow queries submitted to Blazegraph 
+
+The rows in this table are short-lived as they only have a monitoring purpose.
+
+**scope_initialization_errors:**
+Stores error related to project initialization where Nexus Delta executes a list of actions
+such as creating a default Elasticsearch view.
+
+Some of those actions may fail as it relies on external components (like a Blazegraph instance)
+which may be down at this moment.
+
+This table allows to save the failures in order to be able to a posteriori call 
+@ref:[the supervision healing endpoint](../../delta/api/supervision-api.md#project-healing).
+
+**project_last_updates:**
+Stores the last_update and last_ordering properties for the different projects.
+
+This table allows to power the passivation strategy for the different views.
 
 ### PostgreSQL partitioning
 
