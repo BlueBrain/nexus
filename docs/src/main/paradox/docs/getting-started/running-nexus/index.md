@@ -1,5 +1,9 @@
 @@@ index
 
+- @ref:[PostgreSQL](postgresql.md)
+- @ref:[Elasticsearch](elasticsearch.md)
+- @ref:[Blazegraph](blazegraph.md)
+- @ref:[Nexus Delta](delta.md)
 - @ref:[Configuration](configuration/index.md)
 - @ref:[Search Configuration](search-configuration.md)
 
@@ -7,23 +11,8 @@
 
 # Running Nexus
 
-If you wish to quickly try out Nexus, we provide a @ref:[public sandbox](#using-the-public-sandbox). 
-For a more in-depth test-drive of Nexus on your machine, we recommend the @ref:[Docker Compose approach](#docker-compose). 
+If you wish to quickly try out Nexus, we recommend the @ref:[Docker Compose approach](#docker-compose). 
 For a production deployment on your in-house or cloud infrastructure, please refer to our @ref:[deployment guide](#on-premise-cloud-deployment).
-
-## Using the public sandbox
-
-A public instance of Nexus is running at @link:[https://sandbox.bluebrainnexus.io](https://sandbox.bluebrainnexus.io){ open=new }. 
-You can log in with a GitHub account. It's provided for evaluation purposes only, without any guarantees.
-
-The API root is @link:[https://sandbox.bluebrainnexus.io/v1](https://sandbox.bluebrainnexus.io/v1){ open=new }.
-
-@@@ note { .warning }
-
-Do not ingest any proprietary or sensitive data. The environment will be wiped regularly, your data and credentials
-can disappear anytime.
-
-@@@
 
 ## Run Nexus locally with Docker
 
@@ -189,44 +178,6 @@ The provided reverse proxy (the `nginx` image) exposes several endpoints:
 If you'd like to customize the listening port or remove unnecessary endpoints, you can simply modify the `nginx.conf`
 file.
 
-### PostgreSQL partitioning 
-
-Nexus Delta takes advantage of PostgreSQL's @link:[Table Partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html) feature. This allows for improved query performance, and facilitates loading, deleting, or transferring data.
-
-The `public.scoped_events` and `public.scoped_states` are partitioned by organization, which is itself partitioned by the projects it contains; this follows the natural hierarchy that can be found in Nexus Delta.
-
-Nexus Delta takes care of handling the creation and deletion of the partitions.
-
-* If the created project is the first one of a given organization, both the organization partition and the project subpartition will be created.
-* If the organization partition already exist, then only the project subpartition will be created upon project creation.
-
-The naming scheme of the (sub)partitions is as follows:
-
-`{table_name}_{MD5_org_hash}` for organization partitions
-
-`{table_name}_{MD5_project_hash}` for project partition
-
-where
-
-* `{table_name}` is either `scoped_events` or `scoped_states`
-* `{MD5_org_hash}` is the MD5 hash of the organization name
-* `{MD5_project_has}` is the MD5 hash of the project reference (i.e. has the form `{org_name}/{project_name}`)
-
-MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQL table names (such as `-`).
-
-Example:
-
-You create the organization called `myorg`, inside of which you create the `myproject` project. When the project is created, Nexus Delta will have created the following partitions:
-
-* `scoped_events_B665280652D01C4679777AFD9861170C`, the partition of events from the `myorg` organization
-    * `scoped_events_7922DA7049D5E38C83053EE145B27596`, the subpartition of the events from the `myorg/myproject` project
-* `scoped_states_B665280652D01C4679777AFD9861170C`, the partition of states from the `myorg` organization
-    * `scoped_states_7922DA7049D5E38C83053EE145B27596`, the subpartition of the states from the `myorg/myproject` project
-
-#### Advanced subpartitioning
-
-While Nexus Delta provides table partitioning out-of-the-box, it is primarily addressing the case where the data is more or less uniformly spread out across multiple projects. If however there is one or more project that are very large, it is possible to add further subpartitions according to a custom rule. This custom subpartitioning must be decided on a case-by-case basis using your knowledge of the given project; the idea is to create uniform partitions of your project. Please refer to the @link:[PostgreSQL Table Partitioning documentation](https://www.postgresql.org/docs/current/ddl-partitioning.html).
-
 ## On premise / cloud deployment
 
 There are several things to consider when preparing to deploy Nexus "on premise" because the setup depends a lot on the
@@ -239,7 +190,7 @@ various usage profiles, but the most important categories would be:
 *   Backup and restore
 *   Monitoring & alerting
 
-Each of the Nexus services and "off the shelf" products can be deployed as a single instance or as a cluster (with one
+Nexus Delta, Nexus Fusion and "off the shelf" products can be deployed as a single instance or as a cluster (with one
 exception at this point being Blazegraph which doesn't come with a clustering option). The advantages for deploying
 clusters are generally higher availability, capacity and throughput at the cost of higher latency, consistency and
 having to potentially deal with network instability.
@@ -253,6 +204,11 @@ orchestration solution like @link:[Kubernetes](https://kubernetes.io/){ open=new
 balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can
 occur due to evolving usage patterns, software updates etc. Currently, the largest Nexus deployment is at EPFL and runs on Kubernetes.
 
+Details on how to deploy, run and monitor the different components are described here:
+* @ref:[PostgreSQL](postgresql.md)
+* @ref:[Elasticsearch](elasticsearch.md)
+* @ref:[Blazegraph](blazegraph.md)
+* @ref:[Delta](delta.md)
 
 ### Choice of hardware
 
@@ -270,10 +226,14 @@ should narrow the scope:
     *   one exception is the file storage (@ref:[file resources](../../delta/api/files-api.md) which are stored as
         binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access
         speed; this assumes that accessing attachments is not the at the top in the usage profile
-2.  All of Nexus services and most of the "off the shelf" products are built to run on top of the JVM which usually
-    require more memory over computing power. A rough ratio of 2 CPU cores per 8GB of RAM is probably a good one (this
-    of course depends on the CPU specification).
-3.  Due to the design for scalability of Nexus services and "off the shelf" products the network is a very important
+2.  Nexus Delta and most of the "off the shelf" products are built to run on top of the JVM which usually
+    require more memory over computing power.
+    *   They should have sufficient memory to properly leverage the speed of the file system cache and
+        have a properly defined JVM heap so that it is either not too small (so that it does not run out of memory)
+        and not too large (to avoid long garbage collection times).
+    *   Elasticsearch and Blazegraph also rely heavily on the file system cache so as a rule of thumb for the JVM heap, it
+        is important to allocate less than 50% of the available RAM and never exceed 32GB of memory
+3.  Due to the design for scalability of Nexus and the other components, the network is a very important
     characteristic of the deployment as frequent dropped packets or
     @link:[network partitions](https://en.wikipedia.org/wiki/Network_partition){ open=new } can seriously affect the 
     availability of the system. Clustered / distributed systems generally use some form of
@@ -282,102 +242,18 @@ should narrow the scope:
     vertical scalability is desirable over horizontal scalability: fewer host nodes with better specifications is better
     over more commodity hardware host nodes.
 
-### PostgreSQL
+### Monitoring and alerting
 
-Nexus uses @link:[PostgreSQL](https://www.postgresql.org/){ open=new } as its _primary store_ as for its strong reputation for performance, reliability and flexibility.
-It can also be run in different contexts from integration to 
+Monitoring a Nexus deployment is important to identify its performance and its health.
 
-Since this is the _primary store_ it is the most important system to be
-@link:[backed up](https://www.postgresql.org/docs/current/backup.html){ open=new }. All of the data
-that Nexus uses in other stores can be recomputed from the one stored in PostgreSQL as the other stores are used as
-mere indexing systems.
+While different approaches are possible depending on how and where Nexus is deployed, an example of monitoring stack can be:
+* @link:[Prometheus](https://prometheus.io/) which is a open-source tool for monitoring
+* @link:[Blackbox](https://github.com/prometheus/blackbox_exporter) can be used to probe endpoints over
+* @link:[Alert Manager](https://github.com/prometheus/alertmanager) for alerts
+* @link:[Grafana](https://grafana.com/grafana/) for visualization
+* @link:[Filebeats](https://www.elastic.co/beats/filebeat), @link:[Elasticsearch](https://www.elastic.co/elasticsearch) and @link:[Kibana](https://www.elastic.co/kibana) to collect and visualize Delta logs
 
-// TODO capacity planning + recommendations
+Prometheus has been the historical solution for monitoring Nexus at BBP for its popularity and its versatility as it allows to
+monitor all components.
 
-As described in the @ref:[architecture section](../../delta/architecture.md) the generally adopted
-persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
-implications to the total amount of disk used by the primary store.
-
-// TODO formula computing disk space
-
-### Elasticsearch
-
-Nexus uses @link:[Elasticsearch](https://www.elastic.co/elasticsearch){ open=new } to host several _system_ indices and _user
-defined_ ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends
-on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the _primary
-store_, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be
-configured to host a number of replicas for each shard it can tolerate a number of node failures.
-
-The Elasticsearch @link:[setup documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html){ open=new }
-contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and
-cluster are scarce because it depends on usage.
-
-A formula for computing the required disk space:
-```text
-total = (resource_size * count * documents + lucene_index) * replication_factor
-```
-... where the `lucene_index` while it can vary should be less than twice the size of the original documents.
-
-An example, assuming:
-
-*   10KB per resource
-*   1.000.000 distinct resources
-*   3 documents per resource (the number of documents depends on the configured @ref:[views](../../delta/api/views/index.md)
-    in the system)
-*   2 additional shard replicas (replication factor of 3)
-
-... the total required disk size would be:
-```text
-(10KB * 1.000.000 * 3 + 2 * (10KB * 1.000.000 * 3)) * 3 = 270.000.000KB ~= 260GB
-```
-The resulting size represents the total disk space of the data nodes in the cluster; a 5 data node cluster with the data
-volume in the example above would have to be configured with 60GB disks per node.
-
-### Blazegraph
-
-Nexus uses @link:[Blazegraph](https://blazegraph.com/){ open=new } as an RDF (triple) store to provide a advanced querying
-capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and
-Elasticsearch in case of failures, the system can be fully restored from the primary store. While the technology is
-advertised to support @link:[High Availability](https://github.com/blazegraph/database/wiki/HAJournalServer){ open=new } and
-@link:[Scaleout](https://github.com/blazegraph/database/wiki/ClusterGuide){ open=new } deployment configurations, we have yet to be able
-to setup a deployment in this fashion.
-
-We currently recommend deploying Blazegraph using the prepackaged _tar.gz_ distribution available to download from
-@link:[GitHub](https://github.com/blazegraph/database/releases/tag/BLAZEGRAPH_2_1_6_RC){ open=new }.
-
-@@@ note
-
-We're looking at alternative technologies and possible application level (within Nexus) sharding and replicas.
-
-@@@
-
-The @link:[Hardware Configuration](https://github.com/blazegraph/database/wiki/Hardware_Configuration){ open=new } section in the
-documentation gives a couple of hints about the requirements to operate Blazegraph and there are additional sections
-for optimizations in terms of @link:[Performance](https://github.com/blazegraph/database/wiki/PerformanceOptimization){ open=new },
-@link:[IO](https://github.com/blazegraph/database/wiki/IOOptimization){ open=new } and
-@link:[Query](https://github.com/blazegraph/database/wiki/QueryOptimization){ open=new }.
-
-Blazegraph stores data in an append only journal which means updates will use additional disk space.
-
-A formula for computing the required disk space:
-```text
-total = (resource_triples + nexus_triples) * count * number_updates * triple_size + lucene_index
-```
-... where the `lucene_index` while it can vary should be less than twice the size of the original documents.
-
-An example, assuming:
-
-*   100 triples (rough estimate for a 10KB json-ld resource representation)
-*   20  additional nexus triples on average
-*   1.000.000 distinct resources
-*   10 updates per resource
-*   200 bytes triple size (using quads mode)
-
-... the total required disk size would be:
-```text
-(100 + 20) * 1.000.000 * 10 * 200 / 1024 * 3 ~= 700.000.000KB ~= 670GB
-```
-
-Compactions can be applied to the journal using the
-@link:[CompactJournalUtility](https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java){ open=new }
-to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.
+// TODO add a diagram of how the Prometheus ecosystem work.
