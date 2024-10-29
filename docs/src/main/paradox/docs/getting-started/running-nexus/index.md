@@ -205,6 +205,7 @@ balancing and self-healing. They also accommodate changes in hardware allocation
 occur due to evolving usage patterns, software updates etc. Currently, the largest Nexus deployment is at EPFL and runs on Kubernetes.
 
 Details on how to deploy, run and monitor the different components are described here:
+
 * @ref:[PostgreSQL](postgresql.md)
 * @ref:[Elasticsearch](elasticsearch.md)
 * @ref:[Blazegraph](blazegraph.md)
@@ -247,6 +248,7 @@ should narrow the scope:
 Monitoring a Nexus deployment is important to identify its performance and its health.
 
 While different approaches are possible depending on how and where Nexus is deployed, an example of monitoring stack can be:
+
 * @link:[Prometheus](https://prometheus.io/) which is a open-source tool for monitoring
 * @link:[Blackbox](https://github.com/prometheus/blackbox_exporter) can be used to probe endpoints over
 * @link:[Alert Manager](https://github.com/prometheus/alertmanager) for alerts

@@ -8,7 +8,8 @@ advertised to support @link:[High Availability](https://github.com/blazegraph/da
 to setup a deployment in this fashion.
 
 Blazegraph can be deployed by:
-* using the docker image created by BBP https://hub.docker.com/r/bluebrain/blazegraph-nexus
+
+* using the docker image created by BBP: https://hub.docker.com/r/bluebrain/blazegraph-nexus
 * deploying Blazegraph using the prepackaged _tar.gz_ distribution available to download from
   @link:[GitHub](https://github.com/blazegraph/database/releases/tag/BLAZEGRAPH_2_1_6_RC){ open=new }.
 
@@ -26,6 +27,7 @@ unsolved.
 **CPU:**
 It suggests heavy indexing and query operations.
 It is likely to happen when reindexing after updating search but if it happens regularly:
+
 * Review the SPARQL queries made to Blazegraph
 * Review the indexing strategy
 * Allocate more resources to Blazegraph
@@ -69,6 +71,7 @@ for optimizations in terms of @link:[Performance](https://github.com/blazegraph/
 @link:[Query](https://github.com/blazegraph/database/wiki/QueryOptimization){ open=new }.
 
 The Nexus repository gives also:
+
 * @link:[A jetty configuration](https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/jetty.xml)
   allowing which allow to tune Blazegraph so as to handle better Nexus indexing/querying
 * @link:[A log4j configuration](https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/log4j.properties)

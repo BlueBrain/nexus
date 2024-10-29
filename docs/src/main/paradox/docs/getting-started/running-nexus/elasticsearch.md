@@ -14,10 +14,11 @@ cluster are scarce because it depends on usage.
 
 **CPU:**
 It suggests heavy indexing and search operations so:
+
 * The indexing strategy can be reviewed by ajusting the batch
 * The search queries can be optimized
 * Elasticsearch may not be caching correctly
-* More resources need to be allocated to Elasticsearch
+* More resources need to be allocated to Elasticsearch either by scaling vertically or horizontally
 
 **Memory and garbage collection:**
 Elasticsearch will use the available RAM in 2 ways, JVM heap and the file system cache
