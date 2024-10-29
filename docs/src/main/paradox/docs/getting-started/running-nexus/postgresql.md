@@ -1,7 +1,6 @@
 # PostgreSQL
 
 Nexus uses @link:[PostgreSQL](https://www.postgresql.org/){ open=new } as its _primary store_ as for its strong reputation for performance, reliability and flexibility.
-It can also be run in different contexts from integration to
 
 Since this is the _primary store_ it is the most important system to be
 @link:[backed up](https://www.postgresql.org/docs/current/backup.html){ open=new }. All of the data
