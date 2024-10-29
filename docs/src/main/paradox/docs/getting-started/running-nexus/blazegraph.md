@@ -46,7 +46,7 @@ Compactions can be applied to the journal using the
 @link:[CompactJournalUtility](https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java){ open=new }
 to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.
 
-An alternative can be to reindex on a fresh instance of Blazegraph, this approach also allows to reconfigurer the
+An alternative can be to reindex on a fresh instance of Blazegraph, this approach also allows to reconfigure the
 underlying namespaces.
 
 **Query and indexing performance:**
@@ -76,4 +76,4 @@ The Nexus repository gives also:
 * @link:[The docker compose file](https://github.com/BlueBrain/nexus/blob/master/tests/docker/docker-compose.yml#L130)
   for tests shows how to configure those files via system properties
 * @link:[A python script](https://github.com/BlueBrain/nexus/blob/master/blazegraph/prometheus-exporter/prometheus-blazegraph-exporter.py)
-  allowing to scrap Blazegraph metrics so as to push them to a Prometheus instance
+  allowing to scrape Blazegraph metrics so as to push them to a Prometheus instance

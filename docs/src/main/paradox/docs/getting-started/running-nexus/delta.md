@@ -9,7 +9,7 @@ It is likely to happen when reindexing a large amount of views at the same time 
 * Allocate more resources to Delta
 
 **Memory and garbage collection:**
-Blazegraph will use the available RAM in 2 ways, JVM heap and the file system cache
+Delta will use the available RAM in 2 ways, JVM heap and the file system cache
 so like Elasticsearch, the JVM garbage collection frequency and duration are also important to monitor.
 
 @@@ note
@@ -28,7 +28,7 @@ To enable Kamon in Delta, the `KAMON_ENABLED` env variable must be set to true.
 // TODO add mentions to the Kibana dashboard
 
 **Logs:**
-Nexus Delta relies on @link:[Logback](https://logback.qos.ch/) for logs which one of the popular logginhg
+Nexus Delta relies on @link:[Logback](https://logback.qos.ch/) for logs which one of the popular logging
 frameworks on the JVM.
 
 Log back provides:
