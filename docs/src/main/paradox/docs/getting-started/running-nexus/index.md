@@ -250,7 +250,7 @@ Monitoring a Nexus deployment is important to identify its performance and its h
 While different approaches are possible depending on how and where Nexus is deployed, an example of monitoring stack can be:
 
 * @link:[Prometheus](https://prometheus.io/) which is a open-source tool for monitoring
-* @link:[Blackbox](https://github.com/prometheus/blackbox_exporter) can be used to probe endpoints over
+* @link:[Blackbox](https://github.com/prometheus/blackbox_exporter) can be used to probe endpoints over http
 * @link:[Alert Manager](https://github.com/prometheus/alertmanager) for alerts
 * @link:[Grafana](https://grafana.com/grafana/) for visualization
 * @link:[Filebeats](https://www.elastic.co/beats/filebeat), @link:[Elasticsearch](https://www.elastic.co/elasticsearch) and @link:[Kibana](https://www.elastic.co/kibana) to collect and visualize Delta logs
@@ -258,4 +258,4 @@ While different approaches are possible depending on how and where Nexus is depl
 Prometheus has been the historical solution for monitoring Nexus at BBP for its popularity and its versatility as it allows to
 monitor all components.
 
-// TODO add a diagram of how the Prometheus ecosystem work.
+![Monitoring with Prometheus](../assets/prometheus-monitoring.png)
