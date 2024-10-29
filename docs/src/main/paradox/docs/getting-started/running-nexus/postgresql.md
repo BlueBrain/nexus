@@ -1,7 +1,6 @@
 # PostgreSQL
 
 Nexus uses @link:[PostgreSQL](https://www.postgresql.org/){ open=new } as its _primary store_ as for its strong reputation for performance, reliability and flexibility.
-It can also be run in different contexts from integration to
 
 Since this is the _primary store_ it is the most important system to be
 @link:[backed up](https://www.postgresql.org/docs/current/backup.html){ open=new }. All of the data
@@ -33,8 +32,8 @@ The indexing routines rely heavily on the `scoped_states` table,
 Those tables are partitioned as described in the @ref:[following section](#postgresql-partitioning).
 
 **scoped_tombstones:**
-This table allows to notify the indexing routines that a resource state has lost a properly like a type or a tags so that they can
-on their end delete the indexed resource from Elasticsearch for example
+This table allows to notify the indexing routines that a resource state has lost a property like a type or a tags so that they can
+on their end delete the indexed resource from Elasticsearch for example.
 
 The rows in this table are short-lived and are only as their notify purpose is temporary.
 
@@ -69,10 +68,10 @@ Elasticsearch as it does not respect the mapping).
 The rows in this table are short-lived and are only as their purpose is temporary.
 
 **deleted_project_reports:**
-Stores the result of project deletions as a report
+Stores the result of project deletions as a report.
 
 **blazegraph_queries:**
-Stores slow queries submitted to Blazegraph 
+Stores slow queries submitted to Blazegraph.
 
 The rows in this table are short-lived as they only have a monitoring purpose.
 
@@ -112,7 +111,7 @@ where
 
 * `{table_name}` is either `scoped_events` or `scoped_states`
 * `{MD5_org_hash}` is the MD5 hash of the organization name
-* `{MD5_project_has}` is the MD5 hash of the project reference (i.e. has the form `{org_name}/{project_name}`)
+* `{MD5_project_hash}` is the MD5 hash of the project reference (i.e. has the form `{org_name}/{project_name}`)
 
 MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQL table names (such as `-`).
 
