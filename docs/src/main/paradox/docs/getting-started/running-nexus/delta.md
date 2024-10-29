@@ -5,6 +5,7 @@
 **CPU:**
 It suggests heavy indexing and read operations.
 It is likely to happen when reindexing a large amount of views at the same time but if it happens regularly:
+
 * Review which indexing process is going on by querying the `projection_offsets` and `composite_offsets` table
 * Allocate more resources to Delta
 
@@ -32,6 +33,7 @@ Nexus Delta relies on @link:[Logback](https://logback.qos.ch/) for logs which on
 frameworks on the JVM.
 
 Log back provides:
+
 * Reloading the configuration while the application is running
 * Control the output of the logs, opting for JSON helps for the integration with Filebeats and Elasticsearch
   for log aggregation
