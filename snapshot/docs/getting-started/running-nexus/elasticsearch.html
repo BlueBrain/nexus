@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Quotas · Blue Brain Nexus</title>
+<title>Elasticsearch · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Quotas
+Elasticsearch
 </span>
 </div>
 </div>
@@ -149,7 +149,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html" class="active page">Elasticsearch</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
@@ -206,7 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../../docs/delta/api/quotas.html" class="active page">Quotas</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -246,9 +246,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/quotas.html#quotas" class="header">Quotas</a>
+  <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html#elasticsearch" class="header">Elasticsearch</a>
   <ul>
-    <li><a href="../../../docs/delta/api/quotas.html#fetch" class="header">Fetch</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html#running-and-monitoring" class="header">Running and monitoring</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html#tools-and-resources" class="header">Tools and resources</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -270,9 +271,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/quotas.html#quotas" class="header">Quotas</a>
+  <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html#elasticsearch" class="header">Elasticsearch</a>
   <ul>
-    <li><a href="../../../docs/delta/api/quotas.html#fetch" class="header">Fetch</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html#running-and-monitoring" class="header">Running and monitoring</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html#tools-and-resources" class="header">Tools and resources</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -290,34 +292,30 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#quotas" name="quotas" class="anchor"><span class="anchor-link"></span></a>Quotas</h1>
-<p>Quotas are rooted in /v1/quotas collection.</p>
-<p>Each quota defines the maximum number of resources and events that can exist in a certain scope.</p>
-<p>Quotas are powered through static configuration (<code>app.projects.quotas</code>) and they cannot be modified at runtime.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
-<p>When accessing the quotas endpoint, the caller must have <code>quotas/read</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
-<h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
-<pre class="prettyprint"><code class="language-http request">GET /v1/quotas/{org_label}/{project_label}
-</code></pre>
-<p>This endpoint returns information about the quotas configuration for the target project.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/quotas/fetch-quotas.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/quotas/myorg/myproject&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/quotas/fetched-quotas.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/quotas.json&quot;,
-  &quot;@type&quot;: &quot;Quota&quot;,
-  &quot;events&quot;: 4000,
-  &quot;resources&quot;: 2000
-}</code></pre></dd>
-</dl><div class="callout note warning"><div class="callout-title">Note</div>
-<p>This resource endpoint is experimental and the response structure might change in the future.</p></div>
+<h1><a href="#elasticsearch" name="elasticsearch" class="anchor"><span class="anchor-link"></span></a>Elasticsearch</h1>
+<p>Nexus uses <a href="https://www.elastic.co/elasticsearch" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
+<p>The Elasticsearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html" title="setup documentation" target="_blank" rel="noopener noreferrer">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
+<h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
+<p><strong>CPU:</strong> It suggests heavy indexing and search operations so: * The indexing strategy can be reviewed by ajusting the batch * The search queries can be optimized * Elasticsearch may not be caching correctly * More resources need to be allocated to Elasticsearch</p>
+<p><strong>Memory and garbage collection:</strong> Elasticsearch will use the available RAM in 2 ways, JVM heap and the file system cache so the JVM garbage collection frequency and duration are also important to monitor.</p>
+<p><strong>Storage:</strong> If less than 20% of the disk space is available on a disk node, any insert or update of it will fail.</p>
+<p>Elasticsearch can also do a lot of reads and writes to disk so it is also a good it to keep an eye on I/O utilization.</p>
+<p><strong>Cluster health:</strong> Elasticsearch provides a cluster health endpoint giving the status of the cluster (green/yellow/red).</p>
+<p>This is important to monitor as it indicates in the yellow case that some data is likely to become unavailable if more shards disappear.</p>
+<p>When the status turns to red, a primary shard is missing preventing indexing on that shard and causing search to return partial results.</p>
+<p><strong>Number of shards:</strong> Every view in Nexus uses at least 2 shards (one for a primary and one for a replica) and Elasticsearch allows a maximum number of shards per node.</p>
+<p>So when the number of the projects and views grow, Elasticsearch may run out of available shards and any new project or view creation will result in an error</p>
+<p><strong>Search and indexing performance:</strong></p>
+<p>Query load and latency must be monitored to make sure that information in a timely manner to the client.</p>
+<p>On the write side, indexing load and latency must also be watched especially if the data must be available for search as soon as possible.</p>
+<h2><a href="#tools-and-resources" name="tools-and-resources" class="anchor"><span class="anchor-link"></span></a>Tools and resources</h2>
+<p>Elasticsearch provide ways to monitor it via different api endpoints and via Kibana.</p>
+<p>For further monitoring, there are several options with the Elastic stack itself but it requires another cluster dedicated to monitoring and purchase a license to have access to some monitoring and alerting features.</p>
+<p>Another option allowing to push data in Prometheus is <a href="https://github.com/prometheus-community/elasticsearch_exporter" title="elasticsearch_exporter">elasticsearch_exporter</a>.</p>
+<p>// TODO add some link to Elasticsearch recommendations</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/quotas.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/running-nexus/elasticsearch.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -333,7 +331,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/projects-api.html" title="Projects" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/getting-started/running-nexus/postgresql.html" title="PostgreSQL" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -342,17 +340,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Projects
+PostgreSQL
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/schemas-api.html" title="Schemas" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/getting-started/running-nexus/blazegraph.html" title="Blazegraph" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Schemas
+Blazegraph
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

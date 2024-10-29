@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Quotas · Blue Brain Nexus</title>
+<title>Blazegraph · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Quotas
+Blazegraph
 </span>
 </div>
 </div>
@@ -150,7 +150,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html" class="active page">Blazegraph</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
@@ -206,7 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../../docs/delta/api/quotas.html" class="active page">Quotas</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -246,9 +246,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/quotas.html#quotas" class="header">Quotas</a>
+  <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#blazegraph" class="header">Blazegraph</a>
   <ul>
-    <li><a href="../../../docs/delta/api/quotas.html#fetch" class="header">Fetch</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#running-and-monitoring" class="header">Running and monitoring</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#tools-and-resources" class="header">Tools and resources</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -270,9 +271,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/quotas.html#quotas" class="header">Quotas</a>
+  <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#blazegraph" class="header">Blazegraph</a>
   <ul>
-    <li><a href="../../../docs/delta/api/quotas.html#fetch" class="header">Fetch</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#running-and-monitoring" class="header">Running and monitoring</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#tools-and-resources" class="header">Tools and resources</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -290,34 +292,29 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#quotas" name="quotas" class="anchor"><span class="anchor-link"></span></a>Quotas</h1>
-<p>Quotas are rooted in /v1/quotas collection.</p>
-<p>Each quota defines the maximum number of resources and events that can exist in a certain scope.</p>
-<p>Quotas are powered through static configuration (<code>app.projects.quotas</code>) and they cannot be modified at runtime.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
-<p>When accessing the quotas endpoint, the caller must have <code>quotas/read</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
-<h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
-<pre class="prettyprint"><code class="language-http request">GET /v1/quotas/{org_label}/{project_label}
-</code></pre>
-<p>This endpoint returns information about the quotas configuration for the target project.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/quotas/fetch-quotas.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/quotas/myorg/myproject&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/quotas/fetched-quotas.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/quotas.json&quot;,
-  &quot;@type&quot;: &quot;Quota&quot;,
-  &quot;events&quot;: 4000,
-  &quot;resources&quot;: 2000
-}</code></pre></dd>
-</dl><div class="callout note warning"><div class="callout-title">Note</div>
-<p>This resource endpoint is experimental and the response structure might change in the future.</p></div>
+<h1><a href="#blazegraph" name="blazegraph" class="anchor"><span class="anchor-link"></span></a>Blazegraph</h1>
+<p>Nexus uses <a href="https://blazegraph.com/" title="Blazegraph" target="_blank" rel="noopener noreferrer">Blazegraph</a> as an RDF (triple) store to provide a advanced querying capabilities on the hosted data. This store is treated as a specialized index on the data so as with Elasticsearch in case of failures, the system can be fully restored from the primary store. While the technology is advertised to support <a href="https://github.com/blazegraph/database/wiki/HAJournalServer" title="High Availability" target="_blank" rel="noopener noreferrer">High Availability</a> and <a href="https://github.com/blazegraph/database/wiki/ClusterGuide" title="Scaleout" target="_blank" rel="noopener noreferrer">Scaleout</a> deployment configurations, we have yet to be able to setup a deployment in this fashion.</p>
+<p>Blazegraph can be deployed by: * using the docker image created by BBP <a href="https://hub.docker.com/r/bluebrain/blazegraph-nexus">https://hub.docker.com/r/bluebrain/blazegraph-nexus</a> * deploying Blazegraph using the prepackaged <em>tar.gz</em> distribution available to download from  <a href="https://github.com/blazegraph/database/releases/tag/BLAZEGRAPH_2_1_6_RC" title="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>We&rsquo;re looking at alternative technologies and possible application level (within Nexus) sharding and replicas.</p>
+<p>Blazegraph is not actively maintained anymore since Amazon hired the development team for their Neptune product. It makes operating it harder as resources about monitoring are scarce and bugs and issues about Blazegraph will remain unsolved.</p></div>
+<h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
+<p><strong>CPU:</strong> It suggests heavy indexing and query operations. It is likely to happen when reindexing after updating search but if it happens regularly: * Review the SPARQL queries made to Blazegraph * Review the indexing strategy * Allocate more resources to Blazegraph * The Blazegraph and composite views plugin can point to different Blazegraph instances, this can be considered  if you have a heavy usage of both plugins</p>
+<p><strong>Memory and garbage collection:</strong> Blazegraph will use the available RAM in 2 ways, JVM heap and the file system cache so like Elasticsearch, the JVM garbage collection frequency and duration are also important to monitor.</p>
+<p><strong>Storage:</strong></p>
+<p>Blazegraph stores data in an append only journal which means updates will use additional disk space.</p>
+<p>So the disk usage will grow with time depending on the rhythm of updates.</p>
+<p>Compactions can be applied to the journal using the <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java" title="CompactJournalUtility" target="_blank" rel="noopener noreferrer">CompactJournalUtility</a> to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.</p>
+<p>An alternative can be to reindex on a fresh instance of Blazegraph, this approach also allows to reconfigure the underlying namespaces.</p>
+<p><strong>Query and indexing performance:</strong></p>
+<p>Query load and latency must be monitored to make sure that information in a timely manner to the client.</p>
+<p>On the write side, indexing load and latency must also be watched especially if the data must be available for search as soon as possible.</p>
+<p>To help with this, Delta records long queries and stores them in the <code>blazegraph_queries</code> table and also leverage <a href="https://kamon.io/docs/latest/core/tracing/" title="Kamon tracing">Kamon tracing</a> with spans to measure these operations and if any of them fail.</p>
+<h2><a href="#tools-and-resources" name="tools-and-resources" class="anchor"><span class="anchor-link"></span></a>Tools and resources</h2>
+<p>The <a href="https://github.com/blazegraph/database/wiki/Hardware_Configuration" title="Hardware Configuration" target="_blank" rel="noopener noreferrer">Hardware Configuration</a> section in the documentation gives a couple of hints about the requirements to operate Blazegraph and there are additional sections for optimizations in terms of <a href="https://github.com/blazegraph/database/wiki/PerformanceOptimization" title="Performance" target="_blank" rel="noopener noreferrer">Performance</a>, <a href="https://github.com/blazegraph/database/wiki/IOOptimization" title="IO" target="_blank" rel="noopener noreferrer">IO</a> and <a href="https://github.com/blazegraph/database/wiki/QueryOptimization" title="Query" target="_blank" rel="noopener noreferrer">Query</a>.</p>
+<p>The Nexus repository gives also: * <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/jetty.xml" title="A jetty configuration">A jetty configuration</a>  allowing which allow to tune Blazegraph so as to handle better Nexus indexing/querying * <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/log4j.properties" title="A log4j configuration">A log4j configuration</a>  As the default one provided by Blazegraph is insufficient * <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/docker-compose.yml#L130" title="The docker compose file">The docker compose file</a>  for tests shows how to configure those files via system properties * <a href="https://github.com/BlueBrain/nexus/blob/master/blazegraph/prometheus-exporter/prometheus-blazegraph-exporter.py" title="A python script">A python script</a>  allowing to scrape Blazegraph metrics so as to push them to a Prometheus instance</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/quotas.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/running-nexus/blazegraph.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -333,7 +330,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/projects-api.html" title="Projects" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/getting-started/running-nexus/elasticsearch.html" title="Elasticsearch" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -342,17 +339,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Projects
+Elasticsearch
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/schemas-api.html" title="Schemas" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/getting-started/running-nexus/delta.html" title="Nexus Delta" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Schemas
+Nexus Delta
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

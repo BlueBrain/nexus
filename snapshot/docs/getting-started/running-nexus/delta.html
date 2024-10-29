@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Quotas · Blue Brain Nexus</title>
+<title>Nexus Delta · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Quotas
+Nexus Delta
 </span>
 </div>
 </div>
@@ -151,7 +151,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/delta.html" class="active page">Nexus Delta</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
@@ -206,7 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../../docs/delta/api/quotas.html" class="active page">Quotas</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -246,9 +246,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/quotas.html#quotas" class="header">Quotas</a>
+  <li><a href="../../../docs/getting-started/running-nexus/delta.html#nexus-delta" class="header">Nexus Delta</a>
   <ul>
-    <li><a href="../../../docs/delta/api/quotas.html#fetch" class="header">Fetch</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/delta.html#running-and-monitoring" class="header">Running and monitoring</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -270,9 +270,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/quotas.html#quotas" class="header">Quotas</a>
+  <li><a href="../../../docs/getting-started/running-nexus/delta.html#nexus-delta" class="header">Nexus Delta</a>
   <ul>
-    <li><a href="../../../docs/delta/api/quotas.html#fetch" class="header">Fetch</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/delta.html#running-and-monitoring" class="header">Running and monitoring</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -290,34 +290,21 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#quotas" name="quotas" class="anchor"><span class="anchor-link"></span></a>Quotas</h1>
-<p>Quotas are rooted in /v1/quotas collection.</p>
-<p>Each quota defines the maximum number of resources and events that can exist in a certain scope.</p>
-<p>Quotas are powered through static configuration (<code>app.projects.quotas</code>) and they cannot be modified at runtime.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
-<p>When accessing the quotas endpoint, the caller must have <code>quotas/read</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
-<h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
-<pre class="prettyprint"><code class="language-http request">GET /v1/quotas/{org_label}/{project_label}
-</code></pre>
-<p>This endpoint returns information about the quotas configuration for the target project.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/quotas/fetch-quotas.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/quotas/myorg/myproject&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/quotas/fetched-quotas.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/quotas.json&quot;,
-  &quot;@type&quot;: &quot;Quota&quot;,
-  &quot;events&quot;: 4000,
-  &quot;resources&quot;: 2000
-}</code></pre></dd>
-</dl><div class="callout note warning"><div class="callout-title">Note</div>
-<p>This resource endpoint is experimental and the response structure might change in the future.</p></div>
+<h1><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h1>
+<h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
+<p><strong>CPU:</strong> It suggests heavy indexing and read operations. It is likely to happen when reindexing a large amount of views at the same time but if it happens regularly: * Review which indexing process is going on by querying the <code>projection_offsets</code> and <code>composite_offsets</code> table * Allocate more resources to Delta</p>
+<p><strong>Memory and garbage collection:</strong> Delta will use the available RAM in 2 ways, JVM heap and the file system cache so like Elasticsearch, the JVM garbage collection frequency and duration are also important to monitor.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>JVM and host metrics (including those related to the heap) are collected by <a href="https://kamon.io/" title="Kamon">Kamon</a></p></div>
+<p><strong>Storage:</strong> The different types of storage (local, S3) need to be monitored for availability/performance/utilization</p>
+<p><strong>Metrics:</strong> Nexus Delta relies on <a href="https://kamon.io/" title="Kamon">Kamon</a> to also collect metrics about the execution of most operations (fetching a resource, query Blazegraph, etc&hellip;)</p>
+<p>To enable Kamon in Delta, the <code>KAMON_ENABLED</code> env variable must be set to true.</p>
+<p>// TODO add mentions to the Kibana dashboard</p>
+<p><strong>Logs:</strong> Nexus Delta relies on <a href="https://logback.qos.ch/" title="Logback">Logback</a> for logs which one of the popular logging frameworks on the JVM.</p>
+<p>Log back provides: * Reloading the configuration while the application is running * Control the output of the logs, opting for JSON helps for the integration with Filebeats and Elasticsearch  for log aggregation</p>
+<p>An example of logback configuration writing logs as json in files is available <a href="configuration/logback.xml" title="here" target="_blank" rel="noopener noreferrer">here</a></p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/quotas.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/running-nexus/delta.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -333,7 +320,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/projects-api.html" title="Projects" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/getting-started/running-nexus/blazegraph.html" title="Blazegraph" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -342,17 +329,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Projects
+Blazegraph
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/schemas-api.html" title="Schemas" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/getting-started/running-nexus/configuration/index.html" title="Nexus configuration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Schemas
+Nexus configuration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
