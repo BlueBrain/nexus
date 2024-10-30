@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backups-deleter-blazegraph
+  namespace: nexus
+spec:
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  # Every day 01:30
+  schedule: "30 01 * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          namespace: nexus
+        spec:
+          serviceAccountName: nexus
+          containers:
+            - name:  backups-deleter-blazegraph
+              image: bitnami/kubectl:latest
+              command:
+                - "/bin/bash"
+                - "-c"
+                - "find /mnt/backups/ -mindepth 1 -maxdepth 1 -type f -mtime 2 \\( -name '*.sha1' -o -name '*.jnl' \\) -delete"
+              volumeMounts:
+                - name: backups
+                  mountPath: /mnt/backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: backups-blazegraph
+          restartPolicy: Never
