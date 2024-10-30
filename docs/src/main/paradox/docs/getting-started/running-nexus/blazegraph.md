@@ -99,13 +99,13 @@ does not allow large payloads.
 So even if it is possible to repopulate a Blazegraph instance from the primary store, it is better to perform backup using
 @link:[the online backup api endpoint](https://github.com/blazegraph/database/wiki/REST_API#online-backup).
 
-@link:[Here](https://github.com/BlueBrain/nexus/blob/$git.branch$/kubernetes/backup-script.yaml) is an example of a backup script 
-using this endpoint, compressing the resulting file and creating a checksum out it.
+@link:[Here](https://github.com/BlueBrain/nexus/blob/$git.branch$/kubernetes/blazegraph/backup-script.yaml) is an example of a backup script 
+using this endpoint, compressing the resulting file and creating a checksum out of it.
 
 The Nexus repository also provides:
 
-* @link:[A Kubernetes cronjob to run it provided](https://github.com/BlueBrain/nexus/blob/$git.branch$/kubernetes/backup-cronjob.yaml).
-* @link:[A Kubernetes cronjob allowing to delete old backups](https://github.com/BlueBrain/nexus/blob/$git.branch$/kubernetes/backup-cronjob.yaml).
+* @link:[A Kubernetes cronjob to run it provided](https://github.com/BlueBrain/nexus/blob/$git.branch$/kubernetes/blazegraph/backup-cronjob.yaml).
+* @link:[A Kubernetes cronjob allowing to delete old backups](https://github.com/BlueBrain/nexus/blob/$git.branch$/kubernetes/blazegraph/deleter-cronjob.yaml).
 
 @@@ note
 

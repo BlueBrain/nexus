@@ -5,12 +5,15 @@ http://example.com/.*
 https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf
 https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf
 https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ComponentDescription.scala
+https://github.com/BlueBrain/nexus/blob/master/tests/docker/docker-compose.yml.*
+https://github.com/BlueBrain/nexus/issues?.*
 https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-link/README.md
 https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-sdk/README.md
 https://github.com/BlueBrain/nexus-js/blob/main/packages/react-nexus/README.md
 https://github.com/BlueBrain/nexus-web/blob/main/README.md.*
 https://github.com/lightbend/config.*
-https://github.com/BlueBrain/nexus/issues?.*
+https://github.com/blazegraph/database/wiki/Hardware_Configuration.*
+https://github.com/blazegraph/database/wiki/REST_API.*
 https://www.janelia.org
 http://mouselight.janelia.org/
 http://ml-neuronbrowser.janelia.org
