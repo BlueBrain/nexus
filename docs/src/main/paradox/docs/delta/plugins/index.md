@@ -67,7 +67,7 @@ as well as other plugins can be used here.
 
 The plugin can also define instances of following traits/classes, which will be used in Delta:
 
-  - @link:[PriorityRoute](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/PriorityRoute.scala){ open=new } - allows the plugin to define @link:[Akka HTTP Route](https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html){ open=new } with priority. The priority is used
+  - @link:[PriorityRoute](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/PriorityRoute.scala){ open=new } - allows the plugin to define @link:[Akka HTTP Route](https://doc.akka.io/libraries/akka-http/current/routing-dsl/index.html){ open=new } with priority. The priority is used
     by Delta to prioritize route evaluation
   - @link:[ScopeInitialization](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ScopeInitialization.scala){ open=new } - allows the plugin to define hooks which will be run on organization and project creation. 
   - @link:[ScopedEntityDefinition](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/ScopedEntityDefinition.scala){ open=new }  - allows to define the required information to be able to handle a custom scoped entity
