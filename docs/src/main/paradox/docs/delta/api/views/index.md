@@ -159,6 +159,54 @@ Request
 Response
 :   @@snip [view-list.json](../assets/views/list.json)
 
+## Passivation
+
+@@@ note
+
+This feature remains experimental and is not enabled by default.
+
+Its configuration and implementation is subject to change.
+
+@@@
+
+Before this feature, when an indexing routine linked to a view consumed every resource to index, it was
+waiting for a fixed delay before attempting to pull eventual changes which may have happened during this interval.
+
+As it was repeated for every indexing routine when a Nexus deployment has a multitude of projects and views, this ended up
+with a overhead on the database.
+
+Passivation allows to reduce an overhead by centralizing those calls with a process dedicated to look for eventual 
+changes in projects.
+
+With passivation when a view is considered active and has indexed all available data, that is to say a change on one of its resources has been pushed 
+on a given interval (by default in the last `10 minutes` and configurable), it keeps the same approach and looks for eventual data at a given interval.
+
+When there is no change in the last `10 minutes`, the view is marked as inactive and gets passivated, that is to say
+it stops looking for eventual changes and relies on the dedicated process looking for eventual changes to wake it up when this one
+detects a change.
+
+![Passivation](../assets/views/passivation.png)
+
+The process detecting project changes is divided in 2 parts:
+
+* A writing part which is computing incrementally the maximum offset and modified date for every project in Nexus and saves it in
+the primary store.
+This part relies on @ref:[the state log](../../architecture.md#anatomy) and the incremental approach allows it to be a lot faster than a sql query or a materialized view
+which can take seconds (or more) to execute.
+* A reading part which reads back those values in the database and computes for the different projects if those are active or not.
+This part is called by the different indexing routines so that they know if they have to get out of their passivation state.
+
+The default configuration is defined @link:[here](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L54) 
+in the `elem-query` and `project-last-update` configuration keys.
+
+The values defined there are quite conservative and when passivation is enabled, the different delays and intervals can be 
+reduced according to your needs (they should not be lower than `200ms` though):
+
+* A shorter interval/delay will improve indexing speed but will increase the pressure on the primary store
+* A longer one will on the other hand reduce the pressure on the primary store but will also reduce indexing speed
+
+
+
 ## Indexing failures
 
 ### Listing indexing failures

@@ -1,6 +1,7 @@
 @@@ index
 
 - @ref:[v1.11 Release Notes](v1.11-release-notes.md)
+- @ref:[v1.10 To v1.11 Migration](v1.10-to-v1.11-migration.md)
 - @ref:[v1.10 Release Notes](v1.10-release-notes.md)
 - @ref:[v1.9 To v1.10 Migration](v1.9-to-v1.10-migration.md)
 - @ref:[v1.9 Release Notes](v1.9-release-notes.md)
@@ -34,6 +35,11 @@ The items listed below are changes that have been made in this release that brea
 - The Remote storage server implementation has been removed
 - 
 @@@
+
+### New features/enhancements
+
+- @ref:[Conditional requests](../delta/api/conditional-requests.md)
+- @ref:[Passivation](../delta/api/views/index.md#passivation)
 
 ## 1.10.0
 

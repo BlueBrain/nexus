@@ -17,6 +17,14 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
+@@@ note
+
+Graph analytics indexing routines are also subject to passivation.
+
+Please visit @ref:[Passivation](views/index.md#passivation) section to learn more about it.
+
+@@@
+
 @@@ note { .warning }
 
 The described endpoints are experimental and the responses structure might change in the future.
