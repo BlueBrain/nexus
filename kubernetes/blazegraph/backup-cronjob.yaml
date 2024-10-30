@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backups-blazegraph
+  namespace: nexus
+spec:
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  # Every day 01:00
+  schedule: "00 01 * * *"
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          namespace: nexus
+        spec:
+          serviceAccountName: nexus
+          containers:
+            - name:  backups-blazegraph
+              image: bitnami/kubectl:latest
+              imagePullPolicy: IfNotPresent
+              # blazegraph-0 is the name of the pod for the blazegraph instance
+              command:
+                - "/bin/bash"
+                - "-c"
+                - "/mnt/backups/bin/blazegraph-backup.sh -n blazegraph-0 -p /mnt/backups --compress --block"
+              volumeMounts:
+                - name: backups
+                  mountPath: /mnt/backups
+                - name: blazegraph-backup-script
+                  mountPath: /mnt/backups/bin/blazegraph-backup.sh
+                  subPath: blazegraph-backup.sh
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: backups-blazegraph
+            - name: blazegraph-backup-script
+              configMap:
+                name: blazegraph-backup-script
+                defaultMode: 0555
+          restartPolicy: Never

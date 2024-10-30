@@ -1,0 +1,243 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blazegraph-backup-script
+  namespace: nexus
+data:
+  blazegraph-backup.sh: |
+    #!/bin/bash
+    ######################################
+    # Name: blazegraph-backup.sh
+    # Author: Carolina Lindqvist
+    # Date: 30.05.2022
+    #
+    # Description: This script can back up a Blazegraph node.
+    # Example usage: $ ./blazegraph-backup.sh -p /mnt/backups --compress --tag pre-update-backup
+    #######################################
+
+    #######################################
+    # Print help
+    # Output:
+    #   Prints help to stdout
+    #######################################
+    print_help() {
+        echo "Usage: $(basename "$0") [option] ... [-b block| -c compress | -p path | -t tag] "
+        echo
+        echo "   -b, --block            block REST API calls to Blazegraph while backing up"
+        echo "   -c, --compress         ask Blazegraph to compress the backup"
+        echo "   -d, --debug            print commands as they execute"
+        echo "   -h, --help             print help and usage information"
+        echo "   -n, --node             name of node to backup (blazegraph-0)"
+        echo "   -p, --path             path to storage for backups"
+        echo "   -t, --tag              name of tag for backup (optional)"
+        echo
+        echo "Example: $(basename "$0") -n blazegraph-0 -p /mnt/backups --compress -t pre-update"
+    }
+
+    #######################################
+    # Check if an argument is missing a parameter.
+    # Arguments:
+    #   The argument and its parameter.
+    # Outputs:
+    #   Prints error to stdout if a parameter is missing.
+    #######################################
+    has_parameter() {
+        if [ -z "$2" ] || [[ "$2" == "-*" ]]; then
+            echo "ERROR: Missing parameter for argument" $1
+            echo "Exiting..."
+            exit 1
+        fi
+    }
+
+    #######################################
+    # Check if an argument has a forbidden parameter.
+    # Arguments:
+    #   The argument and its parameter.
+    # Outputs:
+    #   Prints error to stdout if a forbidden parameter exists.
+    #######################################
+    has_no_parameter() {
+        if [[ "$1" == "-*" ]] && [[ "$2" != "-*" ]]; then
+            echo "ERROR: Argument $1 does not take any parameter ($2)"
+            echo "Exiting..."
+            exit 1
+        fi
+    }
+
+    #######################################
+    # Parses the arguments and parameters given to the script.
+    # Globals:
+    #   BLOCK
+    #   COMPRESS
+    #   NODE
+    #   STORAGE_PATH
+    #   TAG
+    # Arguments:
+    #   $@ (the arguments given to the script)
+    #######################################
+    parse_arguments(){
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                -b|--block)
+                BLOCK="true"
+                has_no_parameter $1 $2
+                shift
+                ;;
+                -c|--compress)
+                COMPRESS="1"
+                has_no_parameter $1 $2
+                shift
+                ;;
+                -d|--debug)
+                has_no_parameter $1 $2
+                set -x # Print commands
+                shift
+                ;;
+                -h|--help)
+                has_no_parameter $1 $2
+                print_help
+                exit 0
+                ;;
+                -n|--node)
+                has_parameter $1 $2
+                NODE="$2"
+                shift
+                shift
+                ;;
+                -p|--path)
+                has_parameter $1 $2
+                STORAGE_PATH="$2"
+                shift
+                shift
+                ;;
+                -t|--tag)
+                has_parameter $1 $2
+                TAG="$2"
+                shift
+                shift
+                ;;
+                *)
+                echo "ERROR: Unknown option: " $1
+                echo "Exiting..."
+                exit 1
+                ;;
+            esac
+        done
+    }
+
+    #######################################
+    # Check that a valid combination of arguments have been stored in the global environment variables.
+    # Globals:
+    #   STORAGE_PATH
+    #   TAG
+    # Outputs:
+    #   Error messages to stdout in case of errors.
+    #######################################
+    check_arguments() {
+
+        # Check that node name is given
+        if [ -z "$NODE" ]; then
+            echo "ERROR: Please use the option -n to provide a name of a node."
+            print_help
+            exit 1
+        fi
+
+        # Check that path to backup storage is given
+        if [ -z "$STORAGE_PATH" ]; then
+            echo $STORAGE_PATH
+            echo "ERROR: Please provide a path indicating where to store backups"
+            print_help
+            exit 1
+        fi
+
+        # Check that backup storage path exists
+        kubectl -n nexus exec $NODE -- /bin/bash -c "[ -d $STORAGE_PATH ]"
+
+        if [ $? -ne 0 ]; then
+            echo "ERROR: The specified path $STORAGE_PATH does not seem to exist on $NODE"
+            exit 1
+        fi
+    }
+
+    #######################################
+    # Verify the given checksum file.
+    # Arguments:
+    #   Checksum file
+    # Outputs:
+    #   Writes errors to stdout.
+    #######################################
+    verify_checksum() {
+        echo "Verifying checksum..."
+        kubectl -n nexus exec $NODE -- /bin/bash -c "sha1sum -c $1"
+
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Copy failed, could not verify checksum."
+            echo "Exiting...."
+            exit 1
+        else
+            echo "Copy and checksum check: OK"
+        fi
+    }
+
+    #######################################
+    # Back up blazegraph to a specified directory.
+    # Globals:
+    #   COMPRESS
+    #   TAG
+    #   STORAGE_PATH
+    # Arguments:
+    #   None
+    # Outputs:
+    #   Writes information and errors to stdout.
+    #######################################
+    back_up() {
+
+        if [ -z $TAG ]; then
+            TIMESTAMP=$(date +%Y-%m-%d-%H:%M:%S)
+            TAG=$NODE"_"$TIMESTAMP
+        fi
+
+        # If not specified, do not compress backups
+        if [ -z $COMPRESS ]; then
+            echo $(date -u) Backing up without compressing
+            COMPRESS=false
+        fi
+
+        # If not specified, do not block REST API calls while backing up
+        if [ -z $BLOCK ]; then
+            echo $(date -u) Backing up without blocking REST API calls to Blazegraph
+            BLOCK=false
+        fi
+
+        # Launch backup via Blazegraph API
+        echo $(date -u) Sending backup request to $NODE
+
+        RESPONSE=$(kubectl -n nexus exec $NODE -- /bin/bash -c "curl -s --write-out 'STATUS %{http_code}\n' --data-urlencode "file=$STORAGE_PATH/$TAG.jnl" --data-urlencode "compress=$COMPRESS" --data-urlencode "block=$BLOCK" http://localhost:9999/blazegraph/backup")
+
+        if [ "${RESPONSE:0-3}" != "200" ]; then
+            echo $(date -u) Blazegraph backup failed due to $RESPONSE
+            exit 1
+        fi
+
+        echo $(date -u) Blazegraph backup successful
+        echo $(date -u) $RESPONSE
+
+        echo $(date -u) Creating checksum...
+        kubectl -n nexus exec $NODE -- /bin/bash -c "sha1sum $STORAGE_PATH/$TAG.jnl > $STORAGE_PATH/$TAG.sha1"
+        verify_checksum $STORAGE_PATH/$TAG.sha1
+
+        echo $(date -u) Done.
+    }
+
+    # Check if no arguments given
+    if [ $# -eq 0 ]; then
+        echo "ERROR: Please provide arguments."
+        print_help
+        exit 1
+    fi
+
+    parse_arguments $@
+    check_arguments
+    back_up
+
+    exit 0
