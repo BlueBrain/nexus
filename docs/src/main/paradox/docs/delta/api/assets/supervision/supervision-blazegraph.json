@@ -1,0 +1,21 @@
+{
+  "assigned": [
+    {
+      "count": 311,
+      "project": "org/project1",
+      "view": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+    },
+    {
+      "count": 940,
+      "project": "org/project2",
+      "view": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+    }
+  ],
+  "total": 1251,
+  "unassigned": [
+    {
+      "count": 0,
+      "namespace": "kb"
+    }
+  ]
+}
