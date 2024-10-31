@@ -202,7 +202,7 @@ lazy val kernel = project
   .settings(
     libraryDependencies  ++= Seq(
       akkaStream, // Needed to create content type
-      akkaHttpCore,
+      akkaHttp,
       caffeine,
       catsCore,
       catsRetry,
@@ -211,6 +211,8 @@ lazy val kernel = project
       fs2io,
       circeCore,
       circeParser,
+      circeLiteral,
+      circeGenericExtras,
       handleBars,
       nimbusJoseJwt,
       kamonCore,
@@ -219,7 +221,9 @@ lazy val kernel = project
       pureconfigCats,
       munit           % Test,
       munitCatsEffect % Test,
-      scalaTest       % Test
+      scalaTest       % Test,
+      akkaTestKit     % Test,
+      akkaHttpTestKit % Test
     ),
     addCompilerPlugin(kindProjector),
     addCompilerPlugin(betterMonadicFor),
@@ -313,8 +317,6 @@ lazy val sdk = project
     libraryDependencies  ++= Seq(
       akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
       scalaXml,
-      circeLiteral,
-      circeGenericExtras,
       distageCore,
       akkaSlf4j       % Test,
       akkaTestKit     % Test,

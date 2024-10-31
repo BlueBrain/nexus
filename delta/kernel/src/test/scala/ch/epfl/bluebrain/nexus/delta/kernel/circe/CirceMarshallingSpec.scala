@@ -1,13 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.circe
+package ch.epfl.bluebrain.nexus.delta.kernel.circe
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import io.circe.literal._
 import io.circe.syntax._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -19,15 +17,13 @@ class CirceMarshallingSpec
     extends TestKit(ActorSystem("CirceMarshallingSpec"))
     with AnyWordSpecLike
     with Matchers
-    with CirceLiteral
     with CirceMarshalling
-    with TestMatchers
     with ScalaFutures {
   import system.dispatcher
 
-  private val id       = nxv + "myresource"
+  private val id       = "myresource"
   private val resource = SimpleResource(id, 1, Instant.EPOCH, "Maria", 20)
-  private val json     = json"""{"id": "$id", "rev": 1, "createdAt": ${Instant.EPOCH.asJson}, "name": "Maria", "age": 20}"""
+  private val json     = json"""{"id": $id, "rev": 1, "createdAt": ${Instant.EPOCH.asJson}, "name": "Maria", "age": 20}"""
 
   "Converting SimpleResource to an HttpEntity" should {
 

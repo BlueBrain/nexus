@@ -4,12 +4,13 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.Generators
+import ch.epfl.bluebrain.nexus.tests.HttpClient
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
-import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.scalatest.matchers.should.Matchers

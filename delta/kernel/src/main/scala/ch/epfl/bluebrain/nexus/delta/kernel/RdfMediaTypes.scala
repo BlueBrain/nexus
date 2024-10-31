@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.rdf
+package ch.epfl.bluebrain.nexus.delta.kernel
 
 import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.scaladsl.model.MediaType

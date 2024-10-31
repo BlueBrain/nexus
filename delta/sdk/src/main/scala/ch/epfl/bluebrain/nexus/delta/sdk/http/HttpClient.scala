@@ -14,7 +14,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}

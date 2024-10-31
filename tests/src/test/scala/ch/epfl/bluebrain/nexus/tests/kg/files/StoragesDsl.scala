@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model._
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.tests.HttpClient
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
-import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient}
 import io.circe.Json
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
