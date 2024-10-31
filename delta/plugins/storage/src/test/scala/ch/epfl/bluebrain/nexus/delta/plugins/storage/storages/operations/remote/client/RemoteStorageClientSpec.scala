@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures.BucketName
@@ -12,8 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSou
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
@@ -43,10 +42,7 @@ class RemoteStorageClientSpec(fixture: RemoteStorageClientFixtures)
     )
 
     "fetch the service description" in eventually {
-      client.serviceDescription.accepted shouldEqual ServiceDescription(
-        Name.unsafe("remoteStorage"),
-        fixture.storageVersion
-      )
+      client.serviceDescription.accepted shouldEqual ServiceDescription("remoteStorage", fixture.storageVersion)
     }
 
     "check if a bucket exists" in {

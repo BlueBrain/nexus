@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures.defaultProperties
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
@@ -19,8 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusError, HttpServerStatusError}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -114,7 +113,7 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
   "A Blazegraph Client" should {
 
     "fetch the service description" in {
-      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("blazegraph"), "2.1.6-SNAPSHOT")
+      client.serviceDescription.accepted shouldEqual ServiceDescription("blazegraph", "2.1.6-SNAPSHOT")
     }
 
     "verify a namespace does not exist" in {

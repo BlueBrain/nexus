@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.PluginDescription
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
@@ -66,14 +65,14 @@ object PluginDef {
     ConfigFactory.parseFile(new File(p), parseOptions)
   }
 
-  private[plugin] def load(classLoader: ClassLoader, name: Name, configFileName: String) = ConfigFactory
+  private[plugin] def load(classLoader: ClassLoader, name: String, configFileName: String) = ConfigFactory
     .defaultOverrides()
     .withFallback(externalConfig)
     .withFallback(
       ConfigFactory.parseResources(classLoader, configFileName, parseOptions)
     )
     .resolve(resolveOptions)
-    .getConfig(s"plugins.${name.value}")
+    .getConfig(s"plugins.$name")
 
   implicit val pluginDefOrdering: Ordering[PluginDef] = Ordering.by(_.priority)
 }

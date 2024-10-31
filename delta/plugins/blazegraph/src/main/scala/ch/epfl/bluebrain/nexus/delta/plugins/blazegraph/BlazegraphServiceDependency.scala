@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 
 /**
   * Describes the remote storage [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSear
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsProjection, EventMetricsQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchFiles, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchHistoryRoutes, _}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject

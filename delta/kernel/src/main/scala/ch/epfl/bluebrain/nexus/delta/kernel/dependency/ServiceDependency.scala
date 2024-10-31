@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.kernel.dependency
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 
 /**
   * A description of a service that is used by the system

@@ -9,6 +9,8 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
@@ -18,12 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{EmptyResults, 
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusError, HttpUnexpectedError}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, ResultEntry, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe._
 import io.circe.syntax._
@@ -41,7 +41,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 ) {
   import as.dispatcher
   private val logger                                                = Logger[ElasticSearchClient]
-  private val serviceName                                           = Name.unsafe("elasticsearch")
+  private val serviceName                                           = "elasticsearch"
   private val scriptPath                                            = "_scripts"
   private val docPath                                               = "_doc"
   private val allIndexPath                                          = "_all"

@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
@@ -13,11 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -50,10 +50,7 @@ class ElasticSearchClientSpec
   "An ElasticSearch Client" should {
 
     "fetch the service description" in {
-      esClient.serviceDescription.accepted shouldEqual ServiceDescription(
-        Name.unsafe("elasticsearch"),
-        docker.version
-      )
+      esClient.serviceDescription.accepted shouldEqual ServiceDescription("elasticsearch", docker.version)
     }
 
     "verify that an index does not exist" in {
