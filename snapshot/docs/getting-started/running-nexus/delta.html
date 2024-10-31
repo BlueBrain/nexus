@@ -159,6 +159,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -292,15 +293,23 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h1>
 <h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
-<p><strong>CPU:</strong> It suggests heavy indexing and read operations. It is likely to happen when reindexing a large amount of views at the same time but if it happens regularly: * Review which indexing process is going on by querying the <code>projection_offsets</code> and <code>composite_offsets</code> table * Allocate more resources to Delta</p>
+<p><strong>CPU:</strong> It suggests heavy indexing and read operations. It is likely to happen when reindexing a large amount of views at the same time but if it happens regularly:</p>
+<ul>
+  <li>Review which indexing process is going on by querying the <code>projection_offsets</code> and <code>composite_offsets</code> table</li>
+  <li>Allocate more resources to Delta</li>
+</ul>
 <p><strong>Memory and garbage collection:</strong> Delta will use the available RAM in 2 ways, JVM heap and the file system cache so like Elasticsearch, the JVM garbage collection frequency and duration are also important to monitor.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>JVM and host metrics (including those related to the heap) are collected by <a href="https://kamon.io/" title="Kamon">Kamon</a></p></div>
 <p><strong>Storage:</strong> The different types of storage (local, S3) need to be monitored for availability/performance/utilization</p>
 <p><strong>Metrics:</strong> Nexus Delta relies on <a href="https://kamon.io/" title="Kamon">Kamon</a> to also collect metrics about the execution of most operations (fetching a resource, query Blazegraph, etc&hellip;)</p>
 <p>To enable Kamon in Delta, the <code>KAMON_ENABLED</code> env variable must be set to true.</p>
-<p>// TODO add mentions to the Kibana dashboard</p>
+<p>To monitor Nexus write activity like resource and file creation/updates, a dashboard is available in the <a href="https://github.com/BlueBrain/nexus/blob/master/kibana/event-metrics/general.ndjson" title="Nexus repo">Nexus repo</a>.</p>
 <p><strong>Logs:</strong> Nexus Delta relies on <a href="https://logback.qos.ch/" title="Logback">Logback</a> for logs which one of the popular logging frameworks on the JVM.</p>
-<p>Log back provides: * Reloading the configuration while the application is running * Control the output of the logs, opting for JSON helps for the integration with Filebeats and Elasticsearch  for log aggregation</p>
+<p>Logback provides:</p>
+<ul>
+  <li>Reloading the configuration while the application is running</li>
+  <li>Control the output of the logs, opting for JSON helps for the integration with Filebeats and Elasticsearch  for log aggregation</li>
+</ul>
 <p>An example of logback configuration writing logs as json in files is available <a href="configuration/logback.xml" title="here" target="_blank" rel="noopener noreferrer">here</a></p>
 </div>
 <div>

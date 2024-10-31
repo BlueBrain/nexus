@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Organizations · Blue Brain Nexus</title>
+<title>v1.10 To v1.11 Migration · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Organizations
+v1.10 To v1.11 Migration
 </span>
 </div>
 </div>
@@ -159,7 +159,7 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
+    <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html" class="active page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -176,7 +176,7 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
-    <li><a href="../../docs/fusion/organizations.html" class="active page">Organizations</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
     <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
     <ul>
       <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
@@ -247,9 +247,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/organizations.html#organizations" class="header">Organizations</a>
+  <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html#v1-10-to-v1-11-migration" class="header">v1.10 To v1.11 Migration</a>
   <ul>
-    <li><a href="../../docs/fusion/organizations.html#creating-a-new-organization" class="header">Creating a New Organization</a></li>
+    <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html#passivation" class="header">Passivation</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -271,9 +271,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/organizations.html#organizations" class="header">Organizations</a>
+  <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html#v1-10-to-v1-11-migration" class="header">v1.10 To v1.11 Migration</a>
   <ul>
-    <li><a href="../../docs/fusion/organizations.html#creating-a-new-organization" class="header">Creating a New Organization</a></li>
+    <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html#passivation" class="header">Passivation</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -291,18 +291,23 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h1>
-<p>The Nexus Fusion platform provides users with the ability to manage a high-level entity that encompasses all projects within their ecosystem. This feature is accessible through the organizations page, which presents users with a comprehensive overview of all the organizations managed within a given Blue Brain Nexus deployment. Users who possess the necessary permissions are also able to create new organizations through this interface.</p>
-<blockquote>
-  <p>Note: Some organizations in Nexus Delta are created to support Nexus Fusion internals, such as the <code>webapps</code> organization. Be careful when deleting those.</p>
-</blockquote>
-<p>Furthermore, it is noteworthy that the capability to create new organizations is not limited solely to the organizations page. Rather, this functionality is available from various locations throughout the application, including the homepage and the global search types pages. </p>
-<h2><a href="#creating-a-new-organization" name="creating-a-new-organization" class="anchor"><span class="anchor-link"></span></a>Creating a New Organization</h2><div class="center">
-<p><img src="assets/fusion-new-create-organization.png" alt="Create organization" /></p></div>
-<p>When the organization is created successfully, the browser will redirect the user to the projects page where the user can see the list of all projects and create new ones (see <a href="projects.html">Projects</a>).</p>
+<h1><a href="#v1-10-to-v1-11-migration" name="v1-10-to-v1-11-migration" class="anchor"><span class="anchor-link"></span></a>v1.10 To v1.11 Migration</h1>
+<h2><a href="#passivation" name="passivation" class="anchor"><span class="anchor-link"></span></a>Passivation</h2>
+<p>Passivation relies on a process which computes incrementally the last offset and updates for every project. It is recommended to let it catch up and computes those values from the state log before enabling passivation for views.</p>
+<p>The time to catch up depends on the number of entries in the state log.</p>
+<p>To check that passivation is ready to be enabled, those to queries can be run:</p>
+<pre class="prettyprint"><code class="language-sql">SELECT org, project,ordering, instant 
+FROM scoped_states 
+ORDER BY ordering DESC LIMIT 100
+</code></pre>
+<pre class="prettyprint"><code class="language-sql">SELECT * 
+FROM public.project_last_updates 
+ORDER BY last_ordering DESC
+</code></pre>
+<p>When the ordering and instant values are consistent, <a href="../delta/api/views/index.html#passivation">then passivation can be enabled</a>.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/organizations.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.10-to-v1.11-migration.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -318,7 +323,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/fusion/architecture.html" title="Architecture" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/v1.11-release-notes.html" title="v1.11 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -327,17 +332,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Architecture
+v1.11 Release Notes
 </span>
 </div>
 </a>
-<a href="../../docs/fusion/projects.html" title="Projects" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.10-release-notes.html" title="v1.10 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Projects
+v1.10 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

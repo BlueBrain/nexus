@@ -159,6 +159,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -312,7 +313,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Its relationships, that is to say the other resources in the same project it points to.</li>
 </ul><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When reading graph analytics, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
+<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note "><div class="callout-title">Note</div>
+<p>Graph analytics indexing routines are also subject to passivation.</p>
+<p>Please visit <a href="views/index.html#passivation">Passivation</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
 <p>The described endpoints are experimental and the responses structure might change in the future.</p></div>
 <h2><a href="#fetch-relationships" name="fetch-relationships" class="anchor"><span class="anchor-link"></span></a>Fetch relationships</h2>
 <p>Obtains all the @type relationships and their counts - defined by nodes and edges - existing on a project.</p>

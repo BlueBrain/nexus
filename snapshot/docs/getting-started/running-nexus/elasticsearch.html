@@ -159,6 +159,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -296,7 +297,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Nexus uses <a href="https://www.elastic.co/elasticsearch" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
 <p>The Elasticsearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html" title="setup documentation" target="_blank" rel="noopener noreferrer">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
 <h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
-<p><strong>CPU:</strong> It suggests heavy indexing and search operations so: * The indexing strategy can be reviewed by ajusting the batch * The search queries can be optimized * Elasticsearch may not be caching correctly * More resources need to be allocated to Elasticsearch</p>
+<p><strong>CPU:</strong> It suggests heavy indexing and search operations so:</p>
+<ul>
+  <li>The indexing strategy can be reviewed by ajusting the batch</li>
+  <li>The search queries can be optimized</li>
+  <li>Elasticsearch may not be caching correctly</li>
+  <li>More resources need to be allocated to Elasticsearch either by scaling vertically or horizontally</li>
+</ul>
 <p><strong>Memory and garbage collection:</strong> Elasticsearch will use the available RAM in 2 ways, JVM heap and the file system cache so the JVM garbage collection frequency and duration are also important to monitor.</p>
 <p><strong>Storage:</strong> If less than 20% of the disk space is available on a disk node, any insert or update of it will fail.</p>
 <p>Elasticsearch can also do a lot of reads and writes to disk so it is also a good it to keep an eye on I/O utilization.</p>

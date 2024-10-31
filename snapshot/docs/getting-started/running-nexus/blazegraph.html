@@ -159,6 +159,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -250,6 +251,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#running-and-monitoring" class="header">Running and monitoring</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#tools-and-resources" class="header">Tools and resources</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#backups" class="header">Backups</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -275,6 +277,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#running-and-monitoring" class="header">Running and monitoring</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#tools-and-resources" class="header">Tools and resources</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/blazegraph.html#backups" class="header">Backups</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -294,24 +297,53 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#blazegraph" name="blazegraph" class="anchor"><span class="anchor-link"></span></a>Blazegraph</h1>
 <p>Nexus uses <a href="https://blazegraph.com/" title="Blazegraph" target="_blank" rel="noopener noreferrer">Blazegraph</a> as an RDF (triple) store to provide a advanced querying capabilities on the hosted data. This store is treated as a specialized index on the data so as with Elasticsearch in case of failures, the system can be fully restored from the primary store. While the technology is advertised to support <a href="https://github.com/blazegraph/database/wiki/HAJournalServer" title="High Availability" target="_blank" rel="noopener noreferrer">High Availability</a> and <a href="https://github.com/blazegraph/database/wiki/ClusterGuide" title="Scaleout" target="_blank" rel="noopener noreferrer">Scaleout</a> deployment configurations, we have yet to be able to setup a deployment in this fashion.</p>
-<p>Blazegraph can be deployed by: * using the docker image created by BBP <a href="https://hub.docker.com/r/bluebrain/blazegraph-nexus">https://hub.docker.com/r/bluebrain/blazegraph-nexus</a> * deploying Blazegraph using the prepackaged <em>tar.gz</em> distribution available to download from  <a href="https://github.com/blazegraph/database/releases/tag/BLAZEGRAPH_2_1_6_RC" title="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>Blazegraph can be deployed by:</p>
+<ul>
+  <li>using the docker image created by BBP: <a href="https://hub.docker.com/r/bluebrain/blazegraph-nexus">https://hub.docker.com/r/bluebrain/blazegraph-nexus</a></li>
+  <li>deploying Blazegraph using the prepackaged <em>tar.gz</em> distribution available to download from  <a href="https://github.com/blazegraph/database/releases/tag/BLAZEGRAPH_2_1_6_RC" title="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>.</li>
+</ul><div class="callout note "><div class="callout-title">Note</div>
 <p>We&rsquo;re looking at alternative technologies and possible application level (within Nexus) sharding and replicas.</p>
 <p>Blazegraph is not actively maintained anymore since Amazon hired the development team for their Neptune product. It makes operating it harder as resources about monitoring are scarce and bugs and issues about Blazegraph will remain unsolved.</p></div>
 <h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
-<p><strong>CPU:</strong> It suggests heavy indexing and query operations. It is likely to happen when reindexing after updating search but if it happens regularly: * Review the SPARQL queries made to Blazegraph * Review the indexing strategy * Allocate more resources to Blazegraph * The Blazegraph and composite views plugin can point to different Blazegraph instances, this can be considered  if you have a heavy usage of both plugins</p>
+<p><strong>CPU:</strong> It suggests heavy indexing and query operations. It is likely to happen when reindexing after updating search but if it happens regularly:</p>
+<ul>
+  <li>Review the SPARQL queries made to Blazegraph</li>
+  <li>Review the indexing strategy</li>
+  <li>Allocate more resources to Blazegraph</li>
+  <li>The Blazegraph and composite views plugin can point to different Blazegraph instances, this can be considered  if you have a heavy usage of both plugins</li>
+</ul>
 <p><strong>Memory and garbage collection:</strong> Blazegraph will use the available RAM in 2 ways, JVM heap and the file system cache so like Elasticsearch, the JVM garbage collection frequency and duration are also important to monitor.</p>
+<p>Using the supervision endpoints for <a href="../../delta/api/supervision-api.html#blazegraph">Blazegraph</a> and <a href="../../delta/api/supervision-api.html#composite-views">composite views</a> and the <a href="https://github.com/blazegraph/database/wiki/Hardware_Configuration#ram-sizing-guidance" title="RAM guidance from Blazegraph">RAM guidance from Blazegraph</a> gives some insights on how much memory can be assigned.</p>
 <p><strong>Storage:</strong></p>
 <p>Blazegraph stores data in an append only journal which means updates will use additional disk space.</p>
 <p>So the disk usage will grow with time depending on the rhythm of updates.</p>
 <p>Compactions can be applied to the journal using the <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java" title="CompactJournalUtility" target="_blank" rel="noopener noreferrer">CompactJournalUtility</a> to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.</p>
 <p>An alternative can be to reindex on a fresh instance of Blazegraph, this approach also allows to reconfigure the underlying namespaces.</p>
+<p>Using the supervision endpoints for <a href="../../delta/api/supervision-api.html#blazegraph">Blazegraph</a> and <a href="../../delta/api/supervision-api.html#composite-views">composite views</a> and the <a href="https://github.com/blazegraph/database/wiki/Hardware_Configuration#data-on-disk-sizing-guidance" title="Data on disk guidance from Blazegraph">Data on disk guidance from Blazegraph</a> gives some insights on how much storage can be assigned.</p>
 <p><strong>Query and indexing performance:</strong></p>
 <p>Query load and latency must be monitored to make sure that information in a timely manner to the client.</p>
 <p>On the write side, indexing load and latency must also be watched especially if the data must be available for search as soon as possible.</p>
 <p>To help with this, Delta records long queries and stores them in the <code>blazegraph_queries</code> table and also leverage <a href="https://kamon.io/docs/latest/core/tracing/" title="Kamon tracing">Kamon tracing</a> with spans to measure these operations and if any of them fail.</p>
 <h2><a href="#tools-and-resources" name="tools-and-resources" class="anchor"><span class="anchor-link"></span></a>Tools and resources</h2>
 <p>The <a href="https://github.com/blazegraph/database/wiki/Hardware_Configuration" title="Hardware Configuration" target="_blank" rel="noopener noreferrer">Hardware Configuration</a> section in the documentation gives a couple of hints about the requirements to operate Blazegraph and there are additional sections for optimizations in terms of <a href="https://github.com/blazegraph/database/wiki/PerformanceOptimization" title="Performance" target="_blank" rel="noopener noreferrer">Performance</a>, <a href="https://github.com/blazegraph/database/wiki/IOOptimization" title="IO" target="_blank" rel="noopener noreferrer">IO</a> and <a href="https://github.com/blazegraph/database/wiki/QueryOptimization" title="Query" target="_blank" rel="noopener noreferrer">Query</a>.</p>
-<p>The Nexus repository gives also: * <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/jetty.xml" title="A jetty configuration">A jetty configuration</a>  allowing which allow to tune Blazegraph so as to handle better Nexus indexing/querying * <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/log4j.properties" title="A log4j configuration">A log4j configuration</a>  As the default one provided by Blazegraph is insufficient * <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/docker-compose.yml#L130" title="The docker compose file">The docker compose file</a>  for tests shows how to configure those files via system properties * <a href="https://github.com/BlueBrain/nexus/blob/master/blazegraph/prometheus-exporter/prometheus-blazegraph-exporter.py" title="A python script">A python script</a>  allowing to scrape Blazegraph metrics so as to push them to a Prometheus instance</p>
+<p>The Nexus repository gives also:</p>
+<ul>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/jetty.xml" title="A jetty configuration">A jetty configuration</a>  allowing which allow to tune Blazegraph so as to handle better Nexus indexing/querying</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/blazegraph/log4j.properties" title="A log4j configuration">A log4j configuration</a>  As the default one provided by Blazegraph is insufficient</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/docker-compose.yml#L130" title="The docker compose file">The docker compose file</a>  for tests shows how to configure those files via system properties</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/blazegraph/prometheus-exporter/prometheus-blazegraph-exporter.py" title="A python script">A python script</a>  allowing to scrape Blazegraph metrics so as to push them to a Prometheus instance</li>
+</ul>
+<h2><a href="#backups" name="backups" class="anchor"><span class="anchor-link"></span></a>Backups</h2>
+<p>Pushing data to Blazegraph is time-consuming especially via the API as triples are verbose and Blazegraph does not allow large payloads.</p>
+<p>So even if it is possible to repopulate a Blazegraph instance from the primary store, it is better to perform backup using <a href="https://github.com/blazegraph/database/wiki/REST_API#online-backup" title="the online backup api endpoint">the online backup api endpoint</a>.</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/master/kubernetes/blazegraph/backup-script.yaml" title="Here">Here</a> is an example of a backup script using this endpoint, compressing the resulting file and creating a checksum out of it.</p>
+<p>The Nexus repository also provides:</p>
+<ul>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/kubernetes/blazegraph/backup-cronjob.yaml" title="A Kubernetes cronjob to run it provided">A Kubernetes cronjob to run it provided</a>.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/kubernetes/blazegraph/deleter-cronjob.yaml" title="A Kubernetes cronjob allowing to delete old backups">A Kubernetes cronjob allowing to delete old backups</a>.</li>
+</ul><div class="callout note "><div class="callout-title">Note</div>
+<p>This script is meant to be run in Kubernetes as a cronjob but should be easily adaptable from other contexts by replacing the <code>kubectl</code> commands.</p></div>
+<p>To restore a backup, the journal file related to the instance needs to be replaced by the one generated by the backup operation.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/running-nexus/blazegraph.md" title="Edit this page" class="md-source-file md-edit">
