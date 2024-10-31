@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.RouteConcatenation
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder

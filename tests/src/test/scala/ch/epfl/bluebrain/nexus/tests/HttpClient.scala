@@ -14,6 +14,7 @@ import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQuery, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous

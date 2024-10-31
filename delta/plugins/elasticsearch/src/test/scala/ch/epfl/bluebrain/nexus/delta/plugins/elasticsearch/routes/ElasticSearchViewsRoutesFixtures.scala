@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller

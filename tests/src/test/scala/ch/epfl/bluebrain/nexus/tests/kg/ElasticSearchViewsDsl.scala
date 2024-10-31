@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
+import ch.epfl.bluebrain.nexus.tests.{HttpClient, Identity}
 import io.circe.Json
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers

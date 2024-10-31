@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities

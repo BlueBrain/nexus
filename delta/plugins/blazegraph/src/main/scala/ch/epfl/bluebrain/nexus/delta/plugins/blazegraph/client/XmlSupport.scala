@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.{ContentTypeRange, MediaType}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
 
 import scala.xml.NodeSeq
 

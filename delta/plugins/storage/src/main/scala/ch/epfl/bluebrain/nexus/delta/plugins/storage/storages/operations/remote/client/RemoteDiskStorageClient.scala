@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
