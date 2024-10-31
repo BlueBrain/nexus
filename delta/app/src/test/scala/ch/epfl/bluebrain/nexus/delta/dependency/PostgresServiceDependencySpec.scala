@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.dependency
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.{DoobieScalaTestFixture, PostgresDocker}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
@@ -10,8 +9,7 @@ class PostgresServiceDependencySpec extends CatsEffectSpec with DoobieScalaTestF
   "PostgresServiceDependency" should {
 
     "fetch its service name and version" in {
-      new PostgresServiceDependency(xas).serviceDescription.accepted shouldEqual
-        ServiceDescription(Name.unsafe("postgres"), "16.4")
+      new PostgresServiceDependency(xas).serviceDescription.accepted shouldEqual ServiceDescription("postgres", "16.4")
     }
   }
 

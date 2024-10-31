@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig

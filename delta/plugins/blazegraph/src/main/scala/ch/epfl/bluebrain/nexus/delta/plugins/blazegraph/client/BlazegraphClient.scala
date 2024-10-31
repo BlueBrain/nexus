@@ -10,6 +10,8 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient.timeoutHeader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidCountRequest, WrappedHttpClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
@@ -17,9 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsCo
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 import scala.concurrent.duration._
@@ -36,7 +35,7 @@ class BlazegraphClient(
     extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
 
   private val serviceVersion = """(buildVersion">)([^<]*)""".r
-  private val serviceName    = Name.unsafe("blazegraph")
+  private val serviceName    = "blazegraph"
 
   override def query[R <: SparqlQueryResponse](
       indices: Iterable[String],

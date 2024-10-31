@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.dependency
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import doobie.syntax.all._
 
@@ -14,7 +13,7 @@ import doobie.syntax.all._
 class PostgresServiceDependency(xas: Transactors) extends ServiceDependency {
 
   private val regex                                       = "( ?PostgreSQL )([^ ]+)(.*)".r
-  private val serviceName                                 = Name.unsafe("postgres")
+  private val serviceName                                 = "postgres"
   override def serviceDescription: IO[ServiceDescription] =
     sql"select version()"
       .query[String]

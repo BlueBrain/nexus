@@ -9,6 +9,8 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.RemoteDiskStorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
@@ -21,9 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.semiauto.deriveDecoder
@@ -118,7 +118,7 @@ object RemoteDiskStorageClient {
 
     import as.dispatcher
 
-    private val serviceName = Name.unsafe("remoteStorage")
+    private val serviceName = "remoteStorage"
 
     def serviceDescription: IO[ServiceDescription] =
       client

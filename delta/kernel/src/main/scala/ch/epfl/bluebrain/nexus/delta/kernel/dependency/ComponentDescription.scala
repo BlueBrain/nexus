@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.kernel.dependency
 
 /**
   * The description of a component of the system (service or plugin)
@@ -9,7 +9,7 @@ sealed trait ComponentDescription extends Product with Serializable {
     * @return
     *   the name of the component
     */
-  def name: Name
+  def name: String
 
   /**
     * @return
@@ -28,28 +28,28 @@ object ComponentDescription {
   sealed trait ServiceDescription extends ComponentDescription
 
   object ServiceDescription {
-    final case class ResolvedServiceDescription private (name: Name, version: String) extends ServiceDescription
-    final case class UnresolvedServiceDescription private (name: Name)                extends ServiceDescription {
+    final case class ResolvedServiceDescription private (name: String, version: String) extends ServiceDescription
+    final case class UnresolvedServiceDescription private (name: String)                extends ServiceDescription {
       override val version: String = unknownVersion
     }
 
     /**
       * Creates a [[ResolvedServiceDescription]] from the passed ''name'' and ''version''.
       */
-    def apply(name: Name, version: String): ResolvedServiceDescription =
+    def apply(name: String, version: String): ResolvedServiceDescription =
       ResolvedServiceDescription(name, version)
 
     /**
       * Creates a [[UnresolvedServiceDescription]] with the passed ''name''.
       */
-    def unresolved(name: Name): UnresolvedServiceDescription =
+    def unresolved(name: String): UnresolvedServiceDescription =
       UnresolvedServiceDescription(name)
   }
 
   /**
     * The description of a plugin
     */
-  final case class PluginDescription(name: Name, version: String) extends ComponentDescription {
+  final case class PluginDescription(name: String, version: String) extends ComponentDescription {
     override def toString: String = s"$name-$version"
   }
 
