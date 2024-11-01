@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.Arch
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._

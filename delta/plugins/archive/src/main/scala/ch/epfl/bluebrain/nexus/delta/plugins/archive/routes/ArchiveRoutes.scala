@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{permissions, ArchiveRejection, ArchiveResource, Zip}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._

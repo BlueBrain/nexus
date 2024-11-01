@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Uploadi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 import java.util.UUID

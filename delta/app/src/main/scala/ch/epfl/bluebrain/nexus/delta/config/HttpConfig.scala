@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
-import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto._

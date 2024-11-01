@@ -4,14 +4,14 @@ import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
-import cats.implicits._
 import cats.effect.unsafe.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.{AkkaSource, Logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
@@ -31,10 +31,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.OriginalSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShifts}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import io.circe.{Json, Printer}
 import io.circe.syntax.EncoderOps
+import io.circe.{Json, Printer}
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets

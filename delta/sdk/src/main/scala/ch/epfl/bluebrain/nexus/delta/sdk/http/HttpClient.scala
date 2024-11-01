@@ -11,12 +11,12 @@ import akka.stream.StreamTcpException
 import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import io.circe.{Decoder, Json}
 
 import java.net.{ConnectException, UnknownHostException}

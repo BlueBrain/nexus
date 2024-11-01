@@ -8,7 +8,7 @@ import akka.stream.{Materializer, SystemMaterializer}
 import cats.data.NonEmptyList
 import cats.effect.{Clock, IO, Resource, Sync}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, StrictEntity}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, IOFuture, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
@@ -28,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig, ScopeInitializationErrorStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ElemQueryConfig, ProjectLastUpdateConfig, ProjectionConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config._
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.storages
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.StorageScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
@@ -14,9 +15,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Uploadi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.ship.EventClock
