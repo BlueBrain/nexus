@@ -5,10 +5,10 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.data.NonEmptySet
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{GroupsCache, RealmCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm

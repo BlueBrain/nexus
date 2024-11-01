@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 
 /**
   * Error that can occur when using an [[SparqlClient]]

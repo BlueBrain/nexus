@@ -4,9 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
+import ch.epfl.bluebrain.nexus.testkit.http.HttpClientSetup
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 

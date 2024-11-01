@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, RealmIsDeprecated}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

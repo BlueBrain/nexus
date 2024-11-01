@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.http
+package ch.epfl.bluebrain.nexus.delta.kernel.http
 
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientConfig.logger
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy, RetryStrategyConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig.logger
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader

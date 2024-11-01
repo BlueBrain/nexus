@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.http
+package ch.epfl.bluebrain.nexus.delta.kernel.http
 
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.{AcceptEncoding, HttpEncodingRange}
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import io.circe.{Decoder, Json}
 

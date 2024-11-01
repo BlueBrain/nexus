@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.http
+package ch.epfl.bluebrain.nexus.delta.kernel.http
 
 import akka.http.scaladsl.model.StatusCodes.GatewayTimeout
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpConnectError, HttpServerStatusError, HttpTimeoutError, HttpUnexpectedError}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpConnectError, HttpServerStatusError, HttpTimeoutError, HttpUnexpectedError}
 
 trait HttpClientWorthRetry extends (HttpClientError => Boolean)
 

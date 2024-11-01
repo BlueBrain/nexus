@@ -16,8 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Uploadi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, UUIDFFixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.testkit.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.AnyFixture
