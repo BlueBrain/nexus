@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySeq
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalytic
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext

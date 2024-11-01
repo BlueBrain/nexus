@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IllegalEndpointFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}

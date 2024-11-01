@@ -1,9 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.http
+package ch.epfl.bluebrain.nexus.testkit.http
 
 import akka.actor.ActorSystem
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.actor.ActorSystemSetup
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
+import ch.epfl.bluebrain.nexus.testkit.actor.ActorSystemSetup
 
 object HttpClientSetup {
 

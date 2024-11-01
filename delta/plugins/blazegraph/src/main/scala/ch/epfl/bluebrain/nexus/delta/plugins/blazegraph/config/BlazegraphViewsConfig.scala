@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config

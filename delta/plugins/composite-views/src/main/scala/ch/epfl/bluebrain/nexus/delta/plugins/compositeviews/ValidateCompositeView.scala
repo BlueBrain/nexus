@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
@@ -10,8 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewSource, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission

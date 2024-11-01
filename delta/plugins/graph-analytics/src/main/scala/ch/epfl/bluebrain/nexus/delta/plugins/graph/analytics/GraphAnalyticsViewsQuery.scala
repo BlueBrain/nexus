@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}

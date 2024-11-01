@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._

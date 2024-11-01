@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.{GetGroupsFromOid
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, logger, GroupsCache, RealmCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF

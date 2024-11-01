@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{DecodingFailure, Encoder, JsonObject}

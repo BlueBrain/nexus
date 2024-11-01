@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.http
+package ch.epfl.bluebrain.nexus.delta.kernel.http
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `application/octet-stream`}
@@ -8,48 +8,48 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.OnceStrategyConfig
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpSingleRequest
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusError, HttpSerializationError, HttpServerStatusError, HttpUnexpectedError}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSpec.{Count, Value}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientWorthRetry.onServerError
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.OnceStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient.HttpSingleRequest
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpSerializationError, HttpServerStatusError, HttpUnexpectedError}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientSpec.{Count, Value}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientWorthRetry.onServerError
 import io.circe.generic.semiauto._
+import io.circe.literal._
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpecLike
+import org.scalatest.{Assertion, BeforeAndAfterEach}
 
 import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class HttpClientSpec
     extends TestKit(ActorSystem("HttpClientSpec"))
-    with CatsEffectSpec
-    with CirceLiteral
-    with ScalaFutures
+    with AsyncWordSpecLike
     with BeforeAndAfterEach
-    with EitherValues {
+    with Matchers {
+
+  implicit def ioToFutureAssertion(io: IO[Assertion]): Future[Assertion] = io.unsafeToFuture()
 
   implicit private val config: HttpClientConfig = HttpClientConfig(OnceStrategyConfig(200.millis), onServerError, false)
 
   private val value1 = Value("first", 1, deprecated = false)
   private val value2 = Value("second", 2, deprecated = true)
 
-  private val baseUri         = Uri("http://localhost/v1")
-  private val getUri          = baseUri / s"values/first"
+  private val baseUri         = "http://localhost/v1"
+  private val getUri          = Uri(s"$baseUri/values/first")
   private val reqGetValue     = HttpRequest(uri = getUri)
   private val count           = Count()
-  private val streamUri       = baseUri / "values/events"
+  private val streamUri       = Uri(s"$baseUri/values/events")
   private val reqStreamValues = HttpRequest(uri = streamUri)
-  private val clientErrorUri  = baseUri / "values/errors/client"
+  private val clientErrorUri  = Uri(s"$baseUri/values/errors/client")
   private val reqClientError  = HttpRequest(uri = clientErrorUri)
-  private val serverErrorUri  = baseUri / "values/errors/server"
+  private val serverErrorUri  = Uri(s"$baseUri/values/errors/server")
   private val reqServerError  = HttpRequest(uri = serverErrorUri)
 
   private def toSource(values: List[Json]): AkkaSource =
@@ -86,36 +86,57 @@ class HttpClientSpec
     val client = HttpClient(httpSingleReq)
 
     "return the Value response" in {
-      client.fromJsonTo[Value](reqGetValue).accepted shouldEqual value1
-      count.values shouldEqual Count(reqGetValue = 1).values
+      client.fromJsonTo[Value](reqGetValue).map { obtained =>
+        obtained shouldEqual value1
+        count.values shouldEqual Count(reqGetValue = 1).values
+      }
     }
 
     "return the AkkaSource response" in {
-      val stream = client.toDataBytes(reqStreamValues).accepted
-      stream
-        .runFold(Vector.empty[Value]) { (acc, c) => acc :+ parse(c.utf8String).rightValue.as[Value].rightValue }
-        .futureValue shouldEqual Vector(value1, value2)
-      count.values shouldEqual Count(reqStreamValues = 1).values
+      def parseValue(value: String) =
+        parse(value).flatMap(_.as[Value]).getOrElse(throw new IllegalStateException("Could not be parsed to value"))
+
+      def sourceToVector(source: AkkaSource) = source
+        .runFold(Vector.empty[Value]) { (acc, c) => acc :+ parseValue(c.utf8String) }
+      for {
+        source <- client.toDataBytes(reqStreamValues)
+        values <- IO.fromFuture(IO.delay(sourceToVector(source)))
+      } yield {
+        values shouldEqual Vector(value1, value2)
+        count.values shouldEqual Count(reqStreamValues = 1).values
+      }
     }
 
     "fail Decoding the Int response" in {
-      client.fromJsonTo[Int](reqGetValue).rejectedWith[HttpSerializationError]
-      count.values shouldEqual Count(reqGetValue = 1).values
+      recoverToSucceededIf[HttpSerializationError] {
+        client.fromJsonTo[Int](reqGetValue).map(_ => succeed)
+      }.map { _ =>
+        count.values shouldEqual Count(reqGetValue = 1).values
+      }
     }
 
     "fail with HttpUnexpectedError while retrying" in {
-      client.toJson(HttpRequest(uri = "http://other.com")).rejectedWith[HttpUnexpectedError]
-      count.values shouldEqual Count(reqOtherError = 2).values
+      recoverToSucceededIf[HttpUnexpectedError] {
+        client.toJson(HttpRequest(uri = "http://other.com")).map(_ => succeed)
+      }.map { _ =>
+        count.values shouldEqual Count(reqOtherError = 2).values
+      }
     }
 
     "fail with HttpServerStatusError while retrying" in {
-      client.toJson(reqServerError).rejectedWith[HttpServerStatusError]
-      count.values shouldEqual Count(reqServerError = 2).values
+      recoverToSucceededIf[HttpServerStatusError] {
+        client.toJson(reqServerError).map(_ => succeed)
+      }.map { _ =>
+        count.values shouldEqual Count(reqServerError = 2).values
+      }
     }
 
     "fail with HttpClientStatusError" in {
-      client.toJson(reqClientError).rejectedWith[HttpClientStatusError]
-      count.values shouldEqual Count(reqClientError = 1).values
+      recoverToSucceededIf[HttpClientStatusError] {
+        client.toJson(reqClientError).map(_ => succeed)
+      }.map { _ =>
+        count.values shouldEqual Count(reqClientError = 1).values
+      }
     }
   }
 

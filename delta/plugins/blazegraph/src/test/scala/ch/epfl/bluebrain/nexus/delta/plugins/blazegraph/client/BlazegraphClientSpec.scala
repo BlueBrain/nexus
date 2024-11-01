@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusError, HttpServerStatusError}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpServerStatusError}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec

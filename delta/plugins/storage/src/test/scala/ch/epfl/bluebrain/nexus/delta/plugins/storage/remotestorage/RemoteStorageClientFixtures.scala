@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage
 
 import akka.actor.ActorSystem
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures.{BucketName, RemoteStorageHostConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient.RemoteDiskStorageClientImpl
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import org.scalatest.BeforeAndAfterAll

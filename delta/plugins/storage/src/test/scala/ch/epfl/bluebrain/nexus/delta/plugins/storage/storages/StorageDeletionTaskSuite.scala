@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMeta
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
-import ch.epfl.bluebrain.nexus.delta.sdk.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.testkit.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Stream
 import munit.AnyFixture

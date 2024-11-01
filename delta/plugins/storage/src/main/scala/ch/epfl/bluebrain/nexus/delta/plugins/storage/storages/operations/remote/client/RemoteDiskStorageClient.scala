@@ -21,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError._
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

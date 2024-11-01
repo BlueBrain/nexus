@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import akka.actor.ActorSystem
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphContainer
+import ch.epfl.bluebrain.nexus.testkit.http.HttpClientSetup
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 
