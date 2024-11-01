@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.http
+package ch.epfl.bluebrain.nexus.delta.config
 
 import akka.http.scaladsl.server.Directive0
 import pureconfig.ConfigReader
@@ -11,7 +11,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param timeout
   *   if the stream is not completed by then, the directive will fail
   */
-case class StrictEntity(timeout: FiniteDuration) extends AnyVal {
+final case class StrictEntity(timeout: FiniteDuration) extends AnyVal {
   def apply(): Directive0 = toStrictEntity(timeout)
 }
 

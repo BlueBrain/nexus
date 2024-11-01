@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -14,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResourceReso
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 package object sdk {
 
@@ -68,7 +65,5 @@ package object sdk {
     * Type alias for resolver resolution
     */
   type Resolve[A] = (ResourceRef, ProjectRef, Caller) => IO[Either[ResourceResolutionReport, A]]
-
-  type AkkaSource = Source[ByteString, Any]
 
 }
