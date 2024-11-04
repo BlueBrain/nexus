@@ -125,7 +125,7 @@ object RemoteDiskStorageClient {
         .fromJsonTo[ResolvedServiceDescription](Get(baseUri.base))
         .map(_.copy(name = serviceName))
         .widen[ServiceDescription]
-        .timeout(3.seconds)
+        .timeout(1.second)
         .recover(_ => ServiceDescription.unresolved(serviceName))
 
     def exists(bucket: Label): IO[Unit] = {

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, version}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 
@@ -36,7 +36,10 @@ class VersionRoutesSpec extends BaseRouteSpec {
 
   private val descriptionConfig = DescriptionConfig(Name.unsafe("delta"), Name.unsafe("dev"))
 
-  private val aclCheck    = AclSimpleCheck().accepted
+  private val aclCheck = AclSimpleCheck(
+    (caller.subject, AclAddress.Root, Set(version.read))
+  ).accepted
+
   private lazy val routes = Route.seal(
     VersionRoutes(
       identities,
@@ -49,20 +52,44 @@ class VersionRoutesSpec extends BaseRouteSpec {
 
   "The version route" should {
 
-    "fail fetching plugins information without version/read permission" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
+    "return a default value without version/read permission" in {
       Get("/v1/version") ~> routes ~> check {
-        response.shouldBeForbidden
+        val expected =
+          json"""
+            {
+              "@context" : "https://bluebrain.github.io/nexus/contexts/version.json",
+              "delta" : "unknown",
+              "dependencies" : {
+
+              },
+              "environment" : "unknown",
+              "plugins" : {
+
+              }
+            }
+              """
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual expected
       }
     }
 
     "fetch plugins information" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(version.read), caller.subject -> Set(version.read)).accepted
-      val expected = jsonContentOf("version-response.json", "version" -> descriptionConfig.version)
-      Get("/v1/version") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual expected
-      }
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(version.read), caller.subject -> Set(version.read))
+      val expected =
+        json"""
+          {
+            "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
+            "delta": "${descriptionConfig.version}",
+            "dependencies": {
+              "elasticsearch": "unknown",
+              "remoteStorage": "1.0.0"
+            },
+            "plugins": {
+              "pluginA": "1.0",
+              "pluginB": "2.0"
+            },
+            "environment": "dev"
+          } """
 
       Get("/v1/version") ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK

@@ -6,6 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import doobie.syntax.all._
 
+import scala.concurrent.duration._
+
 /**
   * Describes the postgres [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a ''select
   * version();'' SQL command
@@ -19,6 +21,7 @@ class PostgresServiceDependency(xas: Transactors) extends ServiceDependency {
       .query[String]
       .to[List]
       .transact(xas.read)
+      .timeout(1.second)
       .map {
         case versionString :: _ =>
           versionString match {
