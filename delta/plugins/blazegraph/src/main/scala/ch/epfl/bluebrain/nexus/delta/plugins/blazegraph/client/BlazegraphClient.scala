@@ -56,7 +56,7 @@ class BlazegraphClient(
   def serviceDescription: IO[ServiceDescription] =
     client
       .fromEntityTo[ResolvedServiceDescription](Get(endpoint / "status"))
-      .timeout(5.seconds)
+      .timeout(1.second)
       .redeem(_ => ServiceDescription.unresolved(serviceName), _.copy(name = serviceName))
 
   /**

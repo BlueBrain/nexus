@@ -1,25 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.UnresolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.{ComponentDescription, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.VersionBundle
+import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.{emtyVersionBundle, VersionBundle}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
-import io.circe.{Encoder, JsonObject}
 import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
 
 import scala.collection.immutable.Iterable
 
@@ -37,14 +40,17 @@ class VersionRoutes(
 ) extends AuthDirectives(identities, aclCheck)
     with RdfMarshalling {
 
+  private def fullOrDegraded(implicit caller: Caller) = aclCheck.authorizeFor(AclAddress.Root, version.read).flatMap {
+    case true  => dependencies.traverse(_.serviceDescription).map(VersionBundle(main, _, plugins, env))
+    case false => IO.pure(emtyVersionBundle)
+  }
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("version") {
         extractCaller { implicit caller =>
           (get & pathEndOrSingleSlash) {
-            authorizeFor(AclAddress.Root, version.read).apply {
-              emit(dependencies.traverse(_.serviceDescription).map(VersionBundle(main, _, plugins, env)))
-            }
+            emit(fullOrDegraded)
           }
         }
       }
@@ -53,6 +59,13 @@ class VersionRoutes(
 }
 
 object VersionRoutes {
+
+  private val emtyVersionBundle = VersionBundle(
+    UnresolvedServiceDescription("delta"),
+    List.empty,
+    List.empty,
+    Name.unsafe("unknown")
+  )
 
   final private[routes] case class VersionBundle(
       main: ServiceDescription,

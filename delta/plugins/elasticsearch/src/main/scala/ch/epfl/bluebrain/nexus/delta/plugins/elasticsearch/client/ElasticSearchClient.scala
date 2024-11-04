@@ -84,7 +84,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   def serviceDescription: IO[ServiceDescription] =
     client
       .fromJsonTo[ResolvedServiceDescription](Get(endpoint).withHttpCredentials)
-      .timeout(3.seconds)
+      .timeout(1.second)
       .redeem(
         _ => ServiceDescription.unresolved(serviceName),
         _.copy(name = serviceName)
