@@ -1,16 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.{StatusCode, StatusCodes, Uri}
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.{Directive1, Route}
-import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
-import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -18,16 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmRejection}
-import io.circe.Decoder
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmFields, RealmRejection}
 
 class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
@@ -74,16 +68,11 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                     parameter("rev".as[Int].?) {
                       case Some(rev) =>
                         // Update a realm
-                        entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
-                          emitMetadata(realms.update(id, rev, name, openIdConfig, logo, acceptedAudiences))
-                        }
+                        entity(as[RealmFields]) { fields => emitMetadata(realms.update(id, rev, fields)) }
                       case None      =>
                         // Create a realm
-                        entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
-                          emitMetadata(
-                            StatusCodes.Created,
-                            realms.create(id, name, openIdConfig, logo, acceptedAudiences)
-                          )
+                        entity(as[RealmFields]) { fields =>
+                          emitMetadata(StatusCodes.Created, realms.create(id, fields))
                         }
                     }
                   }
@@ -116,18 +105,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
 }
 
 object RealmsRoutes {
-
-  implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
-
-  final private[routes] case class RealmInput(
-      name: Name,
-      openIdConfig: Uri,
-      logo: Option[Uri],
-      acceptedAudiences: Option[NonEmptySet[String]]
-  )
-  private[routes] object RealmInput {
-    implicit val realmDecoder: Decoder[RealmInput] = deriveConfiguredDecoder[RealmInput]
-  }
 
   /**
     * @return

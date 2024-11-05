@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
-import cats.data.NonEmptySet
 import cats.effect.{Clock, IO}
-
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound}
@@ -18,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import cats.implicits._
 
 /**
   * Operations pertaining to managing realms.
@@ -30,21 +28,12 @@ trait Realms {
     *
     * @param label
     *   the realm label
-    * @param name
-    *   the name of the realm
-    * @param openIdConfig
-    *   the address of the openid configuration
-    * @param logo
-    *   an optional realm logo
-    * @param acceptedAudiences
-    *   the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
+    * @param fields
+    *   the realm information
     */
   def create(
       label: Label,
-      name: Name,
-      openIdConfig: Uri,
-      logo: Option[Uri],
-      acceptedAudiences: Option[NonEmptySet[String]]
+      fields: RealmFields
   )(implicit caller: Subject): IO[RealmResource]
 
   /**
@@ -54,22 +43,13 @@ trait Realms {
     *   the realm label
     * @param rev
     *   the current revision of the realm
-    * @param name
-    *   the new name for the realm
-    * @param openIdConfig
-    *   the new openid configuration address
-    * @param logo
-    *   an optional new logo
-    * @param acceptedAudiences
-    *   the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
+    * @param fields
+    *   the realm information
     */
   def update(
       label: Label,
       rev: Int,
-      name: Name,
-      openIdConfig: Uri,
-      logo: Option[Uri],
-      acceptedAudiences: Option[NonEmptySet[String]]
+      fields: RealmFields
   )(implicit caller: Subject): IO[RealmResource]
 
   /**

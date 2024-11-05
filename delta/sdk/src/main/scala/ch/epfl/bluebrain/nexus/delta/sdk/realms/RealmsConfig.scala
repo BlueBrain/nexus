@@ -12,10 +12,13 @@ import pureconfig.generic.semiauto.deriveReader
   *   The event log configuration
   * @param pagination
   *   configuration for how pagination should behave in listing operations
+  * @param provisioning
+  *   configuration to provision realms at startup
   */
 final case class RealmsConfig(
     eventLog: EventLogConfig,
-    pagination: PaginationConfig
+    pagination: PaginationConfig,
+    provisioning: RealmsProvisioningConfig
 )
 
 object RealmsConfig {

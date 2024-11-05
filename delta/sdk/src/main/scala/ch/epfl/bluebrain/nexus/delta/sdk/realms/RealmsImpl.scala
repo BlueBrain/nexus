@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
-import cats.data.NonEmptySet
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsImpl.RealmsLog
@@ -24,24 +22,19 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
 
   override def create(
       label: Label,
-      name: Name,
-      openIdConfig: Uri,
-      logo: Option[Uri],
-      acceptedAudiences: Option[NonEmptySet[String]]
+      fields: RealmFields
   )(implicit caller: Subject): IO[RealmResource] = {
-    val command = CreateRealm(label, name, openIdConfig, logo, acceptedAudiences, caller)
+    val command = CreateRealm(label, fields.name, fields.openIdConfig, fields.logo, fields.acceptedAudiences, caller)
     eval(command).span("createRealm")
   }
 
   override def update(
       label: Label,
       rev: Int,
-      name: Name,
-      openIdConfig: Uri,
-      logo: Option[Uri],
-      acceptedAudiences: Option[NonEmptySet[String]]
+      fields: RealmFields
   )(implicit caller: Subject): IO[RealmResource] = {
-    val command = UpdateRealm(label, rev, name, openIdConfig, logo, acceptedAudiences, caller)
+    val command =
+      UpdateRealm(label, rev, fields.name, fields.openIdConfig, fields.logo, fields.acceptedAudiences, caller)
     eval(command).span("updateRealm")
   }
 

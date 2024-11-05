@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.UnsuccessfulOpenIdConfigResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl, RealmsProvisioningConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -28,7 +28,8 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   val githubLogo: Uri = "https://localhost/ghlogo"
 
-  val config: RealmsConfig = RealmsConfig(eventLogConfig, pagination)
+  private val provisioning = RealmsProvisioningConfig(enabled = false, Map.empty)
+  private val config       = RealmsConfig(eventLogConfig, pagination, provisioning)
 
   val (githubOpenId, githubWk) = WellKnownGen.create(github.value)
   val (gitlabOpenId, gitlabWk) = WellKnownGen.create(gitlab.value)
