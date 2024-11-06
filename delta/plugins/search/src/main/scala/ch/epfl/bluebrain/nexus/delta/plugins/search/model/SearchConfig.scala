@@ -18,8 +18,6 @@ import com.typesafe.config.Config
 import io.circe.parser._
 import io.circe.syntax.KeyOps
 import io.circe.{Decoder, Encoder, JsonObject}
-import pureconfig.configurable.genericMapReader
-import pureconfig.error.CannotConvert
 import pureconfig.{ConfigReader, ConfigSource}
 
 import java.nio.file.{Files, Path}
@@ -39,8 +37,7 @@ object SearchConfig {
   type Suites = Map[Label, Suite]
 
   case class NamedSuite(name: Label, suite: Suite)
-  implicit private val suitesMapReader: ConfigReader[Suites] =
-    genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
+  implicit private val suitesMapReader: ConfigReader[Suites] = Label.labelMapReader[Suite]
 
   implicit val suiteEncoder: Encoder[NamedSuite]         =
     Encoder[JsonObject].contramap(s => JsonObject("projects" := s.suite, "name" := s.name))

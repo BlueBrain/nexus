@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import doobie.{Get, Put}
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 import pureconfig.ConfigReader
+import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert
 
 import scala.util.matching.Regex
@@ -64,6 +65,9 @@ object Label {
   def sanitized(value: String): Either[FormatError, Label] =
     apply(value.replaceAll(s"[^$allowedChars]", "").take(64))
 
+  private def configConvert(value: String): Either[CannotConvert, Label] =
+    apply(value).leftMap(e => CannotConvert(value, classOf[Label].getSimpleName, e.getMessage))
+
   implicit val labelGet: Get[Label] = Get[String].temap(Label(_).leftMap(_.getMessage))
   implicit val labelPut: Put[Label] = Put[String].contramap(_.value)
 
@@ -80,7 +84,8 @@ object Label {
     (cursor: ExpandedJsonLdCursor) =>
       cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.getMessage) } }
 
-  implicit val labelConfigReader: ConfigReader[Label] = ConfigReader.fromString(str =>
-    Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage))
-  )
+  implicit val labelConfigReader: ConfigReader[Label] = ConfigReader.fromString(configConvert)
+
+  def labelMapReader[V](implicit readerV: ConfigReader[V]): ConfigReader[Map[Label, V]] =
+    genericMapReader[Label, V](configConvert)
 }

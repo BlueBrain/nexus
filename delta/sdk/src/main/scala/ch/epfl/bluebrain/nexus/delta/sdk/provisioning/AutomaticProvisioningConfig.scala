@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import pureconfig.ConfigReader
-import pureconfig.configurable._
 import pureconfig.error.CannotConvert
 
 /**
@@ -43,8 +42,7 @@ object AutomaticProvisioningConfig {
       Permission(str).leftMap(err => CannotConvert(str, classOf[Permission].getSimpleName, err.getMessage))
     )
 
-  implicit private val mapReader: ConfigReader[Map[Label, Label]] =
-    genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
+  implicit private val mapReader: ConfigReader[Map[Label, Label]] = Label.labelMapReader[Label]
 
   implicit private val prefixIriReader: ConfigReader[PrefixIri] = ConfigReader[Iri].emap { iri =>
     PrefixIri(iri).leftMap { e => CannotConvert(iri.toString, classOf[PrefixIri].getSimpleName, e.getMessage) }

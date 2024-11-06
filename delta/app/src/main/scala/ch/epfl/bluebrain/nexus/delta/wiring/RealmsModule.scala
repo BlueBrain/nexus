@@ -14,8 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.{Realms, RealmsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmProvisioning, Realms, RealmsConfig, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -27,27 +28,35 @@ object RealmsModule extends ModuleDef {
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
+  make[RealmsConfig].from { (cfg: AppConfig) => cfg.realms }
+
   make[Realms].from {
     (
-        cfg: AppConfig,
+        cfg: RealmsConfig,
         clock: Clock[IO],
         hc: HttpClient @Id("realm"),
         xas: Transactors
     ) =>
       val wellKnownResolver = realms.WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, xas, clock)
+      RealmsImpl(cfg, wellKnownResolver, xas, clock)
+  }
+
+  make[RealmProvisioning].fromEffect { (realms: Realms, cfg: RealmsConfig, serviceAccount: ServiceAccount) =>
+    RealmProvisioning(realms, cfg.provisioning, serviceAccount)
+
   }
 
   make[RealmsRoutes].from {
     (
         identities: Identities,
         realms: Realms,
-        cfg: AppConfig,
+        cfg: RealmsConfig,
         aclCheck: AclCheck,
+        baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
+      new RealmsRoutes(identities, realms, aclCheck)(baseUri, cfg.pagination, cr, ordering)
   }
 
   make[HttpClient].named("realm").from { (as: ActorSystem) =>

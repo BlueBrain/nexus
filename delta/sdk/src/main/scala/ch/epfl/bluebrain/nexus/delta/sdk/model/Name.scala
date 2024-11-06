@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalNameFormatError
 import io.circe.{Decoder, Encoder}
+import pureconfig.ConfigReader
+import pureconfig.error.CannotConvert
 
 import scala.util.matching.Regex
-import cats.implicits._
 
 /**
   * A valid name value that can be used to describe resources, like for example the display name of a realm.
@@ -47,5 +49,10 @@ object Name {
 
   implicit final val nameDecoder: Decoder[Name] =
     Decoder.decodeString.emap(str => Name(str).leftMap(_.getMessage))
+
+  implicit final val nameConfigReader: ConfigReader[Name] =
+    ConfigReader.fromString(str =>
+      Name(str).leftMap(err => CannotConvert(str, classOf[Name].getSimpleName, err.getMessage))
+    )
 
 }
