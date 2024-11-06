@@ -66,8 +66,9 @@ class RealmProvisioningSuite extends NexusSuite with Doobie.Fixture with ConfigF
   }
 
   test("Fail for a invalid OpenId config") {
+    val invalid       = Label.unsafe("xxx")
     val invalidRealm  = RealmFields(Name.unsafe("xxx"), uri"https://localhost/xxx", None, None)
-    val invalidConfig = RealmsProvisioningConfig(enabled = true, Map(Label.unsafe("xxx") -> invalidRealm))
-    RealmProvisioning(realms, invalidConfig, serviceAccount).intercept[UnsuccessfulOpenIdConfigResponse]
+    val invalidConfig = RealmsProvisioningConfig(enabled = true, Map(invalid -> invalidRealm))
+    RealmProvisioning(realms, invalidConfig, serviceAccount) >> realms.fetch(invalid).intercept[RealmNotFound]
   }
 }

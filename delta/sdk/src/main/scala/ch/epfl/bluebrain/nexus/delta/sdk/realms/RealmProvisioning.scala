@@ -26,8 +26,9 @@ object RealmProvisioning extends RealmProvisioning {
       for {
         _ <- logger.info(s"Realm provisioning is active. Creating ${config.realms.size} realms...")
         _ <- config.realms.toList.traverse { case (label, fields) =>
-               realms.create(label, fields).recoverWith { case r: RealmAlreadyExists =>
-                 logger.debug(r)(s"Realm '$label' already exists")
+               realms.create(label, fields).recoverWith {
+                 case r: RealmAlreadyExists => logger.debug(r)(s"Realm '$label' already exists")
+                 case e                     => logger.error(e)(s"Realm '$label' could not be created: '${e.getMessage}'")
                }
              }
         _ <- logger.info(s"Provisioning ${config.realms.size} realms is completed")
