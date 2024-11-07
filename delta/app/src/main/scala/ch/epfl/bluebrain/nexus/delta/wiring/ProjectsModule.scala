@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.job.ProjectHealthJob
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
@@ -75,6 +76,10 @@ object ProjectsModule extends ModuleDef {
     (errorStore: ScopeInitializationErrorStore, scopeInitializer: ScopeInitializer, serviceAccount: ServiceAccount) =>
       ProjectHealer(errorStore, scopeInitializer, serviceAccount)
   )
+
+  make[ProjectHealthJob].fromEffect { (projects: Projects, projectHealer: ProjectHealer) =>
+    ProjectHealthJob(projects, projectHealer)
+  }
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors) =>
     ProjectsStatistics(xas)
