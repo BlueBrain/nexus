@@ -10,54 +10,52 @@ class AclBatchReplaceSuite extends NexusSuite {
   test("Deserialize properly the json payload") {
     val payload = json"""
       {
-        "acls": {
-          "/" : [
-            {
-              "permissions": [
-                "acls/read",
-                "acls/write"
-              ],
-              "identity": {
-                "realm": "realm",
-                "subject": "superuser"
-              }
-            },
-            {
-              "permissions": [
-                "projects/read",
-                "projects/write"
-              ],
-              "identity": {
-                "realm": "realm",
-                "group": "admins"
-              }
+        "/" : [
+          {
+            "permissions": [
+              "acls/read",
+              "acls/write"
+            ],
+            "identity": {
+              "realm": "realm",
+              "subject": "superuser"
             }
-          ],
-          "/bbp": [
-            {
-              "permissions": [
-                "resources/read",
-                "resources/write"
-              ],
-              "identity": {
-                "realm": "realm",
-                "group": "bbp-users"
-              }
+          },
+          {
+            "permissions": [
+              "projects/read",
+              "projects/write"
+            ],
+            "identity": {
+              "realm": "realm",
+              "group": "admins"
             }
-          ],
-          "/bbp/atlas": [
-            {
-              "permissions": [
-                "resources/read",
-                "resources/write"
-              ],
-              "identity": {
-                "realm": "realm",
-                "group": "atlas-users"
-              }
+          }
+        ],
+        "/bbp": [
+          {
+            "permissions": [
+              "resources/read",
+              "resources/write"
+            ],
+            "identity": {
+              "realm": "realm",
+              "group": "bbp-users"
             }
-          ]
-        }
+          }
+        ],
+        "/bbp/atlas": [
+          {
+            "permissions": [
+              "resources/read",
+              "resources/write"
+            ],
+            "identity": {
+              "realm": "realm",
+              "group": "atlas-users"
+            }
+          }
+        ]
       }"""
 
     val realm    = Label.unsafe("realm")
