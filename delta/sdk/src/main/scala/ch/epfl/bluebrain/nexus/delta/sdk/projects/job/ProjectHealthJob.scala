@@ -28,7 +28,7 @@ object ProjectHealthJob extends ProjectHealthJob {
   def apply(projects: Projects, projectHealer: ProjectHealer): IO[ProjectHealthJob.type] =
     healTrigger
       .flatMap {
-        case true => {
+        case true  => {
           logger.info("Starting Nexus automatic project healing.") >>
             run(projects.currentRefs, projectHealer) >>
             logger.info("Nexus automatic healing has completed.")
