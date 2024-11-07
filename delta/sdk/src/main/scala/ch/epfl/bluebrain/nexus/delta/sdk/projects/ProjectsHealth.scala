@@ -1,7 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
+package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 trait ProjectsHealth {

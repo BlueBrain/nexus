@@ -4,7 +4,6 @@ import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.{noopStore, ScopeInitErrorRow}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectHealer
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label, ProjectRef}

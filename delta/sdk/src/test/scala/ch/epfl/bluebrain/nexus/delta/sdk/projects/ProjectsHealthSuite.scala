@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectsHealth
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
