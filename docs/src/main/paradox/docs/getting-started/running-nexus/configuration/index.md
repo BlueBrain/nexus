@@ -57,7 +57,7 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 
 ## Realm provisioning
 
-Realm provisioning allow to create one or several realm at startup.
+Realm provisioning allows to create one or several realm at startup.
 
 It is useful to start a new deployment with having to call the @ref:[realm API](../../../delta/api/realms-api.md) to create those.
 
