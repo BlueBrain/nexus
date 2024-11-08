@@ -10,6 +10,14 @@ The Elasticsearch @link:[setup documentation](https://www.elastic.co/guide/en/el
 contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and
 cluster are scarce because it depends on usage.
 
+@link:[This section of the documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/how-to.html) and @link:[the blog](https://www.elastic.co/blog) also gives useful recommendations on how to run Elasticsearch.
+
+@@@ note { .info }
+Nexus is currently tested with Elasticsearch 8.x but should still work with the 7.x series.
+
+To benefit from the latest features and bug fixes from Elastic, we recommend you to stick as much as possible to the latest releases.
+@@@
+
 ## Running and monitoring
 
 **CPU:**
@@ -35,15 +43,37 @@ Elasticsearch provides a cluster health endpoint giving the status of the cluste
 This is important to monitor as it indicates in the yellow case that some data is likely to become unavailable
 if more shards disappear.
 
-When the status turns to red, a primary shard is missing preventing indexing on that shard and causing search
+When the status turns to red, a primary shard is missing. This prevents indexing on that shard and causes search
 to return partial results.
 
-**Number of shards:**
+**Number of shards per node:**
 Every view in Nexus uses at least 2 shards (one for a primary and one for a replica) and
 Elasticsearch allows a maximum number of shards per node.
 
 So when the number of the projects and views grow, Elasticsearch may run out of available shards and any new project or
-view creation will result in an error
+view creation will result in an error.
+
+@@@ note { .info }
+To solve this, an option can be to add another node on the cluster.
+
+Another option if used with caution can be to raise the maximum number of shards per node.
+
+This can be done via the elasticsearch configuration file:
+```hocon
+cluster.max_shards_per_node: 2000
+```
+
+Of via a call to the API:
+```
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.total_shards_per_node": 2000
+  }
+}
+```
+
+@@@
 
 **Search and indexing performance:**
 
@@ -61,5 +91,3 @@ to monitoring and purchase a license to have access to some monitoring and alert
 
 Another option allowing to push data in Prometheus is
 @link:[elasticsearch_exporter](https://github.com/prometheus-community/elasticsearch_exporter).
-
-// TODO add some link to Elasticsearch recommendations
