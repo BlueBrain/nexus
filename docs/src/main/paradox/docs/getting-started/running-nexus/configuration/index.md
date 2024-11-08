@@ -20,7 +20,7 @@ In order to successfully run Nexus Delta there is a minimum set of configuration
 
 The configuration flag `akka.http.server.parsing.max-content-length` can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.
 
-### Postgres configuration
+## Postgres configuration
 
 @link:[The `database` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L23){ open=new } of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools ('read', 'write', 'streaming'), it is recommended to set the host, port, database name, username, and password via the `app.defaults.database` field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective `app.database.{read|write|streaming}` fields. 
 
@@ -54,6 +54,43 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 - Creating default views on project creation.
 
 @link:[The `service-account` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L427){ open=new } of the configuration defines the service account configuration.
+
+## Realm provisioning
+
+Realm provisioning allow to create one or several realm at startup.
+
+It is useful to start a new deployment with having to call the @ref:[realm API](../../../delta/api/realms-api.md) to create those.
+
+Exemple:
+```hocon
+realms {
+    #...
+
+    # To provision realms at startup
+    # Only the name and the OpenId config url are mandatory
+    provisioning {
+      enabled = true
+      realms {
+         my-realm = {
+          name = "My realm name"
+          open-id-config = "https://.../path/.well-known/openid-configuration"
+          logo = "https://bbp.epfl.ch/path/favicon.png"
+          accepted-audiences = ["audience1", "audience2"]
+        }
+      }
+    }
+  }
+```
+
+@@@ note { .warning }
+
+Realm provisioning will only create realms.
+If a realm with the same identifier exists it will not be updated.
+
+@@@
+
+@link:[The `realms.provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf){ open=new } of the configuration defines the service account configuration.
+
 
 ## Automatic project provisioning
 
