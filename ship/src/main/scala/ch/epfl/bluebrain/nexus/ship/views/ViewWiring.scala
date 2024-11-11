@@ -82,21 +82,21 @@ object ViewWiring {
       rcr: ResolverContextResolution,
       config: EventLogConfig,
       clock: EventClock,
+      uuidF: UUIDF,
       xas: Transactors
   )(implicit jsonLdApi: JsonLdApi) = {
     val noValidation = new ValidateCompositeView {
       override def apply(uuid: UUID, value: CompositeViewValue): IO[Unit] = IO.unit
     }
-    (uuid: UUID) =>
-      CompositeViews(
-        fetchContext,
-        rcr,
-        noValidation,
-        3.seconds, // TODO: use the config?
-        config,
-        xas,
-        clock
-      )(jsonLdApi, UUIDF.fixed(uuid))
+    CompositeViews(
+      fetchContext,
+      rcr,
+      noValidation,
+      3.seconds, // TODO: use the config?
+      config,
+      xas,
+      clock
+    )(jsonLdApi, uuidF)
   }
 
   def viewInitializers(
