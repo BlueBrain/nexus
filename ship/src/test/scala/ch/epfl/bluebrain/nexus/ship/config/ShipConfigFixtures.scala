@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
+import concurrent.duration._
 
 trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with ClasspathResources {
 
@@ -25,7 +26,8 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
 
   private val viewDefaults = ViewDefaults(
     Defaults("Default ES View", "Description ES View"),
-    Defaults("Default EBG View", "Description BG View")
+    Defaults("Default EBG View", "Description BG View"),
+    Defaults("Default Search View", "Description Search View")
   )
 
   private val serviceAccount: ServiceAccountConfig = ServiceAccountConfig(
@@ -57,6 +59,7 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
       organizationsCreation,
       Map.empty,
       viewDefaults,
+      SearchConfig("master", 10.minutes),
       serviceAccount,
       StoragesConfig(eventLogConfig, pagination, config.copy(amazon = Some(amazonConfig))),
       FileProcessingConfig(

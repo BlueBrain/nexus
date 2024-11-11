@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId => bgDefaultViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId => esDefaultViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultViewId => searchViewId}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportEventQuery
@@ -53,6 +54,10 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       weFixThePermissions(project)
 
       thereShouldBeAProject(project, projectJson)
+
+      thereShouldBeAViewWithId(project, bgDefaultViewId)
+      thereShouldBeAViewWithId(project, esDefaultViewId)
+      thereShouldBeAViewWithId(project, searchViewId)
     }
 
     "transfer multiple revisions of a project" in {
@@ -183,6 +188,15 @@ class ShipIntegrationSpec extends BaseIntegrationSpec {
       weFixThePermissions(project)
 
       thereShouldBeAView(project, bgView, patchedSource)
+    }
+
+    def thereShouldBeAViewWithId(project: ProjectRef, view: Iri): Assertion = {
+      val encodedIri = UrlUtils.encode(view.toString)
+      deltaClient
+        .get[Json](s"/views/${project.organization}/${project.project}/$encodedIri", writer) { (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+        }
+        .accepted
     }
 
     def thereShouldBeAView(project: ProjectRef, view: Iri, expectedJson: Json): Assertion = {

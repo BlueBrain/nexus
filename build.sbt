@@ -713,6 +713,7 @@ lazy val ship = project
     compositeViewsPlugin % "compile->compile",
     elasticsearchPlugin  % "compile->compile",
     storagePlugin        % "compile->compile;test->test",
+    searchPlugin,
     tests                % "test->compile;test->test"
   )
   .settings(

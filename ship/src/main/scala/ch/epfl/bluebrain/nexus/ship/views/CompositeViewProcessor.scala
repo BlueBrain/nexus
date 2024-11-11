@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.views
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
@@ -85,7 +86,7 @@ object CompositeViewProcessor {
   )(implicit
       jsonLdApi: JsonLdApi
   ): CompositeViewProcessor = {
-    val views = ViewWiring.compositeViews(fetchContext, rcr, config, clock, xas)
+    val views = (uuid: UUID) => ViewWiring.compositeViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
     new CompositeViewProcessor(views, projectMapper, clock)
   }
 
