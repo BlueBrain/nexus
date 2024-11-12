@@ -296,6 +296,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#elasticsearch" name="elasticsearch" class="anchor"><span class="anchor-link"></span></a>Elasticsearch</h1>
 <p>Nexus uses <a href="https://www.elastic.co/elasticsearch" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
 <p>The Elasticsearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html" title="setup documentation" target="_blank" rel="noopener noreferrer">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
+<p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/how-to.html" title="This section of the documentation">This section of the documentation</a> and <a href="https://www.elastic.co/blog" title="the blog">the blog</a> also gives useful recommendations on how to run Elasticsearch.</p><div class="callout note info"><div class="callout-title">Note</div>
+<p>Nexus is currently tested with Elasticsearch 8.x but should still work with the 7.x series.</p>
+<p>To benefit from the latest features and bug fixes from Elastic, we recommend you to stick as much as possible to the latest releases.</p></div>
 <h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
 <p><strong>CPU:</strong> It suggests heavy indexing and search operations so:</p>
 <ul>
@@ -309,9 +312,22 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Elasticsearch can also do a lot of reads and writes to disk so it is also a good it to keep an eye on I/O utilization.</p>
 <p><strong>Cluster health:</strong> Elasticsearch provides a cluster health endpoint giving the status of the cluster (green/yellow/red).</p>
 <p>This is important to monitor as it indicates in the yellow case that some data is likely to become unavailable if more shards disappear.</p>
-<p>When the status turns to red, a primary shard is missing preventing indexing on that shard and causing search to return partial results.</p>
-<p><strong>Number of shards:</strong> Every view in Nexus uses at least 2 shards (one for a primary and one for a replica) and Elasticsearch allows a maximum number of shards per node.</p>
-<p>So when the number of the projects and views grow, Elasticsearch may run out of available shards and any new project or view creation will result in an error</p>
+<p>When the status turns to red, a primary shard is missing. This prevents indexing on that shard and causes search to return partial results.</p>
+<p><strong>Number of shards per node:</strong> Every view in Nexus uses at least 2 shards (one for a primary and one for a replica) and Elasticsearch allows a maximum number of shards per node.</p>
+<p>So when the number of the projects and views grow, Elasticsearch may run out of available shards and any new project or view creation will result in an error.</p><div class="callout note info"><div class="callout-title">Note</div>
+<p>To solve this, an option can be to add another node on the cluster.</p>
+<p>Another option if used with caution can be to raise the maximum number of shards per node.</p>
+<p>This can be done via the elasticsearch configuration file:</p>
+<pre class="prettyprint"><code class="language-hocon">cluster.max_shards_per_node: 2000
+</code></pre>
+<p>Of via a call to the API:</p>
+<pre><code>PUT _cluster/settings
+{
+  &quot;persistent&quot;: {
+    &quot;cluster.routing.allocation.total_shards_per_node&quot;: 2000
+  }
+}
+</code></pre></div>
 <p><strong>Search and indexing performance:</strong></p>
 <p>Query load and latency must be monitored to make sure that information in a timely manner to the client.</p>
 <p>On the write side, indexing load and latency must also be watched especially if the data must be available for search as soon as possible.</p>
@@ -319,7 +335,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Elasticsearch provide ways to monitor it via different api endpoints and via Kibana.</p>
 <p>For further monitoring, there are several options with the Elastic stack itself but it requires another cluster dedicated to monitoring and purchase a license to have access to some monitoring and alerting features.</p>
 <p>Another option allowing to push data in Prometheus is <a href="https://github.com/prometheus-community/elasticsearch_exporter" title="elasticsearch_exporter">elasticsearch_exporter</a>.</p>
-<p>// TODO add some link to Elasticsearch recommendations</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/running-nexus/elasticsearch.md" title="Edit this page" class="md-source-file md-edit">

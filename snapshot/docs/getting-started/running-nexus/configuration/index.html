@@ -249,13 +249,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#nexus-configuration" class="header">Nexus configuration</a>
   <ul>
-    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a>
-    <ul>
-      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
-    </ul></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
     <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#rdf-parser" class="header">RDF parser</a>
     <ul>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#realm-provisioning" class="header">Realm provisioning</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#fusion-configuration" class="header">Fusion configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#projections-configuration" class="header">Projections configuration</a></li>
@@ -297,13 +296,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#nexus-configuration" class="header">Nexus configuration</a>
   <ul>
-    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a>
-    <ul>
-      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
-    </ul></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
     <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#rdf-parser" class="header">RDF parser</a>
     <ul>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#realm-provisioning" class="header">Realm provisioning</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#fusion-configuration" class="header">Fusion configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#projections-configuration" class="header">Projections configuration</a></li>
@@ -352,7 +350,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#http-configuration" name="http-configuration" class="anchor"><span class="anchor-link"></span></a>Http configuration</h2>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L11" title="The `http` section" target="_blank" rel="noopener noreferrer">The <code>http</code> section</a> of the configuration defines the binding address and port where the service will be listening.</p>
 <p>The configuration flag <code>akka.http.server.parsing.max-content-length</code> can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.</p>
-<h3><a href="#postgres-configuration" name="postgres-configuration" class="anchor"><span class="anchor-link"></span></a>Postgres configuration</h3>
+<h2><a href="#postgres-configuration" name="postgres-configuration" class="anchor"><span class="anchor-link"></span></a>Postgres configuration</h2>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L23" title="The `database` section" target="_blank" rel="noopener noreferrer">The <code>database</code> section</a> of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools (&lsquo;read&rsquo;, &lsquo;write&rsquo;, &lsquo;streaming&rsquo;), it is recommended to set the host, port, database name, username, and password via the <code>app.defaults.database</code> field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective <code>app.database.{read|write|streaming}</code> fields. </p>
 <p>The pool size can be set using the <code>app.defaults.database.access.pool-size</code> setting for all pools, or individually for each pool (<code>app.database.{read|write|streaming}.access.pool-size</code>).</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>A default Postgres deployment will limit the number of connections to 100, unless configured otherwise. See the <a href="https://www.postgresql.org/docs/current/runtime-config-connection.html" title="Postgres Connection and Authentication documentation" target="_blank" rel="noopener noreferrer">Postgres Connection and Authentication documentation</a>.</p></div>
@@ -368,6 +366,30 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Creating default views on project creation.</li>
 </ul>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L427" title="The `service-account` section" target="_blank" rel="noopener noreferrer">The <code>service-account</code> section</a> of the configuration defines the service account configuration.</p>
+<h2><a href="#realm-provisioning" name="realm-provisioning" class="anchor"><span class="anchor-link"></span></a>Realm provisioning</h2>
+<p>Realm provisioning allows to create one or several realm at startup.</p>
+<p>It is useful to start a new deployment with having to call the <a href="../../../delta/api/realms-api.html">realm API</a> to create those.</p>
+<p>Exemple:</p>
+<pre class="prettyprint"><code class="language-hocon">realms {
+    #...
+
+    # To provision realms at startup
+    # Only the name and the OpenId config url are mandatory
+    provisioning {
+      enabled = true
+      realms {
+         my-realm = {
+          name = &quot;My realm name&quot;
+          open-id-config = &quot;https://.../path/.well-known/openid-configuration&quot;
+          logo = &quot;https://bbp.epfl.ch/path/favicon.png&quot;
+          accepted-audiences = [&quot;audience1&quot;, &quot;audience2&quot;]
+        }
+      }
+    }
+  }
+</code></pre><div class="callout note warning"><div class="callout-title">Note</div>
+<p>Realm provisioning will only create realms. If a realm with the same identifier exists it will not be updated.</p></div>
+<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf" title="The `realms.provisioning` section" target="_blank" rel="noopener noreferrer">The <code>realms.provisioning</code> section</a> of the configuration defines the service account configuration.</p>
 <h2><a href="#automatic-project-provisioning" name="automatic-project-provisioning" class="anchor"><span class="anchor-link"></span></a>Automatic project provisioning</h2>
 <p>Automatic project provisioning allows to create a dedicated project for users the first time they connect to Delta that is to say the first time, they query the project listing endpoints.</p>
 <p>The generated project label will be:</p>

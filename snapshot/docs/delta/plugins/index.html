@@ -354,9 +354,9 @@ class TestPluginRoutes(baseUri: BaseUri) {
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/delta/plugins/test-plugin/src/main/scala/ch/epfl/bluebrain/nexus/delta/testplugin/TestPluginDef.scala" target="_blank" title="Go to snippet source">source</a><code class="language-scala">package ch.epfl.bluebrain.nexus.delta.testplugin
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
@@ -374,7 +374,7 @@ case class TestPluginDef() extends PluginDef {
       )
     }
 
-  override val info: PluginDescription = PluginDescription(Name.unsafe(&quot;testplugin&quot;), &quot;0.1.0&quot;)
+  override val info: PluginDescription = PluginDescription(&quot;testplugin&quot;, &quot;0.1.0&quot;)
 
   override def initialize(locator: Locator): IO[Plugin] = IO.pure(locator.get[TestPlugin])
 
@@ -401,7 +401,7 @@ case class TestPluginDef() extends PluginDef {
   <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/metrics/EventMetricEncoder.scala" title="EventMetricEncoder" target="_blank" rel="noopener noreferrer">EventMetricEncoder</a> - enables Delta to convert a database event to an event metric</li>
   <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/MetadataContextValue.scala" title="MetadataContextValue" target="_blank" rel="noopener noreferrer">MetadataContextValue</a> - registers metadata context of this plugin into global metadata context</li>
   <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/rdf/src/main/scala/ch/epfl/bluebrain/nexus/delta/rdf/jsonld/context/RemoteContextResolution.scala" title="RemoteContextResolution" target="_blank" rel="noopener noreferrer">RemoteContextResolution</a> - enables Delta to resolve static contexts defined by the plugin</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ServiceDependency.scala" title="ServiceDependency" target="_blank" rel="noopener noreferrer">ServiceDependency</a> - allows the plugin to define dependencies which will be displayed in <code>/version</code> endpoint.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/kernel/src/main/scala/ch/epfl/bluebrain/nexus/delta/kernel/dependency/ServiceDependency.scala" title="ServiceDependency" target="_blank" rel="noopener noreferrer">ServiceDependency</a> - allows the plugin to define dependencies which will be displayed in <code>/version</code> endpoint.</li>
   <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/projects/model/ApiMappings.scala" title="ApiMappings" target="_blank" rel="noopener noreferrer">ApiMappings</a> - allows the plugin to define default API mappings used to shorten URLs</li>
   <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ResourceToSchemaMappings.scala" title="ResourceToSchemaMappings" target="_blank" rel="noopener noreferrer">ResourceToSchemaMappings</a> - allows the plugin to define mapping from the resource type to schema, which can be used to interact with resources created by the plugin through <code>/resources</code> endpoints.</li>
 </ul>
