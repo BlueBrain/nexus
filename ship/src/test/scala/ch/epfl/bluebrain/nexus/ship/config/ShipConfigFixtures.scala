@@ -34,8 +34,8 @@ trait ShipConfigFixtures extends ConfigFixtures with StorageFixtures with Classp
     ServiceAccount(User("internal", Label.unsafe("sa")))
   )
 
-  private val importBucket = "nexus-ship-production"
-  private val targetBucket = "nexus-delta-production"
+  private val importBucket = "default-import-bucket"
+  private val targetBucket = "default-target-bucket"
 
   private val amazonConfig: S3StorageConfig =
     S3StorageConfig(
