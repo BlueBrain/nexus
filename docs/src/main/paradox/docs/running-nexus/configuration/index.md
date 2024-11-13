@@ -59,7 +59,7 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 
 Realm provisioning allows to create one or several realm at startup.
 
-It is useful to start a new deployment with having to call the @ref:[realm API](../../../delta/api/realms-api.md) to create those.
+It is useful to start a new deployment with having to call the @ref:[realm API](../../delta/api/realms-api.md) to create those.
 
 Exemple:
 ```hocon
@@ -114,7 +114,7 @@ When fetching a resource, Nexus Delta allows to return a redirection to its repr
 
 ## Projections configuration
 
-Projections in Nexus Delta are asynchronous processes that can replay the event log and process this information. For more information on projections, please refer to the @ref:[Architecture page](../../../delta/architecture.md).
+Projections in Nexus Delta are asynchronous processes that can replay the event log and process this information. For more information on projections, please refer to the @ref:[Architecture page](../../delta/architecture.md).
 
 @link:[The `projections` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L281) of the configuration allows to configure the projections.
 
@@ -126,7 +126,7 @@ Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local di
 
 Each plugin configuration is rooted under `plugins.{plugin_name}`. All plugins have a `plugins.{plugin_name}.priority` configuration flag used to determine the order in which the routes are handled in case of collisions. 
 
-For more information about plugins, please refer to the @ref:[Plugins page](../../../delta/plugins/index.md).
+For more information about plugins, please refer to the @ref:[Plugins page](../../delta/plugins/index.md).
 
 ### Elasticsearch views plugin configuration
 

@@ -64,7 +64,7 @@ and the number of triples per individual view.
 The unassigned part allows to spot orphan namespaces, that is to say namespaces which may not have been properly deleted
 when a view got modified or deprecated.
 
-This is an indicator which helps to scale correctly the @ref:[Blazegraph instance](../../getting-started/running-nexus/blazegraph.md).
+This is an indicator which helps to scale correctly the @ref:[Blazegraph instance](../../running-nexus/blazegraph.md).
 
 ```
 GET /v1/supervision/blazegraph
