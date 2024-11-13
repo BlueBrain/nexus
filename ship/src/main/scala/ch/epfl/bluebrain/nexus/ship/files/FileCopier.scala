@@ -3,25 +3,24 @@ package ch.epfl.bluebrain.nexus.ship.files
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
-import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, S3LocationGenerator, S3OperationResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, S3LocationGenerator}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.ship.config.FileProcessingConfig
 import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult
 import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult.{FileCopySkipped, FileCopySuccess}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import software.amazon.awssdk.services.s3.model.S3Exception
 
 import scala.concurrent.duration.DurationInt
 
 trait FileCopier {
 
-  def copyFile(project: ProjectRef, attributes: FileAttributes, forceContentType: Boolean): IO[FileCopyResult]
+  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[FileCopyResult]
 
 }
 
@@ -55,7 +54,7 @@ object FileCopier {
     val importBucket      = config.importBucket
     val targetBucket      = config.targetBucket
     val locationGenerator = new S3LocationGenerator(config.prefix.getOrElse(Path.Empty))
-    (project: ProjectRef, attributes: FileAttributes, forceContentType: Boolean) =>
+    (project: ProjectRef, attributes: FileAttributes) =>
       {
         val origin          = attributes.path
         val patchedFileName = if (attributes.filename.isEmpty) "file" else attributes.filename
@@ -73,15 +72,6 @@ object FileCopier {
               s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey, copyOptions)
           } else
             s3StorageClient.copyObject(importBucket, originKey, targetBucket, targetKey, copyOptions)
-        }.flatMap {
-          case S3OperationResult.Success       => IO.unit
-          case S3OperationResult.AlreadyExists =>
-            IO.whenA(forceContentType) {
-              attributes.mediaType.traverse { mediaType =>
-                logger.info(s"Patching to content type $mediaType for file $patchedFileName") >>
-                  s3StorageClient.updateContentType(targetBucket, targetKey, mediaType)
-              }.void
-            }
         }.timed
           .flatMap { case (duration, _) =>
             IO.whenA(duration > longCopyThreshold)(
@@ -104,7 +94,6 @@ object FileCopier {
       }.retry(copyRetryStrategy)
   }
 
-  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes, _: Boolean) =>
-    IO.pure(FileCopySuccess(attributes.path))
+  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes) => IO.pure(FileCopySuccess(attributes.path))
 
 }

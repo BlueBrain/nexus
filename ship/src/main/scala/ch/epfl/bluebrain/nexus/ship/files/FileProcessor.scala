@@ -5,12 +5,12 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.definition
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.CancelEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileNotFound, IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.FetchStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.LinkFileAction
@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import ch.epfl.bluebrain.nexus.ship._
 import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult.{FileCopySkipped, FileCopySuccess}
-import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{forceMediaType, logger, patchMediaType}
+import ch.epfl.bluebrain.nexus.ship.files.FileProcessor.{logger, patchMediaType}
 import ch.epfl.bluebrain.nexus.ship.files.FileWiring._
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring.linkS3FileOperationOnly
@@ -74,8 +74,7 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        val fct            = forceMediaType(attrs.mediaType, newMediaType)
-        fileCopier.copyFile(e.project, newAttrs, fct).flatMap {
+        fileCopier.copyFile(e.project, newAttrs).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
@@ -88,8 +87,7 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        val fct            = forceMediaType(attrs.mediaType, newMediaType)
-        fileCopier.copyFile(e.project, newAttrs, fct).flatMap {
+        fileCopier.copyFile(e.project, newAttrs).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
@@ -139,11 +137,6 @@ object FileProcessor {
       .flatMap(mediaTypeDetector.find)
       .map(ContentType(_, () => HttpCharsets.`UTF-8`))
       .orElse(original)
-
-  def forceMediaType(
-      originalMediaType: Option[ContentType],
-      newMediaType: Option[ContentType]
-  ): Boolean = originalMediaType != newMediaType
 
   private val noop = new EventProcessor[FileEvent] {
     override def resourceType: EntityType = Files.entityType
