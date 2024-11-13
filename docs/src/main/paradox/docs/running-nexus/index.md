@@ -121,7 +121,7 @@ $ curl http://localhost/v1/version | jq
 
 #### Using Fusion
 
-Fusion can be accessed by opening `http://localhost` in your web browser. You can start by creating an organization from the `http://localhost/admin` page.
+Fusion can be accessed by opening `http://localhost` in your web browser. You can start by creating an organization from the `http://localhost/orgs` page.
 
 @@@ note { .warning }
 
