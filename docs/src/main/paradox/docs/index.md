@@ -4,7 +4,6 @@
 - [Quick Start Guide](getting-started/index.md)
 - [Running Nexus](running-nexus/index.md)
 - [Releases](releases/index.md)
-- [Roadmap](roadmap.md)
 - [Nexus Fusion](fusion/index.md)
 - [Nexus Forge](forge.md)
 - [Nexus Delta](delta/index.md)
@@ -75,7 +74,3 @@ Ready to deploy your own instance of Nexus? Follow our @ref:[guide](running-nexu
 Looking for docs for another release of Nexus ?
 
 @ref:[List of versions](versions.md)
-
-## Roadmap
-
-Curious about our upcoming features? Read our @ref:[open Roadmap](roadmap.md) to find out more.
