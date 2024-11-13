@@ -33,7 +33,7 @@ object FileCopier {
   private val copyRetryStrategy: RetryStrategy[S3Exception] = RetryStrategy.constant(
     30.seconds,
     10,
-    e => e.statusCode() >= 500 && e.statusCode() < 600,
+    e => e.statusCode() == 403 || (e.statusCode() >= 500 && e.statusCode() < 600),
     logError(logger, "s3Copy")
   )
 
