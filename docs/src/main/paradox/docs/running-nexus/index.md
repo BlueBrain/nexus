@@ -214,7 +214,7 @@ Details on how to deploy, run and monitor the different components are described
 ### Choice of hardware
 
 Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please
-take a look at the @ref:[benchmarks section](../../delta/benchmarks/v1.4.2.md) to get an idea of what you should expect in terms
+take a look at the @ref:[benchmarks section](../delta/benchmarks/v1.4.2.md) to get an idea of what you should expect in terms
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
@@ -224,7 +224,7 @@ should narrow the scope:
     access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
     *   prefer SSD over HDDs because random access speed is more important than sequential access,
-    *   one exception is the file storage (@ref:[file resources](../../delta/api/files-api.md) which are stored as
+    *   one exception is the file storage (@ref:[file resources](../delta/api/files-api.md) which are stored as
         binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access
         speed; this assumes that accessing attachments is not the at the top in the usage profile
 2.  Nexus Delta and most of the "off the shelf" products are built to run on top of the JVM which usually
@@ -258,4 +258,4 @@ While different approaches are possible depending on how and where Nexus is depl
 Prometheus has been the historical solution for monitoring Nexus at BBP for its popularity and its versatility as it allows to
 monitor all components.
 
-![Monitoring with Prometheus](../assets/prometheus-monitoring.png)
+![Monitoring with Prometheus](../getting-started/assets/prometheus-monitoring.png)

@@ -2,6 +2,7 @@
 
 - [Versions](versions.md)
 - [Quick Start Guide](getting-started/index.md)
+- [Running Nexus](running-nexus/index.md)
 - [Releases](releases/index.md)
 - [Roadmap](roadmap.md)
 - [Nexus Fusion](fusion/index.md)
@@ -67,7 +68,7 @@ Do you know know what a knowledge graph is? Or want to deepen your understanding
 Want to get started with Nexus right away? We provide a @ref:[tutorial](getting-started/try-nexus.md) that uses our 
 @link:[sandbox](https://sandbox.bluebrainnexus.io/){ open=new } environment to let you try the functionalities.
 
-Ready to deploy your own instance of Nexus? Follow our @ref:[guide](getting-started/running-nexus/index.md).
+Ready to deploy your own instance of Nexus? Follow our @ref:[guide](running-nexus/index.md).
 
 ## Versions
 

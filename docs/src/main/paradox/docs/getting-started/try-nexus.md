@@ -116,7 +116,7 @@ You will need the names of the organisation and project for the next parts of th
 
 ### 1.2. Running your Own Instance of Nexus
 
-We do not recommend to setup your own instance for this tutorial. If you are interested to install your own instance, @ref:[check our guide](./running-nexus/index.md).
+We do not recommend to setup your own instance for this tutorial. If you are interested to install your own instance, @ref:[check our guide](../running-nexus/index.md).
 
 ## Step 2: Download and Register Data from a Single Source
 

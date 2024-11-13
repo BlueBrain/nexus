@@ -15,7 +15,7 @@ The search plugin relies on @ref:[composite views](./views/composite-view-api.md
   indices to which user has access to, i.e. has `views/query` permission.
 
 For instructions on how to configure global search in Nexus and how it works please visit the
-@ref:[Search configuration](../../getting-started/running-nexus/search-configuration.md) page.
+@ref:[Search configuration](../../running-nexus/search-configuration.md) page.
 
 @@@ note { .tip title="Api Mapping" }
 

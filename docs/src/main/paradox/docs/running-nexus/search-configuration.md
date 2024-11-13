@@ -20,10 +20,10 @@ There are several aspects that have been taken into consideration when adding gl
 
 Considering the requirements listed above, the implementation relies on existing Nexus features, namely:
 
-- @ref:[Composite Views](../../delta/api/views/composite-view-api.md) as control resources for partitioning of indices,
+- @ref:[Composite Views](../delta/api/views/composite-view-api.md) as control resources for partitioning of indices,
   how data is indexed, what information to collect, what permissions are required for querying
-- @ref:[Automatic provisioning](../../delta/plugins/index.md#dependency-injection) of project resources after creation
-- @ref:[Plugins](../../delta/plugins/index.md) for orchestrating the behaviour and exposing specific endpoints
+- @ref:[Automatic provisioning](../delta/plugins/index.md#dependency-injection) of project resources after creation
+- @ref:[Plugins](../delta/plugins/index.md) for orchestrating the behaviour and exposing specific endpoints
 
 When the search plugin is enabled and configured it will automatically create within each project a CompositeView that
 controls what resources are indexed and what information is collected for each resource. The reasons for using one
@@ -43,18 +43,18 @@ CompositeViews have been chosen because they are quite versatile, support a wide
 - simple transformations
 
 More information about CompositeViews can be found in the
-@ref:[API Reference](../../delta/api/views/composite-view-api.md).
+@ref:[API Reference](../delta/api/views/composite-view-api.md).
 
 The search plugin introduces a new namespace (`/v1/search`) with two sub-resources (`query` and `config`).
 
-The @ref:[query endpoint](../../delta/api/search-api.md#query) accepts submitting an
+The @ref:[query endpoint](../delta/api/search-api.md#query) accepts submitting an
 @link:[Elasticsearch query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html)
 via `POST`, similar to other views based on Elasticsearch, like `ElasticSearchView`, `AggregateElasticSearchView` or
 `CompositeView` with configured Elasticsearch projections. The query will be dispatched to all ElasticSearch indices
 managed by the CompositeViews created by the search plugin (the ones that share the id mentioned above) for which the
 client has access to. This ensures that access to information is restricted based on each project's access control.
 
-The @ref:[config endpoint](../../delta/api/search-api.md#configuration) allows clients to discover the underlying index
+The @ref:[config endpoint](../delta/api/search-api.md#configuration) allows clients to discover the underlying index
 data model such that it can present users (like in the case of Fusion) an appropriate interface for querying, filtering,
 sorting, aggregations etc. A minimal response for the config endpoint is like the following example:
 
@@ -131,7 +131,7 @@ the rest of the search configuration:
 The search plugin must also be enabled using the `plugins.search.enabled=true` setting.
 
 These additional settings pertain to the configuration of the CompositeViews that are automatically provisioned by the
-search plugin. The @ref:[CompositeView API Reference](../../delta/api/views/composite-view-api.md) provides a detailed
+search plugin. The @ref:[CompositeView API Reference](../delta/api/views/composite-view-api.md) provides a detailed
 explanation on how CompositeViews work and how these options affect the generation of the indices.
 
 ## Example use case
@@ -141,7 +141,7 @@ uses four related data types (`Dataset`, `DataDownload`, `Person` and `License`)
 ability to query resources of type `Dataset` along with information registered in related resources (of type
 `DataDownload`, `Person` or `License`).
 
-[![Data Model](../assets/search-use-case.png "Data Model")](../assets/search-use-case.png)
+[![Data Model](../getting-started/assets/search-use-case.png "Data Model")](../getting-started/assets/search-use-case.png)
 
 There are a couple of things to notice in the data model diagram:
 
