@@ -211,7 +211,7 @@ Request
 Response
 :   @@snip [fetched.json](../assets/views/blazegraph/sparql/fetched.json)
 
-If the @ref:[redirect to Fusion feature](../../../getting-started/running-nexus/configuration/index.md#fusion-configuration) is enabled and
+If the @ref:[redirect to Fusion feature](../../../running-nexus/configuration/index.md#fusion-configuration) is enabled and
 if the `Accept` header is set to `text/html`, a redirection to the fusion representation of the resource will be returned.
 
 ## Fetch original payload

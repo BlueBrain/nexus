@@ -38,8 +38,8 @@ It is likely to happen when reindexing after updating search but if it happens r
 Blazegraph will use the available RAM in 2 ways, JVM heap and the file system cache
 so like Elasticsearch, the JVM garbage collection frequency and duration are also important to monitor.
 
-Using the supervision endpoints for @ref:[Blazegraph](../../delta/api/supervision-api.md#blazegraph) 
-and @ref:[composite views](../../delta/api/supervision-api.md#composite-views) and 
+Using the supervision endpoints for @ref:[Blazegraph](../delta/api/supervision-api.md#blazegraph) 
+and @ref:[composite views](../delta/api/supervision-api.md#composite-views) and 
 the @link:[RAM guidance from Blazegraph](https://github.com/blazegraph/database/wiki/Hardware_Configuration#ram-sizing-guidance)
 gives some insights on how much memory can be assigned.
 
@@ -56,8 +56,8 @@ to reduce the disk usage, but it takes quite a bit a time and requires taking th
 An alternative can be to reindex on a fresh instance of Blazegraph, this approach also allows to reconfigure the
 underlying namespaces.
 
-Using the supervision endpoints for @ref:[Blazegraph](../../delta/api/supervision-api.md#blazegraph)
-and @ref:[composite views](../../delta/api/supervision-api.md#composite-views) and
+Using the supervision endpoints for @ref:[Blazegraph](../delta/api/supervision-api.md#blazegraph)
+and @ref:[composite views](../delta/api/supervision-api.md#composite-views) and
 the @link:[Data on disk guidance from Blazegraph](https://github.com/blazegraph/database/wiki/Hardware_Configuration#data-on-disk-sizing-guidance)
 gives some insights on how much storage can be assigned.
 

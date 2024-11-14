@@ -93,6 +93,7 @@ class RunShipSuite
       _      <- RunShip(events, s3Client, inputConfig, xas).assertEquals(expectedImportReport)
       _      <- checkFor("elasticsearch", nxv + "defaultElasticSearchIndex", xas).assertEquals(1)
       _      <- checkFor("blazegraph", nxv + "defaultSparqlIndex", xas).assertEquals(1)
+      _      <- checkFor("compositeviews", nxv + "searchView", xas).assertEquals(1)
       _      <- checkFor("storage", nxv + "defaultS3Storage", xas).assertEquals(1)
     } yield ()
   }

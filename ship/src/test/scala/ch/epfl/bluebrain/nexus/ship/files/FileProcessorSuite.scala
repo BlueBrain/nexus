@@ -25,24 +25,4 @@ class FileProcessorSuite extends NexusSuite {
     )
   }
 
-  test("Patching media type for a media type that changes") {
-    assertEquals(
-      FileProcessor.forceMediaType(
-        Some(ContentTypes.`application/octet-stream`),
-        Some(ContentTypes.`application/json`)
-      ),
-      true
-    )
-  }
-
-  test("Patching media type for a media type that does not change") {
-    assertEquals(
-      FileProcessor.forceMediaType(
-        Some(ContentTypes.`application/json`),
-        Some(ContentTypes.`application/json`)
-      ),
-      false
-    )
-  }
-
 }

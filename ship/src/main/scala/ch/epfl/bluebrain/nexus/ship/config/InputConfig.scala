@@ -19,6 +19,7 @@ final case class InputConfig(
     organizations: OrganizationCreationConfig,
     projectMapping: ProjectMapping = Map.empty,
     viewDefaults: ViewDefaults,
+    search: SearchConfig,
     serviceAccount: ServiceAccountConfig,
     storages: StoragesConfig,
     files: FileProcessingConfig,

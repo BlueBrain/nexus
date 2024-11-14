@@ -20,7 +20,7 @@ val akkaHttpCirceVersion       = "1.39.2"
 val akkaCorsVersion            = "1.2.0"
 val akkaVersion                = "2.6.21"
 val alpakkaVersion             = "3.0.4"
-val awsSdkVersion              = "2.29.2"
+val awsSdkVersion              = "2.29.9"
 val betterMonadicForVersion    = "0.3.1"
 val caffeineVersion            = "3.1.8"
 val catsEffectVersion          = "3.5.5"
@@ -37,7 +37,7 @@ val fs2Version                 = "3.11.0"
 val fs2AwsVersion              = "6.1.3"
 val googleAuthClientVersion    = "1.36.0"
 val handleBarsVersion          = "4.4.0"
-val hikariVersion              = "6.0.0"
+val hikariVersion              = "6.1.0"
 val jenaVersion                = "4.10.0"
 val jsonldjavaVersion          = "0.13.6"
 val kamonVersion               = "2.7.5"
@@ -48,7 +48,7 @@ val logbackVersion             = "1.5.12"
 val magnoliaVersion            = "1.1.10"
 val munitVersion               = "1.0.2"
 val munitCatsEffectVersion     = "2.0.0"
-val nimbusJoseJwtVersion       = "9.42"
+val nimbusJoseJwtVersion       = "9.46"
 val postgresJdbcVersion        = "42.7.4"
 val pureconfigVersion          = "0.17.7"
 val scalaTestVersion           = "3.2.19"
@@ -713,6 +713,7 @@ lazy val ship = project
     compositeViewsPlugin % "compile->compile",
     elasticsearchPlugin  % "compile->compile",
     storagePlugin        % "compile->compile;test->test",
+    searchPlugin,
     tests                % "test->compile;test->test"
   )
   .settings(

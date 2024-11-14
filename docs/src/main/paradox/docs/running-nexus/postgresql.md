@@ -83,7 +83,7 @@ Some of those actions may fail as it relies on external components (like a Blaze
 which may be down at this moment.
 
 This table allows to save the failures in order to be able to a posteriori call 
-@ref:[the supervision healing endpoint](../../delta/api/supervision-api.md#project-healing).
+@ref:[the supervision healing endpoint](../delta/api/supervision-api.md#project-healing).
 
 **project_last_updates:**
 Stores the last_update and last_ordering properties for the different projects.
@@ -142,7 +142,7 @@ Low memory indicates swapping and degraded performance.
 **Storage:**
 There should be enough available space for PostgreSQL to operate properly.
 
-As described in the @ref:[architecture section](../../delta/architecture.md) the generally adopted
+As described in the @ref:[architecture section](../delta/architecture.md) the generally adopted
 persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
 implications to the total amount of disk used by the primary store.
 
