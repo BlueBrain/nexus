@@ -24,6 +24,25 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
 
+  test("Copy a file containing special characters between buckets") {
+    givenAnS3Bucket { bucket =>
+      givenAnS3Bucket { targetBucket =>
+        val options = CopyOptions(overwriteTarget = false, None)
+        val key     = "/org/proj/9/f/0/3/2/4/f/e/0925_Rhi13.3.13 cell 1+2 (superficial).asc"
+        givenAFileInABucket(bucket, key, fileContents) { _ =>
+          for {
+            result <- s3StorageClient.copyObject(bucket, key, targetBucket, key, options)
+            head   <- s3StorageClient.headObject(targetBucket, key)
+          } yield {
+            assertEquals(result, S3OperationResult.Success)
+            assertEquals(head.fileSize, contentLength)
+            assertEquals(head.contentType, Some(expectedContentType))
+          }
+        }
+      }
+    }
+  }
+
   test("Copy the file to its new location if none is already there without a content type") {
     givenAnS3Bucket { bucket =>
       val options = CopyOptions(overwriteTarget = false, None)

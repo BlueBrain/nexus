@@ -39,9 +39,13 @@ trait S3Helpers { self: Generators =>
 
   def givenAFileInABucket(bucket: String, contents: String)(
       test: String => IO[Unit]
+  )(implicit client: S3StorageClient): IO[Unit] =
+    givenAFileInABucket(bucket, genString(), contents)(test)
+
+  def givenAFileInABucket(bucket: String, key: String, contents: String)(
+      test: String => IO[Unit]
   )(implicit client: S3StorageClient): IO[Unit] = {
     val bytes = contents.getBytes(StandardCharsets.UTF_8)
-    val key   = genString()
     val put   = PutObjectRequest(bucket, key, Some(ContentTypes.`text/plain(UTF-8)`), bytes.length.toLong)
     client.uploadFile(put, Stream.emit(ByteBuffer.wrap(bytes))) >> test(key)
   }

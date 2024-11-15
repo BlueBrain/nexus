@@ -15,4 +15,7 @@
 
     <logger name="ch.epfl.bluebrain.nexus" level="ERROR" />
 
+    <!--    Uncomment to get some information of the S3 sdk underlying calls -->
+    <!--    <logger name="software.amazon.awssdk.request" level="DEBUG" />-->
+
 </configuration>
