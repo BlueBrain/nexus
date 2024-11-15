@@ -16,11 +16,13 @@ import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult
 import ch.epfl.bluebrain.nexus.ship.files.FileCopier.FileCopyResult.{FileCopySkipped, FileCopySuccess}
 import software.amazon.awssdk.services.s3.model.S3Exception
 
+import java.net.URI
+import java.nio.file.Paths
 import scala.concurrent.duration.DurationInt
 
 trait FileCopier {
 
-  def copyFile(project: ProjectRef, attributes: FileAttributes): IO[FileCopyResult]
+  def copyFile(project: ProjectRef, attributes: FileAttributes, localOrigin: Boolean): IO[FileCopyResult]
 
 }
 
@@ -36,6 +38,8 @@ object FileCopier {
     e => e.statusCode() == 403 || (e.statusCode() >= 500 && e.statusCode() < 600),
     logError(logger, "s3Copy")
   )
+
+  def localDiskPath(relative: Path): String = Paths.get(URI.create(s"file:/$relative")).toString
 
   sealed trait FileCopyResult extends Product with Serializable
 
@@ -54,14 +58,14 @@ object FileCopier {
     val importBucket      = config.importBucket
     val targetBucket      = config.targetBucket
     val locationGenerator = new S3LocationGenerator(config.prefix.getOrElse(Path.Empty))
-    (project: ProjectRef, attributes: FileAttributes) =>
+    (project: ProjectRef, attributes: FileAttributes, localOrigin: Boolean) =>
       {
         val origin          = attributes.path
         val patchedFileName = if (attributes.filename.isEmpty) "file" else attributes.filename
         val target          = locationGenerator.file(project, attributes.uuid, patchedFileName).path
         val FIVE_GB         = 5_000_000_000L
 
-        val originKey = UrlUtils.decode(origin)
+        val originKey = if (localOrigin) localDiskPath(origin) else UrlUtils.decode(origin)
         val targetKey = UrlUtils.decode(target)
 
         val copyOptions = CopyOptions(overwriteTarget = false, attributes.mediaType)
@@ -86,14 +90,17 @@ object FileCopier {
           isFolder <-
             if (isObject) IO.pure(false) else s3StorageClient.listObjectsV2(importBucket, originKey).map(_.hasContents)
           _        <- IO.whenA(isObject) { copy }
-          _        <- IO.whenA(isFolder) { logger.info(s"$target has been found to be a folder, skipping the file copy...") }
+          _        <- IO.whenA(isFolder) {
+                        logger.info(s"'$originKey' has been found to be a folder, skipping the file copy...")
+                      }
           _        <- IO.whenA(!isFolder && !isObject) {
-                        logger.error(s"$target is neither an object or folder, something is wrong.")
+                        logger.error(s"'$originKey' is neither an object or folder, something is wrong.")
                       }
         } yield if (isObject) FileCopySuccess(target) else FileCopySkipped
       }.retry(copyRetryStrategy)
   }
 
-  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes) => IO.pure(FileCopySuccess(attributes.path))
+  def apply(): FileCopier = (_: ProjectRef, attributes: FileAttributes, _: Boolean) =>
+    IO.pure(FileCopySuccess(attributes.path))
 
 }
