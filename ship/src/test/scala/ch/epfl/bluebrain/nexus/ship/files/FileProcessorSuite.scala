@@ -15,7 +15,7 @@ class FileProcessorSuite extends NexusSuite {
   test("Correctly decode a local path") {
     val encoded  = Uri.Path("org/proj/9/f/0/3/2/4/f/e/0925_Rhi13.3.13%20cell%201+2%20(superficial).asc")
     val obtained = localDiskPath(encoded)
-    val expected = "/org/proj/9/f/0/3/2/4/f/e/0925_Rhi13.3.13 cell 1+2 (superficial).asc"
+    val expected = "org/proj/9/f/0/3/2/4/f/e/0925_Rhi13.3.13 cell 1+2 (superficial).asc"
     assertEquals(obtained, expected)
   }
 
