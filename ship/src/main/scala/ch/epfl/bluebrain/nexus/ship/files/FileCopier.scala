@@ -39,7 +39,7 @@ object FileCopier {
     logError(logger, "s3Copy")
   )
 
-  def localDiskPath(relative: Path): String = Paths.get(URI.create(s"file:/$relative")).toString
+  def localDiskPath(relative: Path): String = Paths.get(URI.create(s"file:/$relative")).toString.drop(1)
 
   sealed trait FileCopyResult extends Product with Serializable
 
