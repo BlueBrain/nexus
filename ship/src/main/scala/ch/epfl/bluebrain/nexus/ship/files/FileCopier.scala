@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.ship.files
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
@@ -51,6 +52,33 @@ object FileCopier {
 
   }
 
+  def computeOriginKey(
+      s3StorageClient: S3StorageClient,
+      importBucket: String,
+      path: Path,
+      localOrigin: Boolean
+  ): IO[Option[String]] = {
+    def exists(key: String) = s3StorageClient.objectExists(importBucket, key).flatMap {
+      case true  => IO.some(key)
+      case false =>
+        s3StorageClient
+          .listObjectsV2(importBucket, key)
+          .map(_.hasContents)
+          .flatMap { isFolder =>
+            IO.whenA(isFolder) {
+              logger.info(s"'$key' has been found to be a folder, skipping the file copy...")
+            }
+          }
+          .as(None)
+    }
+
+    val decodedKey = if (localOrigin) localDiskPath(path) else UrlUtils.decode(path)
+    exists(decodedKey).flatMap {
+      case Some(key) => IO.some(key)
+      case None      => exists(path.toString())
+    }
+  }
+
   def apply(
       s3StorageClient: S3StorageClient,
       config: FileProcessingConfig
@@ -60,17 +88,15 @@ object FileCopier {
     val locationGenerator = new S3LocationGenerator(config.prefix.getOrElse(Path.Empty))
     (project: ProjectRef, attributes: FileAttributes, localOrigin: Boolean) =>
       {
-        val origin          = attributes.path
+        val path            = attributes.path
         val patchedFileName = if (attributes.filename.isEmpty) "file" else attributes.filename
         val target          = locationGenerator.file(project, attributes.uuid, patchedFileName).path
         val FIVE_GB         = 5_000_000_000L
 
-        val originKey = if (localOrigin) localDiskPath(origin) else UrlUtils.decode(origin)
-        val targetKey = UrlUtils.decode(target)
-
+        val targetKey   = UrlUtils.decode(target)
         val copyOptions = CopyOptions(overwriteTarget = false, attributes.mediaType)
 
-        def copy = {
+        def copy(originKey: String) = {
           if (attributes.bytes >= FIVE_GB) {
             logger.info(s"Attempting to copy a large file from $importBucket/$originKey to $targetBucket/$targetKey") >>
               s3StorageClient.copyObjectMultiPart(importBucket, originKey, targetBucket, targetKey, copyOptions)
@@ -86,17 +112,12 @@ object FileCopier {
           }
 
         for {
-          isObject <- s3StorageClient.objectExists(importBucket, originKey)
-          isFolder <-
-            if (isObject) IO.pure(false) else s3StorageClient.listObjectsV2(importBucket, originKey).map(_.hasContents)
-          _        <- IO.whenA(isObject) { copy }
-          _        <- IO.whenA(isFolder) {
-                        logger.info(s"'$originKey' has been found to be a folder, skipping the file copy...")
-                      }
-          _        <- IO.whenA(!isFolder && !isObject) {
-                        logger.error(s"'$originKey' is neither an object or folder, something is wrong.")
-                      }
-        } yield if (isObject) FileCopySuccess(target) else FileCopySkipped
+          originKey <- computeOriginKey(s3StorageClient, importBucket, path, localOrigin)
+          _         <- originKey.traverse(copy)
+          _         <- IO.whenA(originKey.isEmpty) {
+                         logger.error(s"$path is neither an object or folder, something is wrong.")
+                       }
+        } yield if (originKey.isDefined) FileCopySuccess(target) else FileCopySkipped
       }.retry(copyRetryStrategy)
   }
 
