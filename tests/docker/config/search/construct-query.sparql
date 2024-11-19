@@ -242,6 +242,8 @@ CONSTRUCT {
   ?alias :singleNeuronSimulation  ?singleNeuronSimulation  .
                                   ?singleNeuronSimulation  :injectionLocation                ?injectionLocation .
                                   ?singleNeuronSimulation  :recordingLocation                ?recordingLocation .
+                                  ?singleNeuronSimulation  :isDraft                          ?isDraft .
+                                  ?singleNeuronSimulation  :status                           ?status  .
                                   ?singleNeuronSimulation  :emodel                           ?singleNeuronSimulationEmodelId .
                                                            ?singleNeuronSimulationEmodelId   :name ?singleNeuronSimulationEmodelName .
   ## SingleNeuronSynaptome
@@ -254,6 +256,8 @@ CONSTRUCT {
   ?alias :synaptomeSimulation     ?synaptomeSimulation     .
                                   ?synaptomeSimulation     :injectionLocation                ?injectionLocation .
                                   ?synaptomeSimulation     :recordingLocation                ?recordingLocation .
+                                  ?synaptomeSimulation     :isDraft                          ?isDraft .
+                                  ?synaptomeSimulation     :status                           ?status  .
                                   ?synaptomeSimulation     :synaptome                        ?synaptomeId .
                                                            ?synaptomeId                      :name ?synaptomeName . 
 
@@ -548,6 +552,8 @@ CONSTRUCT {
   # Simulations
   OPTIONAL { ?id  bmo:injectionLocation ?injectionLocation  . } .
   OPTIONAL { ?id  nsg:recordingLocation ?recordingLocation  . } .
+  OPTIONAL { ?id  nsg:status            ?status             . } .
+  OPTIONAL { ?id  bmo:isDraft           ?isDraft            . } .
 
   # Bouton density
   OPTIONAL {
