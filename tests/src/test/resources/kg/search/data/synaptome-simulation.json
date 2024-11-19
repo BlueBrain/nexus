@@ -44,5 +44,7 @@
     "used": {
       "@id": "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome",
       "@type": "SingleNeuronSynaptome"
-    }
+    },
+    "isDraft": false,
+    "status": "Done"
   }
