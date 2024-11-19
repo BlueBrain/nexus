@@ -1117,7 +1117,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                  "singleNeuronSimulation": {
                     "injectionLocation": "dendrite.01B",
                     "recordingLocation": ["dendrite.01A", "dendrite.01B"],
-                    "emodel": { "@id" : "https://bbp.epfl.ch/data/emodel", "name" : "EM__fa285b7__dSTUT__15"}
+                    "emodel": { "@id" : "https://bbp.epfl.ch/data/emodel", "name" : "EM__fa285b7__dSTUT__15"},
+                    "isDraft": "true",
+                    "status": "validated"
                   }
                 }"""
 
@@ -1147,6 +1149,8 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
                     "injectionLocation": "soma[0]",
                     "recordingLocation": ["soma[0]_0.5", "dend[38]_0.5", "dend[1]_0.4", "apic[53]_0.3"],
                     "synaptome": { "@id" : "https://bbp.epfl.ch/data/synapse/single-neuron-synaptome", "name" : "synaptome-model-04"}
+                    "isDraft": "false",
+                    "status": "Done"
                   }
                 }"""
 
