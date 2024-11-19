@@ -192,10 +192,10 @@ class RunShipSuite
       // Directory, should be skipped
       directoryId           = iri"https://bbp.epfl.ch/neurosciencegraph/data/directory"
       _                    <- checkFor("file", directoryId, xas).assertEquals(0)
-      // Summary S3 check, 5 objects should have been imported in total
-      _                    <- s3Client.listObjectsV2(targetBucket).map(_.keyCount().intValue()).assertEquals(5)
+      // Summary S3 check, 8 objects should have been imported in total
+      _                    <- s3Client.listObjectsV2(targetBucket).map(_.keyCount().intValue()).assertEquals(8)
       // Summary report check, only the directory event should have been skipped
-      _                     = assertEquals(report.progress(Files.entityType).success, 6L)
+      _                     = assertEquals(report.progress(Files.entityType).success, 9L)
       _                     = assertEquals(report.progress(Files.entityType).dropped, 1L)
     } yield ()
   }
