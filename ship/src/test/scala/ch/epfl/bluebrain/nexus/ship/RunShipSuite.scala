@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.ship
 
-import akka.http.scaladsl.model.{ContentType, ContentTypes, MediaTypes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, MediaTypes, Uri}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -8,17 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileState}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.DiskStorage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{LocalStackS3StorageClient, PutObjectRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.RowEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
 import ch.epfl.bluebrain.nexus.ship.ImportReport.Statistics
 import ch.epfl.bluebrain.nexus.ship.RunShipSuite.{checkFor, expectedImportReport, fetchFileAttributes, getDistinctOrgProjects}
 import ch.epfl.bluebrain.nexus.ship.config.ShipConfigFixtures
+import ch.epfl.bluebrain.nexus.ship.files.FileCopier.localDiskPath
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.Get
 import doobie.syntax.all._
@@ -65,8 +66,19 @@ class RunShipSuite
     s3Client.uploadFile(put, Stream.emit(contentAsBuffer))
   }
 
-  private def decodedFilePath(json: Json) = root.attributes.path.string.getOption(json).map(UrlUtils.decode)
-  private def fileContentType             = root.attributes.mediaType.string.getOption(_)
+  private def decodedFilePath(json: Json) = {
+    root.storageType.as[StorageType].getOption(json).flatMap {
+      case DiskStorage =>
+        root.attributes.path.as[Uri.Path].getOption(json).map { path =>
+          localDiskPath(path).toString
+        }
+      case _           =>
+        root.attributes.path.string.getOption(json).map(UrlUtils.decode)
+    }
+
+  }
+
+  private def fileContentType = root.attributes.mediaType.string.getOption(_)
 
   private def generatePhysicalFile(row: RowEvent) =
     IO.whenA(row.`type` == Files.entityType) {
@@ -136,7 +148,8 @@ class RunShipSuite
     report.progress == Map(Projects.entityType -> Statistics(1L, 0L))
 
   test("Import files in S3 and in the primary store") {
-    val textPlain = MediaTypes.`text/plain`.withMissingCharset
+    val textPlain              = MediaTypes.`text/plain`.withMissingCharset
+    val applicationOctetStream = MediaTypes.`application/octet-stream`
     for {
       events               <- eventsStream("import/file-import/000000001.json")
       report               <- RunShip(events, s3Client, inputConfig, xas)
@@ -166,13 +179,23 @@ class RunShipSuite
       _                    <- checkFor("file", specialCharsId, xas).assertEquals(1)
       _                    <- assertS3Object(specialCharsLocation, Some(textPlain))
       _                    <- assertFileAttributes(project, specialCharsId)(specialCharsLocation, "special [file].json", Some(textPlain))
+      // Local file containing a plus
+      localPlusId           = iri"https://bbp.epfl.ch/neurosciencegraph/data/local-plus"
+      localPlusLocation     = "/prefix/public/sscx/files/9/f/0/3/2/4/f/e/0925_Rhi13.3.13 cell 1 2 (superficial).asc"
+      _                    <- checkFor("file", localPlusId, xas).assertEquals(1)
+      _                    <- assertS3Object(localPlusLocation, Some(applicationOctetStream))
+      _                    <- assertFileAttributes(project, localPlusId)(
+                                localPlusLocation,
+                                "0925_Rhi13.3.13 cell 1+2 (superficial).asc",
+                                Some(applicationOctetStream)
+                              )
       // Directory, should be skipped
       directoryId           = iri"https://bbp.epfl.ch/neurosciencegraph/data/directory"
       _                    <- checkFor("file", directoryId, xas).assertEquals(0)
-      // Summary S3 check, 4 objects should have been imported in total
-      _                    <- s3Client.listObjectsV2(targetBucket).map(_.keyCount().intValue()).assertEquals(4)
+      // Summary S3 check, 8 objects should have been imported in total
+      _                    <- s3Client.listObjectsV2(targetBucket).map(_.keyCount().intValue()).assertEquals(8)
       // Summary report check, only the directory event should have been skipped
-      _                     = assertEquals(report.progress(Files.entityType).success, 5L)
+      _                     = assertEquals(report.progress(Files.entityType).success, 9L)
       _                     = assertEquals(report.progress(Files.entityType).dropped, 1L)
     } yield ()
   }

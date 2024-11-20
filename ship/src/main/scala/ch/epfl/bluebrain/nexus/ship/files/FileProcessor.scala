@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.FetchStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.LinkFileAction
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
@@ -74,7 +75,7 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        fileCopier.copyFile(e.project, newAttrs).flatMap {
+        fileCopier.copyFile(e.project, newAttrs, e.storageType == DiskStorage).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files
@@ -87,7 +88,7 @@ class FileProcessor private (
         val newMediaType   = patchMediaType(attrs.filename, attrs.mediaType)
         val newAttrs       = e.attributes.copy(mediaType = newMediaType)
         val customMetadata = Some(getCustomMetadata(newAttrs))
-        fileCopier.copyFile(e.project, newAttrs).flatMap {
+        fileCopier.copyFile(e.project, newAttrs, e.storageType == DiskStorage).flatMap {
           case FileCopySuccess(newPath) =>
             val linkRequest = FileLinkRequest(newPath, newMediaType, customMetadata)
             files

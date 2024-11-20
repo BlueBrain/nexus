@@ -49,12 +49,16 @@ class ResolverProcessor private (
       case ResolverUpdated(_, _, value, _, _, _, _) =>
         implicit val caller: Caller = Caller(s, identities(value))
         val patched                 = patchValue(value, projectMapper, iriPatcher)
-        resolvers.update(id, projectRef, cRev, patched)
+        resolvers.update(id, projectRef, cRev, patched).recoverWith { case IncorrectRev(_, expectedRev) =>
+          resolvers.update(id, projectRef, expectedRev, patched)
+        }
       case _: ResolverTagAdded                      =>
         // Tags have been removed
         IO.unit
       case _: ResolverDeprecated                    =>
-        resolvers.deprecate(id, projectRef, cRev)
+        resolvers.deprecate(id, projectRef, cRev).recoverWith { case IncorrectRev(_, expectedRev) =>
+          resolvers.deprecate(id, projectRef, expectedRev)
+        }
     }
   }.redeemWith(
     {

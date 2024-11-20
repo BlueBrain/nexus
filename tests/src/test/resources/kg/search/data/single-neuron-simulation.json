@@ -26,5 +26,7 @@
     "@id": "https://bbp.epfl.ch/data/emodel",
     "@type": "EModel"
   },
-  "recordingLocation": ["dendrite.01A", "dendrite.01B"]
+  "recordingLocation": ["dendrite.01A", "dendrite.01B"],
+  "isDraft": true,
+  "status": "validated"
 }
