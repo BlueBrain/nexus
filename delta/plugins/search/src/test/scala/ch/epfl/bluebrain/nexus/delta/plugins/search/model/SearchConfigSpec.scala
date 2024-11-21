@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.error.LoadFileError.{InvalidJson, UnaccessibleFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, LoadingFileError}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.InvalidSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -79,7 +80,7 @@ class SearchConfigSpec extends CatsEffectSpec {
       val missingContextFile = config(validJson, validJson, Some(validJson), validQuery, Some(missingFile))
       val all                = List(missingFieldFile, missingEsMapping, missingEsSettings, missingSparqlFile, missingContextFile)
       forAll(all) { c =>
-        SearchConfig.load(c).rejectedWith[LoadingFileError]
+        SearchConfig.load(c).rejectedWith[UnaccessibleFile]
       }
     }
 
@@ -90,7 +91,7 @@ class SearchConfigSpec extends CatsEffectSpec {
       val invalidContext    = config(validJson, validJson, Some(validJson), validQuery, Some(emptyFile))
       val all               = List(invalidFields, invalidEsMapping, invalidEsSettings, invalidContext)
       forAll(all) { c =>
-        SearchConfig.load(c).rejectedWith[InvalidJsonError]
+        SearchConfig.load(c).rejectedWith[InvalidJson]
       }
     }
 

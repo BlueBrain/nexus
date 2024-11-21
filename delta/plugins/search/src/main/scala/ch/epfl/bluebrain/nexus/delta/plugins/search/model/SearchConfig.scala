@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils.loadJsonAs
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
@@ -15,12 +17,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
 import com.typesafe.config.Config
-import io.circe.parser._
 import io.circe.syntax.KeyOps
-import io.circe.{Decoder, Encoder, JsonObject}
+import io.circe.{Encoder, JsonObject}
 import pureconfig.{ConfigReader, ConfigSource}
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Path
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
@@ -49,18 +50,19 @@ object SearchConfig {
     * Converts a [[Config]] into an [[SearchConfig]]
     */
   def load(config: Config): IO[SearchConfig] = {
-    val pluginConfig = config.getConfig("plugins.search")
+    val pluginConfig                    = config.getConfig("plugins.search")
+    def getFilePath(configPath: String) = Path.of(pluginConfig.getString(configPath))
     def loadSuites = {
       val suiteSource = ConfigSource.fromConfig(pluginConfig).at("suites")
       IO.fromEither(suiteSource.load[Suites].leftMap(InvalidSuites))
     }
     for {
-      fields        <- loadOption(pluginConfig, "fields", loadExternalConfig[JsonObject])
-      resourceTypes <- loadExternalConfig[IriFilter](pluginConfig.getString("indexing.resource-types"))
-      mapping       <- loadExternalConfig[JsonObject](pluginConfig.getString("indexing.mapping"))
-      settings      <- loadOption(pluginConfig, "indexing.settings", loadExternalConfig[JsonObject])
-      query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
-      context       <- loadOption(pluginConfig, "indexing.context", loadExternalConfig[JsonObject])
+      fields        <- loadOption(pluginConfig, "fields", loadJsonAs[JsonObject])
+      resourceTypes <- loadJsonAs[IriFilter](getFilePath("indexing.resource-types"))
+      mapping       <- loadJsonAs[JsonObject](getFilePath("indexing.mapping"))
+      settings      <- loadOption(pluginConfig, "indexing.settings", loadJsonAs[JsonObject])
+      query         <- loadSparqlQuery(getFilePath("indexing.query"))
+      context       <- loadOption(pluginConfig, "indexing.context", loadJsonAs[JsonObject])
       rebuild       <- loadRebuildStrategy(pluginConfig)
       defaults      <- loadDefaults(pluginConfig)
       suites        <- loadSuites
@@ -79,36 +81,21 @@ object SearchConfig {
     )
   }
 
-  private def loadOption[A](config: Config, path: String, io: String => IO[A]) =
+  private def loadOption[A](config: Config, path: String, io: Path => IO[A]) =
     if (config.hasPath(path))
-      io(config.getString(path)).map(Some(_))
+      io(Path.of(config.getString(path))).map(Some(_))
     else IO.none
 
-  private def loadExternalConfig[A: Decoder](filePath: String): IO[A] =
+  private def loadSparqlQuery(filePath: Path): IO[SparqlConstructQuery] =
     for {
-      content <- IO.fromEither(
-                   Try(Files.readString(Path.of(filePath))).toEither.leftMap(LoadingFileError(filePath, _))
-                 )
-      json    <- IO.fromEither(decode[A](content).leftMap { e => InvalidJsonError(filePath, e.getMessage) })
-    } yield json
-
-  private def loadSparqlQuery(filePath: String): IO[SparqlConstructQuery] =
-    for {
-      content <- IO.fromEither(
-                   Try(Files.readString(Path.of(filePath))).toEither.leftMap(LoadingFileError(filePath, _))
-                 )
+      content <- FileUtils.loadAsString(filePath)
       json    <- IO.fromEither(TemplateSparqlConstructQuery(content).leftMap { e =>
                    InvalidSparqlConstructQuery(filePath, e)
                  })
     } yield json
 
   private def loadDefaults(config: Config): IO[Defaults] =
-    IO.fromEither(
-      Try(
-        ConfigSource.fromConfig(config).at("defaults").loadOrThrow[Defaults]
-        // TODO: Use a correct error
-      ).toEither.leftMap(_ => InvalidJsonError("string", "string"))
-    )
+    IO.pure(ConfigSource.fromConfig(config).at("defaults").loadOrThrow[Defaults])
 
   /**
     * Load the rebuild strategy from the search config. If either of the required fields is null, missing, or not a

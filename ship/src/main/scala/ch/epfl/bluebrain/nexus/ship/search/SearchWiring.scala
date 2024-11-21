@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, LoadingFileError}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
@@ -32,22 +31,22 @@ object SearchWiring {
 
   private def getAsString(url: String) = {
     val request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build()
-    IO.fromEither(
-      Try(client.send(request, HttpResponse.BodyHandlers.ofString())).toEither.leftMap(LoadingFileError(url, _))
+    IO.fromTry(
+      Try(client.send(request, HttpResponse.BodyHandlers.ofString()))
     )
   }
 
   private def loadExternalConfig[A: Decoder](url: String): IO[A] =
     for {
       content <- getAsString(url)
-      value   <- IO.fromEither(decode[A](content.body()).leftMap { e => InvalidJsonError(url, e.getMessage) })
+      value   <- IO.fromEither(decode[A](content.body()))
     } yield value
 
   private def loadSparqlQuery(url: String): IO[SparqlConstructQuery] =
     for {
       content <- getAsString(url)
       value   <- IO.fromEither(TemplateSparqlConstructQuery(content.body()).leftMap { e =>
-                   InvalidSparqlConstructQuery(url, e)
+                   new IllegalStateException(s"Construct query could not be loaded or is invalid: $e")
                  })
     } yield value
 

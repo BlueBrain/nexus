@@ -3,24 +3,20 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.sdk.ProvisioningAction
+import ch.epfl.bluebrain.nexus.delta.sdk.ProvisioningAction.Outcome
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmProvisioning.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.RealmAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
   * Provision the different realms provided in the configuration
   */
-trait RealmProvisioning
+final class RealmProvisioning(realms: Realms, config: RealmsProvisioningConfig, serviceAccount: ServiceAccount)
+    extends ProvisioningAction {
 
-object RealmProvisioning extends RealmProvisioning {
-
-  private val logger = Logger[RealmProvisioning]
-
-  def apply(
-      realms: Realms,
-      config: RealmsProvisioningConfig,
-      serviceAccount: ServiceAccount
-  ): IO[RealmProvisioning.type] =
+  override def run: IO[ProvisioningAction.Outcome] =
     if (config.enabled) {
       implicit val serviceAccountSubject: Subject = serviceAccount.subject
       for {
@@ -32,7 +28,12 @@ object RealmProvisioning extends RealmProvisioning {
                }
              }
         _ <- logger.info(s"Provisioning ${config.realms.size} realms is completed")
-      } yield RealmProvisioning
-    } else logger.info(s"Realm provisioning is inactive.").as(RealmProvisioning)
+      } yield Outcome.Success
+    } else logger.info(s"Realm provisioning is inactive.").as(Outcome.Disabled)
+}
+
+object RealmProvisioning {
+
+  private val logger = Logger[RealmProvisioning]
 
 }

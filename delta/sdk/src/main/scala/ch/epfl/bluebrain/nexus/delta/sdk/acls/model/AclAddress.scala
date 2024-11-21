@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalAclAddressFormatError
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import doobie.{Get, Put}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, KeyDecoder}
 
 /**
   * Enumeration of possible ACL addresses. An ACL address is the address where a certain ACL is anchored.
@@ -99,6 +99,8 @@ object AclAddress {
   implicit val aclAddressPut: Put[AclAddress] = Put[String].contramap(_.string)
 
   implicit val aclAddressOrdering: Ordering[AclAddress] = Ordering.by(_.string)
+
+  implicit val aclAddressKeyDecoder: KeyDecoder[AclAddress] = KeyDecoder.instance(AclAddress.fromString(_).toOption)
 
   implicit val aclAddressEncoder: Encoder[AclAddress] = Encoder.encodeString.contramap(_.string)
   implicit val aclAddressDecoder: Decoder[AclAddress] = Decoder.decodeString.emap { str =>

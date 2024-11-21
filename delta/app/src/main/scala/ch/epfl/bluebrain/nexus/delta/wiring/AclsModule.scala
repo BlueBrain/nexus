@@ -10,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, UserPermissionsRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -26,21 +27,17 @@ object AclsModule extends ModuleDef {
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
 
-  make[Acls].from {
-    (
-        permissions: Permissions,
-        config: AppConfig,
-        xas: Transactors,
-        clock: Clock[IO]
-    ) =>
-      acls.AclsImpl(
-        permissions.fetchPermissionSet,
-        AclsImpl.findUnknownRealms(xas),
-        permissions.minimum,
-        config.acls.eventLog,
-        xas,
-        clock
-      )
+  make[AclsConfig].from { (config: AppConfig) => config.acls }
+
+  make[Acls].from { (permissions: Permissions, config: AclsConfig, xas: Transactors, clock: Clock[IO]) =>
+    acls.AclsImpl(
+      permissions.fetchPermissionSet,
+      AclsImpl.findUnknownRealms(xas),
+      permissions.minimum,
+      config.eventLog,
+      xas,
+      clock
+    )
   }
 
   make[AclCheck].from { (acls: Acls) => AclCheck(acls) }
@@ -55,6 +52,10 @@ object AclsModule extends ModuleDef {
         ordering: JsonKeyOrdering
     ) =>
       new AclsRoutes(identities, acls, aclCheck)(baseUri, cr, ordering)
+  }
+
+  make[AclProvisioning].from { (acls: Acls, config: AclsConfig, serviceAccount: ServiceAccount) =>
+    new AclProvisioning(acls, config.provisioning, serviceAccount)
   }
 
   many[ProjectDeletionTask].add { (acls: Acls) => Acls.projectDeletionTask(acls) }

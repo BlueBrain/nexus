@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.ProvisioningAction.Outcome
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -45,21 +46,24 @@ class RealmProvisioningSuite extends NexusSuite with Doobie.Fixture with ConfigF
     clock
   )
 
+  private def runProvisioning(config: RealmsProvisioningConfig) =
+    new RealmProvisioning(realms, config, serviceAccount).run
+
   test("Provision the different realms according to the configuration") {
     val githubRealm = RealmFields(githubName, githubOpenId, None, None)
     val gitlabRealm = RealmFields(gitlabName, gitlabOpenId, None, None)
     val inactive    = RealmsProvisioningConfig(enabled = false, Map(github -> githubRealm))
     for {
       // Github realm should not be created as provisioning is disabled
-      _           <- RealmProvisioning(realms, inactive, serviceAccount)
+      _           <- runProvisioning(inactive).assertEquals(Outcome.Disabled)
       _           <- realms.fetch(github).intercept[RealmNotFound]
-      githubConfig = RealmsProvisioningConfig(enabled = true, Map(github -> githubRealm))
       // Github realm should be created as provisioning is disabled
-      _           <- RealmProvisioning(realms, githubConfig, serviceAccount)
+      githubConfig = RealmsProvisioningConfig(enabled = true, Map(github -> githubRealm))
+      _           <- runProvisioning(githubConfig).assertEquals(Outcome.Success)
       _           <- realms.fetch(github).map(_.rev).assertEquals(1)
       // Github realm should NOT be updated and the gitlab one should be created
       bothConfig   = RealmsProvisioningConfig(enabled = true, Map(github -> githubRealm, gitlab -> gitlabRealm))
-      _           <- RealmProvisioning(realms, bothConfig, serviceAccount)
+      _           <- runProvisioning(bothConfig).assertEquals(Outcome.Success)
       _           <- realms.fetch(github).map(_.rev).assertEquals(1)
       _           <- realms.fetch(gitlab).map(_.rev).assertEquals(1)
     } yield ()
@@ -69,6 +73,6 @@ class RealmProvisioningSuite extends NexusSuite with Doobie.Fixture with ConfigF
     val invalid       = Label.unsafe("xxx")
     val invalidRealm  = RealmFields(Name.unsafe("xxx"), uri"https://localhost/xxx", None, None)
     val invalidConfig = RealmsProvisioningConfig(enabled = true, Map(invalid -> invalidRealm))
-    RealmProvisioning(realms, invalidConfig, serviceAccount) >> realms.fetch(invalid).intercept[RealmNotFound]
+    new RealmProvisioning(realms, invalidConfig, serviceAccount).run >> realms.fetch(invalid).intercept[RealmNotFound]
   }
 }

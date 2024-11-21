@@ -9,9 +9,12 @@ import pureconfig.generic.semiauto.deriveReader
   *
   * @param eventLog
   *   The event log configuration
+  * @param provisioning
+  *   The provisioning
   */
 final case class AclsConfig(
-    eventLog: EventLogConfig
+    eventLog: EventLogConfig,
+    provisioning: AclProvisioningConfig
 )
 
 object AclsConfig {

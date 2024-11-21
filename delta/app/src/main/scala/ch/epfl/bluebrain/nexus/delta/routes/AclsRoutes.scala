@@ -31,8 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -195,23 +194,6 @@ class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implici
 }
 
 object AclsRoutes {
-
-  final private case class IdentityPermissions(identity: Identity, permissions: Set[Permission])
-
-  final private[routes] case class AclValues(value: Seq[(Identity, Set[Permission])])
-
-  private[routes] object AclValues {
-
-    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] = {
-      implicit val config: Configuration = Configuration.default.withStrictDecoding
-      deriveConfiguredDecoder[IdentityPermissions]
-    }
-
-    implicit val aclValuesDecoder: Decoder[AclValues] =
-      Decoder
-        .decodeSeq[IdentityPermissions]
-        .map(seq => AclValues(seq.map(value => value.identity -> value.permissions)))
-  }
 
   final private[routes] case class ReplaceAcl(acl: AclValues)
   private[routes] object ReplaceAcl {
