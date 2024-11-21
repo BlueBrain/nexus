@@ -93,7 +93,7 @@ If a realm with the same identifier exists it will not be updated.
 
 ## Acl provisioning
 
-Acl provisioning allows to create one or several realm at startup.
+Acl provisioning allows to create one or several acls at startup.
 
 It is useful to start a new deployment with having to call the @ref:[ACL API](../../delta/api/acls-api.md) to create those.
 
@@ -102,8 +102,7 @@ Exemple:
 acls {
     #...
 
-    # To provision realms at startup
-    # Only the name and the OpenId config url are mandatory
+    # To provision acls at startup
     provisioning {
       enabled = true
       path = /path/to/initial/acl
@@ -145,9 +144,9 @@ Like the
 
 @@@ note { .warning }
 
-The realm and the permission defined in the file must exist.
+The realms and the permissions defined in the file must exist in the deployment.
 
-Acl provisioning will only acls if none is create at the root level.
+Acl provisioning will only run if none is create at the root level.
 
 @@@
 
