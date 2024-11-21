@@ -43,7 +43,7 @@ class OrganizationDeleterSuite extends NexusSuite with ConfigFixtures with Proje
   private val fields               = ProjectFields(None, ApiMappings.empty, None, None)
   private lazy val orgs            = OrganizationsImpl(ScopeInitializer.noop, eventLogConfig, xas, clock)
   private val permission           = Permissions.resources.read
-  private lazy val acls            = AclsImpl(IO.pure(Set(permission)), _ => IO.unit, Set(), aclsConfig.eventLog, xas, clock)
+  private lazy val acls            = AclsImpl(IO.pure(Set(permission)), _ => IO.unit, Set(), eventLogConfig, xas, clock)
 
   implicit val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
   implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())

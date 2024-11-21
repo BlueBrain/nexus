@@ -41,9 +41,8 @@ object RealmsModule extends ModuleDef {
       RealmsImpl(cfg, wellKnownResolver, xas, clock)
   }
 
-  make[RealmProvisioning].fromEffect { (realms: Realms, cfg: RealmsConfig, serviceAccount: ServiceAccount) =>
-    RealmProvisioning(realms, cfg.provisioning, serviceAccount)
-
+  make[RealmProvisioning].from { (realms: Realms, cfg: RealmsConfig, serviceAccount: ServiceAccount) =>
+    new RealmProvisioning(realms, cfg.provisioning, serviceAccount)
   }
 
   make[RealmsRoutes].from {

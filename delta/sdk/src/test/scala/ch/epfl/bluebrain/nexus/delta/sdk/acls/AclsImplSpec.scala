@@ -77,8 +77,16 @@ class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with Cance
       acls.fetchWithAncestors(AclAddress.Root).accepted shouldEqual expected
     }
 
+    "return false on `/` as no acl is set yet" in {
+      acls.isRootAclSet.accepted shouldEqual false
+    }
+
     "append an ACL" in {
       acls.append(userR(AclAddress.Root), 0).accepted shouldEqual resourceFor(userR(AclAddress.Root), 1, subject)
+    }
+
+    "return true on `/` now that an acl has been appended" in {
+      acls.isRootAclSet.accepted shouldEqual true
     }
 
     "should not return permissions for Anonymous after a new revision was recorded on Root" in {

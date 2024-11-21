@@ -18,7 +18,7 @@ object RealmsProvisioningConfig {
 
   implicit private val mapReader: ConfigReader[Map[Label, RealmFields]] = Label.labelMapReader[RealmFields]
 
-  implicit final val reamsProvisioningConfigReader: ConfigReader[RealmsProvisioningConfig] =
+  implicit final val realmsProvisioningConfigReader: ConfigReader[RealmsProvisioningConfig] =
     deriveReader[RealmsProvisioningConfig]
 
 }

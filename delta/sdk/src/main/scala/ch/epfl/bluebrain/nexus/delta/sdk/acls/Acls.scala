@@ -25,6 +25,8 @@ import java.time.Instant
   */
 trait Acls {
 
+  def isRootAclSet: IO[Boolean]
+
   /**
     * Fetches the ACL resource for an ''address'' on the current revision.
     *

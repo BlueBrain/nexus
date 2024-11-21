@@ -89,7 +89,69 @@ If a realm with the same identifier exists it will not be updated.
 
 @@@
 
-@link:[The `realms.provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf){ open=new } of the configuration defines the service account configuration.
+@link:[The `realms.provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf){ open=new } of the configuration defines it.
+
+## Acl provisioning
+
+Acl provisioning allows to create one or several realm at startup.
+
+It is useful to start a new deployment with having to call the @ref:[ACL API](../../delta/api/acls-api.md) to create those.
+
+Exemple:
+```hocon
+acls {
+    #...
+
+    # To provision realms at startup
+    # Only the name and the OpenId config url are mandatory
+    provisioning {
+      enabled = true
+      path = /path/to/initial/acl
+    }
+  }
+```
+
+where the file should be readable from Delta and follow the following json format similar to the ACL API:
+
+```json
+{
+        "/" : [
+          {
+            "permissions": [
+              "projects/read",
+              "projects/write"
+            ],
+            "identity": {
+              "realm": "realm",
+              "group": "admins"
+            }
+          }
+        ],
+        "/org/proj": [
+          {
+            "permissions": [
+              "resources/read",
+              "resources/write"
+            ],
+            "identity": {
+              "realm": "realm",
+              "group": "org-proj-users"
+            }
+          }
+        ]
+      }
+```
+Like the 
+
+@@@ note { .warning }
+
+The realm and the permission defined in the file must exist.
+
+Acl provisioning will only acls if none is create at the root level.
+
+@@@
+
+@link:[The `acls.provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf){ open=new } of the configuration defines it.
 
 
 ## Automatic project provisioning

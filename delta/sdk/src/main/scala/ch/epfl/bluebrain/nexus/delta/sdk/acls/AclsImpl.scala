@@ -25,6 +25,14 @@ final class AclsImpl private (
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
+  override def isRootAclSet: IO[Boolean] =
+    log
+      .stateOr(AclAddress.Root, AclNotFound(AclAddress.Root))
+      .redeem(
+        _ => false,
+        _ => true
+      )
+
   override def fetch(address: AclAddress): IO[AclResource] =
     log
       .stateOr(address, AclNotFound(address))
@@ -91,7 +99,7 @@ object AclsImpl {
 
   def findUnknownRealms(xas: Transactors)(labels: Set[Label]): IO[Unit] = {
     GlobalStateStore
-      .listIds(Realms.entityType, xas.read)
+      .listIds(Realms.entityType, xas.write)
       .compile
       .toList
       .flatMap { existing =>
