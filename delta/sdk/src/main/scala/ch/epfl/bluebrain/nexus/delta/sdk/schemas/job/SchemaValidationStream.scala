@@ -37,7 +37,7 @@ object SchemaValidationStream {
 
     private def validateSingle(resource: ResourceState) =
       for {
-        jsonld <- IO.fromEither(resource.toAssembly)
+        jsonld <- resource.toAssembly
         schema <- fetchSchema(Latest(resource.schema.iri), resource.schemaProject)
         _      <- validateResource(jsonld, schema).adaptErr { case r: ResourceRejection =>
                     FailureReason("ValidateSchema", r)

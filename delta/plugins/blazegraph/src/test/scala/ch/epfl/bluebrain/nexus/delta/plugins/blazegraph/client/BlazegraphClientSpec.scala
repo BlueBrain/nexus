@@ -49,13 +49,13 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {
     val json = jsonContentOf("sparql/example.jsonld", "id" -> id, "label" -> label, "value" -> value)
-    ExpandedJsonLd(json).accepted.toGraph.flatMap(_.toNTriples).rightValue
+    ExpandedJsonLd(json).accepted.toGraph.flatMap(_.toNTriples).accepted
   }
 
   private def nTriplesNested(id: String, label: String, name: String, title: String) = {
     val json =
       jsonContentOf("sparql/example-nested.jsonld", "id" -> id, "label" -> label, "name" -> name, "title" -> title)
-    ExpandedJsonLd(json).accepted.toGraph.flatMap(_.toNTriples).rightValue
+    ExpandedJsonLd(json).accepted.toGraph.flatMap(_.toNTriples).accepted
   }
 
   private def expectedResult(id: String, label: String, value: String) =

@@ -115,7 +115,7 @@ object ResourcesTrial {
         projectContext <- fetchContext.onRead(project)
         schemaRefOpt   <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
         resource       <- fetchResource(id, project)
-        jsonld         <- IO.fromEither(resource.toAssembly)
+        jsonld         <- resource.toAssembly
         schemaClaim     = SchemaClaim.onUpdate(project, schemaRefOpt, resource.schema, caller)
         report         <- validateResource(jsonld, schemaClaim, projectContext.enforceSchema)
       } yield report

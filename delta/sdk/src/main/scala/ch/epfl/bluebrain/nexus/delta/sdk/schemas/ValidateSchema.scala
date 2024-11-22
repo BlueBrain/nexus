@@ -5,6 +5,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -29,13 +30,10 @@ object ValidateSchema {
         } yield report
       }.span("validateShacl")
 
-      private def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
-        val eitherGraph =
-          toFoldableOps(expanded)
-            .foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ (_: Graph)))
-            .leftMap { err => InvalidJsonLdFormat(Some(id), err) }
-        IO.fromEither(eitherGraph)
-      }
+      private def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) =
+        toFoldableOps(expanded)
+          .foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ (_: Graph)))
+          .adaptError { case err: RdfError => InvalidJsonLdFormat(Some(id), err) }
     }
 
 }

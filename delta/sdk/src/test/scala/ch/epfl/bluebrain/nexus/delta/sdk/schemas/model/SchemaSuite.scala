@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import cats.data.NonEmptyList
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
@@ -17,15 +16,16 @@ class SchemaSuite extends NexusSuite with Fixtures {
     for {
       entitySource             <- loader.jsonContentOf("schemas/entity.json")
       entityExpanded           <- ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json"))
-      entityExpandedGraphSize  <- IO.fromEither(entityExpanded.toGraph.map(_.getDefaultGraphSize))
+      entityExpandedGraphSize  <- entityExpanded.toGraph.map(_.getDefaultGraphSize)
       entityCompacted          <- entityExpanded.toCompacted(entitySource.topContextValueOrEmpty)
       licenseExpanded          <- ExpandedJsonLd(jsonContentOf("schemas/license-expanded.json"))
-      licenseExpandedGraphSize <- IO.fromEither(licenseExpanded.toGraph.map(_.getDefaultGraphSize))
+      licenseExpandedGraphSize <- licenseExpanded.toGraph.map(_.getDefaultGraphSize)
+      id                        = iri"https://neuroshapes.org/commons/entity"
+      expandeds                 = NonEmptyList.of(entityExpanded, licenseExpanded, entityExpanded)
+      schema                    = Schema(id, project, Tags.empty, entitySource, entityCompacted, expandeds)
+      shapes                   <- schema.shapes
     } yield {
-      val id        = iri"https://neuroshapes.org/commons/entity"
-      val expandeds = NonEmptyList.of(entityExpanded, licenseExpanded, entityExpanded)
-      val schema    = Schema(id, project, Tags.empty, entitySource, entityCompacted, expandeds)
-      assertEquals(schema.shapes.getDefaultGraphSize, entityExpandedGraphSize + licenseExpandedGraphSize)
+      assertEquals(shapes.getDefaultGraphSize, entityExpandedGraphSize + licenseExpandedGraphSize)
     }
   }
 

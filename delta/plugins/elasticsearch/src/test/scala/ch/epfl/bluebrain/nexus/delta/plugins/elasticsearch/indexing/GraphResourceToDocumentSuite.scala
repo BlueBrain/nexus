@@ -36,7 +36,7 @@ class GraphResourceToDocumentSuite extends NexusSuite with Fixtures with JsonAss
         """
 
   private val expanded      = ExpandedJsonLd.expanded(expandedJson).rightValue
-  private val graph         = Graph(expanded).rightValue
+  private val graph         = Graph(expanded).accepted
   private val metadataGraph = graph
 
   private val context = ContextValue.fromFile("contexts/elasticsearch-indexing.json").accepted

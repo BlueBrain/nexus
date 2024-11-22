@@ -60,10 +60,7 @@ trait JsonLdEncoder[A] {
   def ntriples(
       value: A
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[NTriples] =
-    for {
-      graph    <- graph(value)
-      ntriples <- IO.fromEither(graph.toNTriples)
-    } yield ntriples
+    graph(value).flatMap(_.toNTriples)
 
   /**
     * Converts a value of type ''A'' to [[NQuads]] format.
@@ -74,10 +71,7 @@ trait JsonLdEncoder[A] {
   def nquads(
       value: A
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[NQuads] =
-    for {
-      graph    <- graph(value)
-      ntriples <- IO.fromEither(graph.toNQuads)
-    } yield ntriples
+    graph(value).flatMap(_.toNQuads)
 
   /**
     * Converts a value of type ''A'' to [[Graph]]
@@ -88,10 +82,7 @@ trait JsonLdEncoder[A] {
   def graph(
       value: A
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[Graph] =
-    for {
-      expanded <- expand(value)
-      graph    <- IO.fromEither(expanded.toGraph)
-    } yield graph
+    expand(value).flatMap(_.toGraph)
 
 }
 

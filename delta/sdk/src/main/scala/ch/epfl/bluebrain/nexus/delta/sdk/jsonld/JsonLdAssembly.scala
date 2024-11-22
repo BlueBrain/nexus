@@ -54,7 +54,7 @@ object JsonLdAssembly {
   )(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[JsonLdAssembly] =
     for {
       compacted <- expanded.toCompacted(ctx).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
-      graph     <- IO.fromEither(expanded.toGraph).adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
+      graph     <- expanded.toGraph.adaptError { case err: RdfError => InvalidJsonLdFormat(Some(iri), err) }
     } yield JsonLdAssembly(iri, source, compacted, expanded, graph, RemoteContextRef(remoteContexts))
 
   def empty(id: Iri): JsonLdAssembly =

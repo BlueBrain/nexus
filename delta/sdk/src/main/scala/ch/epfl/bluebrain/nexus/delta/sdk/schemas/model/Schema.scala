@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
@@ -38,7 +39,6 @@ import io.circe.{Encoder, Json}
   * @param expanded
   *   the expanded JSON-LD representation of the schema with the imports resolutions applied
   */
-@SuppressWarnings(Array("OptionGet"))
 final case class Schema(
     id: Iri,
     project: ProjectRef,
@@ -51,17 +51,11 @@ final case class Schema(
   /**
     * the shacl shapes of the schema
     */
-  // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
-  @transient
-  lazy val shapes: Graph = graph(_.contains(nxv.Schema))
+  def shapes: IO[Graph] = graph(_.contains(nxv.Schema))
 
-  /**
-    * the Graph representation of the imports that are ontologies
-    */
-  @transient
-  lazy val ontologies: Graph = graph(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema))
+  def ontologies: IO[Graph] = graph(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema))
 
-  private def graph(filteredTypes: Set[Iri] => Boolean): Graph = {
+  private def graph(filteredTypes: Set[Iri] => Boolean): IO[Graph] = {
     implicit val api: JsonLdApi                         = JsonLdJavaApi.lenient
     val init: (Set[IriOrBNode], Vector[ExpandedJsonLd]) = (Set.empty[IriOrBNode], Vector.empty[ExpandedJsonLd])
     val (_, filtered)                                   = expanded.foldLeft(init) {
@@ -72,8 +66,11 @@ final case class Schema(
         updatedSeen -> updatedAcc
       case ((seen, acc), _) => seen -> acc
     }
-    val triples                                         = filtered.map(_.toGraph.toOption.get).foldLeft(Set.empty[Triple])((acc, g) => acc ++ g.triples)
-    Graph.empty(id).add(triples)
+    filtered
+      .foldLeftM(Set.empty[Triple]) { (acc, expanded) =>
+        expanded.toGraph.map { g => acc ++ g.triples }
+      }
+      .map { triples => Graph.empty(id).add(triples) }
   }
 
   def metadata: Metadata = Metadata(tags.tags)

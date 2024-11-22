@@ -80,14 +80,15 @@ object ValidateResource {
           jsonld: JsonLdAssembly,
           schemaRef: ResourceRef,
           schema: ResourceF[Schema]
-      ): IO[ValidationReport] =
-        validateShacl(
-          jsonld.graph ++ schema.value.ontologies,
-          schema.value.shapes,
-          reportDetails = true
-        ).adaptError { e =>
-          ResourceShaclEngineRejection(jsonld.id, schemaRef, e)
-        }.span("validateShacl")
+      ): IO[ValidationReport] = {
+        for {
+          ontologies <- schema.value.ontologies
+          shapes     <- schema.value.shapes
+          report     <- validateShacl(jsonld.graph ++ ontologies, shapes, reportDetails = true)
+        } yield report
+      }.adaptError { e =>
+        ResourceShaclEngineRejection(jsonld.id, schemaRef, e)
+      }.span("validateShacl")
 
       private def assertNotReservedId(resourceId: Iri) = {
         IO.raiseWhen(resourceId.startsWith(contexts.base))(ReservedResourceId(resourceId))

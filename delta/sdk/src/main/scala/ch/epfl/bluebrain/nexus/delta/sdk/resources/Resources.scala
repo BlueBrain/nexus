@@ -476,7 +476,7 @@ object Resources {
     def updateResourceSchema(u: UpdateResourceSchema) = {
       for {
         state                      <- stateWhereResourceIsEditable(u)
-        stateJsonLd                <- IO.fromEither(state.toAssembly)
+        stateJsonLd                <- state.toAssembly
         schemaClaim                 = SchemaClaim.onUpdate(u.project, u.schemaRef, state.schema, u.caller)
         (schemaRev, schemaProject) <- validate(stateJsonLd, schemaClaim, u.projectContext.enforceSchema)
         types                       = state.expanded.getTypes.getOrElse(Set.empty)

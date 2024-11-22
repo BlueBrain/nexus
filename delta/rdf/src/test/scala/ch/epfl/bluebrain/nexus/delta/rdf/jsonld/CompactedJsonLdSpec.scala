@@ -65,7 +65,7 @@ class CompactedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
-      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to graph with a root blank node" in {
@@ -73,7 +73,7 @@ class CompactedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graph.rootNode shouldEqual rootBNode
-      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be merged with another compacted document" in {

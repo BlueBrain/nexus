@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
+import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -70,7 +71,7 @@ trait ResourceInstanceFixture extends CirceLiteral {
 
   val graph: Graph = {
     implicit val jsonldApi: JsonLdApi = JsonLdJavaApi.lenient
-    expanded.toGraph.toTry.get
+    expanded.toGraph.unsafeRunSync()
   }
 
 }

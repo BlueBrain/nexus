@@ -2,13 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextCircularDependency, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi.{tryExpensiveIO, tryOrRdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig.ErrorHandling
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi.tryExpensiveIO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
+import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import com.github.jsonldjava.core.JsonLdError.Error.RECURSIVE_CONTEXT_INCLUSION
 import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdError, JsonLdOptions => JsonLdJavaOptions, JsonLdProcessor}
 import com.github.jsonldjava.utils.JsonUtils
@@ -16,8 +16,8 @@ import io.circe.syntax._
 import io.circe.{parser, Json, JsonObject}
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
-import org.apache.jena.riot.system.ErrorHandlerFactory
 import org.apache.jena.riot._
+import org.apache.jena.riot.system.ErrorHandlerFactory
 import org.apache.jena.sparql.core.DatasetGraph
 
 import scala.annotation.nowarn
@@ -72,7 +72,7 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
       framedObj <- IO.fromEither(toJsonObjectOrErr(framed))
     } yield framedObj
 
-  override private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, DatasetGraph] = {
+  override private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): IO[DatasetGraph] = {
     val c           = new JsonLDReadContext()
     c.setOptions(toOpts())
     val ds          = DatasetFactory.create
@@ -90,18 +90,17 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
         }
       }
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
-    tryOrRdfError(builder.parse(ds.asDatasetGraph()), "toRdf").as(ds.asDatasetGraph())
+    tryExpensiveIO(builder.parse(ds.asDatasetGraph()), "toRdf").as(ds.asDatasetGraph())
   }
 
   override private[rdf] def fromRdf(
       input: DatasetGraph
-  )(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]] = {
+  )(implicit opts: JsonLdOptions): IO[Seq[JsonObject]] = {
     val c = new JsonLDWriteContext()
     c.setOptions(toOpts())
-    for {
-      expanded       <- tryOrRdfError(RDFWriter.create.format(EXPAND).source(input).context(c).asString(), "fromRdf")
-      expandedSeqObj <- toSeqJsonObjectOrErr(expanded)
-    } yield expandedSeqObj
+    tryExpensiveIO(RDFWriter.create.format(EXPAND).source(input).context(c).asString(), "fromRdf").flatMap { expanded =>
+      IO.fromEither(toSeqJsonObjectOrErr(expanded))
+    }
   }
 
   override private[rdf] def context(

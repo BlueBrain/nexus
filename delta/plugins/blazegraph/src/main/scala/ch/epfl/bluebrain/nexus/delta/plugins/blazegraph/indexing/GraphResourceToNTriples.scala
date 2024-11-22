@@ -21,9 +21,7 @@ object GraphResourceToNTriples extends Pipe {
 
   def graphToNTriples(graphResource: GraphResource): IO[Option[NTriples]] = {
     val graph = graphResource.graph ++ graphResource.metadataGraph
-    IO
-      .fromEither(graph.toNTriples)
-      .map(triples => Option.when(!triples.isEmpty)(triples))
+    graph.toNTriples.map(triples => Option.when(!triples.isEmpty)(triples))
   }
 
   override def apply(element: SuccessElem[GraphResource]): IO[Elem[NTriples]] =
