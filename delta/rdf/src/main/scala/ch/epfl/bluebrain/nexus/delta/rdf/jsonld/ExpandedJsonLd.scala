@@ -47,10 +47,7 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
   /**
     * Converts the current document to a [[Graph]]
     */
-  def toGraph(implicit
-      opts: JsonLdOptions,
-      api: JsonLdApi
-  ): Either[RdfError, Graph] = Graph(self)
+  def toGraph(implicit opts: JsonLdOptions, api: JsonLdApi): IO[Graph] = Graph(self)
 
   /**
     * Converts the current document to an ''A''

@@ -128,11 +128,11 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
 
   private def createNTriples(view: ViewRef*): NTriples =
     view.foldLeft(NTriples.empty) { (ntriples, view) =>
-      createGraphs(view).foldLeft(ntriples)(_ ++ _.toNTriples.rightValue)
+      createGraphs(view).foldLeft(ntriples)(_ ++ _.toNTriples.accepted)
     }
 
   private def createTriples(view: ViewRef): Seq[NTriples] =
-    createGraphs(view).map(_.toNTriples.rightValue)
+    createGraphs(view).map(_.toNTriples.accepted)
 
   private def sparqlResourceLinkFor(resourceId: Iri, path: Iri) =
     SparqlResourceLink(

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
+import ch.epfl.bluebrain.nexus.delta.rdf.ExplainResult
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import io.circe.{Json, JsonObject}
 import org.apache.jena.sparql.core.DatasetGraph
@@ -35,9 +35,9 @@ trait JsonLdApi {
       frame: Json
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[JsonObject]
 
-  private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, DatasetGraph]
+  private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): IO[DatasetGraph]
 
-  private[rdf] def fromRdf(input: DatasetGraph)(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]]
+  private[rdf] def fromRdf(input: DatasetGraph)(implicit opts: JsonLdOptions): IO[Seq[JsonObject]]
 
   private[rdf] def context(
       value: ContextValue

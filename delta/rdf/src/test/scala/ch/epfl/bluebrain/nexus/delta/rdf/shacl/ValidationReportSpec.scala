@@ -22,7 +22,7 @@ class ValidationReportSpec extends CatsEffectSpec {
     RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   private def resource(json: Json): Resource = {
-    val g = Graph(ExpandedJsonLd(json).accepted).rightValue.value
+    val g = Graph(ExpandedJsonLd(json).accepted).accepted.value
     DatasetFactory.wrap(g).getDefaultModel.createResource()
   }
 

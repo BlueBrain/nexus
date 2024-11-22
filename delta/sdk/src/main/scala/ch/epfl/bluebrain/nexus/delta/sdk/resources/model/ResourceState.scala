@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
@@ -75,13 +77,13 @@ final case class ResourceState(
     updatedBy: Subject
 ) extends ScopedState {
 
-  def toAssembly: Either[InvalidJsonLdFormat, JsonLdAssembly] = {
+  def toAssembly: IO[JsonLdAssembly] = {
     implicit val api: JsonLdApi = JsonLdJavaApi.lenient
     expanded.toGraph
       .map { graph =>
         JsonLdAssembly(id, source, compacted, expanded, graph, remoteContexts)
       }
-      .leftMap { err => InvalidJsonLdFormat(Some(id), err) }
+      .adaptError { case err: RdfError => InvalidJsonLdFormat(Some(id), err) }
   }
 
   def toResource: DataResource =

@@ -22,23 +22,23 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     val expandedJson     = jsonContentOf("expanded.json")
     val expanded         = ExpandedJsonLd.expanded(expandedJson).rightValue
     val nquads           = NQuads(contentOf("nquads.nq"), iri)
-    val graph            = Graph(expanded).rightValue
+    val graph            = Graph(expanded).accepted
     val bnode            = bNode(graph)
     val iriSubject       = subject(iri)
     val rootBNode        = BNode.random
     val expandedNoIdJson = expandedJson.removeAll(keywords.id -> iri)
     val expandedNoId     = ExpandedJsonLd.expanded(expandedNoIdJson).rightValue.replaceId(rootBNode)
-    val graphNoId        = Graph(expandedNoId).rightValue
+    val graphNoId        = Graph(expandedNoId).accepted
     val bnodeNoId        = bNode(graphNoId)
     val namedGraph       = Graph(
       ExpandedJsonLd.expanded(jsonContentOf("graph/expanded-multiple-roots-namedgraph.json")).rightValue
-    ).rightValue
+    ).accepted
 
     val name      = predicate(schema.name)
     val birthDate = predicate(schema + "birthDate")
 
     "be created from expanded jsonld" in {
-      Graph(expanded).rightValue.triples.size shouldEqual 16
+      Graph(expanded).accepted.triples.size shouldEqual 16
     }
 
     "be created from n-quads" in {
@@ -46,13 +46,13 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     }
 
     "be created from expanded jsonld with a root blank node" in {
-      Graph(expandedNoId).rightValue.triples.size shouldEqual 16
+      Graph(expandedNoId).accepted.triples.size shouldEqual 16
     }
 
     "replace its root node" in {
       val iri2     = iri"http://example.com/newid"
       val subject2 = subject(iri2)
-      val graph    = Graph(expanded).rightValue
+      val graph    = Graph(expanded).accepted
       val graph2   = graph.replaceRootNode(iri2)
       val expected = graph.triples.map { case (s, p, o) => (if (s == iriSubject) subject2 else s, p, o) }
       graph2.rootNode shouldEqual iri2
@@ -107,7 +107,7 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
 
     "be converted to NTriples" in {
       val expected = contentOf("ntriples.nt", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.rdfFormat)
-      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be created from NTriples" in {
@@ -120,22 +120,22 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
 
     "be converted to NTriples from a named graph" in {
       val expected = contentOf("graph/multiple-roots-namedgraph.nt")
-      namedGraph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      namedGraph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to NTriples with a root blank node" in {
       val expected = contentOf("ntriples.nt", "bnode" -> bnodeNoId.rdfFormat, "rootNode" -> rootBNode.rdfFormat)
-      graphNoId.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      graphNoId.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to NQuads" in {
       val expected = contentOf("ntriples.nt", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.rdfFormat)
-      graph.toNQuads.rightValue.toString should equalLinesUnordered(expected)
+      graph.toNQuads.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to NQuads from a named graph" in {
       val expected = contentOf("graph/multiple-roots-namedgraph.nq")
-      namedGraph.toNQuads.rightValue.toString should equalLinesUnordered(expected)
+      namedGraph.toNQuads.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be created from NQuads with a named graph" in {
@@ -185,7 +185,7 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     "failed to be converted to compacted JSON-LD from a multiple root" in {
       val expandedJson = jsonContentOf("graph/expanded-multiple-roots.json")
       val expanded     = ExpandedJsonLd(expandedJson).accepted
-      Graph(expanded).leftValue shouldEqual UnexpectedJsonLd("Expected named graph, but root @id not found")
+      Graph(expanded).rejected shouldEqual UnexpectedJsonLd("Expected named graph, but root @id not found")
     }
 
     "be converted to compacted JSON-LD from a named graph" in {
@@ -265,7 +265,7 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     "raise an error with a strict parser when an iri is invalid" in {
       val expandedJson = jsonContentOf("expanded-invalid-iri.json")
       val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
-      Graph(expanded).leftValue shouldEqual ConversionError(
+      Graph(expanded).rejected shouldEqual ConversionError(
         "Bad IRI: < http://nexus.example.com/myid> Spaces are not legal in URIs/IRIs.",
         "toRdf"
       )
@@ -274,7 +274,7 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     "not raise an error with a lenient parser when an iri is invalid" in {
       val expandedJson = jsonContentOf("expanded-invalid-iri.json")
       val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
-      Graph(expanded)(JsonLdJavaApi.lenient, JsonLdOptions.defaults).rightValue
+      Graph(expanded)(JsonLdJavaApi.lenient, JsonLdOptions.defaults).accepted
     }
   }
 }

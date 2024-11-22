@@ -38,8 +38,7 @@ final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue,
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[Graph] =
-    toExpanded.flatMap(expanded => IO.fromEither(expanded.toGraph))
+  ): IO[Graph] = toExpanded.flatMap(_.toGraph)
 
   /**
     * Merges the current document with the passed one, overriding the fields on the current with the passed.

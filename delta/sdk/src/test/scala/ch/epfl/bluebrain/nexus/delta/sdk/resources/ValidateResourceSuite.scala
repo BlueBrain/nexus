@@ -68,7 +68,7 @@ class ValidateResourceSuite extends NexusSuite {
     for {
       patchedSource <- sourceWithId(id, patchSource)
       expanded      <- ExpandedJsonLd(patchedSource)
-      graph         <- IO.fromEither(expanded.toGraph)
+      graph         <- expanded.toGraph
     } yield JsonLdAssembly(id, patchedSource, CompactedJsonLd.empty, expanded, graph, Set.empty)
   }
 

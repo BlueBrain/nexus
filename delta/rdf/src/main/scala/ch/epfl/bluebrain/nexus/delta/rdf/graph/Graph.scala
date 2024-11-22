@@ -178,22 +178,20 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   /**
     * Attempts to convert the current Graph to the N-Triples format: https://www.w3.org/TR/n-triples/
     */
-  def toNTriples: Either[RdfError, NTriples] =
-    tryOrRdfError(
+  def toNTriples: IO[NTriples] =
+    tryExpensiveIO(
       RDFWriter.create().lang(Lang.NTRIPLES).source(collapseGraphs).asString(),
       Lang.NTRIPLES.getName
-    )
-      .map(NTriples(_, rootNode))
+    ).map(NTriples(_, rootNode))
 
   /**
     * Attempts to convert the current Graph to the N-Quads format: https://www.w3.org/TR/n-quads/
     */
-  def toNQuads: Either[RdfError, NQuads] =
-    tryOrRdfError(
+  def toNQuads: IO[NQuads] =
+    tryExpensiveIO(
       RDFWriter.create().lang(Lang.NQUADS).source(value).asString(),
       Lang.NQUADS.getName
-    )
-      .map(NQuads(_, rootNode))
+    ).map(NQuads(_, rootNode))
 
   /**
     * Transform the current graph to a new one via the provided construct query
@@ -247,11 +245,11 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
 
     if (rootNode.isBNode)
       for {
-        expanded <- IO.fromEither(api.fromRdf(replace(rootNode, fakeId).value))
+        expanded <- api.fromRdf(replace(rootNode, fakeId).value)
         framed   <- computeCompacted(fakeId, expanded.asJson)
       } yield framed.replaceId(self.rootNode)
     else
-      IO.fromEither(api.fromRdf(value)).flatMap(expanded => computeCompacted(rootNode, expanded.asJson))
+      api.fromRdf(value).flatMap(expanded => computeCompacted(rootNode, expanded.asJson))
   }
 
   /**
@@ -337,10 +335,10 @@ object Graph {
     */
   final def apply(
       expanded: ExpandedJsonLd
-  )(implicit api: JsonLdApi, options: JsonLdOptions): Either[RdfError, Graph] =
+  )(implicit api: JsonLdApi, options: JsonLdOptions): IO[Graph] =
     (expanded.obj(keywords.graph), expanded.rootId) match {
       case (Some(_), _: BNode) =>
-        Left(UnexpectedJsonLd("Expected named graph, but root @id not found"))
+        IO.raiseError(UnexpectedJsonLd("Expected named graph, but root @id not found"))
       case (Some(_), iri: Iri) =>
         api.toRdf(expanded.json).map(g => Graph(iri, g))
       case (None, _: BNode)    =>

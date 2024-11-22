@@ -99,10 +99,10 @@ class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers 
 
     "be converted to graph" in {
       val expanded = ExpandedJsonLd(compacted).accepted
-      val graph    = expanded.toGraph.rightValue
+      val graph    = expanded.toGraph.accepted
       val expected = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
-      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "add @id value" in {

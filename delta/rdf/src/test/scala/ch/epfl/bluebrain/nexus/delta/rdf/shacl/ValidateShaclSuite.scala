@@ -24,7 +24,7 @@ class ValidateShaclSuite extends NexusSuite {
   private val schemaGraph = toGraph(schema).accepted
   private val dataGraph   = toGraph(data).accepted
 
-  private def toGraph(json: Json) = ExpandedJsonLd(json).map(_.toGraph).rethrow
+  private def toGraph(json: Json) = ExpandedJsonLd(json).flatMap(_.toGraph)
 
   test("Validate data from schema model") {
     shaclValidation(dataGraph, schemaGraph, reportDetails = true).assert(_.conformsWithTargetedNodes)
