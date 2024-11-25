@@ -106,7 +106,7 @@ $ curl http://localhost/v1/version | jq
   "dependencies": {
     "blazegraph": "2.1.6-SNAPSHOT",
     "elasticsearch": "8.16.1",
-    "postgres": "16.5"
+    "postgres": "17.2"
   },
   "environment": "dev",
   "plugins": {

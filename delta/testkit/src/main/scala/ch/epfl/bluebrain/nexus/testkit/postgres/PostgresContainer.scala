@@ -9,10 +9,10 @@ import scala.concurrent.duration.DurationInt
 import scala.jdk.DurationConverters.ScalaDurationOps
 
 class PostgresContainer(user: String, password: String, database: String)
-    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:16.5")) {
+    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:17.2")) {
   addEnv("POSTGRES_USER", user)
   addEnv("POSTGRES_PASSWORD", password)
-  addEnv("POSTGRES_DB222", database)
+  addEnv("POSTGRES_DB", database)
   addExposedPort(5432)
   setWaitStrategy(Wait.forLogMessage(".*database system is ready to accept connections.*\\s", 2))
   setCommand("postgres", "-c", "fsync=off")
