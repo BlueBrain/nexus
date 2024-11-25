@@ -26,7 +26,6 @@
 * @ref:[Archives](archives-api.md)
 * @ref:[Search](search-api.md)
 * @ref:[Graph Analytics](graph-analytics-api.md)
-* @ref:[Jira integration](jira.md)
 * @ref:[Supervision](supervision-api.md)
 * @ref:[Type Hierarchy](type-hierarchy-api.md)
 
