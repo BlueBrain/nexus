@@ -26,7 +26,7 @@ class ElasticSearchContainer(password: String)
 }
 
 object ElasticSearchContainer {
-  private val Version = "8.15.1"
+  private val Version = "8.16.1"
 
   val ElasticSearchUser                         = "elastic"
   val ElasticSearchPassword                     = "password"
