@@ -260,7 +260,7 @@ class DistributionPatcherSuite extends NexusSuite {
       .map(distrubutionDigest)
       .assertEquals(jobj"""{
                             "algorithm": "SHA-256",
-                            "value": "${digest}"
+                            "value": "$digest"
                           }""")
   }
 
@@ -279,7 +279,7 @@ class DistributionPatcherSuite extends NexusSuite {
     patcher.patchAll(input).assertEquals(expected)
   }
 
-  test("Patch and strip the distribution location when it matches the given prefix") {
+  test("Patch and strip the distribution location when it matches the given prefix leaving the url undefined ") {
     val input =
       json"""{
         "distribution": {
@@ -289,10 +289,40 @@ class DistributionPatcherSuite extends NexusSuite {
         }
       }"""
 
-    patcher
-      .patchAll(input)
-      .map(distributionLocation)
-      .assertEquals("file:///project/a/b/c/d/file.txt")
+    val expected = json"""{
+        "distribution": {
+          "atLocation": {
+            "location": "file:///project/a/b/c/d/file.txt"
+          }
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(expected)
+  }
+
+  test(
+    "Patch and strip the distribution location when it matches the given prefix, setting the url to the same value"
+  ) {
+    val input =
+      json"""{
+        "distribution": {
+          "url": "XXX",
+          "atLocation": {
+            "location": "file:///location_to_strip/project/a/b/c/d/file.txt"
+          }
+        }
+      }"""
+
+    val expected = json"""{
+        "distribution": {
+          "url": "file:///project/a/b/c/d/file.txt",
+          "atLocation": {
+            "location": "file:///project/a/b/c/d/file.txt"
+          }
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(expected)
   }
 
   private def distributionContentSize(json: Json): JsonObject = {

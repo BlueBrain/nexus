@@ -11,7 +11,7 @@ final case class FileProcessingConfig(
     importBucket: String,
     targetBucket: String,
     prefix: Option[Path],
-    locationPrefixToStripOpt: Option[Uri],
+    locationPrefixToStrip: Option[Uri],
     skipFileEvents: Boolean,
     mediaTypeDetector: MediaTypeDetectorConfig
 )

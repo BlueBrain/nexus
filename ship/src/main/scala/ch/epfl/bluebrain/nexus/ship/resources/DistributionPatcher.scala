@@ -69,10 +69,18 @@ final class DistributionPatcher(
   }
 
   private def stripLocationOnUnknownFile(json: Json): Json = {
-    locationPrefixToStripOpt.fold(json) { locationPrefixToStrip =>
-      root.atLocation.location.string.modify { location =>
-        location.replaceFirst(locationPrefixToStrip.toString, "file://")
+    def patchLocation(locationPrefixToStrip: String) = root.atLocation.location.string.modify { location =>
+      location.replaceFirst(locationPrefixToStrip, "file://")
+    }
+
+    def patchUrl = (json: Json) =>
+      root.url.string.modify { originalUrl =>
+        val locationOpt = root.atLocation.location.string.getOption(json)
+        locationOpt.getOrElse(originalUrl)
       }(json)
+
+    locationPrefixToStripOpt.fold(json) { locationPrefixToStrip =>
+      patchLocation(locationPrefixToStrip.toString).andThen(patchUrl)(json)
     }
   }
 
