@@ -279,7 +279,7 @@ class DistributionPatcherSuite extends NexusSuite {
     patcher.patchAll(input).assertEquals(expected)
   }
 
-  test("Patch and strip the distribution location when it matches the given prefix leaving the url undefined ") {
+  test("Patch and strip the distribution location when it matches the prefix leaving the url undefined ") {
     val input =
       json"""{
         "distribution": {
@@ -301,7 +301,7 @@ class DistributionPatcherSuite extends NexusSuite {
   }
 
   test(
-    "Patch and strip the distribution location when it matches the given prefix, setting the url to the same value"
+    "Patch and strip the distribution location when it matches the prefix, setting the url to the same value"
   ) {
     val input =
       json"""{
@@ -323,6 +323,19 @@ class DistributionPatcherSuite extends NexusSuite {
       }"""
 
     patcher.patchAll(input).assertEquals(expected)
+  }
+
+  test("Do not patch the location or the url if the distribution location when it does not match the prefix") {
+    val input =
+      json"""{
+        "distribution": {
+          "atLocation": {
+            "location": "file:///some/other/location/project/a/b/c/d/file.txt"
+          }
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(input)
   }
 
   private def distributionContentSize(json: Json): JsonObject = {
