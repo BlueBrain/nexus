@@ -10,7 +10,7 @@ From Delta version 1.5.0,  `AggregateElasticSearchView` can point to other `Aggr
 @@@
 
 When performing queries on the `_search` endpoint, this view will make use of the 
-@link:[multi-index](https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html){ open=new } query 
+@link:[multi-index](https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#api-multi-index){ open=new } query 
 capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.
 
 If the caller does not have the permission views/query (or from v1.5, the user-defined permission) on all the views defined on the aggregated view,
