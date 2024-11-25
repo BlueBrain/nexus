@@ -306,13 +306,6 @@ To generate such a key in the correct format follow these steps:
 
 The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.
 
-### Jira plugin configuration
-
-The Jira plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/jira/src/main/resources/jira.conf){ open=new }.
-
-Setting up the Jira plugin needs to set up the endpoint of the Jira instance but also the consumer key, the consumer secret 
-and the private key required to interact with Jira (more details including the configuration steps in Jira @link:[here](https://developer.atlassian.com/server/jira/platform/oauth/#step-1--configure-jira)).
-
 ## Monitoring
 
 For monitoring, Nexus Delta relies on @link:[Kamon](https://kamon.io/){ open=new }.
