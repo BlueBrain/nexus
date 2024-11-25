@@ -69,18 +69,29 @@ final class DistributionPatcher(
   }
 
   private def stripLocationOnUnknownFile(json: Json): Json = {
-    def patchLocation(locationPrefixToStrip: String) = root.atLocation.location.string.modify { location =>
-      location.replaceFirst(locationPrefixToStrip, "file://")
-    }
 
-    def patchUrl = (json: Json) =>
-      root.url.string.modify { originalUrl =>
-        val locationOpt = root.atLocation.location.string.getOption(json)
-        locationOpt.getOrElse(originalUrl)
-      }(json)
+    def strip(original: String, locationPrefixToStrip: String) = original.replaceFirst(locationPrefixToStrip, "file://")
 
     locationPrefixToStripOpt.fold(json) { locationPrefixToStrip =>
-      patchLocation(locationPrefixToStrip.toString).andThen(patchUrl)(json)
+      val locationPrefixToStripString = locationPrefixToStrip.toString
+      val matchingContentUrl          = root.contentUrl.string.getOption(json).filter(_.startsWith(locationPrefixToStripString))
+
+      matchingContentUrl match {
+        case Some(value) =>
+          // If there is a contentUrl matching the prefix it had the priority, we strip the path and apply it to contentUrl, location and url
+          val patchedValue = strip(value, locationPrefixToStripString)
+          setContentUrl(patchedValue).andThen(setLocation(patchedValue)).andThen(setUrl(patchedValue))(json)
+        case None        =>
+          // We fallback to a location matching the prefix, we patch the location and the url
+          val matchedLocation =
+            root.atLocation.location.string.getOption(json).filter(_.startsWith(locationPrefixToStripString))
+          matchedLocation match {
+            case Some(value) =>
+              val patchedValue = strip(value, locationPrefixToStripString)
+              setLocation(patchedValue).andThen(setUrl(patchedValue))(json)
+            case None        => json
+          }
+      }
     }
   }
 
@@ -103,6 +114,7 @@ final class DistributionPatcher(
   private def setContentUrl(newContentUrl: String)                = root.contentUrl.string.replace(newContentUrl)
   private def setLocation(newLocation: String)                    = (json: Json) =>
     json.deepMerge(Json.obj("atLocation" := Json.obj("location" := newLocation)))
+  private def setUrl(newUrl: String)                              = (json: Json) => json.deepMerge(Json.obj("url" := newUrl))
   private def setContentSize(newSize: Long)                       = (json: Json) =>
     json.deepMerge(Json.obj("contentSize" := Json.obj("unitCode" := "bytes", "value" := newSize)))
   private def setEncodingFormat(contentType: Option[ContentType]) = (json: Json) =>

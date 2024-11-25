@@ -279,13 +279,11 @@ class DistributionPatcherSuite extends NexusSuite {
     patcher.patchAll(input).assertEquals(expected)
   }
 
-  test("Patch and strip the distribution location when it matches the prefix leaving the url undefined ") {
+  test("Patch and strip the distribution contentUrl when it matches the prefix and set the value to location and url") {
     val input =
       json"""{
         "distribution": {
-          "atLocation": {
-            "location": "file:///location_to_strip/project/a/b/c/d/file.txt"
-          }
+          "contentUrl": "file:///location_to_strip/project/a/b/c/d/file.txt"
         }
       }"""
 
@@ -293,16 +291,27 @@ class DistributionPatcherSuite extends NexusSuite {
         "distribution": {
           "atLocation": {
             "location": "file:///project/a/b/c/d/file.txt"
-          }
+          },
+          "contentUrl": "file:///project/a/b/c/d/file.txt",
+          "url": "file:///project/a/b/c/d/file.txt"
         }
       }"""
 
     patcher.patchAll(input).assertEquals(expected)
   }
 
-  test(
-    "Patch and strip the distribution location when it matches the prefix, setting the url to the same value"
-  ) {
+  test("Do not patch the distribution contentUrl when it does not match the prefix") {
+    val input =
+      json"""{
+        "distribution": {
+          "contentUrl": "file:///some/other/location/project/a/b/c/d/file.txt"
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(input)
+  }
+
+  test("Patch and strip the distribution location when it matches the prefix, setting the url to the same value") {
     val input =
       json"""{
         "distribution": {
