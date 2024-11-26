@@ -146,15 +146,15 @@ BlueBrain/nexus
     <li><a href="../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
     <li><a href="../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
     <li><a href="../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
-    <li><a href="../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
-    <ul>
-      <li><a href="../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
-      <li><a href="../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
-      <li><a href="../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
-      <li><a href="../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
-      <li><a href="../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
-      <li><a href="../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
-    </ul></li>
+  </ul></li>
+  <li><a href="../docs/running-nexus/index.html" class="page">Running Nexus</a>
+  <ul>
+    <li><a href="../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
+    <li><a href="../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+    <li><a href="../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+    <li><a href="../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    <li><a href="../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
   <li><a href="../docs/releases/index.html" class="page">Releases</a>
   <ul>
@@ -172,7 +172,6 @@ BlueBrain/nexus
     <li><a href="../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
-  <li><a href="../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../docs/fusion/architecture.html" class="page">Architecture</a></li>
@@ -229,7 +228,6 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
-      <li><a href="../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
       <li><a href="../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
@@ -349,7 +347,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Yes, Nexus is a free, Open Source platform released under <a href="https://www.apache.org/licenses/LICENSE-2.0" title="Apache Licence 2.0" target="_blank" rel="noopener noreferrer">Apache Licence 2.0</a></p>
 <h3><a href="#how-do-i-run-blue-brain-nexus-" name="how-do-i-run-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>How do I run Blue Brain Nexus?</h3>
 <p>There are many ways to run Nexus. Our public Sandbox is running <a href="https://sandbox.bluebrainnexus.io" title="here" target="_blank" rel="noopener noreferrer">here</a> and you can use it to test Nexus on small, non-sensitive data. Our <a href="getting-started/try-nexus.html">tutorial</a> can help you to run Nexus step by step.</p>
-<p>Meanwhile if you want to run it locally you can do so using <a href="getting-started/running-nexus/index.html#docker">Docker</a>. You can also deploy Nexus <a href="getting-started/running-nexus/index.html#on-premise-cloud-deployment">“on premise”</a>, as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>.</p>
+<p>Meanwhile if you want to run it locally you can do so using <a href="running-nexus/index.html#docker">Docker</a>. You can also deploy Nexus <a href="running-nexus/index.html#on-premise-cloud-deployment">“on premise”</a>, as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>.</p>
 <h3><a href="#how-can-i-try-blue-brain-nexus-without-installing-it-" name="how-can-i-try-blue-brain-nexus-without-installing-it-" class="anchor"><span class="anchor-link"></span></a>How can I try Blue Brain Nexus without installing it?</h3>
 <p>The <a href="https://sandbox.bluebrainnexus.io" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a> provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.</p>
 <h3><a href="#what-is-the-difference-with-a-relational-database-like-postgresql-" name="what-is-the-difference-with-a-relational-database-like-postgresql-" class="anchor"><span class="anchor-link"></span></a>What is the difference with a relational database like PostgreSQL?</h3>
@@ -377,7 +375,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul>
 <h2><a href="#technical-faq" name="technical-faq" class="anchor"><span class="anchor-link"></span></a>Technical FAQ</h2>
 <h3><a href="#what-are-the-clients-i-can-use-with-blue-brain-nexus-what-are-the-requirements-to-run-blue-brain-nexus-locally-" name="what-are-the-clients-i-can-use-with-blue-brain-nexus-what-are-the-requirements-to-run-blue-brain-nexus-locally-" class="anchor"><span class="anchor-link"></span></a>What are the clients I can use with Blue Brain Nexus? What are the requirements to run Blue Brain Nexus locally?</h3>
-<p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GB of memory in total. You can increase the limits in Docker settings in the menu <em>Preferences &gt; Advanced</em>. More details are in the dedicated <a href="getting-started/running-nexus/index.html">page</a>.</p>
+<p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GB of memory in total. You can increase the limits in Docker settings in the menu <em>Preferences &gt; Advanced</em>. More details are in the dedicated <a href="running-nexus/index.html">page</a>.</p>
 <h3><a href="#what-is-json-ld-" name="what-is-json-ld-" class="anchor"><span class="anchor-link"></span></a>What is JSON-LD?</h3>
 <p>JSON-LD is a JavaScript Object Notation for Linked Data. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph. In order to find more information about JSON-LD, please visit this page, please visit the section <a href="getting-started/understanding-knowledge-graphs.html#json-ld">this page</a></p>
 <h3><a href="#how-can-i-represent-lists-on-json-ld-" name="how-can-i-represent-lists-on-json-ld-" class="anchor"><span class="anchor-link"></span></a>How can I represent lists on JSON-LD?</h3>

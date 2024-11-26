@@ -146,15 +146,15 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
     <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
     <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
-    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
-    <ul>
-      <li><a href="../../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
-    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/running-nexus/index.html" class="page">Running Nexus</a>
+  <ul>
+    <li><a href="../../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
+    <li><a href="../../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+    <li><a href="../../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+    <li><a href="../../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    <li><a href="../../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
@@ -172,7 +172,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
-  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
@@ -229,7 +228,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
-      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
       <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
@@ -623,7 +621,7 @@ CREATE TABLE IF NOT EXISTS public.ignored_events(
     </tr>
   </tbody>
 </table>
-<p>For more information on the configuration of Delta, please refer to the <a href="../getting-started/running-nexus/configuration/index.html">Nexus configuration page</a>.</p>
+<p>For more information on the configuration of Delta, please refer to the <a href="../running-nexus/configuration/index.html">Nexus configuration page</a>.</p>
 <h2><a href="#migrating-events-from-cassandra-to-postgresql" name="migrating-events-from-cassandra-to-postgresql" class="anchor"><span class="anchor-link"></span></a>Migrating events from Cassandra to PostgreSQL</h2>
 <h3><a href="#starting-the-data-migration" name="starting-the-data-migration" class="anchor"><span class="anchor-link"></span></a>Starting the data migration</h3>
 <p>Start Delta v1.8 with the configuration described in the <a href="v1.7-to-v1.8-migration.html#migration-configuration">configuration section</a>. As the application starts, the Delta log should contain the following lines:</p>

@@ -146,15 +146,15 @@ BlueBrain/nexus
     <li><a href="../../../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
     <li><a href="../../../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
     <li><a href="../../../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
-    <li><a href="../../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
-    <ul>
-      <li><a href="../../../../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
-      <li><a href="../../../../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
-      <li><a href="../../../../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
-      <li><a href="../../../../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
-      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
-      <li><a href="../../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
-    </ul></li>
+  </ul></li>
+  <li><a href="../../../../docs/running-nexus/index.html" class="page">Running Nexus</a>
+  <ul>
+    <li><a href="../../../../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
+    <li><a href="../../../../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+    <li><a href="../../../../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+    <li><a href="../../../../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../../../../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    <li><a href="../../../../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
@@ -172,7 +172,6 @@ BlueBrain/nexus
     <li><a href="../../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
-  <li><a href="../../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../../../docs/fusion/architecture.html" class="page">Architecture</a></li>
@@ -229,7 +228,6 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
-      <li><a href="../../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
       <li><a href="../../../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
@@ -323,7 +321,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ol>
 <h2><a href="#single-composite-sink" name="single-composite-sink" class="anchor"><span class="anchor-link"></span></a>Single Composite Sink</h2>
 <p>By default, Nexus Delta will use the Single Composite Sink. This sink performs one query to the Blazegraph common namespace for each resource in the project. The queries are done in chronological order (by the <code>updatedAt</code> time of the resources).</p>
-<p>We recommend reading through the <a href="../../../getting-started/running-nexus/search-configuration.html#example-use-case">search configuration example use case</a> and the <a href="composite-view-api.html">Composite View API reference</a> to learn more about Composite Views.</p>
+<p>We recommend reading through the <a href="../../../running-nexus/search-configuration.html#example-use-case">search configuration example use case</a> and the <a href="composite-view-api.html">Composite View API reference</a> to learn more about Composite Views.</p>
 <h2><a href="#batch-composite-sink" name="batch-composite-sink" class="anchor"><span class="anchor-link"></span></a>Batch Composite Sink</h2>
 <p>Starting with Delta 1.9, it is possible to configure Nexus Delta to use a Batch Composite Sink. This implementation of the Composite Sink can query the Blazegraph common namespace for multiple resource IDs at the same time.</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>We recommend to start using Composite Views with the default <a href="composite-sink.html#single-composite-sink">Single Composite Sink</a>. Once you have a good understanding of it, the Batch Composite Sink can be used to enhance the performance of your deployment.</p></div>

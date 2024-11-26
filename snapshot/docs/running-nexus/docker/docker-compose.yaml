@@ -1,19 +1,21 @@
 services:
   delta:
     depends_on:
-      - blazegraph
-      - elasticsearch
-      - postgres
-    image: bluebrain/nexus-delta:1.10.0-M13
+      elasticsearch:
+        condition: service_healthy
+      blazegraph:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+    image: bluebrain/nexus-delta:1.10.0
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta.conf"
       KAMON_ENABLED: "false"
-    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
-                  "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
-                  "./bin/delta-app",
-                  "-Xmx512m"
-    ]
+    entrypoint:
+      - '/bin/bash'
+      - '-c'
+      - '/opt/docker/bin/delta-app -Xmx512m'
     volumes:
       - ${PWD}/delta.conf:/config/delta.conf
     deploy:
@@ -22,13 +24,18 @@ services:
           memory: 1024M
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:8.15.1"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:8.16.1"
     environment:
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
       ingest.geoip.downloader.enabled: "false"
       ELASTIC_PASSWORD: "password"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://elastic:password@localhost:9200/" ]
+      interval: 1s
+      timeout: 2s
+      retries: 60
     ports:
       - "9200"
     deploy:
@@ -37,7 +44,7 @@ services:
           memory: 512M
 
   postgres:
-    image: library/postgres:16.4
+    image: library/postgres:17.2
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
@@ -48,6 +55,11 @@ services:
       JAVA_OPTS: "-Djava.awt.headless=true  -XX:MaxDirectMemorySize=64m -Xmx512m -XX:+UseG1GC"
     ports:
       - "9999"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9999/blazegraph/" ]
+      interval: 1s
+      timeout: 2s
+      retries: 60
     deploy:
       resources:
         limits:
@@ -56,7 +68,7 @@ services:
   web:
     depends_on:
       - delta
-    image: bluebrain/nexus-web:1.9.9
+    image: bluebrain/nexus-web:1.10.0-M2-studio-open-tag-in-drawer
     environment:
       BASE_PATH: "/"
       HOST_NAME: "http://localhost"

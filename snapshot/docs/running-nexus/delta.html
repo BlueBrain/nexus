@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>v1.9 To v1.10 Migration · Blue Brain Nexus</title>
+<title>Nexus Delta · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-v1.9 To v1.10 Migration
+Nexus Delta
 </span>
 </div>
 </div>
@@ -152,7 +152,7 @@ BlueBrain/nexus
     <li><a href="../../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
     <li><a href="../../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
     <li><a href="../../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
-    <li><a href="../../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../../docs/running-nexus/delta.html" class="active page">Nexus Delta</a></li>
     <li><a href="../../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
     <li><a href="../../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
@@ -161,7 +161,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="active page">v1.9 To v1.10 Migration</a></li>
+    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
@@ -245,10 +245,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html#v1-9-to-v1-10-migration" class="header">v1.9 To v1.10 Migration</a>
+  <li><a href="../../docs/running-nexus/delta.html#nexus-delta" class="header">Nexus Delta</a>
   <ul>
-    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html#default-elasticsearch-views" class="header">Default Elasticsearch views</a></li>
-    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html#project-event-metrics" class="header">Project event metrics</a></li>
+    <li><a href="../../docs/running-nexus/delta.html#running-and-monitoring" class="header">Running and monitoring</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -270,10 +269,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html#v1-9-to-v1-10-migration" class="header">v1.9 To v1.10 Migration</a>
+  <li><a href="../../docs/running-nexus/delta.html#nexus-delta" class="header">Nexus Delta</a>
   <ul>
-    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html#default-elasticsearch-views" class="header">Default Elasticsearch views</a></li>
-    <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html#project-event-metrics" class="header">Project event metrics</a></li>
+    <li><a href="../../docs/running-nexus/delta.html#running-and-monitoring" class="header">Running and monitoring</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -291,26 +289,29 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#v1-9-to-v1-10-migration" name="v1-9-to-v1-10-migration" class="anchor"><span class="anchor-link"></span></a>v1.9 To v1.10 Migration</h1>
-<h2><a href="#default-elasticsearch-views" name="default-elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Default Elasticsearch views</h2>
-<p>As the mapping and setting of default Elasticsearch views have changed, it is necessary to update the views. For this purpose, set the following environment variable when launching Nexus Delta 1.10.0 for the first time:</p>
+<h1><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h1>
+<h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
+<p><strong>CPU:</strong> It suggests heavy indexing and read operations. It is likely to happen when reindexing a large amount of views at the same time but if it happens regularly:</p>
 <ul>
-  <li><code>RESET_DEFAULT_ES_VIEWS</code>: true</li>
+  <li>Review which indexing process is going on by querying the <code>projection_offsets</code> and <code>composite_offsets</code> table</li>
+  <li>Allocate more resources to Delta</li>
 </ul>
-<p>The following logs should appear in Delta for each of your project:</p>
-<pre><code>2024-08-28 16:30:14 INFO  c.e.b.n.d.p.e.i.ElasticSearchDefaultViewsResetter - Created a new defaultElasticSearchView in project &#39;myorg/myproject&#39;.
-</code></pre>
-<h2><a href="#project-event-metrics" name="project-event-metrics" class="anchor"><span class="anchor-link"></span></a>Project event metrics</h2>
-<p>As the mapping and the structure of project event metrics has changed, it is necessary to reindex them. For this purpose, set the following environment variable when launching Nexus Delta 1.10.0 for the first time: </p>
+<p><strong>Memory and garbage collection:</strong> Delta will use the available RAM in 2 ways, JVM heap and the file system cache so like Elasticsearch, the JVM garbage collection frequency and duration are also important to monitor.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>JVM and host metrics (including those related to the heap) are collected by <a href="https://kamon.io/" title="Kamon">Kamon</a></p></div>
+<p><strong>Storage:</strong> The different types of storage (local, S3) need to be monitored for availability/performance/utilization</p>
+<p><strong>Metrics:</strong> Nexus Delta relies on <a href="https://kamon.io/" title="Kamon">Kamon</a> to also collect metrics about the execution of most operations (fetching a resource, query Blazegraph, etc&hellip;)</p>
+<p>To enable Kamon in Delta, the <code>KAMON_ENABLED</code> env variable must be set to true.</p>
+<p>To monitor Nexus write activity like resource and file creation/updates, a dashboard is available in the <a href="https://github.com/BlueBrain/nexus/blob/master/kibana/event-metrics/general.ndjson" title="Nexus repo">Nexus repo</a>.</p>
+<p><strong>Logs:</strong> Nexus Delta relies on <a href="https://logback.qos.ch/" title="Logback">Logback</a> for logs which one of the popular logging frameworks on the JVM.</p>
+<p>Logback provides:</p>
 <ul>
-  <li><code>RESET_EVENT_METRICS</code>: true</li>
+  <li>Reloading the configuration while the application is running</li>
+  <li>Control the output of the logs, opting for JSON helps for the integration with Filebeats and Elasticsearch  for log aggregation</li>
 </ul>
-<p>The following logs should appear in Delta for each of your project:</p>
-<pre><code>2024-08-30 14:44:03 WARN  c.e.b.n.d.p.e.m.EventMetricsProjection - Resetting event metrics as the env RESET_EVENT_METRICS is set...
-</code></pre>
+<p>An example of logback configuration writing logs as json in files is available <a href="configuration/logback.xml" title="here" target="_blank" rel="noopener noreferrer">here</a></p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.9-to-v1.10-migration.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/running-nexus/delta.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -326,7 +327,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/v1.10-release-notes.html" title="v1.10 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/running-nexus/blazegraph.html" title="Blazegraph" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -335,17 +336,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-v1.10 Release Notes
+Blazegraph
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.9-release-notes.html" title="v1.9 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/running-nexus/configuration/index.html" title="Nexus configuration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.9 Release Notes
+Nexus configuration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

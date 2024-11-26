@@ -146,15 +146,15 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
     <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
     <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
-    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
-    <ul>
-      <li><a href="../../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
-    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/running-nexus/index.html" class="page">Running Nexus</a>
+  <ul>
+    <li><a href="../../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
+    <li><a href="../../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+    <li><a href="../../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+    <li><a href="../../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    <li><a href="../../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
@@ -172,7 +172,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
-  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
@@ -229,7 +228,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
-      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
       <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
@@ -340,7 +338,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+created%3A2021-05-01..2021-10-13+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.5.</p>
 <p>If you are currently using Nexus Delta from 1.5.x, please visit the <a href="v1.5-to-v1.6-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
-<p>The main goal of this release is to allow users to search across multiple projects through <a href="../getting-started/running-nexus/search-configuration.html">global search</a></p>
+<p>The main goal of this release is to allow users to search across multiple projects through <a href="../running-nexus/search-configuration.html">global search</a></p>
 <p>Secondary goals include:</p>
 <ul>
   <li>The possibility for Delta to query a secured Elasticsearch cluster</li>
@@ -369,10 +367,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>A Delta plugin which allows to index and query resources according to a given configuration</li>
   <li>A matching plugin in Fusion allows to query the endpoints provided by Delta to filter/sort results and customize how these results are displayed to the users</li>
 </ul>
-<p>More details about search and how to configure it is provided <a href="../getting-started/running-nexus/search-configuration.html">here</a></p>
+<p>More details about search and how to configure it is provided <a href="../running-nexus/search-configuration.html">here</a></p>
 <p>Please note that this first version is experimental in both Delta and Fusion and that improvements and possibly breaking changes may be introduced in the upcoming releases.</p>
 <h3><a href="#secure-the-delta-elasticsearch-client" name="secure-the-delta-elasticsearch-client" class="anchor"><span class="anchor-link"></span></a>Secure the Delta Elasticsearch client</h3>
-<p>With 1.6, it is now possible to define credentials to query a secured Elasticsearch cluster: <a href="../getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration">Elasticsearch configuration</a>.</p>
+<p>With 1.6, it is now possible to define credentials to query a secured Elasticsearch cluster: <a href="../running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration">Elasticsearch configuration</a>.</p>
 <h3><a href="#dedicated-blazegraph-client-for-user-defined-queries" name="dedicated-blazegraph-client-for-user-defined-queries" class="anchor"><span class="anchor-link"></span></a>Dedicated Blazegraph client for user-defined queries</h3>
 <p>User-defined queries could bring instability to Blazegraph because of their complexity. In 1.6, a <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L34" title="dedicated client with a timeout">dedicated client with a timeout</a> which triggers a circuit breaker in Blazegraph has been introduced in order to solve that problem.</p>
 <h3><a href="#synchronous-indexing" name="synchronous-indexing" class="anchor"><span class="anchor-link"></span></a>Synchronous indexing</h3>
@@ -386,7 +384,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>The RDF parser allowing to validate incoming data can now be <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L83" title="configured">configured</a> in order to be more or less strict.</p>
 <h3><a href="#automatic-project-provisioning" name="automatic-project-provisioning" class="anchor"><span class="anchor-link"></span></a>Automatic project provisioning</h3>
 <p>When enabled, a dedicated project is created for the current user on its first access to the Nexus platform.</p>
-<p>How to enable and configure it is detailed <a href="../getting-started/running-nexus/configuration/index.html#automatic-project-provisioning">here</a></p>
+<p>How to enable and configure it is detailed <a href="../running-nexus/configuration/index.html#automatic-project-provisioning">here</a></p>
 <h3><a href="#deletion-of-projects" name="deletion-of-projects" class="anchor"><span class="anchor-link"></span></a>Deletion of projects</h3>
 <p>The deletion of projects and all its enclosed resources is now possible by enabling a configuration flag via a <a href="../delta/api/projects-api.html#delete">dedicated endpoint</a>.</p>
 <h3><a href="#quotas" name="quotas" class="anchor"><span class="anchor-link"></span></a>Quotas</h3>

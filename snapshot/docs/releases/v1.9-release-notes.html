@@ -146,15 +146,15 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
     <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
     <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
-    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
-    <ul>
-      <li><a href="../../docs/getting-started/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/delta.html" class="page">Nexus Delta</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
-    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/running-nexus/index.html" class="page">Running Nexus</a>
+  <ul>
+    <li><a href="../../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
+    <li><a href="../../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+    <li><a href="../../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+    <li><a href="../../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    <li><a href="../../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
@@ -172,7 +172,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
-  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
@@ -229,7 +228,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
-      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
       <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
@@ -516,7 +514,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
 <h4><a href="#remote-authentication" name="remote-authentication" class="anchor"><span class="anchor-link"></span></a>Remote authentication</h4>
 <p>Rather than storing an auth token in the composite view, it is now expected to specify an authentication method in the Delta configuration.</p>
-<p><a href="../getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration">More information</a></p>
+<p><a href="../running-nexus/configuration/index.html#composite-views-plugin-configuration">More information</a></p>
 <h4><a href="#remove-the-resourcetag-field-in-projections-of-composite-views" name="remove-the-resourcetag-field-in-projections-of-composite-views" class="anchor"><span class="anchor-link"></span></a>Remove the resourceTag field in projections of composite views</h4>
 <p>This field was never used, so as there is no plan for it, it has now been removed.</p>
 <h3><a href="#elasticsearch-views" name="elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Views</h3>
@@ -555,7 +553,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#automatic-media-type-configuration" name="automatic-media-type-configuration" class="anchor"><span class="anchor-link"></span></a>Automatic media type configuration</h4>
 <p>The automatic detection of the media type can now be customized at the Delta level.</p>
 <p>NB: The media type provided by the user still prevails over automatic detection.</p>
-<p><a href="../getting-started/running-nexus/configuration/index.html#file-configuration">More information</a></p>
+<p><a href="../running-nexus/configuration/index.html#file-configuration">More information</a></p>
 <h4><a href="#tagging-at-creation-update" name="tagging-at-creation-update" class="anchor"><span class="anchor-link"></span></a>Tagging at creation/update</h4>
 <p>Create and update operations on files accept now an optional tag allowing to tag the resulting file in the same call.</p>
 <p><a href="../delta/api/files-api.html">More information</a></p>
@@ -615,7 +613,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#nexus-storage" name="nexus-storage" class="anchor"><span class="anchor-link"></span></a>Nexus Storage</h2>
 <h3><a href="#automatic-file-detection" name="automatic-file-detection" class="anchor"><span class="anchor-link"></span></a>Automatic file detection</h3>
 <p>The Nexus storage app also benefits from the changes in automatic file detection.</p>
-<p><a href="../getting-started/running-nexus/configuration/index.html#file-configuration">More information</a></p>
+<p><a href="../running-nexus/configuration/index.html#file-configuration">More information</a></p>
 <h3><a href="#removing-delta-callback-to-validate-the-caller-identity" name="removing-delta-callback-to-validate-the-caller-identity" class="anchor"><span class="anchor-link"></span></a>Removing Delta callback to validate the caller identity</h3>
 <p>This callback has been replaced by a local validation of the token.</p>
 </div>
