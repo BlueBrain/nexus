@@ -260,7 +260,7 @@ class DistributionPatcherSuite extends NexusSuite {
       .map(distrubutionDigest)
       .assertEquals(jobj"""{
                             "algorithm": "SHA-256",
-                            "value": "${digest}"
+                            "value": "$digest"
                           }""")
   }
 
@@ -279,20 +279,72 @@ class DistributionPatcherSuite extends NexusSuite {
     patcher.patchAll(input).assertEquals(expected)
   }
 
-  test("Patch and strip the distribution location when it matches the given prefix") {
+  test("Patch and strip the distribution contentUrl when it matches the prefix and set the value to location and url") {
     val input =
       json"""{
         "distribution": {
+          "contentUrl": "file:///location_to_strip/project/a/b/c/d/file.txt"
+        }
+      }"""
+
+    val expected = json"""{
+        "distribution": {
+          "atLocation": {
+            "location": "file:///project/a/b/c/d/file.txt"
+          },
+          "contentUrl": "file:///project/a/b/c/d/file.txt",
+          "url": "file:///project/a/b/c/d/file.txt"
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(expected)
+  }
+
+  test("Do not patch the distribution contentUrl when it does not match the prefix") {
+    val input =
+      json"""{
+        "distribution": {
+          "contentUrl": "file:///some/other/location/project/a/b/c/d/file.txt"
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(input)
+  }
+
+  test("Patch and strip the distribution location when it matches the prefix, setting the url to the same value") {
+    val input =
+      json"""{
+        "distribution": {
+          "url": "XXX",
           "atLocation": {
             "location": "file:///location_to_strip/project/a/b/c/d/file.txt"
           }
         }
       }"""
 
-    patcher
-      .patchAll(input)
-      .map(distributionLocation)
-      .assertEquals("file:///project/a/b/c/d/file.txt")
+    val expected = json"""{
+        "distribution": {
+          "url": "file:///project/a/b/c/d/file.txt",
+          "atLocation": {
+            "location": "file:///project/a/b/c/d/file.txt"
+          }
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(expected)
+  }
+
+  test("Do not patch the location or the url if the distribution location when it does not match the prefix") {
+    val input =
+      json"""{
+        "distribution": {
+          "atLocation": {
+            "location": "file:///some/other/location/project/a/b/c/d/file.txt"
+          }
+        }
+      }"""
+
+    patcher.patchAll(input).assertEquals(input)
   }
 
   private def distributionContentSize(json: Json): JsonObject = {

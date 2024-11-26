@@ -64,7 +64,7 @@ object SourcePatcher {
         projectMapper,
         iriPatcher,
         targetBase,
-        config.files.locationPrefixToStripOpt,
+        config.files.locationPrefixToStrip,
         fetchFileAttributes
       )
     new SourcePatcher(distributionPatcher, iriPatcher)
