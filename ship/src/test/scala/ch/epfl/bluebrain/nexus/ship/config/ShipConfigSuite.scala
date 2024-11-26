@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.ship.config
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.LocalStackS3StorageClient.uploadFileToS3
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{iriStringContextSyntax, uriStringContextSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -38,8 +38,11 @@ class ShipConfigSuite extends NexusSuite with ShipConfigFixtures with LocalStack
     val expectedBaseUri = BaseUri("https://bbp.epfl.ch", Label.unsafe("v1"))
     for {
       externalConfigPath <- loader.absolutePath("config/external.conf")
-      _                  <- ShipConfig.load(Some(Path(externalConfigPath))).map(_.input.targetBaseUri).assertEquals(expectedBaseUri)
-    } yield ()
+      config             <- ShipConfig.load(Some(Path(externalConfigPath)))
+    } yield {
+      assertEquals(config.input.files.locationPrefixToStrip, Some(uri"""file:///prefix/to/strip"""))
+      assertEquals(config.input.targetBaseUri, expectedBaseUri)
+    }
   }
 
   test("Should have correct project mapping") {
