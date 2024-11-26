@@ -19,7 +19,7 @@ The described endpoints are experimental and the responses structure might chang
 @@@
 
 ```
-GET /v1/history/{org_label}/{project_label}/{id}
+GET /v1/history/resources/{org_label}/{project_label}/{id}
 ```
 
 where...
