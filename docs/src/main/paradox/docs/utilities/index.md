@@ -1,62 +1,15 @@
 # Utilities
 
-## Domains (Schemas, Vocabularies)
+## Examples of domain schemas used with Nexus
 
-Nexus provides some schemas which make building provenance based knowledge graphs easier.
+#### Brain Modeling ontology
 
-### Nexus Core Schemas
+Ontologies and schemas that Blue Brain has developed to enable the integration of specific neuroscience data in the 
+Nexus Knowledge graph.
 
-#### nexus-schemaorg
-
-@link:[SHACL](https://www.w3.org/TR/shacl/){ open=new } version of a subset of schemas defined by
-@link:[schema.org](https://schema.org/docs/full.html){ open=new } that are commonly used in Blue Brain Nexus.
-
-@link:[Source Code](https://github.com/BlueBrain/nexus-schemaorg){ open=new }
-
-#### nexus-prov
-
-Data management oriented @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new } version of
-@link:[W3C PROV-O](https://www.w3.org/ns/prov-o-20130430){ open=new }.
-
-@link:[Source Code](https://github.com/BlueBrain/nexus-prov){ open=new }
-
-### Nexus domain specific components
-
-#### Nexus BBP Data models
-
-Data models that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.
-
-@link:[Source Code](https://github.com/BlueBrain/nexus-bbp-domains){ open=new }
-
-#### Neuroshapes
-
-A community effort to develop open SHACL schemas for FAIR (Findable, Accessible, Interoperable, Reproducible)
-neuroscience data.
-
-@link:[Source Code](https://github.com/INCF/neuroshapes){ open=new }
+@link:[Source Code](https://github.com/BlueBrain/brain-modeling-ontology){ open=new }
 
 ## Nexus Tools
-
-### Nexus Python SDK
-
-A Python wrapper for the Blue Brain Nexus REST API.
-
-#### How to install the Nexus Python SDK
-
-`pip install nexus-sdk`
-
-#### Usage
-
-```
-import nexussdk as nexus
-
-nexus.config.set_environment(DEPLOYMENT)
-nexus.config.set_token(TOKEN)
-
-nexus.permissions.fetch()
-```
-
-@link:[Source Code](https://github.com/BlueBrain/nexus-python-sdk){ open=new } | @link:[Documentation](https://bluebrain.github.io/nexus-python-sdk/){ open=new }
 
 ### Nexus.js
 
