@@ -4,6 +4,7 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -12,10 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, OpenIdAuthService}
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -49,11 +48,10 @@ object IdentitiesModule extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        projectProvisioning: ProjectProvisioning,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new IdentitiesRoutes(identities, aclCheck, projectProvisioning)(baseUri, cr, ordering)
+    ) => new IdentitiesRoutes(identities, aclCheck)(baseUri, cr, ordering)
 
   }
 
