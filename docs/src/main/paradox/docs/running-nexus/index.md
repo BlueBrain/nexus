@@ -213,10 +213,9 @@ Details on how to deploy, run and monitor the different components are described
 
 ### Choice of hardware
 
-Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please
-take a look at the @ref:[benchmarks section](../delta/benchmarks/v1.4.2.md) to get an idea of what you should expect in terms
-of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
-should narrow the scope:
+Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly. 
+
+When the usage profiles are unknown a couple of rules of thumb should narrow the scope:
 
 1.  Nexus uses a collection of data stores (@link:[PostgreSQL](https://www.postgresql.org/){ open=new },
     @link:[Elasticsearch](https://www.elastic.co/elasticsearch){ open=new }, 

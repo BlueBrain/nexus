@@ -4,7 +4,6 @@
 - @ref:[API Reference](api/index.md)
 - @ref:[Nexus Metadata](metadata.md)
 - @ref:[Plugins](plugins/index.md)
-- @ref:[Benchmarks](benchmarks/index.md)
 
 @@@
 

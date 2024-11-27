@@ -10,8 +10,6 @@
 - @ref:[v1.7 To v1.8 Migration](v1.7-to-v1.8-migration.md)
 - @ref:[v1.7 Release Notes](v1.7-release-notes.md)
 - @ref:[v1.6 To v1.7 Migration](v1.6-to-v1.7-migration.md)
-- @ref:[v1.6 Release Notes](v1.6-release-notes.md)
-- @ref:[v1.5 To v1.6 Migration](v1.5-to-v1.6-migration.md)
 - @ref:[Older releases](older-releases.md)
 
 @@@
@@ -339,60 +337,6 @@ Tools will be provided to enable migration from Cassandra to PostgreSQL for exis
 - Add a group identifier in Elasticsearch projections of composite views
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.7-release-notes.md).
-
-## v1.6.1 (29.10.2021)
-
-This release contains bugfixes and minor improvements:
-
-- Graph-analytics returns edges for non-existing nodes @link:[#2871](https://github.com/BlueBrain/nexus/issues/2871)
-- Graph analytics is trying to resolve every link to all types of resources
-  @link:[#2852](https://github.com/BlueBrain/nexus/issues/2852)
-- Composite key values cache is not distributed across nodes
-  @link:[#2909](https://github.com/BlueBrain/nexus/issues/2909)
-- Shortcut Acl permission check (project -> org -> root) when address matches early
-  @link:[#2916](https://github.com/BlueBrain/nexus/issues/2916)
-- Resource-view opens up as a side panel @link:[#2617](https://github.com/BlueBrain/nexus/issues/2617)
-- User can see all data, when the search query is empty @link:[#2875](https://github.com/BlueBrain/nexus/issues/2875)
-- A loading spinner shows up when there is a delay in fetching search results
-  @link:[#2880](https://github.com/BlueBrain/nexus/issues/2880)
-- Label 'none of' in filter was previously mis labelled as 'any of'
-  @link:[#2872](https://github.com/BlueBrain/nexus/issues/2872)
-- The behaviour of 'none of' filter has been fixed to avoid confusion with other filters
-  @link:[#2898](https://github.com/BlueBrain/nexus/issues/2898)
-- Preview plugin big fix to prevent it from crashing for certain file paths
-  @link:[#2884](https://github.com/BlueBrain/nexus/issues/2884)
-- Search bar matches query content @link:[#2874](https://github.com/BlueBrain/nexus/issues/2874)
-
-**Full Changelogs**:
-
-- Delta: @link:[v1.6.0...v1.6.1](https://github.com/BlueBrain/nexus/compare/v1.6.0...v1.6.1)
-- Fusion: @link:[v1.6.0...v1.6.1](https://github.com/BlueBrain/nexus-web/compare/v1.6.0...v1.6.1)
-
-## v1.6.0 (13.10.2021)
-
-### Deprecations
-
-- Nexus client
-- Indexing data in other systems
-- Remote storages
-
-### New features / enhancements
-
-- Introduced a plugin to search among different projects
-- Introduced PDF, CSV, TSV and Youtube Viewer Fusion Plugins
-- Add basic authentication to access a secured Elasticsearch cluster
-- Handle user-defined queries to Blazegraph with a dedicated client
-- Introduced a plugin to analyze properties and relationships of resources within a project
-- Synchronous indexing
-- Listing of resources outside the project scope
-- The RDF parser to validate resources is now configurable
-- Automatic project provisioning
-- Introduced quotas on projects
-- Project deletion (on demand and automatic)
-- Tagging resources after deprecation
-- View passivation
-
-A detailed list of changes included in the release can be found in the @ref:[release notes](v1.6-release-notes.md).
 
 ## Older releases
 
