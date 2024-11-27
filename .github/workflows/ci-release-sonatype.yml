@@ -5,7 +5,8 @@ on:
   workflow_dispatch:
 jobs:
   release:
-    if: github.event_name == 'release'
+    # Disabling temporarily as it is failing
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
