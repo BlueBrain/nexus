@@ -152,21 +152,6 @@ Acl provisioning will only run if none is create at the root level.
 
 @link:[The `acls.provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf){ open=new } of the configuration defines it.
 
-
-## Automatic project provisioning
-
-Automatic project provisioning allows to create a dedicated project for users the first time they connect to Delta that is to
-say the first time, they query the project listing endpoints.
-
-The generated project label will be:
-
-* The current username where only non-diacritic alphabetic characters (`[a-zA-Z]`), numbers, dashes and underscores will be preserved.
-* This resulting string is then truncated to 64 characters if needed.
-
-This feature can be turned on via the flag `app.automatic-provisioning.enabled`.
-
-@link:[The `automatic-provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L197){ open=new } of the configuration defines the project provisioning configuration.
-
 ## Fusion configuration
 
 When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing `text/html` in the `Accept` header.

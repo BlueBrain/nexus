@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
@@ -43,7 +42,6 @@ final case class AppConfig(
     organizations: OrganizationsConfig,
     acls: AclsConfig,
     projects: ProjectsConfig,
-    automaticProvisioning: AutomaticProvisioningConfig,
     quotas: QuotasConfig,
     resolvers: ResolversConfig,
     resources: ResourcesConfig,
