@@ -22,7 +22,7 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
   private val tag              = UserTag.unsafe("mytag")
   private val projectRef       = ProjectRef.unsafe("myorg", "myproj")
 
-  private val s3ValUpdate     = s3Val.copy(bucket = "mybucket2", maxFileSize = 41)
+  private val s3ValUpdate = s3Val.copy(bucket = "mybucket2", maxFileSize = 41)
 
   private val diskCreated      = StorageCreated(dId, projectRef, diskVal, diskFieldsJson, 1, instant, subject)
   private val s3Created        = StorageCreated(s3Id, projectRef, s3Val, s3FieldsJson, 1, instant, subject)
@@ -79,8 +79,8 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
   }
 
   private val statesMapping = VectorMap(
-    (dId, diskVal, diskFieldsJson)      -> jsonContentOf("storages/storage-disk-state.json"),
-    (s3Id, s3Val, s3FieldsJson)         -> jsonContentOf("storages/storage-s3-state.json")
+    (dId, diskVal, diskFieldsJson) -> jsonContentOf("storages/storage-disk-state.json"),
+    (s3Id, s3Val, s3FieldsJson)    -> jsonContentOf("storages/storage-s3-state.json")
   ).map { case ((id, value, source), v) =>
     StorageState(
       id,

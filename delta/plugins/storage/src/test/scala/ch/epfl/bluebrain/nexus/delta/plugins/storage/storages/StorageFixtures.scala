@@ -45,9 +45,9 @@ trait StorageFixtures extends CirceLiteral {
     s3Fields.writePermission.get
   )
 
-  val diskJson   = jsonContentOf("storages/disk-storage.json")
-  val s3Json     = jsonContentOf("storages/s3-storage.json")
+  val diskJson = jsonContentOf("storages/disk-storage.json")
+  val s3Json   = jsonContentOf("storages/s3-storage.json")
 
-  val diskFieldsJson   = diskJson.removeKeys("@id", "@context", "_algorithm")
-  val s3FieldsJson     = s3Json.removeKeys("@id", "@context", "_algorithm")
+  val diskFieldsJson = diskJson.removeKeys("@id", "@context", "_algorithm")
+  val s3FieldsJson   = s3Json.removeKeys("@id", "@context", "_algorithm")
 }

@@ -77,7 +77,7 @@ class FilesSpec
     FileDescription(filename, None, Some(FileCustomMetadata(Some(name), Some(description), Some(keywords))))
 
   "The Files operations bundle" when {
-    implicit val caller: Caller      = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+    implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
 
     val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")
@@ -90,13 +90,13 @@ class FilesSpec
       otherWrite
     )
 
-    val defaultStorageIri         = nxv + "default"
-    val defaultStorageId          = IriSegment(defaultStorageIri)
-    val defaultStorageRef         = ResourceRef.Revision(defaultStorageIri, 1)
+    val defaultStorageIri    = nxv + "default"
+    val defaultStorageId     = IriSegment(defaultStorageIri)
+    val defaultStorageRef    = ResourceRef.Revision(defaultStorageIri, 1)
     val defaultStorageFolder = FileGen.mkTempDir("default")
 
-    val customStorageIri         = nxv + "custom"
-    val customStorageId          = IriSegment(customStorageIri)
+    val customStorageIri    = nxv + "custom"
+    val customStorageId     = IriSegment(customStorageIri)
     val customStorageFolder = FileGen.mkTempDir("default")
 
     val storageIri         = nxv + "other-storage"
@@ -118,7 +118,8 @@ class FilesSpec
     val cfg = config.copy(
       disk = config.disk.copy(
         defaultMaxFileSize = maxFileSize,
-        allowedVolumes = config.disk.allowedVolumes ++ Set(defaultStorageFolder, customStorageFolder))
+        allowedVolumes = config.disk.allowedVolumes ++ Set(defaultStorageFolder, customStorageFolder)
+      )
     )
 
     lazy val storages: Storages = Storages(
@@ -159,7 +160,8 @@ class FilesSpec
     "creating a file" should {
 
       "create storages for files" in {
-        val defaultStoragePayload = diskFieldsJson deepMerge json"""{"maxFileSize": 300, "volume": "$defaultStorageFolder"}"""
+        val defaultStoragePayload =
+          diskFieldsJson deepMerge json"""{"maxFileSize": 300, "volume": "$defaultStorageFolder"}"""
         storages.create(defaultStorageId, projectRef, defaultStoragePayload).accepted
 
         val customStoragePayload = diskFieldsJson deepMerge
@@ -210,7 +212,8 @@ class FilesSpec
       }
 
       "succeed with randomly generated id" in {
-        val expected = mkResource(generatedId, projectRef, defaultStorageRef, attributes(defaultStorageFolder, "myfile2.txt"))
+        val expected =
+          mkResource(generatedId, projectRef, defaultStorageRef, attributes(defaultStorageFolder, "myfile2.txt"))
         val request  = FileUploadRequest.from(entity("myfile2.txt"))
         val actual   = files.create(None, projectRef, request, None).accepted
         val fetched  = files.fetch(FileId(actual.id, projectRef)).accepted
@@ -256,7 +259,9 @@ class FilesSpec
       "reject if the file exceeds max file size for the storage" in {
         val id      = fileId("file-too-large")
         val request = FileUploadRequest.from(randomEntity("large_file", (maxFileSize + 1).toInt))
-        files.create(id, Some(customStorageId), request, None)(aliceCaller).rejected shouldEqual FileTooLarge(maxFileSize)
+        files.create(id, Some(customStorageId), request, None)(aliceCaller).rejected shouldEqual FileTooLarge(
+          maxFileSize
+        )
       }
 
       "reject if storage does not exist" in {
@@ -282,7 +287,15 @@ class FilesSpec
       "succeed" in {
         val request = FileUploadRequest.from(entity())
         files.update(fileId("file1"), None, 1, request, None).accepted shouldEqual
-          FileGen.resourceFor(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 2, createdBy = bob, updatedBy = bob)
+          FileGen.resourceFor(
+            file1,
+            projectRef,
+            defaultStorageRef,
+            attributes(defaultStorageFolder),
+            rev = 2,
+            createdBy = bob,
+            updatedBy = bob
+          )
       }
 
       "succeed with custom metadata" in {
@@ -392,7 +405,14 @@ class FilesSpec
     "tagging a file" should {
 
       "succeed" in {
-        val expected = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 3, tags = Tags(tag -> 1))
+        val expected = mkResource(
+          file1,
+          projectRef,
+          defaultStorageRef,
+          attributes(defaultStorageFolder),
+          rev = 3,
+          tags = Tags(tag -> 1)
+        )
         val actual   = files.tag(fileIdIri(file1), tag, tagRev = 1, 2).accepted
         actual shouldEqual expected
       }
@@ -432,7 +452,8 @@ class FilesSpec
     "deprecating a file" should {
 
       "succeed" in {
-        val expected = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 5, deprecated = true)
+        val expected =
+          mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 5, deprecated = true)
         val actual   = files.deprecate(fileIdIri(file1), 4).accepted
         actual shouldEqual expected
       }
@@ -458,7 +479,15 @@ class FilesSpec
 
       "allow tagging after deprecation" in {
         val expected =
-          mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 6, tags = Tags(tag -> 4), deprecated = true)
+          mkResource(
+            file1,
+            projectRef,
+            defaultStorageRef,
+            attributes(defaultStorageFolder),
+            rev = 6,
+            tags = Tags(tag -> 4),
+            deprecated = true
+          )
         val actual   = files.tag(fileIdIri(file1), tag, tagRev = 4, 5).accepted
         actual shouldEqual expected
       }
@@ -504,10 +533,19 @@ class FilesSpec
     }
 
     "fetching a file" should {
-      val resourceRev1 = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder, "myfile.txt"))
+      val resourceRev1 =
+        mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder, "myfile.txt"))
       val resourceRev4 = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 4)
       val resourceRev6 =
-        mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 6, tags = Tags(tag -> 4), deprecated = true)
+        mkResource(
+          file1,
+          projectRef,
+          defaultStorageRef,
+          attributes(defaultStorageFolder),
+          rev = 6,
+          tags = Tags(tag -> 4),
+          deprecated = true
+        )
 
       "succeed" in {
         files.fetch(fileIdIri(file1)).accepted shouldEqual resourceRev6

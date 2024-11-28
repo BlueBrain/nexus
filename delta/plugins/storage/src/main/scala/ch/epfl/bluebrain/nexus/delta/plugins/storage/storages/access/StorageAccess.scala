@@ -19,8 +19,8 @@ trait StorageAccess {
 object StorageAccess {
 
   def apply(s3Access: S3StorageAccess): StorageAccess = {
-    case d: DiskStorageValue       => DiskStorageAccess.checkVolumeExists(d.volume)
-    case s: S3StorageValue         => s3Access.checkBucketExists(s.bucket)
+    case d: DiskStorageValue => DiskStorageAccess.checkVolumeExists(d.volume)
+    case s: S3StorageValue   => s3Access.checkBucketExists(s.bucket)
   }
 
 }

@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 
 /**
-  * Describes the Blazegraph [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from
- * its ''/status'' endpoint
+  * Describes the Blazegraph [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from its
+  * ''/status'' endpoint
   */
 class BlazegraphServiceDependency(client: BlazegraphClient) extends ServiceDependency {
 

@@ -29,13 +29,13 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
   private val bob   = User("Bob", realm)
   private val alice = User("Alice", realm)
 
-  private val id               = nxv + "files"
-  private val myTag            = UserTag.unsafe("myTag")
-  private val storageRef       = ResourceRef.Revision(nxv + "disk", 1)
+  private val id           = nxv + "files"
+  private val myTag        = UserTag.unsafe("myTag")
+  private val storageRef   = ResourceRef.Revision(nxv + "disk", 1)
   private val s3StorageRef = ResourceRef.Revision(nxv + "s3", 1)
-  private val mediaType        = Some(ContentTypes.`text/plain(UTF-8)`)
-  private val dig              = ComputedDigest(DigestAlgorithm.default, "something")
-  private val attributes       = FileAttributes(
+  private val mediaType    = Some(ContentTypes.`text/plain(UTF-8)`)
+  private val dig          = ComputedDigest(DigestAlgorithm.default, "something")
+  private val attributes   = FileAttributes(
     uuid,
     location = "http://localhost/my/file.txt",
     path = Uri.Path("my/file.txt"),

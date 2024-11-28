@@ -32,7 +32,7 @@ class DiskStorageSaveFileSpec
   "A DiskStorage saving operations" should {
     val project = ProjectRef.unsafe("org", "project")
     val content = "file content"
-    val digest = "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c"
+    val digest  = "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c"
     val entity  = HttpEntity(content)
 
     val uploading = DiskUploadingFile(project, volume, DigestAlgorithm.default, "myfile.txt", entity)

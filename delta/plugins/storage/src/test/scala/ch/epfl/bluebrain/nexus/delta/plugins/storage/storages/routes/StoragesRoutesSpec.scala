@@ -67,12 +67,12 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     ProjectGen.project("myorg", "myproject", uuid = randomUuid, orgUuid = randomUuid, base = projBase, mappings = am)
   private val projectRef = project.ref
 
-  private val s3IdEncoded     = UrlUtils.encode(s3Id.toString)
+  private val s3IdEncoded = UrlUtils.encode(s3Id.toString)
 
-  private val diskRead    = Permission.unsafe("disk/read")
-  private val diskWrite   = Permission.unsafe("disk/write")
-  private val s3Read      = Permission.unsafe("s3/read")
-  private val s3Write     = Permission.unsafe("s3/write")
+  private val diskRead  = Permission.unsafe("disk/read")
+  private val diskWrite = Permission.unsafe("disk/write")
+  private val s3Read    = Permission.unsafe("s3/read")
+  private val s3Write   = Permission.unsafe("s3/write")
 
   override val allowedPerms = Seq(
     permissions.read,

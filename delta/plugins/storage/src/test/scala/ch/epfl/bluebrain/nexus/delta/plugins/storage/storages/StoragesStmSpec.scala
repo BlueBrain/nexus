@@ -34,9 +34,9 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
   private val accessibleDisk = Set(diskFields.volume.value, tmp2)
 
   private val access: StorageAccess = {
-    case disk: DiskStorageValue         =>
+    case disk: DiskStorageValue =>
       IO.whenA(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible("wrong volume")))
-    case s3: S3StorageValue             =>
+    case s3: S3StorageValue     =>
       IO.whenA(!s3Fields.bucket.contains(s3.bucket))(IO.raiseError(StorageNotAccessible("wrong bucket")))
   }
 
@@ -49,8 +49,8 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
     "evaluating an incoming command" should {
 
       "create a new event from a CreateStorage command" in {
-        val disk   = CreateStorage(dId, project, diskFields.copy(maxFileSize = Some(1)), diskFieldsJson, bob)
-        val s3     = CreateStorage(s3Id, project, s3Fields.copy(maxFileSize = Some(2)), s3FieldsJson, bob)
+        val disk = CreateStorage(dId, project, diskFields.copy(maxFileSize = Some(1)), diskFieldsJson, bob)
+        val s3   = CreateStorage(s3Id, project, s3Fields.copy(maxFileSize = Some(2)), s3FieldsJson, bob)
 
         forAll(List(disk, s3)) { cmd =>
           eval(None, cmd).accepted shouldEqual
@@ -59,11 +59,11 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
       }
 
       "create a new event from a UpdateStorage command" in {
-        val disk          = UpdateStorage(dId, project, diskFields, diskFieldsJson, 1, alice)
-        val diskCurrent   = storageState(dId, project, diskVal.copy(maxFileSize = 1))
-        val s3            = UpdateStorage(s3Id, project, s3Fields, s3FieldsJson, 1, alice)
-        val s3Current     = storageState(s3Id, project, s3Val.copy(maxFileSize = 2))
-        val list          = List((diskCurrent, disk), (s3Current, s3))
+        val disk        = UpdateStorage(dId, project, diskFields, diskFieldsJson, 1, alice)
+        val diskCurrent = storageState(dId, project, diskVal.copy(maxFileSize = 1))
+        val s3          = UpdateStorage(s3Id, project, s3Fields, s3FieldsJson, 1, alice)
+        val s3Current   = storageState(s3Id, project, s3Val.copy(maxFileSize = 2))
+        val list        = List((diskCurrent, disk), (s3Current, s3))
 
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).accepted shouldEqual
@@ -96,12 +96,12 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
       }
 
       "reject with StorageNotAccessible" in {
-        val notAllowedDiskVal     = diskFields.copy(volume = Some(tmp2))
-        val inaccessibleDiskVal   =
+        val notAllowedDiskVal   = diskFields.copy(volume = Some(tmp2))
+        val inaccessibleDiskVal =
           diskFields.copy(volume = Some(AbsolutePath(Files.createTempDirectory("other")).rightValue))
-        val inaccessibleS3Val     = s3Fields.copy(bucket = Some("other"))
-        val diskCurrent           = storageState(dId, project, diskVal)
-        val s3Current             = storageState(s3Id, project, s3Val)
+        val inaccessibleS3Val   = s3Fields.copy(bucket = Some("other"))
+        val diskCurrent         = storageState(dId, project, diskVal)
+        val s3Current           = storageState(s3Id, project, s3Val)
 
         forAll(
           List(
@@ -116,8 +116,8 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
 
         forAll(
           List(
-            diskCurrent   -> inaccessibleDiskVal,
-            s3Current     -> inaccessibleS3Val
+            diskCurrent -> inaccessibleDiskVal,
+            s3Current   -> inaccessibleS3Val
           )
         ) { case (state, value) =>
           val updateCmd = UpdateStorage(state.id, project, value, Json.obj(), 1, alice)
@@ -126,10 +126,10 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
       }
 
       "reject with InvalidMaxFileSize" in {
-        val exceededSizeDiskVal   = diskFields.copy(maxFileSize = Some(100))
-        val exceededSizeS3Val     = s3Fields.copy(maxFileSize = Some(100))
-        val diskCurrent           = storageState(dId, project, diskVal)
-        val s3Current             = storageState(s3Id, project, s3Val)
+        val exceededSizeDiskVal = diskFields.copy(maxFileSize = Some(100))
+        val exceededSizeS3Val   = s3Fields.copy(maxFileSize = Some(100))
+        val diskCurrent         = storageState(dId, project, diskVal)
+        val s3Current           = storageState(s3Id, project, s3Val)
 
         forAll(
           List(
@@ -190,11 +190,11 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
       }
 
       "reject with DifferentStorageType" in {
-        val diskCurrent   = storageState(dId, project, diskVal)
-        val s3Current     = storageState(s3Id, project, s3Val)
-        val list          = List(
-          diskCurrent   -> UpdateStorage(dId, project, s3Fields, Json.obj(), 1, alice),
-          s3Current     -> UpdateStorage(s3Id, project, diskFields, Json.obj(), 1, alice),
+        val diskCurrent = storageState(dId, project, diskVal)
+        val s3Current   = storageState(s3Id, project, s3Val)
+        val list        = List(
+          diskCurrent -> UpdateStorage(dId, project, s3Fields, Json.obj(), 1, alice),
+          s3Current   -> UpdateStorage(s3Id, project, diskFields, Json.obj(), 1, alice)
         )
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejectedWith[DifferentStorageType]
@@ -219,8 +219,8 @@ class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
     "reject with InvalidStorageType" in {
       val s3Current                 = storageState(s3Id, project, s3Val)
       val list                      = List(
-        None                -> CreateStorage(s3Id, project, s3Fields, Json.obj(), bob),
-        Some(s3Current)     -> UpdateStorage(s3Id, project, s3Fields, Json.obj(), 1, alice),
+        None            -> CreateStorage(s3Id, project, s3Fields, Json.obj(), bob),
+        Some(s3Current) -> UpdateStorage(s3Id, project, s3Fields, Json.obj(), 1, alice)
       )
       val diskVolume                = AbsolutePath(Files.createTempDirectory("disk")).rightValue
       // format: off

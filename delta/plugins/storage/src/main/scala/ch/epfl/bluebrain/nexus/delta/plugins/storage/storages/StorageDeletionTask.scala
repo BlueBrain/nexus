@@ -25,9 +25,9 @@ final class StorageDeletionTask(currentStorages: ProjectRef => Stream[IO, Storag
   private def run(project: ProjectRef) =
     currentStorages(project)
       .evalScan(init) {
-        case (acc, disk: DiskStorageValue)         =>
+        case (acc, disk: DiskStorageValue) =>
           deleteRecursively(project, disk).map(acc ++ _)
-        case (acc, s3: S3StorageValue)             =>
+        case (acc, s3: S3StorageValue)     =>
           val message =
             s"Deletion of files for S3 storages is yet to be implemented. Files in bucket '${s3.bucket}' will remain."
           logger.warn(message).as(acc ++ message)

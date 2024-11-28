@@ -186,14 +186,14 @@ object FileRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
-        case SaveRejection(_, _, rejection)            =>
+        case WrappedAkkaRejection(rejection)  => rejection.asJsonObject
+        case SaveRejection(_, _, rejection)   =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case FetchRejection(_, _, rejection)           =>
+        case FetchRejection(_, _, rejection)  =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _: FileNotFound                           => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                         => obj
+        case IncorrectRev(provided, expected) => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _: FileNotFound                  => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                => obj
       }
     }
 

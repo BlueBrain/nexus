@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageResource, schemas}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -59,8 +59,8 @@ final case class StorageState(
 
   def storage: Storage =
     value match {
-      case value: DiskStorageValue       => DiskStorage(id, project, value, source)
-      case value: S3StorageValue         => S3Storage(id, project, value, source)
+      case value: DiskStorageValue => DiskStorage(id, project, value, source)
+      case value: S3StorageValue   => S3Storage(id, project, value, source)
     }
 
   def toResource: StorageResource =

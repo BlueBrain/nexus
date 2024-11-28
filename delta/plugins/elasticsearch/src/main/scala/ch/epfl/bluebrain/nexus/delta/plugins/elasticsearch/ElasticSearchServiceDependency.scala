@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 
 /**
-  * Describes the Elasticsearch [[ServiceDependency]] providing a way to extract the [[ServiceDescription]]
- * from Elasticsearch
+  * Describes the Elasticsearch [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from
+  * Elasticsearch
   */
 class ElasticSearchServiceDependency(client: ElasticSearchClient) extends ServiceDependency {
 

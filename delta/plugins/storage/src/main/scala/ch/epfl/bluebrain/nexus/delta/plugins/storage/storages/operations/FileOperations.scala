@@ -38,13 +38,13 @@ object FileOperations {
         contentLength: Option[Long]
     ): IO[FileStorageMetadata] =
       IO.fromEither(UploadingFile(storage, info, contentLength)).flatMap {
-        case d: DiskUploadingFile   => diskFileOps.save(d)
-        case s: S3UploadingFile     => s3FileOps.save(s)
+        case d: DiskUploadingFile => diskFileOps.save(d)
+        case s: S3UploadingFile   => s3FileOps.save(s)
       }
 
     override def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource] = storage match {
-      case _: DiskStorage       => diskFileOps.fetch(attributes.location.path)
-      case s: S3Storage         => s3FileOps.fetch(s.value.bucket, attributes.path)
+      case _: DiskStorage => diskFileOps.fetch(attributes.location.path)
+      case s: S3Storage   => s3FileOps.fetch(s.value.bucket, attributes.path)
     }
 
     override def delegate(storage: Storage, filename: String): IO[FileDelegationRequest.TargetLocation] =

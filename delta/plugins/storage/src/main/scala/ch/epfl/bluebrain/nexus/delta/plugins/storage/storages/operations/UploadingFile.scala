@@ -57,9 +57,9 @@ object UploadingFile {
       contentLengthOpt: Option[Long]
   ): Either[SaveFileRejection, UploadingFile] =
     storage match {
-      case s: DiskStorage       =>
+      case s: DiskStorage =>
         Right(DiskUploadingFile(s.project, s.value.volume, s.value.algorithm, info.filename, info.contents))
-      case s: S3Storage         =>
+      case s: S3Storage   =>
         contentLengthOpt.toRight(FileContentLengthIsMissing).map { contentLength =>
           S3UploadingFile(
             s.project,
