@@ -6,7 +6,6 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.UUIDFFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
@@ -33,6 +32,7 @@ class DiskStorageSaveFileSpec
   "A DiskStorage saving operations" should {
     val project = ProjectRef.unsafe("org", "project")
     val content = "file content"
+    val digest = "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c"
     val entity  = HttpEntity(content)
 
     val uploading = DiskUploadingFile(project, volume, DigestAlgorithm.default, "myfile.txt", entity)
@@ -47,7 +47,7 @@ class DiskStorageSaveFileSpec
         FileStorageMetadata(
           fixedUuid,
           Files.size(file.value),
-          ComputedDigest(DigestAlgorithm.default, RemoteStorageClientFixtures.Digest),
+          ComputedDigest(DigestAlgorithm.default, digest),
           Client,
           s"file://$file",
           Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")

@@ -59,12 +59,6 @@ object StorageFileRejection {
         extends FetchAttributeRejection(
           s"Fetching a file's attributes is not supported for storages of type '${tpe.iri}'"
         )
-
-    /**
-      * Rejection returned when a storage cannot fetch a file
-      */
-    final case class WrappedFetchRejection(rejection: FetchFileRejection)
-        extends FetchAttributeRejection(rejection.loggedDetails)
   }
 
   /**
@@ -118,51 +112,6 @@ object StorageFileRejection {
         extends SaveFileRejection(s"Access denied to bucket $bucket at key $key")
   }
 
-  /**
-    * Rejection returned when a storage cannot move a file
-    */
-  sealed abstract class MoveFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
-
-  object MoveFileRejection {
-
-    /**
-      * Rejection returned when a file is not found
-      */
-    final case class FileNotFound(sourcePath: String)
-        extends MoveFileRejection(s"File could not be moved from expected path '$sourcePath'.")
-
-    /**
-      * Rejection returned when a storage cannot move a file because it already exists on its destination location
-      */
-    final case class ResourceAlreadyExists(destinationPath: String)
-        extends MoveFileRejection(
-          s"File cannot be moved because it already exists on its destination path '$destinationPath'."
-        )
-
-    /**
-      * Rejection returned when a path to be moved contains links
-      */
-    final case class PathContainsLinks(path: String)
-        extends MoveFileRejection(
-          s"File could not be moved from path '$path' because the path contains links."
-        )
-
-    /**
-      * Rejection returned when a storage cannot move a file due to an unexpected reason
-      */
-    final case class UnexpectedMoveError(sourcePath: String, destinationPath: String, details: String)
-        extends MoveFileRejection(
-          s"File cannot be moved from path '$sourcePath' to '$destinationPath' for unexpected reasons. Details '$details'"
-        )
-
-    /**
-      * Rejection performing this operation because the storage does not support it
-      */
-    final case class UnsupportedOperation(tpe: StorageType)
-        extends MoveFileRejection(s"Moving a file is not supported for storages of type '${tpe.iri}'")
-
-  }
-
   sealed abstract class LinkFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
 
   object LinkFileRejection {
@@ -173,7 +122,7 @@ object StorageFileRejection {
         extends LinkFileRejection(s"An S3 path must contain at least the filename. Path was $path")
 
     final case class UnsupportedOperation(tpe: StorageType)
-        extends MoveFileRejection(s"Linking a file is not supported for storages of type '${tpe.iri}'")
+        extends LinkFileRejection(s"Linking a file is not supported for storages of type '${tpe.iri}'")
   }
 
   sealed abstract class DelegateFileOperation(loggedDetails: String) extends StorageFileRejection(loggedDetails)

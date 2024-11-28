@@ -15,8 +15,6 @@ class StorageSpec extends CatsEffectSpec with RemoteContextResolutionFixture wit
     val diskStorage   =
       DiskStorage(nxv + "disk", project, diskVal, json"""{"disk": "value"}""")
     val s3Storage     = S3Storage(nxv + "s3", project, s3Val, json"""{"s3": "value"}""")
-    val remoteStorage =
-      RemoteDiskStorage(nxv + "remote", project, remoteVal, json"""{"remote": "value"}""")
 
     "be compacted" in {
       forAll(
@@ -24,10 +22,7 @@ class StorageSpec extends CatsEffectSpec with RemoteContextResolutionFixture wit
           diskStorage   -> diskJson.deepMerge(json"""{"@type": ["Storage", "DiskStorage"]}"""),
           s3Storage     -> s3Json
             .deepMerge(json"""{"@type": ["Storage", "S3Storage"]}""")
-            .removeKeys("accessKey", "secretKey"),
-          remoteStorage -> remoteJson
-            .deepMerge(json"""{"@type": ["Storage", "RemoteDiskStorage"]}""")
-            .removeKeys("credentials")
+            .removeKeys("accessKey", "secretKey")
         )
       ) { case (value, compacted) =>
         value.toCompactedJsonLd.accepted.json shouldEqual compacted
@@ -37,9 +32,8 @@ class StorageSpec extends CatsEffectSpec with RemoteContextResolutionFixture wit
     "be expanded" in {
       val diskJson   = jsonContentOf("storages/disk-storage-expanded.json")
       val s3Json     = jsonContentOf("storages/s3-storage-expanded.json")
-      val remoteJson = jsonContentOf("storages/remote-storage-expanded.json")
 
-      forAll(List(diskStorage -> diskJson, s3Storage -> s3Json, remoteStorage -> remoteJson)) {
+      forAll(List(diskStorage -> diskJson, s3Storage -> s3Json)) {
         case (value, expanded) => value.toExpandedJsonLd.accepted.json shouldEqual expanded
       }
     }

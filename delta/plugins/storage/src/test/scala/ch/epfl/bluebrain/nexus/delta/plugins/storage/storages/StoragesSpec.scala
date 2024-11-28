@@ -81,8 +81,9 @@ private class StoragesSpec
       }
 
       "succeed with the passed id" in {
-        storages.create(rdId, projectRef, remoteFieldsJson).accepted shouldEqual
-          resourceFor(rdId, projectRef, remoteVal, remoteFieldsJson, createdBy = bob, updatedBy = bob)
+        val otherS3Id = nxv + "other-s3-storage"
+        storages.create(otherS3Id, projectRef, s3FieldsJson).accepted shouldEqual
+          resourceFor(otherS3Id, projectRef, s3Val, s3FieldsJson, createdBy = bob, updatedBy = bob)
       }
 
       "reject with different ids on the payload and passed" in {
@@ -217,37 +218,37 @@ private class StoragesSpec
     }
 
     "fetching a storage" should {
-      val resourceRev1 = resourceFor(rdId, projectRef, remoteVal, remoteFieldsJson, createdBy = bob, updatedBy = bob)
+      val resourceRev1 = resourceFor(s3Id, projectRef, s3Val, s3FieldsJson, createdBy = bob, updatedBy = bob)
       val resourceRev2 = resourceFor(
-        rdId,
+        s3Id,
         projectRef,
-        remoteVal,
-        remoteFieldsJson,
+        s3Val,
+        s3FieldsJson,
         rev = 2,
         createdBy = bob,
         updatedBy = bob
       )
 
       "succeed" in {
-        storages.fetch(rdId, projectRef).accepted shouldEqual resourceRev2
+        storages.fetch(s3Id, projectRef).accepted shouldEqual resourceRev2
       }
 
       "succeed by tag" in {
-        storages.fetch(IdSegmentRef(rdId, tag), projectRef).accepted shouldEqual resourceRev1
+        storages.fetch(IdSegmentRef(s3Id, tag), projectRef).accepted shouldEqual resourceRev1
       }
 
       "succeed by rev" in {
-        storages.fetch(IdSegmentRef(rdId, 2), projectRef).accepted shouldEqual resourceRev2
-        storages.fetch(IdSegmentRef(rdId, 1), projectRef).accepted shouldEqual resourceRev1
+        storages.fetch(IdSegmentRef(s3Id, 2), projectRef).accepted shouldEqual resourceRev2
+        storages.fetch(IdSegmentRef(s3Id, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
       "reject fetch by tag" in {
-        val id = ResourceRef.Tag(rdId, UserTag.unsafe("other"))
+        val id = ResourceRef.Tag(s3Id, UserTag.unsafe("other"))
         storages.fetch(id, projectRef).rejected shouldEqual FetchByTagNotSupported(id)
       }
 
       "reject if revision does not exist" in {
-        storages.fetch(IdSegmentRef(rdId, 5), projectRef).rejected shouldEqual
+        storages.fetch(IdSegmentRef(s3Id, 5), projectRef).rejected shouldEqual
           RevisionNotFound(provided = 5, current = 2)
       }
 
@@ -260,7 +261,7 @@ private class StoragesSpec
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        storages.fetch(rdId, projectRef).rejectedWith[ProjectNotFound]
+        storages.fetch(s3Id, projectRef).rejectedWith[ProjectNotFound]
       }
     }
 

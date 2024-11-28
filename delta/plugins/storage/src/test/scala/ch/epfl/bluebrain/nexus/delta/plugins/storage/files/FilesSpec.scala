@@ -1,22 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.{ContentType, Uri}
 import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.remotestorage.RemoteStorageClientFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -28,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -35,19 +32,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.scalatest.Assertion
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{Assertion, DoNotDiscover}
 
 import java.net.URLDecoder
 import java.util.UUID
 
-@DoNotDiscover
-class FilesSpec(fixture: RemoteStorageClientFixtures)
+class FilesSpec
     extends TestKit(ActorSystem("FilesSpec"))
     with CatsEffectSpec
     with DoobieScalaTestFixture
@@ -83,7 +78,6 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
   "The Files operations bundle" when {
     implicit val caller: Caller      = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    lazy val remoteDiskStorageClient = fixture.init
 
     val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")
@@ -96,13 +90,14 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       otherWrite
     )
 
-    val remoteIdIri         = nxv + "remote"
-    val remoteId: IdSegment = remoteIdIri
-    val remoteRev           = ResourceRef.Revision(remoteIdIri, 1)
+    val defaultStorageIri         = nxv + "default"
+    val defaultStorageId          = IriSegment(defaultStorageIri)
+    val defaultStorageRef         = ResourceRef.Revision(defaultStorageIri, 1)
+    val defaultStorageFolder = FileGen.mkTempDir("default")
 
-    val diskIdIri         = nxv + "disk"
-    val diskId: IdSegment = nxv + "disk"
-    val diskRev           = ResourceRef.Revision(diskIdIri, 1)
+    val customStorageIri         = nxv + "custom"
+    val customStorageId          = IriSegment(customStorageIri)
+    val customStorageFolder = FileGen.mkTempDir("default")
 
     val storageIri         = nxv + "other-storage"
     val storage: IdSegment = nxv + "other-storage"
@@ -121,8 +116,9 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     val maxFileSize = 300L
 
     val cfg = config.copy(
-      disk = config.disk.copy(defaultMaxFileSize = maxFileSize, allowedVolumes = config.disk.allowedVolumes + path),
-      remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = maxFileSize))
+      disk = config.disk.copy(
+        defaultMaxFileSize = maxFileSize,
+        allowedVolumes = config.disk.allowedVolumes ++ Set(defaultStorageFolder, customStorageFolder))
     )
 
     lazy val storages: Storages = Storages(
@@ -137,7 +133,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     ).accepted
 
     lazy val fetchStorage            = FetchStorage(storages, aclCheck)
-    lazy val fileOps: FileOperations = FileOperationsMock.forDiskAndRemoteDisk(remoteDiskStorageClient)
+    lazy val fileOps: FileOperations = FileOperationsMock.forDisk
 
     val mediaTypeDetector = new MediaTypeDetector(MediaTypeDetectorConfig.Empty)
     val dataExtractor     = FormDataExtractor(mediaTypeDetector)(system)
@@ -160,30 +156,21 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     ): FileResource =
       FileGen.resourceFor(id, project, storage, attributes, storageType, rev, deprecated, tags, bob, bob)
 
-    def updateAttributes(file: Iri) = {
-      val aliceCaller = Caller(alice, Set(alice, Group("mygroup", realm), Authenticated(realm)))
-      for {
-        file    <- files.fetchState(Latest(file), projectRef)
-        storage <- fetchStorage.onRead(file.storage, projectRef)(aliceCaller)
-        _       <- files.updateAttributes(file, storage)
-      } yield ()
-    }
-
     "creating a file" should {
 
       "create storages for files" in {
-        val payload = diskFieldsJson deepMerge json"""{"maxFileSize": 300, "volume": "$path"}"""
-        storages.create(diskId, projectRef, payload).accepted
+        val defaultStoragePayload = diskFieldsJson deepMerge json"""{"maxFileSize": 300, "volume": "$defaultStorageFolder"}"""
+        storages.create(defaultStorageId, projectRef, defaultStoragePayload).accepted
 
-        val payload2 =
-          json"""{"@type": "RemoteDiskStorage", "endpoint": "${fixture.hostConfig.endpoint}", "folder": "${RemoteStorageClientFixtures.BucketName}", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
-        storages.create(remoteId, projectRef, payload2).accepted
+        val customStoragePayload = diskFieldsJson deepMerge
+          json"""{"maxFileSize": 300, "volume": "$customStorageFolder", "readPermission": "$otherRead", "writePermission": "$otherWrite", "default": false}"""
+        storages.create(customStorageId, projectRef, customStoragePayload).accepted
       }
 
       "succeed with the id passed" in {
         val request  = FileUploadRequest.from(entity("myfile.txt"))
-        val expected = mkResource(file1, projectRef, diskRev, attributes("myfile.txt"))
-        val actual   = files.create(fileId("file1"), Some(diskId), request, None).accepted
+        val expected = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder, "myfile.txt"))
+        val actual   = files.create(fileId("file1"), Some(defaultStorageId), request, None).accepted
         actual shouldEqual expected
       }
 
@@ -192,7 +179,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val id       = fileId(genString())
         val request  = FileUploadRequest(entity(genString()), Some(metadata), None)
 
-        files.create(id, Some(diskId), request, None).accepted
+        files.create(id, Some(defaultStorageId), request, None).accepted
         assertCorrectCustomMetadata(id, metadata)
       }
 
@@ -200,7 +187,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val specialFileName = "-._~:?#[ ]@!$&'()*,;="
         val request         = FileUploadRequest.from(randomEntity(specialFileName, 1))
 
-        files.create(fileId("specialFile"), Some(diskId), request, None).accepted
+        files.create(fileId("specialFile"), Some(defaultStorageId), request, None).accepted
         val fetched = files.fetch(fileId("specialFile")).accepted
 
         val decodedFilenameFromLocation =
@@ -212,9 +199,9 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       "succeed and tag with the id passed" in {
         withUUIDF(uuid2) {
           val request      = FileUploadRequest.from(entity("fileTagged.txt"))
-          val file         = files.create(fileId("fileTagged"), Some(diskId), request, Some(tag)).accepted
-          val attr         = attributes("fileTagged.txt", id = uuid2)
-          val expectedData = mkResource(fileTagged, projectRef, diskRev, attr, tags = Tags(tag -> 1))
+          val file         = files.create(fileId("fileTagged"), Some(defaultStorageId), request, Some(tag)).accepted
+          val attr         = attributes(defaultStorageFolder, "fileTagged.txt", id = uuid2)
+          val expectedData = mkResource(fileTagged, projectRef, defaultStorageRef, attr, tags = Tags(tag -> 1))
           val fileByTag    = files.fetch(FileId("fileTagged", tag, projectRef)).accepted
 
           file shouldEqual expectedData
@@ -223,7 +210,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       }
 
       "succeed with randomly generated id" in {
-        val expected = mkResource(generatedId, projectRef, diskRev, attributes("myfile2.txt"))
+        val expected = mkResource(generatedId, projectRef, defaultStorageRef, attributes(defaultStorageFolder, "myfile2.txt"))
         val request  = FileUploadRequest.from(entity("myfile2.txt"))
         val actual   = files.create(None, projectRef, request, None).accepted
         val fetched  = files.fetch(FileId(actual.id, projectRef)).accepted
@@ -243,8 +230,8 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "succeed and tag with randomly generated id" in {
         withUUIDF(uuid2) {
-          val attr      = attributes("fileTagged2.txt", id = uuid2)
-          val expected  = mkResource(generatedId2, projectRef, diskRev, attr, tags = Tags(tag -> 1))
+          val attr      = attributes(defaultStorageFolder, "fileTagged2.txt", id = uuid2)
+          val expected  = mkResource(generatedId2, projectRef, defaultStorageRef, attr, tags = Tags(tag -> 1))
           val request   = FileUploadRequest.from(entity("fileTagged2.txt"))
           val file      = files.create(None, projectRef, request, Some(tag)).accepted
           val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
@@ -256,7 +243,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if no write permissions" in {
         val request = FileUploadRequest.from(entity())
-        files.create(fileId("file2"), Some(remoteId), request, None).rejectedWith[AuthorizationFailed]
+        files.create(fileId("file2"), Some(customStorageId), request, None).rejectedWith[AuthorizationFailed]
       }
 
       "reject if file id already exists" in {
@@ -269,7 +256,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       "reject if the file exceeds max file size for the storage" in {
         val id      = fileId("file-too-large")
         val request = FileUploadRequest.from(randomEntity("large_file", (maxFileSize + 1).toInt))
-        files.create(id, Some(remoteId), request, None)(aliceCaller).rejected shouldEqual FileTooLarge(maxFileSize)
+        files.create(id, Some(customStorageId), request, None)(aliceCaller).rejected shouldEqual FileTooLarge(maxFileSize)
       }
 
       "reject if storage does not exist" in {
@@ -286,79 +273,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if project is deprecated" in {
         val request = FileUploadRequest.from(entity())
-        files.create(Some(diskId), deprecatedProject.ref, request, None).rejectedWith[ProjectIsDeprecated]
-      }
-    }
-
-    "linking a file" should {
-
-      "reject if no write permissions" in {
-        files
-          .createLegacyLink(fileId("file2"), Some(remoteId), description("myfile.txt"), Uri.Path.Empty, None)
-          .rejectedWith[AuthorizationFailed]
-      }
-
-      "succeed and tag with the id passed" in {
-        aclCheck.append(AclAddress.Root, bob -> Set(otherWrite)).accepted
-        val path      = Uri.Path("my/file-3.txt")
-        val tempAttr  = attributes("myfile.txt").copy(digest = NotComputedDigest)
-        val attr      =
-          tempAttr.copy(
-            location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"),
-            origin = Storage,
-            mediaType = None
-          )
-        val expected  =
-          mkResource(file2, projectRef, remoteRev, attr, storageType = RemoteStorageType, tags = Tags(tag -> 1))
-
-        val result    = files
-          .createLegacyLink(fileId("file2"), Some(remoteId), description("myfile.txt"), path, Some(tag))
-          .accepted
-        val fileByTag = files.fetch(FileId("file2", tag, projectRef)).accepted
-
-        result shouldEqual expected
-        fileByTag.value.tags.tags should contain(tag)
-      }
-
-      "succeed with custom user provided metadata" in {
-        val (name, description, keywords) = (genString(), genString(), genKeywords())
-        val fileDescription               = descriptionWithMetadata("file-5.txt", name, description, keywords)
-
-        val id   = fileId(genString())
-        val path = Uri.Path(s"my/file-5.txt")
-
-        files.createLegacyLink(id, Some(remoteId), fileDescription, path, None).accepted
-        val fetchedFile = files.fetch(id).accepted
-
-        fetchedFile.value.attributes.name should contain(name)
-        fetchedFile.value.attributes.description should contain(description)
-        fetchedFile.value.attributes.keywords shouldEqual keywords
-      }
-
-      "reject if file id already exists" in {
-        files
-          .createLegacyLink(fileId("file2"), Some(remoteId), description("myfile.txt"), Uri.Path.Empty, None)
-          .rejected shouldEqual
-          ResourceAlreadyExists(file2, projectRef)
-      }
-
-      "reject if storage does not exist" in {
-        files
-          .createLegacyLink(fileId("file3"), Some(storage), description("myfile.txt"), Uri.Path.Empty, None)
-          .rejected shouldEqual StorageNotFound(storageIri, projectRef)
-      }
-
-      "reject if project does not exist" in {
-        val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files
-          .createLegacyLink(None, projectRef, description("myfile.txt"), Uri.Path.Empty, None)
-          .rejectedWith[ProjectNotFound]
-      }
-
-      "reject if project is deprecated" in {
-        files
-          .createLegacyLink(Some(remoteId), deprecatedProject.ref, description("myfile.txt"), Uri.Path.Empty, None)
-          .rejectedWith[ProjectIsDeprecated]
+        files.create(Some(defaultStorageId), deprecatedProject.ref, request, None).rejectedWith[ProjectIsDeprecated]
       }
     }
 
@@ -367,7 +282,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       "succeed" in {
         val request = FileUploadRequest.from(entity())
         files.update(fileId("file1"), None, 1, request, None).accepted shouldEqual
-          FileGen.resourceFor(file1, projectRef, diskRev, attributes(), rev = 2, createdBy = bob, updatedBy = bob)
+          FileGen.resourceFor(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 2, createdBy = bob, updatedBy = bob)
       }
 
       "succeed with custom metadata" in {
@@ -376,7 +291,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val createRequest = FileUploadRequest.from(entity(genString()))
         val updateRequest = FileUploadRequest(randomEntity(genString(), 10), Some(metadata), None)
 
-        files.create(id, Some(diskId), createRequest, None).accepted
+        files.create(id, Some(defaultStorageId), createRequest, None).accepted
         files.update(id, None, 1, updateRequest, None).accepted
 
         assertCorrectCustomMetadata(id, metadata)
@@ -416,7 +331,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val metadata = genCustomMetadata()
         val request  = FileUploadRequest.from(entity(genString()))
 
-        files.create(id, Some(diskId), request, None).accepted
+        files.create(id, Some(defaultStorageId), request, None).accepted
         files.updateMetadata(id, 1, metadata, None).accepted
 
         files.fetch(id).accepted.rev shouldEqual 2
@@ -428,7 +343,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val metadata = genCustomMetadata()
         val request  = FileUploadRequest.from(entity(genString()))
 
-        files.create(id, Some(diskId), request, None).accepted
+        files.create(id, Some(defaultStorageId), request, None).accepted
         files.updateMetadata(id, 1, metadata, Some(tag)).accepted
         val updatedFile = files.fetch(id).accepted
 
@@ -442,7 +357,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
         val metadata = genCustomMetadata()
         val request  = FileUploadRequest.from(entity(genString()))
 
-        files.create(id, Some(diskId), request, None).accepted
+        files.create(id, Some(defaultStorageId), request, None).accepted
         val expectedError = IncorrectRev(expected = 1, provided = 2)
         files.updateMetadata(id, 2, metadata, None).rejected shouldEqual expectedError
       }
@@ -474,126 +389,10 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
     }
 
-    "updating remote disk file attributes" should {
-
-      "succeed" in {
-        val tempAttr = attributes("myfile.txt")
-        val attr     = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
-        val expected = mkResource(
-          file2,
-          projectRef,
-          remoteRev,
-          attr,
-          storageType = RemoteStorageType,
-          rev = 2,
-          tags = Tags(tag -> 1)
-        )
-
-        (updateAttributes(file2) >> files.fetch(fileIdIri(file2))).accepted shouldEqual expected
-      }
-    }
-
-    "reject if digest is already computed" in {
-      updateAttributes(file2).rejectedWith[DigestAlreadyComputed]
-    }
-
-    "updating a file linking" should {
-
-      "succeed and tag" in {
-        val path     = Uri.Path("my/file-4.txt")
-        val tempAttr = attributes("file-4.txt").copy(digest = NotComputedDigest)
-        val attr     = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
-        val newTag   = UserTag.unsafe(genString())
-        val expected =
-          mkResource(
-            file2,
-            projectRef,
-            remoteRev,
-            attr,
-            storageType = RemoteStorageType,
-            rev = 3,
-            tags = Tags(tag -> 1, newTag -> 3)
-          )
-        val actual   = files
-          .updateLegacyLink(
-            fileId("file2"),
-            Some(remoteId),
-            description("file-4.txt", `text/plain(UTF-8)`),
-            path,
-            2,
-            Some(newTag)
-          )
-          .accepted
-        val byTag    = files.fetch(FileId("file2", newTag, projectRef)).accepted
-
-        actual shouldEqual expected
-        byTag shouldEqual expected
-      }
-
-      "succeed if also updating custom metadata" in {
-        val id   = fileId(genString())
-        val path = Uri.Path("my/file-6.txt")
-
-        val (name, desc, keywords) = (genString(), genString(), genKeywords())
-
-        val originalFileDescription = description("file-6.txt")
-
-        files.createLegacyLink(id, Some(remoteId), originalFileDescription, path, None).accepted
-        eventually {
-          files.fetch(id).map { fetched =>
-            fetched.value.attributes.name should contain(name)
-            fetched.value.attributes.description should contain(desc)
-            fetched.value.attributes.keywords shouldEqual keywords
-          }
-        }
-
-      }
-
-      "reject if file doesn't exists" in {
-        files
-          .updateLegacyLink(fileIdIri(nxv + "other"), None, description("myfile.txt"), Uri.Path.Empty, 1, None)
-          .rejectedWith[FileNotFound]
-      }
-
-      "reject if digest is not computed" in {
-        files
-          .updateLegacyLink(fileId("file2"), None, description("myfile.txt"), Uri.Path.Empty, 3, None)
-          .rejectedWith[DigestNotComputed]
-      }
-
-      "reject if storage does not exist" in {
-        val storage = nxv + "other-storage"
-        files
-          .updateLegacyLink(fileId("file1"), Some(storage), description("myfile.txt"), Uri.Path.Empty, 2, None)
-          .rejected shouldEqual StorageNotFound(storage, projectRef)
-      }
-
-      "reject if project does not exist" in {
-        val projectRef = ProjectRef(org, Label.unsafe("other"))
-
-        files
-          .updateLegacyLink(FileId(file1, projectRef), None, description("myfile.txt"), Uri.Path.Empty, 2, None)
-          .rejectedWith[ProjectNotFound]
-      }
-
-      "reject if project is deprecated" in {
-        files
-          .updateLegacyLink(
-            FileId(file1, deprecatedProject.ref),
-            None,
-            description("myfile.txt"),
-            Uri.Path.Empty,
-            2,
-            None
-          )
-          .rejectedWith[ProjectIsDeprecated]
-      }
-    }
-
     "tagging a file" should {
 
       "succeed" in {
-        val expected = mkResource(file1, projectRef, diskRev, attributes(), rev = 3, tags = Tags(tag -> 1))
+        val expected = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 3, tags = Tags(tag -> 1))
         val actual   = files.tag(fileIdIri(file1), tag, tagRev = 1, 2).accepted
         actual shouldEqual expected
       }
@@ -605,17 +404,17 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.tag(FileId(rdId, projectRef), tag, tagRev = 2, 4).rejectedWith[ProjectNotFound]
+        files.tag(FileId(nxv + "file", projectRef), tag, tagRev = 2, 4).rejectedWith[ProjectNotFound]
       }
 
       "reject if project is deprecated" in {
-        files.tag(FileId(rdId, deprecatedProject.ref), tag, tagRev = 2, 4).rejectedWith[ProjectIsDeprecated]
+        files.tag(FileId(nxv + "file", deprecatedProject.ref), tag, tagRev = 2, 4).rejectedWith[ProjectIsDeprecated]
       }
     }
 
     "deleting a tag" should {
       "succeed" in {
-        val expected = mkResource(file1, projectRef, diskRev, attributes(), rev = 4)
+        val expected = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 4)
         val actual   = files.deleteTag(fileIdIri(file1), tag, 3).accepted
         actual shouldEqual expected
       }
@@ -633,7 +432,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     "deprecating a file" should {
 
       "succeed" in {
-        val expected = mkResource(file1, projectRef, diskRev, attributes(), rev = 5, deprecated = true)
+        val expected = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 5, deprecated = true)
         val actual   = files.deprecate(fileIdIri(file1), 4).accepted
         actual shouldEqual expected
       }
@@ -659,7 +458,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "allow tagging after deprecation" in {
         val expected =
-          mkResource(file1, projectRef, diskRev, attributes(), rev = 6, tags = Tags(tag -> 4), deprecated = true)
+          mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 6, tags = Tags(tag -> 4), deprecated = true)
         val actual   = files.tag(fileIdIri(file1), tag, tagRev = 4, 5).accepted
         actual shouldEqual expected
       }
@@ -705,10 +504,10 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
     }
 
     "fetching a file" should {
-      val resourceRev1 = mkResource(file1, projectRef, diskRev, attributes("myfile.txt"))
-      val resourceRev4 = mkResource(file1, projectRef, diskRev, attributes(), rev = 4)
+      val resourceRev1 = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder, "myfile.txt"))
+      val resourceRev4 = mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 4)
       val resourceRev6 =
-        mkResource(file1, projectRef, diskRev, attributes(), rev = 6, tags = Tags(tag -> 4), deprecated = true)
+        mkResource(file1, projectRef, defaultStorageRef, attributes(defaultStorageFolder), rev = 6, tags = Tags(tag -> 4), deprecated = true)
 
       "succeed" in {
         files.fetch(fileIdIri(file1)).accepted shouldEqual resourceRev6
@@ -742,7 +541,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.fetch(FileId(rdId, projectRef)).rejectedWith[ProjectNotFound]
+        files.fetch(FileId(nxv + "file", projectRef)).rejectedWith[ProjectNotFound]
       }
 
     }
@@ -793,7 +592,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.fetchContent(FileId(rdId, projectRef)).rejectedWith[ProjectNotFound]
+        files.fetchContent(FileId(nxv + "file", projectRef)).rejectedWith[ProjectNotFound]
       }
 
     }
@@ -802,7 +601,7 @@ class FilesSpec(fixture: RemoteStorageClientFixtures)
       val filename = genString()
       val id       = fileId(filename)
       val request  = FileUploadRequest.from(randomEntity(filename, 1))
-      files.create(id, Some(diskId), request, None).accepted
+      files.create(id, Some(defaultStorageId), request, None).accepted
       files.fetch(id).accepted
       assertion(id)
     }

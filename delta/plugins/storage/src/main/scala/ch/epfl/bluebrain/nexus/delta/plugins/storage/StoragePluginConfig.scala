@@ -34,10 +34,7 @@ object StoragePluginConfig {
       .flatTap { config =>
         IO.whenA(config.storages.storageTypeConfig.amazon.isDefined) {
           logger.info("Amazon S3 storage is enabled")
-        } >>
-          IO.whenA(config.storages.storageTypeConfig.remoteDisk.isDefined) {
-            logger.info("Remote-disk storage is enabled")
-          }
+        }
       }
 
   implicit final val storagePluginConfig: ConfigReader[StoragePluginConfig] =

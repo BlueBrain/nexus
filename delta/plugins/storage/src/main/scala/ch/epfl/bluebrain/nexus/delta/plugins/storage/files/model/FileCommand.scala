@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageWrite
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -153,34 +152,6 @@ object FileCommand {
       rev: Int,
       subject: Subject,
       tag: Option[UserTag]
-  ) extends FileCommand
-
-  /**
-    * Command to update an asynchronously computed file attributes. This command gets issued when linking a file using a
-    * ''RemoteDiskStorage''. Since the attributes cannot be computed synchronously, ''NotComputedDigest'' and wrong size
-    * are returned
-    *
-    * @param id
-    *   the file identifier
-    * @param project
-    *   the project the file belongs to
-    * @param mediaType
-    *   the optional media type of the file
-    * @param bytes
-    *   the size of the file file in bytes
-    * @param digest
-    *   the digest information of the file
-    * @param subject
-    *   the identity associated to this command
-    */
-  final case class UpdateFileAttributes(
-      id: Iri,
-      project: ProjectRef,
-      mediaType: Option[ContentType],
-      bytes: Long,
-      digest: Digest,
-      rev: Int,
-      subject: Subject
   ) extends FileCommand
 
   /**

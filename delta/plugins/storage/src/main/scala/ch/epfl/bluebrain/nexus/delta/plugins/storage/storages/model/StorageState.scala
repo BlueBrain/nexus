@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, S3Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageResource, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -27,8 +27,6 @@ import java.time.Instant
   *   additional fields to configure the storage
   * @param source
   *   the representation of the storage as posted by the subject
-  * @param tags
-  *   the collection of tag aliases
   * @param rev
   *   the current state revision
   * @param deprecated
@@ -63,7 +61,6 @@ final case class StorageState(
     value match {
       case value: DiskStorageValue       => DiskStorage(id, project, value, source)
       case value: S3StorageValue         => S3Storage(id, project, value, source)
-      case value: RemoteDiskStorageValue => RemoteDiskStorage(id, project, value, source)
     }
 
   def toResource: StorageResource =

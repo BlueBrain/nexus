@@ -7,7 +7,6 @@
     "@vocab": "https://bluebrain.github.io/nexus/keywords/",
     "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
     "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
-    "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage",
     "File": "https://bluebrain.github.io/nexus/vocabulary/File",
     "_digest": "https://bluebrain.github.io/nexus/vocabulary/digest",
     "_bytes": "https://bluebrain.github.io/nexus/vocabulary/bytes",

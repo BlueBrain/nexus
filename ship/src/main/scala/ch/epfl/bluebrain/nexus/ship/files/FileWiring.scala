@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.ship.files
 
-import akka.http.scaladsl.model.{HttpEntity, Uri}
+import akka.http.scaladsl.model.HttpEntity
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileDelegationRequest, FileStorageMetadata}
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDelegationRequest, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FormDataExtractor, UploadedFileInformation}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 
 object FileWiring {
 
@@ -20,12 +20,6 @@ object FileWiring {
     ): IO[FileStorageMetadata] = ???
 
     override def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource] = noFileOperationError
-
-    override def legacyLink(storage: Storage, sourcePath: Uri.Path, filename: String): IO[FileStorageMetadata] =
-      noFileOperationError
-
-    override def fetchAttributes(storage: Storage, attributes: FileAttributes): IO[ComputedFileAttributes] =
-      noFileOperationError
 
     override def delegate(storage: Storage, filename: String): IO[FileDelegationRequest.TargetLocation] =
       noFileOperationError

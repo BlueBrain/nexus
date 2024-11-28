@@ -15,8 +15,6 @@ services:
         condition: service_healthy
       postgres:
         condition: service_started
-      storage-service:
-        condition: service_started
       localstack:
         condition: service_started
     environment:
@@ -148,20 +146,6 @@ services:
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
-
-  storage-service:
-    container_name: "nexus-storage-service"
-    image: bluebrain/nexus-storage:1.10.0
-    environment:
-      STORAGE_CONFIG_FILE: "/config/storage.conf"
-      KAMON_ENABLED: "false"
-    entrypoint: [ "./bin/storage",
-                  "-Dkamon.modules.prometheus-reporter.enabled=false",
-                  "-Dkamon.modules.jaeger.enabled=false" ]
-    ports:
-      - 8090:8090
-    volumes:
-      - ./config:/config
 
   localstack:
     image: localstack/localstack:4.0

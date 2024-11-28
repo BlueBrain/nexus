@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, contexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -77,19 +77,6 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: S3StorageValue,
-      source: Json
-  ) extends Storage {
-    override val default: Boolean           = value.default
-    override val storageValue: StorageValue = value
-  }
-
-  /**
-    * A storage that stores and fetches files from a remote volume using a well-defined API
-    */
-  final case class RemoteDiskStorage(
-      id: Iri,
-      project: ProjectRef,
-      value: RemoteDiskStorageValue,
       source: Json
   ) extends Storage {
     override val default: Boolean           = value.default

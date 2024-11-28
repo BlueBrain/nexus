@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
+import akka.http.scaladsl.model.MediaRange
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.headers.{`Content-Length`, Accept}
-import akka.http.scaladsl.model.{ContentType, MediaRange}
+import akka.http.scaladsl.model.headers.{Accept, `Content-Length`}
 import akka.http.scaladsl.server.Directives.{extractRequestEntity, optionalHeaderValueByName, provide, reject}
 import akka.http.scaladsl.server._
 import cats.effect.IO
@@ -13,9 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.LinkFileRequest.{fileDescriptionFromRequest, linkFileDecoder}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileResource, Files, schemas}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragePluginExceptionHandler.handleStorageExceptions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -31,9 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
-import io.circe.{parser, Decoder}
+import io.circe.parser
 
 /**
   * The files routes
@@ -77,18 +73,6 @@ final class FilesRoutes(
             concat(
               (pathEndOrSingleSlash & post & noRev & storageParam & indexingMode & tagParam) { (storage, mode, tag) =>
                 concat(
-                  // Link a file without id segment
-                  entity(as[LinkFileRequest]) { linkRequest =>
-                    emit(
-                      Created,
-                      fileDescriptionFromRequest(linkRequest)
-                        .flatMap { desc =>
-                          files
-                            .createLegacyLink(storage, project, desc, linkRequest.path, tag)
-                            .index(mode)
-                        }
-                    )
-                  },
                   // Create a file without id segment
                   uploadRequest { request =>
                     emit(
@@ -107,24 +91,6 @@ final class FilesRoutes(
                         concat(
                           (revParam & storageParam & tagParam) { case (rev, storage, tag) =>
                             concat(
-                              // Update a Link
-                              entity(as[LinkFileRequest]) { linkRequest =>
-                                emit(
-                                  fileDescriptionFromRequest(linkRequest)
-                                    .flatMap { description =>
-                                      files
-                                        .updateLegacyLink(
-                                          fileId,
-                                          storage,
-                                          description,
-                                          linkRequest.path,
-                                          rev,
-                                          tag
-                                        )
-                                        .index(mode)
-                                    }
-                                )
-                              },
                               // Update a file
                               (requestEntityPresent & uploadRequest) { request =>
                                 emit(
@@ -145,18 +111,6 @@ final class FilesRoutes(
                           },
                           (storageParam & tagParam) { case (storage, tag) =>
                             concat(
-                              // Link a file with id segment
-                              entity(as[LinkFileRequest]) { linkRequest =>
-                                emit(
-                                  Created,
-                                  fileDescriptionFromRequest(linkRequest)
-                                    .flatMap { description =>
-                                      files
-                                        .createLegacyLink(fileId, storage, description, linkRequest.path, tag)
-                                        .index(mode)
-                                    }
-                                )
-                              },
                               // Create a file with id segment
                               uploadRequest { request =>
                                 emit(
@@ -312,23 +266,4 @@ object FilesRoutes {
       case (entity, customMetadata, contentLength) =>
         provide(FileUploadRequest(entity, customMetadata, contentLength))
     }
-
-  final case class LinkFileRequest(
-      path: Path,
-      filename: Option[String],
-      mediaType: Option[ContentType],
-      metadata: Option[FileCustomMetadata]
-  )
-
-  object LinkFileRequest {
-
-    implicit private val config: Configuration             = Configuration.default
-    implicit val linkFileDecoder: Decoder[LinkFileRequest] = deriveConfiguredDecoder[LinkFileRequest]
-
-    def fileDescriptionFromRequest(f: LinkFileRequest): IO[FileDescription] =
-      f.filename.orElse(f.path.lastSegment) match {
-        case Some(value) => IO.pure(FileDescription(value, f.mediaType, f.metadata))
-        case None        => IO.raiseError(InvalidFilePath)
-      }
-  }
 }

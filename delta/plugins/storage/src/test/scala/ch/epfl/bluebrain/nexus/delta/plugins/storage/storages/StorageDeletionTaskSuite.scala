@@ -28,7 +28,7 @@ class StorageDeletionTaskSuite extends NexusSuite with StorageFixtures with Acto
     val content                                 = "file content"
     val entity                                  = HttpEntity(content)
     val uploading                               = DiskUploadingFile(project, diskVal.volume, DigestAlgorithm.default, "trace", entity)
-    val storageStream: Stream[IO, StorageValue] = Stream(diskVal, s3Val, remoteVal)
+    val storageStream: Stream[IO, StorageValue] = Stream(diskVal, s3Val)
     val storageDir                              = diskVal.rootDirectory(project)
 
     def fileExists(metadata: FileStorageMetadata) = diskOps.fetch(metadata.location.path).redeem(_ => false, _ => true)
@@ -38,7 +38,7 @@ class StorageDeletionTaskSuite extends NexusSuite with StorageFixtures with Acto
       _           <- fileExists(metadata).assertEquals(true, s"'${metadata.location}' should have been created.")
       deletionTask = new StorageDeletionTask(_ => storageStream)
       result      <- deletionTask(project)
-      _            = assertEquals(result.log.size, 3, s"The three storages should have been processed:\n$result")
+      _            = assertEquals(result.log.size, 2, s"The two storages should have been processed:\n$result")
       _            = fileExists(metadata).assertEquals(false, s"'${metadata.location}' should have been deleted.")
       _            = assert(!storageDir.exists, s"The directory '$storageDir' should have been deleted.")
 

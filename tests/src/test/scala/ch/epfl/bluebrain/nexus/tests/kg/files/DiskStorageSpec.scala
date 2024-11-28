@@ -63,19 +63,4 @@ class DiskStorageSpec extends StorageSpec {
       }
     }
   }
-
-  s"Linking against the default storage" should {
-    "reject linking operations" in {
-      val payload = Json.obj(
-        "filename"  -> Json.fromString("logo.png"),
-        "path"      -> Json.fromString("does/not/matter"),
-        "mediaType" -> Json.fromString("image/png")
-      )
-
-      deltaClient.put[Json](s"/files/$projectRef/linking.png", payload, Coyote) { (json, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("kg/files/linking-notsupported.json", "org" -> orgId, "proj" -> projId)
-      }
-    }
-  }
 }
