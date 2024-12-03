@@ -93,15 +93,6 @@ object FileRejection {
       )
 
   /**
-    * Signals that the digest of the file has already been computed
-    *
-    * @param id
-    *   the file identifier
-    */
-  final case class DigestAlreadyComputed(id: Iri)
-      extends FileRejection(s"The digest computation for the current file '$id' has already been completed")
-
-  /**
     * Rejection returned when a subject intends to perform an operation on the current file, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
@@ -169,22 +160,6 @@ object FileRejection {
       )
 
   /**
-    * Rejection returned when interacting with the storage operations bundle to fetch a file attributes from a storage
-    *
-    * @param id
-    *   the file id
-    * @param storageId
-    *   the storage id
-    * @param rejection
-    *   the rejection which occurred with the storage
-    */
-  final case class FetchAttributesRejection(
-      id: Iri,
-      storageId: Iri,
-      rejection: StorageFileRejection.FetchAttributeRejection
-  ) extends FileRejection(s"Attributes of file '$id' could not be fetched using storage '$storageId'")
-
-  /**
     * Rejection returned when interacting with the storage operations bundle to save a file in a storage
     *
     * @param id
@@ -196,22 +171,6 @@ object FileRejection {
     */
   final case class SaveRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.SaveFileRejection)
       extends FileRejection(s"File '$id' could not be saved using storage '$storageId'", Some(rejection.loggedDetails))
-
-  /**
-    * Rejection returned when interacting with the storage operations bundle to move a file in a storage
-    *
-    * @param id
-    *   the file id
-    * @param storageId
-    *   the storage id
-    * @param rejection
-    *   the rejection which occurred with the storage
-    */
-  final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
-      extends FileRejection(
-        s"File '$id' could not be linked using storage '$storageId'",
-        Some(rejection.loggedDetails)
-      )
 
   /**
     * Rejection returned when attempting to link a file without providing a filename or a path that ends with a
@@ -227,18 +186,14 @@ object FileRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
-        case SaveRejection(_, _, rejection)            =>
+        case WrappedAkkaRejection(rejection)  => rejection.asJsonObject
+        case SaveRejection(_, _, rejection)   =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case FetchRejection(_, _, rejection)           =>
+        case FetchRejection(_, _, rejection)  =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case FetchAttributesRejection(_, _, rejection) =>
-          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case LinkRejection(_, _, rejection)            =>
-          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _: FileNotFound                           => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                         => obj
+        case IncorrectRev(provided, expected) => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _: FileNotFound                  => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                => obj
       }
     }
 

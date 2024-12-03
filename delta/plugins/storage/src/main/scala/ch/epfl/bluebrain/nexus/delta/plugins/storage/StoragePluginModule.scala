@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives.concat
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -13,31 +12,27 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{DelegateFilesRoutes, FilesRoutes, LinkFilesRoutes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileAttributesUpdateStream, Files, FormDataExtractor, MediaTypeDetector}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, FormDataExtractor, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.{S3StorageAccess, StorageAccess}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskFileOperations
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.{RemoteStorageAccess, S3StorageAccess, StorageAccess}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
@@ -49,7 +44,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -67,10 +61,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[ShowFileLocation].from { cfg: StorageTypeConfig => cfg.showFileLocation }
 
-  make[HttpClient].named("storage").from { (as: ActorSystem) =>
-    HttpClient.noRetry(compression = false)(as)
-  }
-
   make[S3StorageClient].fromResource { (cfg: StoragePluginConfig) =>
     S3StorageClient.resource(cfg.storages.storageTypeConfig.amazon)
   }
@@ -80,9 +70,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     new S3LocationGenerator(prefix)
   }
 
-  make[StorageAccess].from { (remoteClient: RemoteDiskStorageClient, s3Client: S3StorageClient) =>
-    StorageAccess(RemoteStorageAccess(remoteClient), S3StorageAccess(s3Client))
-  }
+  make[StorageAccess].from { (s3Client: S3StorageClient) => StorageAccess(S3StorageAccess(s3Client)) }
 
   make[Storages]
     .fromEffect {
@@ -179,17 +167,13 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     DiskFileOperations.mk(as, uuidF)
   }
 
-  make[RemoteDiskFileOperations].from { (client: RemoteDiskStorageClient, uuidF: UUIDF) =>
-    RemoteDiskFileOperations.mk(client)(uuidF)
-  }
-
   make[S3FileOperations].from {
     (client: S3StorageClient, locationGenerator: S3LocationGenerator, uuidF: UUIDF, as: ActorSystem) =>
       S3FileOperations.mk(client, locationGenerator)(as, uuidF)
   }
 
-  make[FileOperations].from { (disk: DiskFileOperations, remoteDisk: RemoteDiskFileOperations, s3: S3FileOperations) =>
-    FileOperations.apply(disk, remoteDisk, s3)
+  make[FileOperations].from { (disk: DiskFileOperations, s3: S3FileOperations) =>
+    FileOperations.apply(disk, s3)
   }
 
   make[MediaTypeDetector].from { (cfg: StoragePluginConfig) =>
@@ -224,11 +208,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         linkFileAction,
         clock
       )(uuidF)
-  }
-
-  make[FileAttributesUpdateStream].fromEffect {
-    (files: Files, storages: Storages, storageTypeConfig: StorageTypeConfig, supervisor: Supervisor) =>
-      FileAttributesUpdateStream.start(files, storages, storageTypeConfig.remoteDisk, supervisor)
   }
 
   make[FilesRoutes].from {
@@ -301,26 +280,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ResourceShift[_, _, _]].ref[File.Shift]
-
-  make[RemoteDiskStorageClient].from {
-    (
-        client: HttpClient @Id("storage"),
-        as: ActorSystem,
-        authTokenProvider: AuthTokenProvider,
-        cfg: StorageTypeConfig
-    ) =>
-      RemoteDiskStorageClient(client, authTokenProvider, cfg.remoteDisk)(as)
-  }
-
-  many[ServiceDependency].addSet {
-    (
-        cfg: StorageTypeConfig,
-        remoteStorageClient: RemoteDiskStorageClient
-    ) =>
-      cfg.remoteDisk.fold(Set.empty[ServiceDependency]) { _ =>
-        Set(new RemoteStorageServiceDependency(remoteStorageClient))
-      }
-  }
 
   many[ScopeInitialization].addSet { (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>
     Option.when(cfg.enableDefaultCreation)(StorageScopeInitialization(storages, serviceAccount, cfg.defaults)).toSet

@@ -30,7 +30,7 @@ The latest stable release is **v1.10.0** released on **17.09.2024**.
 
 The items listed below are changes that have been made in this release that break compatibility with previous releases.
 
-- The Remote storage server implementation has been removed.
+- The Remote storage implementation has been removed.
 - The automatic provisioning of projects has been removed.
 - The Jira integration plugin has been removed.
 @@@

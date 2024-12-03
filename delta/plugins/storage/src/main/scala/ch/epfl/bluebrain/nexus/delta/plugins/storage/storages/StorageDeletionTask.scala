@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -25,13 +25,9 @@ final class StorageDeletionTask(currentStorages: ProjectRef => Stream[IO, Storag
   private def run(project: ProjectRef) =
     currentStorages(project)
       .evalScan(init) {
-        case (acc, disk: DiskStorageValue)         =>
+        case (acc, disk: DiskStorageValue) =>
           deleteRecursively(project, disk).map(acc ++ _)
-        case (acc, remote: RemoteDiskStorageValue) =>
-          val message =
-            s"Deletion of files for remote storages is yet to be implemented. Files in folder '${remote.folder}' will remain."
-          logger.warn(message).as(acc ++ message)
-        case (acc, s3: S3StorageValue)             =>
+        case (acc, s3: S3StorageValue)     =>
           val message =
             s"Deletion of files for S3 storages is yet to be implemented. Files in bucket '${s3.bucket}' will remain."
           logger.warn(message).as(acc ++ message)

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
@@ -16,12 +17,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -114,59 +114,6 @@ final class Files(
       res                   <- eval(CreateFile(iri, id.project, storageRef, storage.tpe, metadata, caller.subject, tag))
     } yield res
   }.span("createFile")
-
-  /**
-    * Create a new file linking where the id is self generated
-    *
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef
-    *   the project where the file will belong
-    * @param path
-    *   the path where the file is located inside the storage
-    * @param tag
-    *   the optional tag this file link is being created with, attached to the current revision
-    */
-  def createLegacyLink(
-      storageId: Option[IdSegment],
-      projectRef: ProjectRef,
-      description: FileDescription,
-      path: Uri.Path,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileResource] = {
-    for {
-      pc         <- fetchContext.onCreate(projectRef)
-      iri        <- generateId(pc)
-      storageIri <- storageId.traverse(expandStorageIri(_, pc))
-      res        <- createLegacyLink(iri, projectRef, storageIri, description, path, tag)
-    } yield res
-  }.span("createLink")
-
-  /**
-    * Create a new file linking it from an existing file in a storage
-    *
-    * @param id
-    *   the file identifier to expand as the iri of the file
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param path
-    *   the path where the file is located inside the storage
-    * @param tag
-    *   the optional tag this file link is being created with, attached to the current revision
-    */
-  def createLegacyLink(
-      id: FileId,
-      storageId: Option[IdSegment],
-      description: FileDescription,
-      path: Uri.Path,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileResource] = {
-    for {
-      (iri, pc)  <- id.expandIri(fetchContext.onCreate)
-      storageIri <- storageId.traverse(expandStorageIri(_, pc))
-      res        <- createLegacyLink(iri, id.project, storageIri, description, path, tag)
-    } yield res
-  }.span("createLink")
 
   /**
     * Grants a delegation to create the physical file on the given storage
@@ -306,37 +253,6 @@ final class Files(
   }.span("updateLinkedFile")
 
   /**
-    * Update a new file linking it from an existing file in a storage
-    *
-    * @param id
-    *   the file identifier to expand as the iri of the file
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param rev
-    *   the current revision of the file
-    * @param path
-    *   the path where the file is located inside the storage
-    */
-  def updateLegacyLink(
-      id: FileId,
-      storageId: Option[IdSegment],
-      description: FileDescription,
-      path: Uri.Path,
-      rev: Int,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileResource] = {
-    for {
-      (iri, pc)             <- id.expandIri(fetchContext.onModify)
-      storageIri            <- storageId.traverse(expandStorageIri(_, pc))
-      _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
-      (storageRef, storage) <- fetchStorage.onWrite(storageIri, id.project)
-      metadata              <- legacyLinkFile(storage, path, description.filename, iri)
-      attributes             = FileAttributes.from(description.filename, description.mediaType, description.metadata, metadata)
-      res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
-    } yield res
-  }.span("updateLink")
-
-  /**
     * Add a tag to an existing file
     *
     * @param id
@@ -459,33 +375,6 @@ final class Files(
     }
   }
 
-  private def createLegacyLink(
-      iri: Iri,
-      project: ProjectRef,
-      storageIri: Option[Iri],
-      description: FileDescription,
-      path: Uri.Path,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileResource] =
-    for {
-      _                     <- test(CreateFile(iri, project, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchStorage.onWrite(storageIri, project)
-      storageMetadata       <- legacyLinkFile(storage, path, description.filename, iri)
-      fileAttributes         =
-        FileAttributes.from(description.filename, description.mediaType, description.metadata, storageMetadata)
-      res                   <- eval(CreateFile(iri, project, storageRef, storage.tpe, fileAttributes, caller.subject, tag))
-    } yield res
-
-  private def legacyLinkFile(
-      storage: Storage,
-      path: Uri.Path,
-      filename: String,
-      fileId: Iri
-  ): IO[FileStorageMetadata] =
-    fileOperations.legacyLink(storage, path, filename).adaptError { case e: StorageFileRejection =>
-      LinkRejection(fileId, storage.id, e)
-    }
-
   private def eval(cmd: FileCommand): IO[FileResource] = FilesLog.eval(log)(cmd)
 
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
@@ -501,23 +390,6 @@ final class Files(
     uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   def states(offset: Offset): SuccessElemStream[FileState] = log.states(Scope.root, offset)
-
-  private[files] def updateAttributes(f: FileState, storage: Storage): IO[Unit] = {
-    val attr = f.attributes
-    for {
-      _        <- IO.raiseWhen(f.attributes.digest.computed)(DigestAlreadyComputed(f.id))
-      newAttr  <- fetchAttributes(storage, attr, f.id)
-      mediaType = attr.mediaType orElse Some(newAttr.mediaType)
-      command   = UpdateFileAttributes(f.id, f.project, mediaType, newAttr.bytes, newAttr.digest, f.rev, f.updatedBy)
-      _        <- log.evaluate(f.project, f.id, command)
-    } yield ()
-  }
-
-  private def fetchAttributes(storage: Storage, attr: FileAttributes, fileId: Iri): IO[ComputedFileAttributes] = {
-    fileOperations
-      .fetchAttributes(storage, attr)
-      .adaptError { case e: FetchAttributeRejection => FetchAttributesRejection(fileId, storage.id, e) }
-  }
 
   def cancelEvent(command: CancelEvent): IO[Unit] = log.evaluate(command.project, command.id, command).void
 
@@ -624,19 +496,6 @@ object Files {
           .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1, _, c.subject, c.tag))
     }
 
-    def updateAttributes(c: UpdateFileAttributes) = state match {
-      case None                                    => IO.raiseError(FileNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev               => IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if s.deprecated                 => IO.raiseError(FileIsDeprecated(c.id))
-      case Some(s) if s.attributes.digest.computed => IO.raiseError(DigestAlreadyComputed(s.id))
-      case Some(s) if !c.digest.computed           => IO.raiseError(DigestNotComputed(s.id))
-      case Some(s)                                 =>
-        // format: off
-        clock.realTimeInstant
-          .map(FileAttributesUpdated(c.id, c.project, s.storage, s.storageType, c.mediaType, c.bytes, c.digest, s.rev + 1, _, c.subject))
-      // format: on
-    }
-
     def updateCustomMetadata(c: UpdateFileCustomMetadata) = state match {
       case None                      => IO.raiseError(FileNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
@@ -706,7 +565,6 @@ object Files {
     cmd match {
       case c: CreateFile               => create(c)
       case c: UpdateFile               => update(c)
-      case c: UpdateFileAttributes     => updateAttributes(c)
       case c: UpdateFileCustomMetadata => updateCustomMetadata(c)
       case c: TagFile                  => tag(c)
       case c: DeleteFileTag            => deleteTag(c)

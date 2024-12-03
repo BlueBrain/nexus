@@ -105,7 +105,7 @@ object FileEvent {
     * @param project
     *   the project the file belongs to
     * @param storage
-    *   the reference to the remote storage used
+    *   the reference to the storage used
     * @param storageType
     *   the type of storage
     * @param attributes
@@ -139,7 +139,7 @@ object FileEvent {
     * @param project
     *   the project the file belongs to
     * @param storage
-    *   the reference to the remote storage used
+    *   the reference to the storage used
     * @param storageType
     *   the type of storage
     * @param metadata

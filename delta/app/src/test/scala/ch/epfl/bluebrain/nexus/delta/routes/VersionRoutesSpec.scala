@@ -31,7 +31,7 @@ class VersionRoutesSpec extends BaseRouteSpec {
   }
 
   private val dependency2 = new ServiceDependency {
-    override def serviceDescription: IO[ServiceDescription] = IO.pure(ServiceDescription("remoteStorage", "1.0.0"))
+    override def serviceDescription: IO[ServiceDescription] = IO.pure(ServiceDescription("blazegraph", "1.0.0"))
   }
 
   private val descriptionConfig = DescriptionConfig(Name.unsafe("delta"), Name.unsafe("dev"))
@@ -82,7 +82,7 @@ class VersionRoutesSpec extends BaseRouteSpec {
             "delta": "${descriptionConfig.version}",
             "dependencies": {
               "elasticsearch": "unknown",
-              "remoteStorage": "1.0.0"
+              "blazegraph": "1.0.0"
             },
             "plugins": {
               "pluginA": "1.0",

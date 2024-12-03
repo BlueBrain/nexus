@@ -192,7 +192,7 @@ class FilesRoutesSpec
     "create a file" in {
       postFile("/v1/files/org/proj", entity()) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        val attr = attributes()
+        val attr = attributes(path)
         response.asJson shouldEqual fileMetadata(projectRef, generatedId, attr, diskIdRev)
       }
     }
@@ -239,37 +239,13 @@ class FilesRoutesSpec
       withUUIDF(uuid2) {
         postFile("/v1/files/org/proj?tag=mytag", entity()) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
-          val attr      = attributes(id = uuid2)
+          val attr      = attributes(path, id = uuid2)
           val expected  = fileMetadata(projectRef, generatedId2, attr, diskIdRev)
           val userTag   = UserTag.unsafe(tag)
           val fileByTag = files.fetch(FileId(generatedId2, userTag, projectRef)).accepted
           response.asJson shouldEqual expected
           fileByTag.value.tags.tags should contain(userTag)
         }
-      }
-    }
-
-    "fail to create a file link using a storage that does not allow it" in {
-      val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
-      putJson("/v1/files/org/proj/file1", payload) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual
-          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storageId" -> dId)
-      }
-    }
-
-    "fail to create a file link if no filename is specified either explicitly or in the path" in {
-      val payload = json"""{"path": "my/", "mediaType": "text/plain"}"""
-      postJson("/v1/files/org/proj", payload) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual
-          json"""
-            {
-              "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-              "@type" : "InvalidFilePath",
-              "reason" : "Linking a file cannot be performed without a 'filename' or a 'path' that does not end with a filename."
-            }
-              """
       }
     }
 
@@ -283,7 +259,7 @@ class FilesRoutesSpec
       val id = genString()
       putFile(s"/v1/files/org/proj/$id?storage=s3-storage", entity(id)) ~> asS3Writer ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        val attr = attributes(id)
+        val attr = attributes(path, id)
         response.asJson shouldEqual
           fileMetadata(projectRef, nxv + id, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
       }
@@ -296,7 +272,7 @@ class FilesRoutesSpec
           entity("fileTagged.txt")
         ) ~> asS3Writer ~> routes ~> check {
           status shouldEqual StatusCodes.Created
-          val attr      = attributes("fileTagged.txt", id = uuid2)
+          val attr      = attributes(path, "fileTagged.txt", id = uuid2)
           val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
           val userTag   = UserTag.unsafe(tag)
           val fileByTag = files.fetch(FileId(generatedId2, userTag, projectRef)).accepted
@@ -351,7 +327,7 @@ class FilesRoutesSpec
           val filename = s"file-idx-$idx.txt"
           putFile(s"$endpoint?rev=${idx + 1}", entity(filename)) ~> asWriter ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            val attr = attributes(filename)
+            val attr = attributes(path, filename)
             response.asJson shouldEqual
               fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = idx + 2)
           }
@@ -490,17 +466,6 @@ class FilesRoutesSpec
       }
     }
 
-    "fail to update a file link using a storage that does not allow it" in {
-      givenAFile { id =>
-        val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
-        putJson(s"/v1/files/org/proj/$id?rev=1", payload) ~> asWriter ~> routes ~> check {
-          status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual
-            jsonContentOf("files/errors/unsupported-operation.json", "id" -> (nxv + id), "storageId" -> dId)
-        }
-      }
-    }
-
     "reject the update of a non-existent file" in {
       val nonExistentFile = genString()
       putFile(s"/v1/files/org/proj/$nonExistentFile?rev=1", entity("other.txt")) ~> asWriter ~> routes ~> check {
@@ -542,7 +507,7 @@ class FilesRoutesSpec
       givenAFile { id =>
         Delete(s"/v1/files/org/proj/$id?rev=1") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          val attr = attributes(id)
+          val attr = attributes(path, id)
           response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = 2, deprecated = true)
         }
       }
@@ -579,7 +544,7 @@ class FilesRoutesSpec
         Put(s"/v1/files/org/proj/$id/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
-            fileMetadata(projectRef, nxv + id, attributes(id), diskIdRev, rev = 3, deprecated = false)
+            fileMetadata(projectRef, nxv + id, attributes(path, id), diskIdRev, rev = 3, deprecated = false)
 
           Get(s"/v1/files/org/proj/$id") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
@@ -611,7 +576,7 @@ class FilesRoutesSpec
         val payload = json"""{"tag": "mytag", "rev": 1}"""
         postJson(s"/v1/files/org/proj/$id/tags?rev=1", payload) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
-          val attr = attributes(id)
+          val attr = attributes(path, id)
           response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = 2)
         }
       }
@@ -704,7 +669,7 @@ class FilesRoutesSpec
       givenAFile { id =>
         Get(s"/v1/files/org/proj/$id") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          val attr = attributes(id)
+          val attr = attributes(path, id)
           response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev)
           response.expectConditionalCacheHeaders
           response.headers should contain(varyHeader)
@@ -714,7 +679,7 @@ class FilesRoutesSpec
 
     "fetch a file metadata by rev and tag" in {
       givenATaggedFile(tag) { id =>
-        val attr      = attributes(id)
+        val attr      = attributes(path, id)
         val endpoints = List(
           s"/v1/files/org/proj/$id",
           s"/v1/resources/org/proj/_/$id",
@@ -772,7 +737,7 @@ class FilesRoutesSpec
 
     def deleteTag(id: String, tag: String, rev: Int) =
       Delete(s"/v1/files/org/proj/$id/tags/$tag?rev=$rev") ~> asWriter ~> routes ~> check {
-        val attr = attributes(s"$id")
+        val attr = attributes(path, s"$id")
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = rev + 1)
       }

@@ -27,8 +27,7 @@ object VersionSpec {
   final case class DependenciesBundle(
       blazegraph: String,
       postgres: Option[String],
-      elasticsearch: String,
-      remoteStorage: String
+      elasticsearch: String
   )
   object DependenciesBundle {
     implicit val dependenciesBundleDecoder: Decoder[DependenciesBundle] = deriveDecoder[DependenciesBundle]

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
@@ -143,53 +143,6 @@ object StorageValue {
         None,
         default,
         bucket,
-        readPermission,
-        writePermission,
-        maxFileSize
-      )
-  }
-
-  /**
-    * Resolved values to create/update a Remote disk storage
-    *
-    * @see
-    *   [[StorageFields.RemoteDiskStorageFields]]
-    */
-  final case class RemoteDiskStorageValue(
-      name: Option[String] = None,
-      description: Option[String] = None,
-      default: Boolean,
-      algorithm: DigestAlgorithm,
-      folder: Label,
-      readPermission: Permission,
-      writePermission: Permission,
-      maxFileSize: Long
-  ) extends StorageValue {
-
-    override val tpe: StorageType = StorageType.RemoteDiskStorage
-
-  }
-
-  object RemoteDiskStorageValue {
-
-    /**
-      * @return
-      *   a RemoteDiskStorageValue without name or description
-      */
-    def apply(
-        default: Boolean,
-        algorithm: DigestAlgorithm,
-        folder: Label,
-        readPermission: Permission,
-        writePermission: Permission,
-        maxFileSize: Long
-    ): RemoteDiskStorageValue =
-      RemoteDiskStorageValue(
-        None,
-        None,
-        default,
-        algorithm,
-        folder,
         readPermission,
         writePermission,
         maxFileSize

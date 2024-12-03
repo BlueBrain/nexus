@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, S3StorageValue}
 
 trait StorageAccess {
 
@@ -18,10 +18,9 @@ trait StorageAccess {
 
 object StorageAccess {
 
-  def apply(remoteAccess: RemoteStorageAccess, s3Access: S3StorageAccess): StorageAccess = {
-    case d: DiskStorageValue       => DiskStorageAccess.checkVolumeExists(d.volume)
-    case s: RemoteDiskStorageValue => remoteAccess.checkFolderExists(s.folder)
-    case s: S3StorageValue         => s3Access.checkBucketExists(s.bucket)
+  def apply(s3Access: S3StorageAccess): StorageAccess = {
+    case d: DiskStorageValue => DiskStorageAccess.checkVolumeExists(d.volume)
+    case s: S3StorageValue   => s3Access.checkBucketExists(s.bucket)
   }
 
 }

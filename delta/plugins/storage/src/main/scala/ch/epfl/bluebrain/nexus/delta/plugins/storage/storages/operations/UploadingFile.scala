@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.http.scaladsl.model.{BodyPartEntity, ContentType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileContentLengthIsMissing
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
   * Represents a file being uploaded with one implementing by storage type
@@ -42,9 +42,6 @@ object UploadingFile {
       entity: BodyPartEntity
   ) extends UploadingFile
 
-  final case class RemoteUploadingFile(project: ProjectRef, folder: Label, filename: String, entity: BodyPartEntity)
-      extends UploadingFile
-
   final case class S3UploadingFile(
       project: ProjectRef,
       bucket: String,
@@ -58,13 +55,11 @@ object UploadingFile {
       storage: Storage,
       info: UploadedFileInformation,
       contentLengthOpt: Option[Long]
-  ): Either[SaveFileRejection.FileContentLengthIsMissing.type, UploadingFile] =
+  ): Either[SaveFileRejection, UploadingFile] =
     storage match {
-      case s: DiskStorage       =>
+      case s: DiskStorage =>
         Right(DiskUploadingFile(s.project, s.value.volume, s.value.algorithm, info.filename, info.contents))
-      case s: RemoteDiskStorage =>
-        Right(RemoteUploadingFile(s.project, s.value.folder, info.filename, info.contents))
-      case s: S3Storage         =>
+      case s: S3Storage   =>
         contentLengthOpt.toRight(FileContentLengthIsMissing).map { contentLength =>
           S3UploadingFile(
             s.project,

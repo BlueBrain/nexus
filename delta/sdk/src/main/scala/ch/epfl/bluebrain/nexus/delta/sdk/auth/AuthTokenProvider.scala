@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 import java.time.{Duration, Instant}
 
 /**
-  * Provides an auth token for the service account, for use when comunicating with remote storage
+  * Provides an auth token for the service account, for use when comunicating with remote Delta instances
   */
 trait AuthTokenProvider {
   def apply(credentials: Credentials): IO[Option[AuthToken]]

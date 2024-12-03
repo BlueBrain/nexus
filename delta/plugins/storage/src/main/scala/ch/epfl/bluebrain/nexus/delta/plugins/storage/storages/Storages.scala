@@ -384,8 +384,7 @@ object Storages {
 
     val allowedStorageTypes: Set[StorageType] =
       Set(StorageType.DiskStorage) ++
-        config.amazon.as(StorageType.S3Storage) ++
-        config.remoteDisk.as(StorageType.RemoteDiskStorage)
+        config.amazon.as(StorageType.S3Storage)
 
     def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageValue] =
       for {

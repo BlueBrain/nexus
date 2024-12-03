@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLdConfiguration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -146,49 +145,6 @@ object StorageFields {
           description,
           default,
           bucket.getOrElse(cfg.defaultBucket),
-          readPermission.getOrElse(cfg.defaultReadPermission),
-          writePermission.getOrElse(cfg.defaultWritePermission),
-          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
-        )
-      }
-  }
-
-  /**
-    * Necessary values to create/update a Remote disk storage
-    *
-    * @param default
-    *   ''true'' if this store is the project's default, ''false'' otherwise
-    * @param folder
-    *   the rootFolder for this storage
-    * @param readPermission
-    *   the permission required in order to download a file from this storage
-    * @param writePermission
-    *   the permission required in order to upload a file to this storage
-    * @param maxFileSize
-    *   the maximum allowed file size (in bytes) for uploaded files
-    */
-  final case class RemoteDiskStorageFields(
-      name: Option[String],
-      description: Option[String],
-      default: Boolean,
-      folder: Label,
-      readPermission: Option[Permission],
-      writePermission: Option[Permission],
-      maxFileSize: Option[Long]
-  ) extends StorageFields {
-
-    override val tpe: StorageType = StorageType.RemoteDiskStorage
-
-    override type Value = RemoteDiskStorageValue
-
-    override def toValue(config: StorageTypeConfig): Option[Value] =
-      config.remoteDisk.map { cfg =>
-        RemoteDiskStorageValue(
-          name,
-          description,
-          default,
-          cfg.digestAlgorithm,
-          folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
           computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)

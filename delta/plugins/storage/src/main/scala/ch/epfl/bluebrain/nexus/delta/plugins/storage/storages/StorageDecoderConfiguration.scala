@@ -16,7 +16,6 @@ private[storages] object StorageDecoderConfiguration {
       val ctx = jsonLdContext
         .addAlias("DiskStorageFields", StorageType.DiskStorage.iri)
         .addAlias("S3StorageFields", StorageType.S3Storage.iri)
-        .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
       Configuration(ctx, "id")
     }
 }

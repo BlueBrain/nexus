@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.{ContentTypes, Uri}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{DigestAlreadyComputed, DigestNotComputed, FileIsDeprecated, FileIsNotDeprecated, FileNotFound, IncorrectRev, ResourceAlreadyExists, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{DigestNotComputed, FileIsDeprecated, FileIsNotDeprecated, FileNotFound, IncorrectRev, ResourceAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
@@ -29,13 +29,13 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
   private val bob   = User("Bob", realm)
   private val alice = User("Alice", realm)
 
-  private val id               = nxv + "files"
-  private val myTag            = UserTag.unsafe("myTag")
-  private val storageRef       = ResourceRef.Revision(nxv + "disk?rev=1", nxv + "disk", 1)
-  private val remoteStorageRef = ResourceRef.Revision(nxv + "remote?rev=1", nxv + "remote", 1)
-  private val mediaType        = Some(ContentTypes.`text/plain(UTF-8)`)
-  private val dig              = ComputedDigest(DigestAlgorithm.default, "something")
-  private val attributes       = FileAttributes(
+  private val id           = nxv + "files"
+  private val myTag        = UserTag.unsafe("myTag")
+  private val storageRef   = ResourceRef.Revision(nxv + "disk", 1)
+  private val s3StorageRef = ResourceRef.Revision(nxv + "s3", 1)
+  private val mediaType    = Some(ContentTypes.`text/plain(UTF-8)`)
+  private val dig          = ComputedDigest(DigestAlgorithm.default, "something")
+  private val attributes   = FileAttributes(
     uuid,
     location = "http://localhost/my/file.txt",
     path = Uri.Path("my/file.txt"),
@@ -62,19 +62,10 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
       "create a new event from a UpdateFile command" in {
         val updateCmd = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice, None)
         val current   =
-          FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1), RemoteStorageType)
+          FileGen.state(id, projectRef, s3StorageRef, attributes.copy(bytes = 1), RemoteStorageType)
 
         evaluate(clock)(Some(current), updateCmd).accepted shouldEqual
           FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, epoch, alice, None)
-      }
-
-      "create a new event from a UpdateFileAttributes command" in {
-        val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
-        val current       =
-          FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1, digest = Digest.NotComputedDigest))
-
-        evaluate(clock)(Some(current), updateAttrCmd).accepted shouldEqual
-          FileAttributesUpdated(id, projectRef, remoteStorageRef, DiskStorageType, mediaType, 10, dig, 2, epoch, alice)
       }
 
       "create a new event from a TagFile command" in {
@@ -120,7 +111,6 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         val current  = FileGen.state(id, projectRef, storageRef, attributes)
         val commands = List(
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice, None),
-          UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
           DeleteFileTag(id, projectRef, myTag, 2, alice),
           DeprecateFile(id, projectRef, 2, alice),
@@ -143,7 +133,6 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
       "reject with FileNotFound" in {
         val commands = List(
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice, None),
-          UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
           DeleteFileTag(id, projectRef, myTag, 2, alice),
           DeprecateFile(id, projectRef, 2, alice),
@@ -158,7 +147,6 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         val current  = FileGen.state(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
         val commands = List(
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice, None),
-          UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -183,20 +171,6 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         evaluate(clock)(Some(current), cmd).rejected shouldEqual DigestNotComputed(id)
       }
 
-      "reject with DigestNotComputed with an update attributes command" in {
-        val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, NotComputedDigest, 1, alice)
-        val current       = FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
-
-        evaluate(clock)(Some(current), updateAttrCmd).rejected shouldEqual DigestAlreadyComputed(id)
-      }
-
-      "reject with DigestAlreadyComputed with an update attributes command" in {
-        val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
-        val current       = FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
-
-        evaluate(clock)(Some(current), updateAttrCmd).rejected shouldEqual DigestAlreadyComputed(id)
-      }
-
     }
 
     "producing next state" should {
@@ -214,7 +188,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
         next(None, event) shouldEqual None
 
         val att     = attributes.copy(bytes = 1)
-        val current = FileGen.state(id, projectRef, remoteStorageRef, att, createdBy = bob, updatedBy = bob)
+        val current = FileGen.state(id, projectRef, s3StorageRef, att, createdBy = bob, updatedBy = bob)
 
         next(Some(current), event).value shouldEqual
           current.copy(rev = 2, storage = storageRef, attributes = attributes, updatedAt = time2, updatedBy = alice)

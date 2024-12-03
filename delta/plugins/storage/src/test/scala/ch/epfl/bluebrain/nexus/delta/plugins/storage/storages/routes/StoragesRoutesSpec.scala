@@ -67,15 +67,12 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     ProjectGen.project("myorg", "myproject", uuid = randomUuid, orgUuid = randomUuid, base = projBase, mappings = am)
   private val projectRef = project.ref
 
-  private val remoteIdEncoded = UrlUtils.encode(rdId.toString)
-  private val s3IdEncoded     = UrlUtils.encode(s3Id.toString)
+  private val s3IdEncoded = UrlUtils.encode(s3Id.toString)
 
-  private val diskRead    = Permission.unsafe("disk/read")
-  private val diskWrite   = Permission.unsafe("disk/write")
-  private val s3Read      = Permission.unsafe("s3/read")
-  private val s3Write     = Permission.unsafe("s3/write")
-  private val remoteRead  = Permission.unsafe("remote/read")
-  private val remoteWrite = Permission.unsafe("remote/write")
+  private val diskRead  = Permission.unsafe("disk/read")
+  private val diskWrite = Permission.unsafe("disk/write")
+  private val s3Read    = Permission.unsafe("s3/read")
+  private val s3Write   = Permission.unsafe("s3/write")
 
   override val allowedPerms = Seq(
     permissions.read,
@@ -84,9 +81,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     diskRead,
     diskWrite,
     s3Read,
-    s3Write,
-    remoteRead,
-    remoteWrite
+    s3Write
   )
 
   private val perms        = allowedPerms.toSet
@@ -95,7 +90,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
   private val storageStatistics: StoragesStatistics =
     (storage, project) =>
-      if (project.equals(projectRef) && storage.toString.equals("remote-disk-storage"))
+      if (project.equals(projectRef) && storage.toString.equals("s3-storage"))
         IO.pure(StorageStatEntry(50, 5000))
       else IO.raiseError(StorageNotFound(iri"https://bluebrain.github.io/nexus/vocabulary/$storage", project))
 
@@ -120,8 +115,8 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val readPermissions  = Set(permissions.read, diskRead, s3Read, remoteRead)
-    val writePermissions = Set(permissions.write, diskWrite, s3Write, remoteWrite)
+    val readPermissions  = Set(permissions.read, diskRead, s3Read)
+    val writePermissions = Set(permissions.write, diskWrite, s3Write)
     aclCheck.append(AclAddress.Root, reader -> readPermissions).accepted
     aclCheck.append(AclAddress.Root, writer -> writePermissions).accepted
   }
@@ -144,17 +139,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
       }
     }
 
-    "create a storage with an authenticated user and provided id" in {
-      Put(
-        "/v1/storages/myorg/myproject/remote-disk-storage",
-        remoteFieldsJson.toEntity
-      ) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual
-          storageMetadata(projectRef, rdId, StorageType.RemoteDiskStorage)
-      }
-    }
-
     "reject the creation of a storage which already exists" in {
       Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
@@ -174,10 +158,9 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
         s"/v1/storages/myorg/myproject/$s3IdEncoded"
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
-        // the starting revision is 2 because this storage has been updated to default = false
-        Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
+        Put(s"$endpoint?rev=${idx + 1}", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 3)
+          response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 2)
         }
       }
     }
@@ -194,7 +177,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
       Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 4)
+          jsonContentOf("storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
       }
     }
 
@@ -205,14 +188,14 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "deprecate a storage" in {
-      Delete("/v1/storages/myorg/myproject/s3-storage?rev=4") ~> asWriter ~> routes ~> check {
+      Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           storageMetadata(
             projectRef,
             s3Id,
             StorageType.S3Storage,
-            rev = 5,
+            rev = 4,
             deprecated = true,
             updatedBy = writer,
             createdBy = writer
@@ -228,7 +211,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "reject the deprecation of a already deprecated storage" in {
-      Delete(s"/v1/storages/myorg/myproject/s3-storage?rev=5") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/storages/myorg/myproject/s3-storage?rev=4") ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("storages/errors/storage-deprecated.json", "id" -> s3Id)
       }
@@ -282,16 +265,8 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "fail to fetch a storage and do listings without resources/read permission" in {
-      val endpoints = List(
-        "/v1/storages/myorg/myproject/caches",
-        "/v1/storages/myorg/myproject/remote-disk-storage"
-      )
-      forAll(endpoints) { endpoint =>
-        forAll(List("", "?rev=1")) { suffix =>
-          Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.shouldBeForbidden
-          }
-        }
+      Get(s"/v1/storages/myorg/myproject/s3-storage") ~> routes ~> check {
+        response.shouldBeForbidden
       }
     }
 
@@ -307,31 +282,31 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "fetch a storage by rev" in {
       val endpoints = List(
-        "/v1/storages/myorg/myproject/remote-disk-storage",
-        "/v1/resources/myorg/myproject/_/remote-disk-storage",
-        "/v1/resources/myorg/myproject/storage/remote-disk-storage",
-        s"/v1/storages/myorg/myproject/$remoteIdEncoded",
-        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded",
-        s"/v1/resources/myorg/myproject/storage/$remoteIdEncoded"
+        "/v1/storages/myorg/myproject/s3-storage",
+        "/v1/resources/myorg/myproject/_/s3-storage",
+        "/v1/resources/myorg/myproject/storage/s3-storage",
+        s"/v1/storages/myorg/myproject/$s3IdEncoded",
+        s"/v1/resources/myorg/myproject/_/$s3IdEncoded",
+        s"/v1/resources/myorg/myproject/storage/$s3IdEncoded"
       )
       forAll(endpoints) { endpoint =>
-        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+        Get(s"$endpoint?rev=4") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf(
-            "storages/remote-storage-fetched.json",
-            "self" -> self(rdId)
+            "storages/s3-storage-fetched.json",
+            "self" -> self(s3Id)
           )
         }
       }
     }
 
     "fetch a storage original payload" in {
-      val expectedSource = remoteFieldsJson deepMerge json"""{"default": false}"""
+      val expectedSource = s3FieldsJson
       val endpoints      = List(
-        "/v1/storages/myorg/myproject/remote-disk-storage/source",
-        "/v1/resources/myorg/myproject/_/remote-disk-storage/source",
-        s"/v1/storages/myorg/myproject/$remoteIdEncoded/source",
-        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded/source"
+        "/v1/storages/myorg/myproject/s3-storage/source",
+        "/v1/resources/myorg/myproject/_/s3-storage/source",
+        s"/v1/storages/myorg/myproject/$s3IdEncoded/source",
+        s"/v1/resources/myorg/myproject/_/$s3IdEncoded/source"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> asReader ~> routes ~> check {
@@ -343,19 +318,19 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "fetch a storage original payload by rev" in {
       val endpoints = List(
-        "/v1/storages/myorg/myproject/remote-disk-storage/source",
-        s"/v1/storages/myorg/myproject/$remoteIdEncoded/source"
+        "/v1/storages/myorg/myproject/s3-storage/source",
+        s"/v1/storages/myorg/myproject/$s3IdEncoded/source"
       )
       forAll(endpoints) { endpoint =>
-        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+        Get(s"$endpoint?rev=4") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual remoteFieldsJson
+          response.asJson shouldEqual s3FieldsJson
         }
       }
     }
 
     "get storage statistics for an existing entry" in {
-      Get("/v1/storages/myorg/myproject/remote-disk-storage/statistics") ~> asReader ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/s3-storage/statistics") ~> asReader ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storages/statistics.json")
       }

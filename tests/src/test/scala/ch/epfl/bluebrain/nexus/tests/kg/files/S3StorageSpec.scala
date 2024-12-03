@@ -135,20 +135,6 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
     }
   }
 
-  s"Linking in S3" should {
-    "be rejected" in {
-      val payload = Json.obj(
-        "filename"  := "logo.png",
-        "path"      := logoKey,
-        "mediaType" := "image/png"
-      )
-      deltaClient.put[Json](s"/files/$projectRef/logo.png?storage=nxv:${storageId}2", payload, Coyote) {
-        (_, response) =>
-          response.status shouldEqual StatusCodes.BadRequest
-      }
-    }
-  }
-
   "Filenames with url-encodable characters" should {
     "have an appropriate filename in S3" in {
       val id   = genId()
