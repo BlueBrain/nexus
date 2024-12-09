@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.7.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -146,14 +146,20 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
     <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
     <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
-    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
-    <ul>
-      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
-    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/running-nexus/index.html" class="page">Running Nexus</a>
+  <ul>
+    <li><a href="../../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
+    <li><a href="../../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+    <li><a href="../../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+    <li><a href="../../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    <li><a href="../../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -162,11 +168,8 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
-    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
-  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
@@ -190,6 +193,7 @@ BlueBrain/nexus
     <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../docs/delta/api/conditional-requests.html" class="page">Conditional requests</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
       <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
@@ -222,17 +226,11 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
-      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
       <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
-    <ul>
-      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
-      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
-    </ul></li>
   </ul></li>
   <li><a href="../../docs/utilities/index.html" class="active page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
@@ -242,26 +240,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/utilities/index.html#utilities" class="header">Utilities</a>
   <ul>
-    <li><a href="../../docs/utilities/index.html#domains-schemas-vocabularies-" class="header">Domains (Schemas, Vocabularies)</a>
+    <li><a href="../../docs/utilities/index.html#examples-of-domain-schemas-used-with-nexus" class="header">Examples of domain schemas used with Nexus</a>
     <ul>
-      <li><a href="../../docs/utilities/index.html#nexus-core-schemas" class="header">Nexus Core Schemas</a>
-      <ul>
-        <li><a href="../../docs/utilities/index.html#nexus-schemaorg" class="header">nexus-schemaorg</a></li>
-        <li><a href="../../docs/utilities/index.html#nexus-prov" class="header">nexus-prov</a></li>
-      </ul></li>
-      <li><a href="../../docs/utilities/index.html#nexus-domain-specific-components" class="header">Nexus domain specific components</a>
-      <ul>
-        <li><a href="../../docs/utilities/index.html#nexus-bbp-data-models" class="header">Nexus BBP Data models</a></li>
-        <li><a href="../../docs/utilities/index.html#neuroshapes" class="header">Neuroshapes</a></li>
-      </ul></li>
+      <li><a href="../../docs/utilities/index.html#brain-modeling-ontology" class="header">Brain Modeling ontology</a></li>
     </ul></li>
     <li><a href="../../docs/utilities/index.html#nexus-tools" class="header">Nexus Tools</a>
     <ul>
-      <li><a href="../../docs/utilities/index.html#nexus-python-sdk" class="header">Nexus Python SDK</a>
-      <ul>
-        <li><a href="../../docs/utilities/index.html#how-to-install-the-nexus-python-sdk" class="header">How to install the Nexus Python SDK</a></li>
-        <li><a href="../../docs/utilities/index.html#usage" class="header">Usage</a></li>
-      </ul></li>
       <li><a href="../../docs/utilities/index.html#nexus-js" class="header">Nexus.js</a>
       <ul>
         <li><a href="../../docs/utilities/index.html#how-to-install-nexus-js" class="header">How to install Nexus.js</a></li>
@@ -281,7 +265,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> Snapshot
+<i class="md-icon" title="Version">label_outline</i> v1.11.x
 </label>
 </li>
 </ul>
@@ -296,26 +280,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/utilities/index.html#utilities" class="header">Utilities</a>
   <ul>
-    <li><a href="../../docs/utilities/index.html#domains-schemas-vocabularies-" class="header">Domains (Schemas, Vocabularies)</a>
+    <li><a href="../../docs/utilities/index.html#examples-of-domain-schemas-used-with-nexus" class="header">Examples of domain schemas used with Nexus</a>
     <ul>
-      <li><a href="../../docs/utilities/index.html#nexus-core-schemas" class="header">Nexus Core Schemas</a>
-      <ul>
-        <li><a href="../../docs/utilities/index.html#nexus-schemaorg" class="header">nexus-schemaorg</a></li>
-        <li><a href="../../docs/utilities/index.html#nexus-prov" class="header">nexus-prov</a></li>
-      </ul></li>
-      <li><a href="../../docs/utilities/index.html#nexus-domain-specific-components" class="header">Nexus domain specific components</a>
-      <ul>
-        <li><a href="../../docs/utilities/index.html#nexus-bbp-data-models" class="header">Nexus BBP Data models</a></li>
-        <li><a href="../../docs/utilities/index.html#neuroshapes" class="header">Neuroshapes</a></li>
-      </ul></li>
+      <li><a href="../../docs/utilities/index.html#brain-modeling-ontology" class="header">Brain Modeling ontology</a></li>
     </ul></li>
     <li><a href="../../docs/utilities/index.html#nexus-tools" class="header">Nexus Tools</a>
     <ul>
-      <li><a href="../../docs/utilities/index.html#nexus-python-sdk" class="header">Nexus Python SDK</a>
-      <ul>
-        <li><a href="../../docs/utilities/index.html#how-to-install-the-nexus-python-sdk" class="header">How to install the Nexus Python SDK</a></li>
-        <li><a href="../../docs/utilities/index.html#usage" class="header">Usage</a></li>
-      </ul></li>
       <li><a href="../../docs/utilities/index.html#nexus-js" class="header">Nexus.js</a>
       <ul>
         <li><a href="../../docs/utilities/index.html#how-to-install-nexus-js" class="header">How to install Nexus.js</a></li>
@@ -338,36 +308,11 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#utilities" name="utilities" class="anchor"><span class="anchor-link"></span></a>Utilities</h1>
-<h2><a href="#domains-schemas-vocabularies-" name="domains-schemas-vocabularies-" class="anchor"><span class="anchor-link"></span></a>Domains (Schemas, Vocabularies)</h2>
-<p>Nexus provides some schemas which make building provenance based knowledge graphs easier.</p>
-<h3><a href="#nexus-core-schemas" name="nexus-core-schemas" class="anchor"><span class="anchor-link"></span></a>Nexus Core Schemas</h3>
-<h4><a href="#nexus-schemaorg" name="nexus-schemaorg" class="anchor"><span class="anchor-link"></span></a>nexus-schemaorg</h4>
-<p><a href="https://www.w3.org/TR/shacl/" title="SHACL" target="_blank" rel="noopener noreferrer">SHACL</a> version of a subset of schemas defined by <a href="https://schema.org/docs/full.html" title="schema.org" target="_blank" rel="noopener noreferrer">schema.org</a> that are commonly used in Blue Brain Nexus.</p>
-<p><a href="https://github.com/BlueBrain/nexus-schemaorg" title="Source Code" target="_blank" rel="noopener noreferrer">Source Code</a></p>
-<h4><a href="#nexus-prov" name="nexus-prov" class="anchor"><span class="anchor-link"></span></a>nexus-prov</h4>
-<p>Data management oriented <a href="https://www.w3.org/TR/shacl/" title="SHACL" target="_blank" rel="noopener noreferrer">SHACL</a> version of <a href="https://www.w3.org/ns/prov-o-20130430" title="W3C PROV-O" target="_blank" rel="noopener noreferrer">W3C PROV-O</a>.</p>
-<p><a href="https://github.com/BlueBrain/nexus-prov" title="Source Code" target="_blank" rel="noopener noreferrer">Source Code</a></p>
-<h3><a href="#nexus-domain-specific-components" name="nexus-domain-specific-components" class="anchor"><span class="anchor-link"></span></a>Nexus domain specific components</h3>
-<h4><a href="#nexus-bbp-data-models" name="nexus-bbp-data-models" class="anchor"><span class="anchor-link"></span></a>Nexus BBP Data models</h4>
-<p>Data models that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.</p>
-<p><a href="https://github.com/BlueBrain/nexus-bbp-domains" title="Source Code" target="_blank" rel="noopener noreferrer">Source Code</a></p>
-<h4><a href="#neuroshapes" name="neuroshapes" class="anchor"><span class="anchor-link"></span></a>Neuroshapes</h4>
-<p>A community effort to develop open SHACL schemas for FAIR (Findable, Accessible, Interoperable, Reproducible) neuroscience data.</p>
-<p><a href="https://github.com/INCF/neuroshapes" title="Source Code" target="_blank" rel="noopener noreferrer">Source Code</a></p>
+<h2><a href="#examples-of-domain-schemas-used-with-nexus" name="examples-of-domain-schemas-used-with-nexus" class="anchor"><span class="anchor-link"></span></a>Examples of domain schemas used with Nexus</h2>
+<h4><a href="#brain-modeling-ontology" name="brain-modeling-ontology" class="anchor"><span class="anchor-link"></span></a>Brain Modeling ontology</h4>
+<p>Ontologies and schemas that Blue Brain has developed to enable the integration of specific neuroscience data in the Nexus Knowledge graph.</p>
+<p><a href="https://github.com/BlueBrain/brain-modeling-ontology" title="Source Code" target="_blank" rel="noopener noreferrer">Source Code</a></p>
 <h2><a href="#nexus-tools" name="nexus-tools" class="anchor"><span class="anchor-link"></span></a>Nexus Tools</h2>
-<h3><a href="#nexus-python-sdk" name="nexus-python-sdk" class="anchor"><span class="anchor-link"></span></a>Nexus Python SDK</h3>
-<p>A Python wrapper for the Blue Brain Nexus REST API.</p>
-<h4><a href="#how-to-install-the-nexus-python-sdk" name="how-to-install-the-nexus-python-sdk" class="anchor"><span class="anchor-link"></span></a>How to install the Nexus Python SDK</h4>
-<p><code>pip install nexus-sdk</code></p>
-<h4><a href="#usage" name="usage" class="anchor"><span class="anchor-link"></span></a>Usage</h4>
-<pre><code>import nexussdk as nexus
-
-nexus.config.set_environment(DEPLOYMENT)
-nexus.config.set_token(TOKEN)
-
-nexus.permissions.fetch()
-</code></pre>
-<p><a href="https://github.com/BlueBrain/nexus-python-sdk" title="Source Code" target="_blank" rel="noopener noreferrer">Source Code</a> | <a href="https://bluebrain.github.io/nexus-python-sdk/" title="Documentation" target="_blank" rel="noopener noreferrer">Documentation</a></p>
 <h3><a href="#nexus-js" name="nexus-js" class="anchor"><span class="anchor-link"></span></a>Nexus.js</h3>
 <p>The <a href="https://github.com/BlueBrain/nexus-js" title="Javascript SDK" target="_blank" rel="noopener noreferrer">Javascript SDK</a> provides many features to help you build web applications that integrate with Blue Brain Nexus.</p>
 <p><img src="../assets/nexus-js-logo.png" alt="Nexus JS logo" /></p>
@@ -400,7 +345,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-Snapshot
+v1.11.x
 </span>
 </div>
 </article>
@@ -410,7 +355,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/delta/benchmarks/v1.2.1.html" title="Benchmarks v1.2.1" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/delta/plugins/index.html" title="Plugins" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -419,7 +364,7 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Benchmarks v1.2.1
+Plugins
 </span>
 </div>
 </a>

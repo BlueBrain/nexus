@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.7.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -146,14 +146,20 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
     <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
     <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
-    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
-    <ul>
-      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
-      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
-    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/running-nexus/index.html" class="page">Running Nexus</a>
+  <ul>
+    <li><a href="../../docs/running-nexus/postgresql.html" class="page">PostgreSQL</a></li>
+    <li><a href="../../docs/running-nexus/elasticsearch.html" class="page">Elasticsearch</a></li>
+    <li><a href="../../docs/running-nexus/blazegraph.html" class="page">Blazegraph</a></li>
+    <li><a href="../../docs/running-nexus/delta.html" class="page">Nexus Delta</a></li>
+    <li><a href="../../docs/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    <li><a href="../../docs/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.9-to-v1.10-migration.html" class="page">v1.9 To v1.10 Migration</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
@@ -162,11 +168,8 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
-    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
-  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
@@ -190,6 +193,7 @@ BlueBrain/nexus
     <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../docs/delta/api/conditional-requests.html" class="page">Conditional requests</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
       <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
@@ -222,17 +226,11 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
-      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
       <li><a href="../../docs/delta/api/type-hierarchy-api.html" class="page">Type hierarchy</a></li>
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
-    <ul>
-      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
-      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
-    </ul></li>
   </ul></li>
   <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
@@ -281,7 +279,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> Snapshot
+<i class="md-icon" title="Version">label_outline</i> v1.11.x
 </label>
 </li>
 </ul>
@@ -540,7 +538,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-Snapshot
+v1.11.x
 </span>
 </div>
 </article>

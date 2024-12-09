@@ -1,0 +1,25 @@
+{
+    type: DataDownload
+    contentSize:
+    {
+        unitCode: f"bytes"
+        value: x._bytes
+    }
+    digest:
+    {
+        algorithm: x._digest._algorithm
+        value: x._digest._value
+    }
+    encodingFormat: x._mediaType
+    name: x._filename
+    contentUrl: x._self
+    atLocation:
+    {
+        type: Location
+        store: 
+        {
+            id: x._storage["@id"]
+        }
+        location: x._location if '_location' in x else None
+    }
+}

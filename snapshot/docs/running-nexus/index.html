@@ -168,8 +168,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
-    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -233,11 +231,6 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
-    <ul>
-      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
-      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
-    </ul></li>
   </ul></li>
   <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
@@ -473,7 +466,8 @@ $ docker compose --project-name nexus --file=docker-compose.yaml up --detach
   <li><a href="delta.html">Delta</a></li>
 </ul>
 <h3><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h3>
-<p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../delta/benchmarks/v1.4.2.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
+<p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly. </p>
+<p>When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
 <ol>
   <li>Nexus uses a collection of data stores (<a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a>, <a href="https://www.elastic.co/elasticsearch" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a>, <a href="https://blazegraph.com/" title="Blazegraph" target="_blank" rel="noopener noreferrer">Blazegraph</a>) which depend performance wise to the underlying disk access, so:
     <ul>

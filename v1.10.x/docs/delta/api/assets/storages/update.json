@@ -1,0 +1,5 @@
+{
+  "@type": "S3Storage",
+  "default": false,
+  "bucket": "test-updated"
+}
