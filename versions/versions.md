@@ -1,15 +1,20 @@
 # Versions
 
-## Current (v1.10.x)
+## Current (v1.11.x)
 - @link:[Documentation](https://bluebrainnexus.io/docs/)
-- @link:[Github](https://github.com/BlueBrain/nexus/tree/v1.10.x){ open=new }
-- @link:[Release notes](https://bluebrainnexus.io/docs/releases/v1.10-release-notes.html)
+- @link:[Github](https://github.com/BlueBrain/nexus/tree/v1.11.x){ open=new }
+- @link:[Release notes](https://bluebrainnexus.io/docs/releases/v1.11-release-notes.html)
 
 ## Snapshot
 - @link:[Documentation](https://bluebrainnexus.io/snapshot/docs/)
 - @link:[Github](https://github.com/BlueBrain/nexus){ open=new }
 
 ## Previous releases
+
+## v1.10.x
+- @link:[Documentation](https://bluebrainnexus.io/v1.10.x/docs/)
+- @link:[Github](https://github.com/BlueBrain/nexus/tree/v1.10.x){ open=new }
+- @link:[Release notes](https://bluebrainnexus.io/docs/releases/v1.10-release-notes.html)
 
 ## v1.9.x
 - @link:[Documentation](https://bluebrainnexus.io/v1.9.x/docs/)
@@ -25,9 +30,4 @@
 - @link:[Documentation](https://bluebrainnexus.io/v1.7.x/docs/)
 - @link:[Github](https://github.com/BlueBrain/nexus/tree/v1.7.x){ open=new }
 - @link:[Release notes](https://bluebrainnexus.io/docs/releases/v1.7-release-notes.html)
-
-### v1.6.x
-- @link:[Documentation](https://bluebrainnexus.io/v1.6.x/docs/)
-- @link:[Github](https://github.com/BlueBrain/nexus/tree/v1.6.x){ open=new }
-- @link:[Release notes](https://bluebrainnexus.io/docs/releases/v1.6-release-notes.html)
 
