@@ -176,9 +176,9 @@ lazy val docs = project
     Compile / paradoxProperties     ++=
       Map(
         "github.base_url"       -> "https://github.com/BlueBrain/nexus/tree/master",
-        "project.version.short" -> "Snapshot",
-        "current.url"           -> "https://bluebrainnexus.io/docs/",
-        "git.branch"            -> "master"
+        "project.version.short" -> "v1.10.x",
+        "git.branch"            -> "v1.10.x",
+        "version.old"           -> "true"
       ),
     paradoxRoots                     := List("docs/index.html"),
     previewPath                      := "docs/index.html",
