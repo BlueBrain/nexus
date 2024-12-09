@@ -7,7 +7,7 @@ services:
         condition: service_healthy
       postgres:
         condition: service_started
-    image: bluebrain/nexus-delta:1.10.0
+    image: bluebrain/nexus-delta:1.11.0
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta.conf"

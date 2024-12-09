@@ -19,8 +19,7 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web
 applications.
 
-TODO: update release date
-The latest stable release is **v1.10.0** released on **17.09.2024**.
+The latest stable release is **v1.11.0** released on **09.12.2024**.
 
 ## 1.11.0
 
