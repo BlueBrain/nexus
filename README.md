@@ -55,7 +55,7 @@ The Blue Brain Nexus [documentation] offers more information about the software,
 Please head over to the [getting started] section for a description of various options on running Nexus and
 introductory material to [Linked Data] and the [Shapes Constraint Language].
 
-For more details, you can talk with the development team directly on [Github Discussions] or [contact them by email][nexus-team-email].
+For more details, you can talk with the development team directly on [Github Discussions].
 
 [architecture]: https://bluebrainnexus.io/docs/delta/architecture.html
 [documentation]: https://bluebrainnexus.io/docs/
@@ -64,7 +64,6 @@ For more details, you can talk with the development team directly on [Github Dis
 [api reference]: https://bluebrainnexus.io/docs/delta/api/index.html
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/
-[nexus-team-email]: mailto:bbp-nexus-support@groupes.epfl.ch
 [Github Discussions]: https://github.com/BlueBrain/nexus/discussions
 
 ## Getting involved
