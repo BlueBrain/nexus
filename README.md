@@ -1,7 +1,7 @@
 <p align="center"><img src="docs/src/main/paradox/assets/img/Blue-Brain-Nexus-Delta-Github-Banner.jpg"/></p>
 
 [![View our technology page](https://img.shields.io/badge/technology-Nexus-03ABE9.svg)](https://bluebrainnexus.io/)
-[![GitHub release](https://img.shields.io/github/release/BlueBrain/nexus.svg)](https://github.com/BlueBrain/nexus/releases/tag/v1.10.0)
+[![GitHub release](https://img.shields.io/github/release/BlueBrain/nexus.svg)](https://github.com/BlueBrain/nexus/releases/tag/v1.11.0)
 
 # Blue Brain Nexus
 
@@ -46,33 +46,24 @@ The Nexus ecosystem leverages a set of smaller open-source utilities.
 
 Do you know what a knowledge graph is? Or want to deepen your understanding? Follow our [introduction](https://bluebrainnexus.io/docs/getting-started/understanding-knowledge-graphs.html).
 
-Want to get started with Nexus right away? We provide a [tutorial](https://bluebrainnexus.io/docs/getting-started/try-nexus.html) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
-
-Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrainnexus.io/docs/getting-started/running-nexus/index.html).
-
-## Roadmap
-
-Curious about our upcoming features? Read our [open Roadmap](https://bluebrainnexus.io/docs/roadmap.html) to find out more.
+Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrainnexus.io/docs/running-nexus/index.html).
 
 ## More information
 
-The Blue Brain Nexus [documentation] offers more information about the software, its [architecture], an [api reference]
-and the current [roadmap].
+The Blue Brain Nexus [documentation] offers more information about the software, its [architecture] and the [api reference].
 
 Please head over to the [getting started] section for a description of various options on running Nexus and
 introductory material to [Linked Data] and the [Shapes Constraint Language].
 
-For more details, you can talk with the development team directly on [Github Discussions] or [contact them by email][nexus-team-email].
+For more details, you can talk with the development team directly on [Github Discussions].
 
 [architecture]: https://bluebrainnexus.io/docs/delta/architecture.html
 [documentation]: https://bluebrainnexus.io/docs/
 [components]: https://bluebrainnexus.io/docs/index.html#nexus-components
 [getting started]: https://bluebrainnexus.io/docs/getting-started/index.html
 [api reference]: https://bluebrainnexus.io/docs/delta/api/index.html
-[roadmap]: https://bluebrainnexus.io/docs/roadmap.html
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/
-[nexus-team-email]: mailto:bbp-nexus-support@groupes.epfl.ch
 [Github Discussions]: https://github.com/BlueBrain/nexus/discussions
 
 ## Getting involved
