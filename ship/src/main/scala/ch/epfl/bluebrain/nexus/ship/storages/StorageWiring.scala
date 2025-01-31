@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -31,7 +30,7 @@ object StorageWiring {
       config: InputConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit api: JsonLdApi): IO[Storages] = {
+  ): IO[Storages] = {
     val noopAccess   = new StorageAccess {
       override def validateStorageAccess(storage: StorageValue): IO[Unit] = IO.unit
     }
@@ -47,7 +46,7 @@ object StorageWiring {
       config.storages,
       config.serviceAccount.value,
       clock
-    )(api, UUIDF.random)
+    )(UUIDF.random)
   }
 
   def s3StorageInitializer(

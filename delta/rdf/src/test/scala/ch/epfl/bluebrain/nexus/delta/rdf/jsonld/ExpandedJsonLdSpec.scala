@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, GraphHelpers}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.RemoteContextCircularDependency
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, GraphHelpers}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers {
@@ -153,7 +153,7 @@ class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers 
 
       val input =
         json"""{"@context": ["http://localhost/c", {"a": "http://localhost/a"} ], "a": "A", "c": "C", "d": "D"}"""
-      ExpandedJsonLd(input).rejected shouldEqual RemoteContextCircularDependency(iri"http://localhost/c")
+      ExpandedJsonLd(input).rejectedWith[ConversionError].getMessage contains "Too many contexts"
     }
   }
 }

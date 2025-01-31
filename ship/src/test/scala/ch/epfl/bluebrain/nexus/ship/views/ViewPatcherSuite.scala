@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elast
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
@@ -46,7 +46,7 @@ class ViewPatcherSuite extends NexusSuite {
     Vocabulary.contexts.tags       -> ContextValue.fromFile("contexts/tags.json"),
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json")
   )
-  implicit val api: JsonLdApi               = JsonLdJavaApi.strict
+  implicit val api: JsonLdApi               = TitaniumJsonLdApi.strict
   private val ref                           = ProjectRef.unsafe("org", "proj")
   private val context                       = ProjectContext.unsafe(
     ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources),

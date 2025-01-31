@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
@@ -20,7 +20,7 @@ import scala.concurrent.duration.DurationInt
 
 object SchemaGen {
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
-  implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+  implicit val api: JsonLdApi = TitaniumJsonLdApi.lenient
 
   def empty(id: Iri, project: ProjectRef) =
     SchemaState(

@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource
@@ -27,7 +27,7 @@ class RdfMarshallingSpec
     with CatsIOValues
     with TestMatchers {
 
-  implicit private val api: JsonLdApi               = JsonLdJavaApi.strict
+  implicit private val api: JsonLdApi               = TitaniumJsonLdApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contextIri -> context)
   implicit private val ordering: JsonKeyOrdering    =
     JsonKeyOrdering.default(topKeys =

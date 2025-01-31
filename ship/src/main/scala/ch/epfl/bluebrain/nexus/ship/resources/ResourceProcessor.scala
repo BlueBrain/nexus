@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -17,8 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{Inco
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
-import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor.logger
 import ch.epfl.bluebrain.nexus.ship._
+import ch.epfl.bluebrain.nexus.ship.resources.ResourceProcessor.logger
 import io.circe.Decoder
 
 class ResourceProcessor private (
@@ -107,7 +106,7 @@ object ResourceProcessor {
       iriPatcher: IriPatcher,
       resourceTypesToIgnore: Set[Iri],
       clock: EventClock
-  )(implicit jsonLdApi: JsonLdApi): ResourceProcessor = {
+  ): ResourceProcessor = {
     val resources = ResourcesImpl(log, fetchContext, rcr)
     new ResourceProcessor(resources, projectMapper, sourcePatcher, iriPatcher, resourceTypesToIgnore, clock)
   }

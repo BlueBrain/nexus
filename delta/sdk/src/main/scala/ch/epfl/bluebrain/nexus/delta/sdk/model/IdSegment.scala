@@ -35,7 +35,7 @@ object IdSegment {
     * Construct an [[IdSegment]] from the passed ''string''
     */
   final def apply(string: String): IdSegment =
-    Iri.absolute(string).fold[IdSegment](_ => StringSegment(string), IriSegment)
+    Iri.reference(string).fold[IdSegment](_ => StringSegment(string), IriSegment)
 
   /**
     * A segment that holds a free form string (which can expand into an Iri)

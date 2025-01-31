@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -522,10 +521,7 @@ object BlazegraphViews {
       prefix: String,
       xas: Transactors,
       clock: Clock[IO]
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): IO[BlazegraphViews] = {
+  )(implicit uuidF: UUIDF): IO[BlazegraphViews] = {
     val createNameSpace = (v: ViewResource) =>
       v.value match {
         case i: IndexingBlazegraphView =>
@@ -547,10 +543,7 @@ object BlazegraphViews {
       prefix: String,
       xas: Transactors,
       clock: Clock[IO]
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): IO[BlazegraphViews] = {
+  )(implicit uuidF: UUIDF): IO[BlazegraphViews] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
     BlazegraphDecoderConfiguration.apply

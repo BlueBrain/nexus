@@ -4,7 +4,6 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -64,17 +63,13 @@ object ResourcesModule extends ModuleDef {
         resourceLog: ResourceLog,
         fetchContext: FetchContext,
         resolverContextResolution: ResolverContextResolution,
-        api: JsonLdApi,
         uuidF: UUIDF
     ) =>
       ResourcesImpl(
         resourceLog,
         fetchContext,
         resolverContextResolution
-      )(
-        api,
-        uuidF
-      )
+      )(uuidF)
   }
 
   make[ResolverContextResolution].from {

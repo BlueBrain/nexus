@@ -71,21 +71,21 @@ object SparqlLink {
       for {
         link         <- SparqlExternalLink(bindings)
         project      <-
-          bindings.get(nxv.project.prefix).map(_.value).flatMap(Iri.absolute(_).toOption).flatMap(projectRefFromId)
+          bindings.get(nxv.project.prefix).map(_.value).flatMap(Iri.reference(_).toOption).flatMap(projectRefFromId)
         rev          <- bindings.get(nxv.rev.prefix).map(_.value).flatMap(v => v.toIntOption)
         deprecated   <- bindings.get(nxv.deprecated.prefix).map(_.value).flatMap(v => v.toBooleanOption)
         created      <- bindings.get(nxv.createdAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
         updated      <- bindings.get(nxv.updatedAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
-        createdByIri <- bindings.get(nxv.createdBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
+        createdByIri <- bindings.get(nxv.createdBy.prefix).map(_.value).flatMap(Iri.reference(_).toOption)
         createdBy    <- createdByIri.as[Subject].toOption
-        updatedByIri <- bindings.get(nxv.updatedBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
+        updatedByIri <- bindings.get(nxv.updatedBy.prefix).map(_.value).flatMap(Iri.reference(_).toOption)
         updatedBy    <- updatedByIri.as[Subject].toOption
-        schema       <- bindings.get(nxv.constrainedBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
+        schema       <- bindings.get(nxv.constrainedBy.prefix).map(_.value).flatMap(Iri.reference(_).toOption)
         schemaRef     = ResourceRef(schema)
         schemaProject = bindings
                           .get(nxv.schemaProject.prefix)
                           .map(_.value)
-                          .flatMap(Iri.absolute(_).toOption)
+                          .flatMap(Iri.reference(_).toOption)
                           .flatMap(projectRefFromId)
                           .getOrElse(project)
         resourceUris  = resourceUrisFor(project, schemaProject, link.id)
@@ -130,12 +130,12 @@ object SparqlLink {
     def apply(bindings: Map[String, Binding]): Option[SparqlExternalLink] = {
       val types = bindings.get("types").map(binding => toIris(binding.value).toSet).getOrElse(Set.empty)
       val paths = bindings.get("paths").map(binding => toIris(binding.value).toList).getOrElse(List.empty)
-      bindings.get("s").map(_.value).flatMap(Iri.absolute(_).toOption).map(SparqlExternalLink(_, paths, types))
+      bindings.get("s").map(_.value).flatMap(Iri.reference(_).toOption).map(SparqlExternalLink(_, paths, types))
     }
   }
 
   private def toIris(string: String): Array[Iri] =
-    string.split(" ").flatMap(Iri.absolute(_).toOption)
+    string.split(" ").flatMap(Iri.reference(_).toOption)
 
   implicit def linkEncoder(implicit base: BaseUri): Encoder.AsObject[SparqlLink] = Encoder.AsObject.instance {
     case SparqlExternalLink(id, paths, types) =>

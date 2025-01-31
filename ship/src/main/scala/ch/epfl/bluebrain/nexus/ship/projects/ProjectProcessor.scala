@@ -2,13 +2,12 @@ package ch.epfl.bluebrain.nexus.ship.projects
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.NotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectBase, ProjectContext, ProjectEvent, ProjectFields, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects, ProjectsImpl, ValidateProjectDeletion}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -103,10 +102,7 @@ object ProjectProcessor {
       config: InputConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit
-      base: BaseUri,
-      jsonLdApi: JsonLdApi
-  ): IO[ProjectProcessor] =
+  )(implicit base: BaseUri): IO[ProjectProcessor] =
     for {
       uuidF       <- EventUUIDF.init()
       initializer <- ScopeInitializerWiring.initializer(fetchContext, rcr, config, clock, xas)

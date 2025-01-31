@@ -4,7 +4,6 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
@@ -31,8 +30,6 @@ object SchemaWiring {
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit
-      jsonLdApi: JsonLdApi
   ): SchemaImports = {
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
     SchemaImports(alwaysAuthorize, resolvers, fetchSchema, fetchResource)

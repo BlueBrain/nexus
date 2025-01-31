@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3F
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -82,7 +81,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           xas: Transactors,
           cfg: StoragePluginConfig,
           serviceAccount: ServiceAccount,
-          api: JsonLdApi,
           clock: Clock[IO],
           uuidF: UUIDF
       ) =>
@@ -95,10 +93,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           cfg.storages,
           serviceAccount,
           clock
-        )(
-          api,
-          uuidF
-        )
+        )(uuidF)
     }
 
   make[FetchStorage].from { (storages: Storages, aclCheck: AclCheck) =>

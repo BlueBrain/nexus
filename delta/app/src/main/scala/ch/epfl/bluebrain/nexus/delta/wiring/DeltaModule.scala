@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.Plug
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, IOFuture, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.provisioning.ProvisioningCoordinator
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ErrorRoutes
@@ -119,10 +118,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
         contexts.bulkOperation  -> bulkOpCtx
       )
       .merge(otherCtxResolutions.toSeq: _*)
-  }
-
-  make[JsonLdApi].fromValue {
-    new JsonLdJavaApi(appCfg.jsonLdApi)
   }
 
   make[Clock[IO]].from(implicitly[Clock[IO]])

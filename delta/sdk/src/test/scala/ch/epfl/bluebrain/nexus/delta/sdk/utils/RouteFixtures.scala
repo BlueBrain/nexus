@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.utils
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
 trait RouteFixtures {
   self: ClasspathResources =>
 
-  implicit val api: JsonLdApi = JsonLdJavaApi.strict
+  implicit val api: JsonLdApi = TitaniumJsonLdApi.strict
 
   implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(

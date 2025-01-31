@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
@@ -27,7 +27,7 @@ import munit.Location
 
 class ValidateResourceSuite extends NexusSuite {
 
-  implicit val api: JsonLdApi                       = JsonLdJavaApi.lenient
+  implicit val api: JsonLdApi                       = TitaniumJsonLdApi.lenient
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
       contexts.metadata        -> ContextValue.fromFile("contexts/metadata.json"),

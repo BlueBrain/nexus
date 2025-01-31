@@ -42,10 +42,6 @@ Auto creation of tables is included as a development convenience and should be a
 
 @@@
 
-# RDF parser
-
-The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[configurable using the `json-ld-api` field](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L49) to enable different levels of strictness.
-
 ## Service account configuration
 
 Nexus Delta uses a service account to perform automatic tasks under the hood. Examples of it are:

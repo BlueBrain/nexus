@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -167,10 +166,7 @@ object SchemasImpl {
       fetchContext: FetchContext,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): Schemas = {
+  )(implicit uuidF: UUIDF): Schemas = {
     val parser =
       new JsonLdSourceResolvingParser(
         List(contexts.shacl, contexts.schemasMetadata),

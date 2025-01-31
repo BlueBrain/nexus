@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -426,10 +425,7 @@ object ElasticSearchViews {
       defaultMapping: DefaultMapping,
       defaultSettings: DefaultSettings,
       clock: Clock[IO]
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): IO[ElasticSearchViews] =
+  )(implicit uuidF: UUIDF): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
       new ElasticSearchViews(
         ScopedEventLog(

@@ -8,7 +8,7 @@
 
     },
     "resultMessage" : "Value must be a valid literal of type integer",
-    "result:Path" : {
+    "sh:resultPath" : {
       "@id" : "nxv:number"
     },
     "resultSeverity" : "sh:Violation",

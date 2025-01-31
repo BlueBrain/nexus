@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, perm
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -23,8 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -192,9 +191,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
       )
   }
 
-  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit
-      api: JsonLdApi
-  ): IO[ElasticSearchViewJsonLdSourceDecoder] = {
+  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution): IO[ElasticSearchViewJsonLdSourceDecoder] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
     ElasticSearchDecoderConfiguration.apply.map { implicit config =>

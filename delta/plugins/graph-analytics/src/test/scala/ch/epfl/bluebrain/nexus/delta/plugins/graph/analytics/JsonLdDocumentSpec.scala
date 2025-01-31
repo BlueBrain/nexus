@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocumen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -14,7 +14,7 @@ import io.circe.syntax.EncoderOps
 class JsonLdDocumentSpec extends CatsEffectSpec with ContextFixtures with CirceEq {
 
   "A JsonLdDocument" should {
-    implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
+    implicit val jsonLdApi: JsonLdApi = TitaniumJsonLdApi.lenient
     val input                         = jsonContentOf("reconstructed-cell.json")
     val expanded                      = ExpandedJsonLd(input).accepted
 

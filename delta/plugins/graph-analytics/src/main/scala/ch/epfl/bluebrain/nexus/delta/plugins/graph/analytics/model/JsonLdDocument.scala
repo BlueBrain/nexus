@@ -85,7 +85,7 @@ object JsonLdDocument {
               JsonLdDocument.empty
             case (key, value)                             =>
               Iri
-                .absolute(key)
+                .reference(key)
                 .fold(
                   _ => JsonLdDocument.empty,
                   k => innerEntry(value, path.appended(k), isInArray)

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
@@ -10,7 +10,7 @@ class PropertiesStatisticsSpec extends CatsEffectSpec with ContextFixtures {
 
   "PropertiesStatistics" should {
 
-    implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
+    implicit val jsonLdApi: JsonLdApi = TitaniumJsonLdApi.lenient
 
     val responseJson = jsonContentOf("paths-properties-aggregations-response.json")
     val expected     = jsonContentOf("properties-tree.json")

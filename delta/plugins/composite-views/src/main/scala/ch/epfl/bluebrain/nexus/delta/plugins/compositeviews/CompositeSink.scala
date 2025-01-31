@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchSink, GraphResourceToDocument}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -120,7 +120,7 @@ final class Batch[SinkFormat](
 
   /** Replaces the graph of a provided [[GraphResource]] by extracting its new graph from the provided (full) graph. */
   private def replaceGraph(gr: GraphResource, fullGraph: Graph) = {
-    implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+    implicit val api: JsonLdApi = TitaniumJsonLdApi.lenient
     fullGraph
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)

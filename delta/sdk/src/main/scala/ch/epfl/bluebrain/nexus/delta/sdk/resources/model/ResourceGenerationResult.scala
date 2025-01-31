@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
@@ -57,7 +57,7 @@ final case class ResourceGenerationResult(
 }
 
 object ResourceGenerationResult {
-  implicit private[model] val api: JsonLdApi = JsonLdJavaApi.lenient
+  implicit private[model] val api: JsonLdApi = TitaniumJsonLdApi.lenient
 
   val emptySchema: IO[Json] = IO.pure(Json.obj())
 }

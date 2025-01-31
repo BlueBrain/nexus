@@ -5,7 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -23,7 +23,9 @@ import io.circe.{Json, JsonObject}
 /**
   * Allows to define different JsonLd processors
   */
-sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
+sealed abstract class JsonLdSourceProcessor {
+
+  implicit protected val api: JsonLdApi = TitaniumJsonLdApi.strict
 
   def uuidF: UUIDF
 
@@ -71,8 +73,7 @@ object JsonLdSourceProcessor {
   final private class JsonLdSourceParser(
       contextIri: Seq[Iri],
       override val uuidF: UUIDF
-  )(implicit api: JsonLdApi)
-      extends JsonLdSourceProcessor {
+  ) extends JsonLdSourceProcessor {
 
     /**
       * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload.
@@ -136,8 +137,7 @@ object JsonLdSourceProcessor {
       contextIri: Seq[Iri],
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit api: JsonLdApi)
-      extends JsonLdSourceProcessor {
+  ) extends JsonLdSourceProcessor {
 
     private val underlying = new JsonLdSourceParser(contextIri, uuidF)
 
@@ -212,18 +212,15 @@ object JsonLdSourceProcessor {
   }
 
   object JsonLdSourceResolvingParser {
-    def apply(contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
-        api: JsonLdApi
-    ): JsonLdSourceResolvingParser =
+    def apply(contextResolution: ResolverContextResolution, uuidF: UUIDF): JsonLdSourceResolvingParser =
       new JsonLdSourceResolvingParser(Seq.empty, contextResolution, uuidF)
   }
 
   /**
     * Allows to parse the given json source and decode it into an ''A'' using static contexts
     */
-  final class JsonLdSourceDecoder[A: JsonLdDecoder](contextIri: Iri, override val uuidF: UUIDF)(implicit
-      api: JsonLdApi
-  ) extends JsonLdSourceProcessor {
+  final class JsonLdSourceDecoder[A: JsonLdDecoder](contextIri: Iri, override val uuidF: UUIDF)
+      extends JsonLdSourceProcessor {
 
     /**
       * Expands the passed ''source'' and attempt to decode it into an ''A'' The @id value is extracted from the
@@ -278,8 +275,7 @@ object JsonLdSourceProcessor {
       contextIri: Iri,
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit api: JsonLdApi)
-      extends JsonLdSourceProcessor {
+  ) extends JsonLdSourceProcessor {
 
     private val underlying = new JsonLdSourceDecoder[A](contextIri, uuidF)
 

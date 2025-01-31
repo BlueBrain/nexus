@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship.schemas
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -86,8 +85,8 @@ object SchemaProcessor {
       projectMapper: ProjectMapper,
       sourcePatcher: SourcePatcher,
       clock: EventClock
-  )(implicit jsonLdApi: JsonLdApi): SchemaProcessor = {
-    val schemas = SchemasImpl(log, fetchContext, schemaImports, rcr)(jsonLdApi, FailingUUID)
+  ): SchemaProcessor = {
+    val schemas = SchemasImpl(log, fetchContext, schemaImports, rcr)(FailingUUID)
     new SchemaProcessor(schemas, projectMapper, sourcePatcher, clock)
   }
 

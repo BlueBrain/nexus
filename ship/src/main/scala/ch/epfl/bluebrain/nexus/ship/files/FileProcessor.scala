@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.LinkFileAction
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -155,7 +154,7 @@ object FileProcessor {
       config: InputConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): EventProcessor[FileEvent] = if (config.files.skipFileEvents) noop
+  ): EventProcessor[FileEvent] = if (config.files.skipFileEvents) noop
   else {
 
     val storages = StorageWiring.storages(fetchContext, rcr, config, clock, xas)

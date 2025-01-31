@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -96,7 +96,7 @@ object ArchiveDownload {
   ): ArchiveDownload =
     new ArchiveDownload {
 
-      implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
+      implicit private val api: JsonLdApi = TitaniumJsonLdApi.lenient
       private val printer                 = Printer.spaces2.copy(dropNullValues = true)
       private val sourcePrinter           = Printer.spaces2.copy(dropNullValues = false)
 

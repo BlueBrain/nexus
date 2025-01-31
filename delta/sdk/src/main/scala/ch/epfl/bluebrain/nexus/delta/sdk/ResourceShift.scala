@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -49,7 +49,7 @@ abstract class ResourceShift[State <: ScopedState, A, M](
     metadataEncoder: Option[JsonLdEncoder[M]]
 )(implicit serializer: Serializer[_, State], baseUri: BaseUri) {
 
-  implicit private val api: JsonLdApi                                         = JsonLdJavaApi.lenient
+  implicit private val api: JsonLdApi                                         = TitaniumJsonLdApi.lenient
   implicit private val valueJsonLdEncoder: JsonLdEncoder[A]                   = valueEncoder
   implicit private val resourceFJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] = ResourceF.defaultResourceFAJsonLdEncoder
 

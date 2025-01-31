@@ -40,35 +40,35 @@ object Triple {
     NodeFactory.createURI(value.toString)
 
   def obj(value: String, lang: Option[String] = None): Node =
-    lang.fold(NodeFactory.createLiteral(value))(l => NodeFactory.createLiteral(value, l))
+    lang.fold(NodeFactory.createLiteralString(value))(l => NodeFactory.createLiteralLang(value, l))
 
   def obj(value: String, dataType: Option[Iri], languageTag: Option[String]): Node =
     dataType match {
       case Some(dt) =>
         val tpe = TypeMapper.getInstance().getSafeTypeByName(dt.toString)
-        if (tpe.isValid(value)) NodeFactory.createLiteral(value, tpe)
+        if (tpe.isValid(value)) NodeFactory.createLiteralDT(value, tpe)
         else obj(value, languageTag)
       case None     => obj(value, languageTag)
 
     }
 
   def obj(value: Boolean): Node =
-    NodeFactory.createLiteral(value.toString, XSDDatatype.XSDboolean)
+    NodeFactory.createLiteralDT(value.toString, XSDDatatype.XSDboolean)
 
   def obj(value: Int): Node =
-    NodeFactory.createLiteral(value.toString, XSDDatatype.XSDinteger)
+    NodeFactory.createLiteralDT(value.toString, XSDDatatype.XSDinteger)
 
   def obj(value: Long): Node =
-    NodeFactory.createLiteral(value.toString, XSDDatatype.XSDinteger)
+    NodeFactory.createLiteralDT(value.toString, XSDDatatype.XSDinteger)
 
   def obj(value: Double): Node =
-    NodeFactory.createLiteral(eFormatter.format(value), XSDDatatype.XSDdouble)
+    NodeFactory.createLiteralDT(eFormatter.format(value), XSDDatatype.XSDdouble)
 
   def obj(value: Float): Node =
     obj(value.toDouble)
 
   def obj(value: Instant): Node =
-    NodeFactory.createLiteral(
+    NodeFactory.createLiteralDT(
       value.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),
       XSDDatatype.XSDdateTime
     )

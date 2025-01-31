@@ -4,7 +4,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewFields}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -43,8 +42,10 @@ final class CompositeViewFieldsJsonLdSourceDecoder private (
 
 object CompositeViewFieldsJsonLdSourceDecoder {
 
-  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution, minIntervalRebuild: FiniteDuration)(implicit
-      api: JsonLdApi
+  def apply(
+      uuidF: UUIDF,
+      contextResolution: ResolverContextResolution,
+      minIntervalRebuild: FiniteDuration
   ): CompositeViewFieldsJsonLdSourceDecoder = {
     implicit val compositeViewFieldsJsonLdDecoder: JsonLdDecoder[CompositeViewFields] =
       CompositeViewFields.jsonLdDecoder(minIntervalRebuild)

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.rdfType
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdJavaApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmpty, ContextObject}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -274,7 +274,7 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     "not raise an error with a lenient parser when an iri is invalid" in {
       val expandedJson = jsonContentOf("expanded-invalid-iri.json")
       val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
-      Graph(expanded)(JsonLdJavaApi.lenient, JsonLdOptions.defaults).accepted
+      Graph(expanded)(TitaniumJsonLdApi.lenient, JsonLdOptions.defaults).accepted
     }
   }
 }

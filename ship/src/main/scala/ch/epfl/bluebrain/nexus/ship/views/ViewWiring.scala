@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewV
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, ValidateCompositeView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchFiles, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchScopeInitialization, ElasticSearchViews, ValidateElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -30,7 +29,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): IO[ElasticSearchViews] = {
+  ): IO[ElasticSearchViews] = {
     implicit val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
     val prefix                                   = "nexus" // TODO: use the config?
 
@@ -49,7 +48,7 @@ object ViewWiring {
         files.defaultMapping,
         files.defaultSettings,
         clock
-      )(jsonLdApi, uuidF)
+      )(uuidF)
     }
   }
 
@@ -60,7 +59,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): IO[BlazegraphViews] = {
+  ): IO[BlazegraphViews] = {
     val noValidation = new ValidateBlazegraphView {
       override def apply(value: BlazegraphViewValue): IO[Unit] = IO.unit
     }
@@ -74,7 +73,7 @@ object ViewWiring {
       prefix,
       xas,
       clock
-    )(jsonLdApi, uuidF)
+    )(uuidF)
   }
 
   def compositeViews(
@@ -84,7 +83,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi) = {
+  ) = {
     val noValidation = new ValidateCompositeView {
       override def apply(uuid: UUID, value: CompositeViewValue): IO[Unit] = IO.unit
     }
@@ -96,7 +95,7 @@ object ViewWiring {
       config,
       xas,
       clock
-    )(jsonLdApi, uuidF)
+    )(uuidF)
   }
 
   def viewInitializers(

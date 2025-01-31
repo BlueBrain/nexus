@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -94,7 +94,7 @@ final case class JsonLdContext(
     }
 
   private def expandWith(iri: Iri, suffix: String): Option[Iri] =
-    Iri.absolute(s"$iri$suffix").toOption
+    Iri.reference(s"$iri$suffix").toOption
 
   /**
     * Expand the ''passed'' string:
@@ -105,7 +105,7 @@ final case class JsonLdContext(
     def expandedVocabOrBase =
       if (useVocab) vocab.flatMap(expandWith(_, value)) else base.flatMap(expandWith(_, value))
 
-    aliases.get(value) orElse expandCurie(value) orElse Iri.absolute(value).toOption orElse expandedVocabOrBase
+    aliases.get(value) orElse expandCurie(value) orElse Iri.reference(value).toOption orElse expandedVocabOrBase
   }
 
   /**
@@ -220,8 +220,8 @@ object JsonLdContext {
     */
   def apply(
       contextValue: ContextValue
-  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[JsonLdContext] =
-    api.context(contextValue)
+  )(implicit resolution: RemoteContextResolution, opts: JsonLdOptions): IO[JsonLdContext] =
+    TitaniumJsonLdApi.strict.context(contextValue)
 
   /**
     * @return

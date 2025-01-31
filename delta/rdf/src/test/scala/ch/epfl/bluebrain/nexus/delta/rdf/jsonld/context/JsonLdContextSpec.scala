@@ -21,18 +21,19 @@ class JsonLdContextSpec extends CatsEffectSpec with Fixtures {
       result.vocab.value shouldEqual vocab.value
       result.aliases shouldEqual
         Map(
+          "id"         -> iri"@id",
           "Person"     -> schema.Person,
-          "Person2"    -> schema.Person,
           "deprecated" -> (schema + "deprecated"),
           "customid"   -> (vocab + "customid")
         )
       result.aliasesInv shouldEqual
         Map(
+          iri"@id"                -> "id",
           schema.Person           -> "Person",
           (schema + "deprecated") -> "deprecated",
           (vocab + "customid")    -> "customid"
         )
-      result.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base, "xsd2" -> xsd.base)
+      result.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base)
       result.prefixMappingsInv shouldEqual Map(schema.base -> "schema", xsd.base -> "xsd")
     }
 

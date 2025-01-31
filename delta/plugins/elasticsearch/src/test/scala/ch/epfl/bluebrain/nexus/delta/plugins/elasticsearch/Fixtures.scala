@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchFiles}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
@@ -46,7 +46,7 @@ trait Fixtures {
     ContextObject(obj.filterKeys(_.startsWith("_")))
   }))
 
-  implicit val api: JsonLdApi = JsonLdJavaApi.strict
+  implicit val api: JsonLdApi = TitaniumJsonLdApi.strict
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIOResource(
     elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json"),

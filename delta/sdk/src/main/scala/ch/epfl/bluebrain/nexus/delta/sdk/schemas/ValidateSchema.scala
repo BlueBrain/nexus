@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ValidateShacl, ValidationReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.InvalidJsonLdFormat
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.kamonComponent
@@ -21,8 +21,10 @@ trait ValidateSchema {
 
 object ValidateSchema {
 
-  def apply(validateShacl: ValidateShacl)(implicit api: JsonLdApi): ValidateSchema =
+  def apply(validateShacl: ValidateShacl): ValidateSchema =
     new ValidateSchema {
+      implicit val api: JsonLdApi = TitaniumJsonLdApi.strict
+
       override def apply(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]): IO[ValidationReport] = {
         for {
           graph  <- toGraph(id, expanded)

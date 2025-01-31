@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -12,7 +12,7 @@ import scala.concurrent.duration.DurationInt
 
 class ProjectDeletionConfigSpec extends CatsEffectSpec {
 
-  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
+  implicit private val api: JsonLdApi = TitaniumJsonLdApi.strict
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
     contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json")

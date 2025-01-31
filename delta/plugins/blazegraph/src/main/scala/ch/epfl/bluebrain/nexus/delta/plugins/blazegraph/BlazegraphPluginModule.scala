@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoord
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent, DefaultProperties}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphSupervisionRoutes, BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -122,7 +121,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           client: BlazegraphClient @Id("blazegraph-indexing-client"),
           config: BlazegraphViewsConfig,
           xas: Transactors,
-          api: JsonLdApi,
           clock: Clock[IO],
           uuidF: UUIDF
       ) =>
@@ -135,7 +133,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           config.prefix,
           xas,
           clock
-        )(api, uuidF)
+        )(uuidF)
     }
 
   make[BlazegraphCoordinator].fromEffect {

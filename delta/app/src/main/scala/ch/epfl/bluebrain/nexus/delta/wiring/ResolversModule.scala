@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
@@ -39,7 +38,6 @@ object ResolversModule extends ModuleDef {
         resolverContextResolution: ResolverContextResolution,
         config: AppConfig,
         xas: Transactors,
-        api: JsonLdApi,
         clock: Clock[IO],
         uuidF: UUIDF
     ) =>
@@ -50,7 +48,7 @@ object ResolversModule extends ModuleDef {
         config.resolvers.eventLog,
         xas,
         clock
-      )(api, uuidF)
+      )(uuidF)
   }
 
   make[MultiResolution].from {

@@ -35,10 +35,10 @@ val distageVersion             = "1.2.16"
 val doobieVersion              = "1.0.0-RC6"
 val fs2Version                 = "3.11.0"
 val fs2AwsVersion              = "6.2.0"
+val glassFishJakartaVersion    = "2.0.1"
 val handleBarsVersion          = "4.4.0"
 val hikariVersion              = "6.2.1"
-val jenaVersion                = "4.10.0"
-val jsonldjavaVersion          = "0.13.6"
+val jenaVersion                = "5.3.0"
 val kamonVersion               = "2.7.5"
 val kanelaAgentVersion         = "1.0.18"
 val kindProjectorVersion       = "0.13.3"
@@ -52,7 +52,7 @@ val postgresJdbcVersion        = "42.7.5"
 val pureconfigVersion          = "0.17.8"
 val scalaTestVersion           = "3.2.19"
 val scalaXmlVersion            = "2.3.0"
-val topBraidVersion            = "1.4.3"
+val topBraidVersion            = "1.4.4"
 val testContainersVersion      = "1.20.4"
 val testContainersScalaVersion = "0.41.5"
 
@@ -96,9 +96,9 @@ lazy val fs2ReactiveStreams            = "co.fs2"                       %% "fs2-
 lazy val fs2io                         = "co.fs2"                       %% "fs2-io"                             % fs2Version
 lazy val fs2Aws                        = "io.laserdisc"                 %% "fs2-aws-core"                       % fs2AwsVersion
 lazy val fs2AwsS3                      = "io.laserdisc"                 %% "fs2-aws-s3"                         % fs2AwsVersion
+lazy val glassFishJakarta              = "org.glassfish"                 % "jakarta.json"                       % glassFishJakartaVersion
 lazy val handleBars                    = "com.github.jknack"             % "handlebars"                         % handleBarsVersion
-lazy val jenaArq                       = "org.apache.jena"               % "jena-arq"                           % jenaVersion exclude ("com.apicatalog", "titanium-json-ld")
-lazy val jsonldjava                    = "com.github.jsonld-java"        % "jsonld-java"                        % jsonldjavaVersion
+lazy val jenaArq                       = "org.apache.jena"               % "jena-arq"                           % jenaVersion
 lazy val kamonAkkaHttp                 = "io.kamon"                     %% "kamon-akka-http"                    % kamonVersion
 lazy val kamonCore                     = "io.kamon"                     %% "kamon-core"                         % kamonVersion
 lazy val kanelaAgent                   = "io.kamon"                      % "kanela-agent"                       % kanelaAgentVersion
@@ -291,8 +291,8 @@ lazy val rdf = project
       circeParser,
       circeGeneric,
       circeGenericExtras,
+      glassFishJakarta,
       jenaArq,
-      jsonldjava,
       magnolia,
       scalaReflect,
       topBraidShacl,

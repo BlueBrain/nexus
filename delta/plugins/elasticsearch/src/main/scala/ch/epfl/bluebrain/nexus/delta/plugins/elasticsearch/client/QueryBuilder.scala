@@ -152,7 +152,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     * order to not split the IRI into tokens that are not meaningful.
     */
   private def multiMatch(q: String): JsonObject = {
-    val iri      = Iri.absolute(q).toOption
+    val iri      = Iri.reference(q).toOption
     val payload  = JsonObject(
       "multi_match" -> Json.obj(
         "query"  -> iri.map(_.toString).getOrElse(q).asJson,

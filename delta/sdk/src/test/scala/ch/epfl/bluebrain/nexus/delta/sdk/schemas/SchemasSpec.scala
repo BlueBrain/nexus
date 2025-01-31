@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
@@ -17,12 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import io.circe.Json
 
 import java.time.Instant
 
 class SchemasSpec extends CatsEffectSpec with Fixtures {
-
-  implicit override val api: JsonLdApi = JsonLdJavaApi.lenient
 
   "The Schemas state machine" when {
 
@@ -108,7 +106,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
 
       "reject with InvalidSchema" in {
         val current     = SchemaGen.currentState(schema)
-        val wrongSource = source.replace("minCount" -> 1, "wrong")
+        val wrongSource = source.mapAllKeys("property", _ => Json.obj())
         val wrongSchema = SchemaGen.schema(myId, project.value.ref, wrongSource)
         val compacted   = wrongSchema.compacted
         val expanded    = wrongSchema.expanded

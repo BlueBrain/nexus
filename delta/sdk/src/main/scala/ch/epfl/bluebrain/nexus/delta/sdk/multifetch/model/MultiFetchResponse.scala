@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonLdEncoderSyntax
@@ -78,7 +78,7 @@ object MultiFetchResponse {
       JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
     }
 
-    implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
+    implicit private val api: JsonLdApi = TitaniumJsonLdApi.lenient
 
     private[model] def itemEncoder(repr: ResourceRepresentation)(implicit base: BaseUri, rcr: RemoteContextResolution) =
       (item: Result) => {
