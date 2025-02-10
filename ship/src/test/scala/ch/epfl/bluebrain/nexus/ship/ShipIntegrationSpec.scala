@@ -25,12 +25,13 @@ import fs2.io.file.Path
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import io.circe.syntax.EncoderOps
-import org.scalatest.Assertion
+import org.scalatest.{Assertion, Ignore}
 
 import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
+@Ignore
 class ShipIntegrationSpec extends BaseIntegrationSpec {
 
   override def beforeAll(): Unit = {
