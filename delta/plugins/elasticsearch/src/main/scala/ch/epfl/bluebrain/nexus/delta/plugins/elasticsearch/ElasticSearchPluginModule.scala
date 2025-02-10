@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUID
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{DefaultIndexDeletionTask, ElasticSearchDeletionTask, EventMetricsDeletionTask}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{DefaultIndexingCoordinator, ElasticSearchCoordinator}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{DefaultIndexingAction, DefaultIndexingCoordinator, ElasticSearchCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsProjection, EventMetricsQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchFiles, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultIndexQuery

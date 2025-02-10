@@ -1,5 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
