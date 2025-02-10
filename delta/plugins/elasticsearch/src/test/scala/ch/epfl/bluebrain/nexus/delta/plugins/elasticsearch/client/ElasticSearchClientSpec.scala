@@ -7,17 +7,16 @@ import akka.testkit.TestKit
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -134,13 +133,12 @@ class ElasticSearchClientSpec
       val result     = esClient.bulk(operations).accepted
       result match {
         case BulkResponse.Success              => fail("errors expected")
-        case BulkResponse.MixedOutcomes(items) => {
+        case BulkResponse.MixedOutcomes(items) =>
           items.size shouldEqual 4
           items.get("1").value shouldEqual Outcome.Success
           items.get("2").value shouldEqual Outcome.Success
           items.get("3").value shouldEqual Outcome.Success
           items.get("5").value shouldBe an[Outcome.Error]
-        }
       }
     }
 
@@ -222,32 +220,6 @@ class ElasticSearchClientSpec
           .accepted
           .removeKeys("took") shouldEqual
           jsonContentOf("elasticsearch-results.json", "index" -> index)
-      }
-    }
-
-    "aggregate" in {
-      val index       = IndexLabel(genString()).rightValue
-      val operations  = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "_project": "proj1", "@type" : "Person" }"""),
-        ElasticSearchAction.Index(index, "2", json"""{ "_project": "proj2", "@type" : "Person" }"""),
-        ElasticSearchAction.Index(index, "3", json"""{ "_project": "proj3", "@type" : "Dog" }""")
-      )
-      val params      = ResourcesSearchParams()
-      val expectedAgg = jsonContentOf("elasticsearch-agg-results.json").asObject.get
-
-      val mapping =
-        json"""{ "properties": {
-               "@type": { "type": "keyword" },
-               "_project": { "type": "keyword" } } }""".asObject
-
-      val aggregate = for {
-        _   <- esClient.createIndex(index, mapping, None)
-        _   <- esClient.bulk(operations)
-        agg <- esClient.aggregate(params, Set(index.value), Query.Empty, 100)
-      } yield agg
-
-      eventually {
-        aggregate.accepted shouldEqual AggregationResult(3, expectedAgg)
       }
     }
 

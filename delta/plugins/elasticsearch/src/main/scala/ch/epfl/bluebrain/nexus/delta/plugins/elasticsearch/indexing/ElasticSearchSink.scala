@@ -164,6 +164,34 @@ object ElasticSearchSink {
       refresh
     )
 
+  /**
+    * @param client
+    *   the ES client
+    * @param chunkSize
+    *   the maximum number of documents to be pushed at once
+    * @param maxWindow
+    *   the maximum window before a document is pushed
+    * @param index
+    *   the index to push into
+    * @param refresh
+    *   the value for the `refresh` Elasticsearch parameter
+    */
+  def defaultIndexing(
+      client: ElasticSearchClient,
+      chunkSize: Int,
+      maxWindow: FiniteDuration,
+      index: IndexLabel,
+      refresh: Refresh
+  ): ElasticSearchSink =
+    new ElasticSearchSink(
+      client,
+      chunkSize,
+      maxWindow,
+      index,
+      elem => s"${elem.project}_${elem.id}",
+      refresh
+    )
+
   private def onMissingInResponse(id: Iri) = FailureReason(
     "MissingInResponse",
     Json.obj("message" := s"$id was not found in Elasticsearch response")

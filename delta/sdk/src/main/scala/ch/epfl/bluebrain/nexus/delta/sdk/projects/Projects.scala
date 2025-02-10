@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, ScopedEntityDefinition, StateMachine}
 import fs2.Stream
 
 trait Projects {
@@ -138,7 +138,7 @@ trait Projects {
   /**
     * Stream all references of existing projects in a finite stream
     */
-  def currentRefs: Stream[IO, ProjectRef]
+  def currentRefs(scope: Scope): Stream[IO, ProjectRef]
 
   /**
     * Stream project states in a non-finite stream

@@ -179,8 +179,7 @@ class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixt
              sv,
              (_: ActiveViewDef) => new NoopSink[Json],
              (v: ActiveViewDef) => IO.delay(createdIndices.add(v.index)).void,
-             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.index)).void,
-             IO.unit
+             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.index)).void
            )
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))

@@ -67,6 +67,10 @@ object ProjectsModule extends ModuleDef {
       )
   }
 
+  make[ProjectScopeResolver].from { (projects: Projects, aclCheck: AclCheck) =>
+    ProjectScopeResolver(projects, aclCheck)
+  }
+
   make[ProjectsHealth].from { (errorStore: ScopeInitializationErrorStore) =>
     ProjectsHealth(errorStore)
   }

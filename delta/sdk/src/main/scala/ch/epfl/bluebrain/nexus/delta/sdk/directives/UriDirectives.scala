@@ -14,10 +14,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsU
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.InvalidResourceId
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.Json
 
 import java.util.UUID
@@ -143,6 +146,12 @@ trait UriDirectives extends QueryParamsUnmarshalling {
         case Left(_)    => reject()
         case Right(iri) => provide(iri)
       }
+    }
+
+  def resourceRef(idSegment: IdSegment)(implicit pc: ProjectContext): Directive1[ResourceRef] =
+    Resources.expandResourceRef(idSegment, pc.apiMappings, pc.base, InvalidResourceId) match {
+      case Right(resourceRef) => provide(resourceRef)
+      case Left(err)          => reject(validationRejection(err.getMessage))
     }
 
   /**

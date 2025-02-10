@@ -3,7 +3,7 @@
   "aggregations" : {
     "projects" : {
       "buckets" : {
-        "doc_count" : 8,
+        "doc_count" : 7,
         "key" : "http://delta:8080/v1/projects/{{org}}/{{project}}"
       },
       "doc_count_error_upper_bound" : 0,
@@ -12,7 +12,7 @@
     "types" : {
       "buckets" : [
         {
-          "doc_count" : 3,
+          "doc_count" : 2,
           "key" : "https://bluebrain.github.io/nexus/vocabulary/View"
         },
         {
@@ -29,15 +29,7 @@
         },
         {
           "doc_count" : 1,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView"
-        },
-        {
-          "doc_count" : 1,
           "key" : "https://bluebrain.github.io/nexus/vocabulary/InProject"
-        },
-        {
-          "doc_count" : 1,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/Project"
         },
         {
           "doc_count" : 1,
@@ -60,5 +52,5 @@
       "sum_other_doc_count" : 0
     }
   },
-  "total" : 9
+  "total" : 7
 }

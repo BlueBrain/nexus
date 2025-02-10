@@ -9,9 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.literal.JsonStringContext
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -67,8 +68,11 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   /**
     * Filters by the passed ''params''
     */
-  def withFilters(params: ResourcesSearchParams)(implicit baseUri: BaseUri): QueryBuilder = {
+  def withFilters(params: ResourcesSearchParams, projects: Set[ProjectRef])(implicit baseUri: BaseUri): QueryBuilder = {
     val (includeTypes, excludeTypes) = params.types.partition(_.include)
+    val projectsTerm                 = or(projects.map { project =>
+      term("_project", ResourceUris.project(project).accessUri)
+    }.toSeq: _*)
     QueryBuilder(
       query deepMerge queryPayload(
         mustTerms = typesTerms(params.typeOperator, includeTypes) ++
@@ -85,7 +89,8 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           params.tag.map(term(nxv.tags.prefix, _)) ++
           params.keywords.map { case (key, value) =>
             term(s"_keywords.$key", value)
-          },
+          } ++
+          List(projectsTerm),
         mustNotTerms = typesTerms(params.typeOperator.negate, excludeTypes),
         withScore = params.q.isDefined
       )
@@ -190,11 +195,6 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
 object QueryBuilder {
 
   /**
-    * The elasticsearch schema parameter where all other fields are being copied to
-    */
-  final private[client] val allFields = "_all_fields"
-
-  /**
     * An empty [[QueryBuilder]]
     */
   val empty: QueryBuilder = QueryBuilder(JsonObject.empty)
@@ -204,6 +204,6 @@ object QueryBuilder {
   /**
     * A [[QueryBuilder]] using the filter ''params''.
     */
-  def apply(params: ResourcesSearchParams)(implicit baseUri: BaseUri): QueryBuilder =
-    empty.withFilters(params)
+  def apply(params: ResourcesSearchParams, projects: Set[ProjectRef])(implicit baseUri: BaseUri): QueryBuilder =
+    empty.withFilters(params, projects)
 }

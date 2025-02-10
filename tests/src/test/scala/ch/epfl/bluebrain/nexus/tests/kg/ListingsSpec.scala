@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resour
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
 import io.circe.Json
+import io.circe.optics.JsonPath.root
 import org.scalatest.Assertion
-
 import org.scalatest.LoneElement._
 
 import java.net.URLEncoder
@@ -110,20 +110,17 @@ final class ListingsSpec extends BaseIntegrationSpec {
     }
 
     "get default views" in {
-      val defaultElasticSearchView = "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
-      val defaultSparqlView        = "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
-      val searchView               = "https://bluebrain.github.io/nexus/vocabulary/searchView"
+      val defaultSparqlView = "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+      val searchView        = "https://bluebrain.github.io/nexus/vocabulary/searchView"
 
       val mapping = replacements(
         Delta,
-        "project-label"                -> ref11,
-        "project"                      -> s"${config.deltaUri}/projects/$ref11",
-        "defaultElasticSearchView"     -> defaultElasticSearchView,
-        "defaultElasticSearchViewSelf" -> viewSelf(ref11, defaultElasticSearchView),
-        "defaultSparqlView"            -> defaultSparqlView,
-        "defaultSparqlViewSelf"        -> viewSelf(ref11, defaultSparqlView),
-        "searchView"                   -> searchView,
-        "searchViewSelf"               -> viewSelf(ref11, searchView)
+        "project-label"         -> ref11,
+        "project"               -> s"${config.deltaUri}/projects/$ref11",
+        "defaultSparqlView"     -> defaultSparqlView,
+        "defaultSparqlViewSelf" -> viewSelf(ref11, defaultSparqlView),
+        "searchView"            -> searchView,
+        "searchViewSelf"        -> viewSelf(ref11, searchView)
       )
 
       val expected = jsonContentOf("kg/listings/default-view.json", mapping: _*)
@@ -236,42 +233,27 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
   }
 
-  "Listing resources within an org" should {
-    val projectType = URLEncoder.encode("https://bluebrain.github.io/nexus/vocabulary/Project", "UTF-8")
-    "get resources from both projects in the org for user with appropriate acls" in {
-      val expected = jsonContentOf(
-        "kg/listings/org/filter-project-2.json",
-        replacements(
-          Bob,
-          "org"   -> org1,
-          "proj1" -> proj11,
-          "proj2" -> proj12,
-          "proj3" -> proj13
-        ): _*
-      )
+  private def assertProjects(json: Json, projects: String*) = {
+    val obtained = root._results.each._project.string.getAll(json).toSet
 
+    obtained should contain theSameElementsAs projects.map { ref => s"${config.deltaUri}/projects/$ref" }
+  }
+
+  "Listing resources within an org" should {
+    "get resources from the 3 projects in the org for user with appropriate acls" in {
       eventually {
-        deltaClient.get[Json](s"/resources/$org1?type=$projectType", Bob) { (json, response) =>
+        deltaClient.get[Json](s"/resources/$org1", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+          assertProjects(json, ref11, ref12, ref13)
         }
       }
     }
 
     "get resources from only one project in the org for user with restricted acls" in {
-      val expected = jsonContentOf(
-        "kg/listings/org/filter-project-1.json",
-        replacements(
-          Bob,
-          "org"  -> org1,
-          "proj" -> proj12
-        ): _*
-      )
-
       eventually {
-        deltaClient.get[Json](s"/resources/$org1?type=$projectType", Alice) { (json, response) =>
+        deltaClient.get[Json](s"/resources/$org1", Alice) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+          assertProjects(json, ref12)
         }
       }
     }
@@ -304,7 +286,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
     }
 
     "get an error for anonymous" in {
-      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Anonymous) { (_, response) =>
+      deltaClient.get[Json](s"/resources/$org1", Anonymous) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }

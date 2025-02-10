@@ -2,23 +2,27 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{aggregations, searchMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultViewsQuery._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultIndexQuery._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy, ProjectScopeResolver}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
-class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures {
+class ListingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val myId2        = nxv + "myid2"
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
@@ -29,18 +33,24 @@ class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
-  private lazy val defaultViewsQuery = new DummyDefaultViewsQuery
+  private def projectResolver: ProjectScopeResolver = new ProjectScopeResolver {
+    override def apply(scope: Scope, permission: Permission)(implicit caller: Caller): IO[Set[ProjectRef]] =
+      IO.pure { Set.empty }
+  }
+
+  private lazy val defaultIndexQuery = new DummyDefaultIndexQuery
 
   private lazy val routes =
     Route.seal(
       ElasticSearchViewsRoutesHandler(
         groupDirectives,
-        new ElasticSearchQueryRoutes(
+        new ListingRoutes(
           identities,
           aclCheck,
+          projectResolver,
           resourceToSchemaMapping,
           groupDirectives,
-          defaultViewsQuery
+          defaultIndexQuery
         ).routes
       )
     )

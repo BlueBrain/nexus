@@ -19,10 +19,6 @@ class EventsSpec extends BaseIntegrationSpec {
   private val id2                            = s"$orgId2/$projId"
   private val initialEventId: Option[String] = None
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-  }
-
   "creating projects" should {
 
     "add necessary permissions for user" in {
@@ -49,11 +45,9 @@ class EventsSpec extends BaseIntegrationSpec {
 
     "wait for default project events" in {
       val endpoints = List(
-        s"/views/$id/nxv:defaultElasticSearchIndex",
         s"/views/$id/nxv:defaultSparqlIndex",
         s"/resolvers/$id/nxv:defaultInProject",
         s"/storages/$id/nxv:diskStorageDefault",
-        s"/views/$id2/nxv:defaultElasticSearchIndex",
         s"/views/$id2/nxv:defaultSparqlIndex",
         s"/resolvers/$id2/nxv:defaultInProject",
         s"/storages/$id2/nxv:diskStorageDefault"
@@ -145,7 +139,7 @@ class EventsSpec extends BaseIntegrationSpec {
 
     "fetch resource events filtered by project" in eventually {
       deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { seq =>
-        val projectEvents = seq.drop(6)
+        val projectEvents = seq.drop(5)
         projectEvents.size shouldEqual 6
         projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
           "ResourceCreated",
@@ -170,7 +164,7 @@ class EventsSpec extends BaseIntegrationSpec {
 
     "fetch resource events filtered by organization 1" in {
       deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
-        val projectEvents = seq.drop(6)
+        val projectEvents = seq.drop(5)
         projectEvents.size shouldEqual 6
         projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
           "ResourceCreated",
@@ -195,7 +189,7 @@ class EventsSpec extends BaseIntegrationSpec {
 
     "fetch resource events filtered by organization 2" in {
       deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
-        val projectEvents = seq.drop(6)
+        val projectEvents = seq.drop(5)
         projectEvents.size shouldEqual 1
         projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
         val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
