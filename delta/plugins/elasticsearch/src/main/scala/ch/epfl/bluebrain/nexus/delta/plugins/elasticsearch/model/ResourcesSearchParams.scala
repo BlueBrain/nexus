@@ -59,6 +59,8 @@ final case class ResourcesSearchParams(
     * Adds a schema to the current [[ResourcesSearchParams]] overriding it if necessary
     */
   def withSchema(ref: ResourceRef): ResourcesSearchParams = copy(schema = Some(ref))
+
+  def withSchema(iri: Iri): ResourcesSearchParams = copy(schema = Some(ResourceRef(iri)))
 }
 
 object ResourcesSearchParams {

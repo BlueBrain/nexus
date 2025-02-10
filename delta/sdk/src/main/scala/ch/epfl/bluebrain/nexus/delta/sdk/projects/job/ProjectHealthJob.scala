@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.std.Env
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectHealer, Projects}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.Stream
 
@@ -30,7 +31,7 @@ object ProjectHealthJob extends ProjectHealthJob {
       .flatMap {
         case true  => {
           logger.info("Starting Nexus automatic project healing.") >>
-            run(projects.currentRefs, projectHealer) >>
+            run(projects.currentRefs(Scope.Root), projectHealer) >>
             logger.info("Nexus automatic healing has completed.")
         }
         case false => logger.info("Nexus automatic project healingi is disabled.")

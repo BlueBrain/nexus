@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, ElasticSearchViewType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -87,14 +87,12 @@ class ElasticSearchViewsQuerySuite
     )
 
   // Indexing views for project 1
-  private val defaultView = ViewRef(project1.ref, defaultViewId)
-  private val view1Proj1  = ViewRef(project1.ref, nxv + "view1Proj1")
-  private val view2Proj1  = ViewRef(project1.ref, nxv + "view2Proj1")
+  private val view1Proj1 = ViewRef(project1.ref, nxv + "view1Proj1")
+  private val view2Proj1 = ViewRef(project1.ref, nxv + "view2Proj1")
 
   // Indexing views for project 2
-  private val defaultView2 = ViewRef(project2.ref, defaultViewId)
-  private val view1Proj2   = ViewRef(project2.ref, nxv + "view1Proj2")
-  private val view2Proj2   = ViewRef(project2.ref, nxv + "view2Proj2")
+  private val view1Proj2 = ViewRef(project2.ref, nxv + "view1Proj2")
+  private val view2Proj2 = ViewRef(project2.ref, nxv + "view2Proj2")
 
   // Aggregates all views of project1
   private val aggregate1      = ViewRef(project1.ref, nxv + "aggregate1")
@@ -124,8 +122,7 @@ class ElasticSearchViewsQuerySuite
     NonEmptySet.of(view2Proj2, aggregate2)
   )
 
-  private val allDefaultViews                 = List(defaultView, defaultView2)
-  private val allIndexingViews: List[ViewRef] = allDefaultViews ++ List(view1Proj1, view2Proj1, view1Proj2, view2Proj2)
+  private val allIndexingViews: List[ViewRef] = List(view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   // Resources are indexed in every view
   private def epochPlus(plus: Long) = Instant.EPOCH.plusSeconds(plus)

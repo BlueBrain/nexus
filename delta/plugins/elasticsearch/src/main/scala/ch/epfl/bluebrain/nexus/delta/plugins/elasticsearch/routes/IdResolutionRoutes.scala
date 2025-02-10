@@ -32,7 +32,7 @@ class IdResolutionRoutes(
     pathPrefix("resolve") {
       extractCaller { implicit caller =>
         (get & iriSegment & pathEndOrSingleSlash) { iri =>
-          val resolved = idResolution.resolve(iri)
+          val resolved = idResolution.apply(iri)
           emit(resolved.attemptNarrow[ElasticSearchQueryError])
         }
       }
