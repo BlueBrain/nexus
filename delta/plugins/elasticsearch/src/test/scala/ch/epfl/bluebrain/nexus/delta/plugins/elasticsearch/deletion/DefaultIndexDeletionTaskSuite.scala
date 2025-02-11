@@ -35,11 +35,16 @@ class DefaultIndexDeletionTaskSuite
 
     def toProjectUri(project: ProjectRef) = ResourceUris.project(project).accessUri
 
+    def indexAction(id: Int, project: ProjectRef) = {
+      val json = json"""{ "_project": "${toProjectUri(project)}", "number": $id }"""
+      ElasticSearchAction.Index(index, id.toString, Some(project.toString), json)
+    }
+
     val bulk = List(
-      ElasticSearchAction.Index(index, "1", json"""{ "_project": "${toProjectUri(projectToDelete)}", "number": 1 }"""),
-      ElasticSearchAction.Index(index, "2", json"""{ "_project": "${toProjectUri(anotherProject)}","number" : 2 }"""),
-      ElasticSearchAction.Index(index, "3", json"""{ "_project": "${toProjectUri(projectToDelete)}", "number" : 3 }"""),
-      ElasticSearchAction.Index(index, "4", json"""{ "_project": "${toProjectUri(anotherProject)}", "number" : 4 }""")
+      indexAction(1, projectToDelete),
+      indexAction(2, anotherProject),
+      indexAction(3, projectToDelete),
+      indexAction(4, anotherProject)
     )
 
     def countInIndex(project: ProjectRef) =

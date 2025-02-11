@@ -53,7 +53,7 @@ class EventMetricsQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
     for {
       _      <- client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value)).assertEquals(true)
       bulk    = List(event11, event12, event21).zipWithIndex.map { case (event, i) =>
-                  ElasticSearchAction.Index(index, i.toString, event.asJson)
+                  ElasticSearchAction.Index(index, i.toString, None, event.asJson)
                 }
       _      <- client.bulk(bulk).assertEquals(BulkResponse.Success)
       _      <- client.refresh(index)

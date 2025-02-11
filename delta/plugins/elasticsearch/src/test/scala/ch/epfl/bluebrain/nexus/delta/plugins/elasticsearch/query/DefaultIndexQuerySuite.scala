@@ -164,8 +164,7 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
       _    <- client.createIndex(defaultIndex, Some(defaultMapping), Some(defaultSettings))
       bulk <- allResources.traverse { r =>
                 r.asDocument.map { d =>
-                  // We create a unique id across all indices
-                  ElasticSearchAction.Index(defaultIndex, genString(), d)
+                  ElasticSearchAction.Index(defaultIndex, genString(), Some(r.project.toString), d)
                 }
               }
       _    <- client.bulk(bulk)

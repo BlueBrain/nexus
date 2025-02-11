@@ -263,7 +263,7 @@ class ElasticSearchViewsQuerySuite
         bulk <- allResources.traverse { r =>
                   r.asDocument(ref).map { d =>
                     // We create a unique id across all indices
-                    ElasticSearchAction.Index(view.index, genString(), d)
+                    ElasticSearchAction.Index(view.index, genString(), None, d)
                   }
                 }
         _    <- client.bulk(bulk)

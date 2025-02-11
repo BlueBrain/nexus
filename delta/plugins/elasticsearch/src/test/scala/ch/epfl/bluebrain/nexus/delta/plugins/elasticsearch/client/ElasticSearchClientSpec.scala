@@ -106,12 +106,12 @@ class ElasticSearchClientSpec
     "run bulk operation" in {
       val index      = IndexLabel(genString()).rightValue
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : "value1" }"""),
-        ElasticSearchAction.Delete(index, "2"),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : "value1" }"""),
-        ElasticSearchAction.Delete(index, "2"),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : "value3" }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", Some("routing"), json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2", Some("routing2")),
+        ElasticSearchAction.Index(index, "2", Some("routing2"), json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2", Some("routing2")),
+        ElasticSearchAction.Create(index, "3", Some("routing"), json"""{ "field1" : "value3" }"""),
+        ElasticSearchAction.Update(index, "1", Some("routing"), json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations).accepted
       eventually {
@@ -123,12 +123,12 @@ class ElasticSearchClientSpec
     "run bulk operation with errors" in {
       val index      = IndexLabel(genString()).rightValue
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : "value1" }"""),
-        ElasticSearchAction.Delete(index, "2"),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 27 }"""),
-        ElasticSearchAction.Delete(index, "3"),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : "value3" }"""),
-        ElasticSearchAction.Update(index, "5", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2", None),
+        ElasticSearchAction.Index(index, "2", None, json"""{ "field1" : 27 }"""),
+        ElasticSearchAction.Delete(index, "3", None),
+        ElasticSearchAction.Create(index, "3", None, json"""{ "field1" : "value3" }"""),
+        ElasticSearchAction.Update(index, "5", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
       val result     = esClient.bulk(operations).accepted
       result match {
@@ -146,7 +146,7 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
       val doc   = json"""{ "field1" : 1 }"""
 
-      val operations = List(ElasticSearchAction.Index(index, "1", doc))
+      val operations = List(ElasticSearchAction.Index(index, "1", None, doc))
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
       esClient.getSource[Json](index, "1").accepted shouldEqual doc
@@ -157,9 +157,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 2 }"""),
-        ElasticSearchAction.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Index(index, "2", None, json"""{ "field1" : 2 }"""),
+        ElasticSearchAction.Index(index, "3", None, json"""{ "doc" : {"field2" : 4} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
@@ -174,9 +174,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 2 }"""),
-        ElasticSearchAction.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Index(index, "2", None, json"""{ "field1" : 2 }"""),
+        ElasticSearchAction.Index(index, "3", None, json"""{ "doc" : {"field2" : 4} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
@@ -187,9 +187,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : 3 }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "3", None, json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
       val query      = QueryBuilder(jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }""")
@@ -208,9 +208,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : 3 }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "3", None, json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations).accepted
       val query2     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
@@ -227,9 +227,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Create(index, "2", json"""{ "field1" : 3 }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "2", None, json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
 
       def theCountShouldBe(count: Long): IO[Assertion] =
