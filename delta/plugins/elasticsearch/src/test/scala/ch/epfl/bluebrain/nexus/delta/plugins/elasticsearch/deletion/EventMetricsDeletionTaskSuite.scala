@@ -31,10 +31,10 @@ class EventMetricsDeletionTaskSuite
     val task = new EventMetricsDeletionTask(client, prefix)
 
     val operations = List(
-      ElasticSearchAction.Index(index, "1", json"""{ "project": "$projectToDelete", "number": 1 }"""),
-      ElasticSearchAction.Index(index, "2", json"""{ "project": "$anotherProject","number" : 2 }"""),
-      ElasticSearchAction.Index(index, "3", json"""{ "project": "$projectToDelete", "number" : 3 }"""),
-      ElasticSearchAction.Index(index, "4", json"""{ "project": "$anotherProject", "number" : 4 }""")
+      ElasticSearchAction.Index(index, "1", None, json"""{ "project": "$projectToDelete", "number": 1 }"""),
+      ElasticSearchAction.Index(index, "2", None, json"""{ "project": "$anotherProject","number" : 2 }"""),
+      ElasticSearchAction.Index(index, "3", None, json"""{ "project": "$projectToDelete", "number" : 3 }"""),
+      ElasticSearchAction.Index(index, "4", None, json"""{ "project": "$anotherProject", "number" : 4 }""")
     )
 
     def countMetrics(project: ProjectRef) =

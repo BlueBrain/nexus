@@ -151,7 +151,7 @@ class SearchSpec
       val index   = projectionIndex(p.projection, p.view.uuid, prefix)
       esClient.createIndex(index, Some(mappings), None).accepted
       val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
-        ElasticSearchAction.Index(index, idx.toString, json)
+        ElasticSearchAction.Index(index, idx.toString, None, json)
       }
       bulk ++ newBulk
     }

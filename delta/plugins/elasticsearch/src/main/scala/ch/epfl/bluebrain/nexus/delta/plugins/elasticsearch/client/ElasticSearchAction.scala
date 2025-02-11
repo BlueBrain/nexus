@@ -16,6 +16,14 @@ sealed trait ElasticSearchAction extends Product with Serializable {
 
   /**
     * @return
+    *   To route the document to a particular shard
+    * @see
+    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html
+    */
+  def routing: Option[String]
+
+  /**
+    * @return
     *   the id of the document for the current bulk operation
     */
   def id: String
@@ -27,25 +35,30 @@ sealed trait ElasticSearchAction extends Product with Serializable {
   def payload: String
 
   protected def json: Json =
-    Json.obj("_index" -> index.value.asJson, "_id" -> id.asJson)
+    Json.fromFields(
+      List("_index" := index.value, "_id" := id) ++ routing.map { r => "routing" := r }
+    )
 }
 
 object ElasticSearchAction {
 
   private val newLine = System.lineSeparator()
 
-  final case class Index(index: IndexLabel, id: String, content: Json)                  extends ElasticSearchAction {
+  final case class Index(index: IndexLabel, id: String, routing: Option[String], content: Json)
+      extends ElasticSearchAction {
     def payload: String = Json.obj("index" -> json).noSpaces + newLine + content.noSpaces
   }
-  final case class Create(index: IndexLabel, id: String, content: Json)                 extends ElasticSearchAction {
+  final case class Create(index: IndexLabel, id: String, routing: Option[String], content: Json)
+      extends ElasticSearchAction {
     def payload: String = Json.obj("create" -> json).noSpaces + newLine + content.noSpaces
   }
-  final case class Update(index: IndexLabel, id: String, content: Json, retry: Int = 0) extends ElasticSearchAction {
+  final case class Update(index: IndexLabel, id: String, routing: Option[String], content: Json, retry: Int = 0)
+      extends ElasticSearchAction {
     val modified = if (retry > 0) json deepMerge Json.obj("retry_on_conflict" -> retry.asJson) else json
 
     def payload: String = Json.obj("update" -> modified).noSpaces + newLine + content.asJson.noSpaces
   }
-  final case class Delete(index: IndexLabel, id: String)                                extends ElasticSearchAction {
+  final case class Delete(index: IndexLabel, id: String, routing: Option[String]) extends ElasticSearchAction {
     def payload: String = Json.obj("delete" -> json).noSpaces + newLine
   }
 }

@@ -77,7 +77,7 @@ final class GraphAnalyticsSink(
           case Noop                     => acc
           case UpdateByQuery(id, types) => acc.update(id, types)
           case g: Index                 =>
-            val bulkAction = ElasticSearchAction.Index(index, documentId(success), g.asJson)
+            val bulkAction = ElasticSearchAction.Index(index, documentId(success), None, g.asJson)
             acc.add(bulkAction).update(g.id, g.types)
         }
       //TODO: handle correctly the deletion of individual resources when the feature is implemented
