@@ -44,7 +44,7 @@ class DefaultIndexDeletionTaskSuite
       indexAction(1, projectToDelete),
       indexAction(2, anotherProject),
       indexAction(3, projectToDelete),
-      indexAction(4, anotherProject),
+      indexAction(4, anotherProject)
     )
 
     def countInIndex(project: ProjectRef) =
