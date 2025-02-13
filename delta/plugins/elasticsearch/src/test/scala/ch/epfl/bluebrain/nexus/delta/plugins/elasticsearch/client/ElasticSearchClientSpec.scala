@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import io.circe.syntax.KeyOps
 import io.circe.{Json, JsonObject}
 import org.scalatest.Assertion
 import org.scalatest.concurrent.Eventually
@@ -263,5 +264,29 @@ class ElasticSearchClientSpec
         _   <- esClient.deletePointInTime(pit)
       } yield ()
     }.accepted
+
+    "create an alias for an index and delete it" in {
+      val index      = IndexLabel.unsafe(genString())
+      val alias      = IndexLabel.unsafe(genString())
+      val indexAlias = IndexAlias(index, alias, Some("routing"), Some(JsonObject("match_all" := Json.obj())))
+      for {
+        _           <- esClient.createIndex(index)
+        _           <- esClient.createAlias(indexAlias)
+        aliasExists <- esClient.existsIndex(alias)
+        _            = aliasExists shouldEqual true
+        _           <- esClient.removeAlias(index, alias)
+        aliasExists <- esClient.existsIndex(alias)
+        _            = aliasExists shouldEqual false
+        indexExists <- esClient.existsIndex(index)
+        _            = indexExists shouldEqual true
+      } yield ()
+    }.accepted
+
+    "create an alias for a non existing index should fail" in {
+      val index      = IndexLabel.unsafe(genString())
+      val alias      = IndexLabel.unsafe(genString())
+      val indexAlias = IndexAlias(index, alias, Some("routing"), Some(JsonObject("match_all" := Json.obj())))
+      esClient.createAlias(indexAlias).rejectedWith[HttpClientStatusError]
+    }
   }
 }

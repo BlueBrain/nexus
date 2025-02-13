@@ -43,6 +43,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val scriptPath                                            = "_scripts"
   private val docPath                                               = "_doc"
   private val allIndexPath                                          = "_all"
+  private val aliasPath                                             = "_aliases"
   private val bulkPath                                              = "_bulk"
   private val refreshPath                                           = "_refresh"
   private val indexTemplate                                         = "_index_template"
@@ -465,6 +466,31 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     client.run(Delete(endpoint / pit, pointInTime.asJson).withHttpCredentials) {
       case resp if resp.status.isSuccess() => discardEntity(resp)
     }
+
+  def createAlias(indexAlias: IndexAlias): IO[Unit] = {
+    val aliasPayload = Json.obj(
+      "index"   := indexAlias.index.value,
+      "alias"   := indexAlias.alias.value,
+      "routing" := indexAlias.routing,
+      "filter"  := indexAlias.filter
+    )
+    aliasAction(Json.obj("add" := aliasPayload))
+  }
+
+  def removeAlias(index: IndexLabel, alias: IndexLabel): IO[Unit] = {
+    val aliasPayload = Json.obj(
+      "index" := index.value,
+      "alias" := alias.value
+    )
+    aliasAction(Json.obj("remove" := aliasPayload))
+  }
+
+  private def aliasAction(aliasAction: Json) = {
+    val aliasWrap = Json.obj("actions" := Json.arr(aliasAction))
+    client.run(Post(endpoint / aliasPath, aliasWrap).withHttpCredentials) {
+      case resp if resp.status.isSuccess() => discardEntity(resp)
+    }
+  }
 
   private def discardEntity(resp: HttpResponse) =
     IO.delay(resp.discardEntityBytes()) >> IO.unit

@@ -6,17 +6,29 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, Hits, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.defaultProjectTargetAlias
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, JsonObject}
+import io.circe.{Decoder, Json, JsonObject}
 
 /**
   * Allow to list resources from the default Elasticsearch index
   */
 trait DefaultIndexQuery {
+
+  /**
+    * Query the default index with the provided query limiting the search to the given project
+    * @param project
+    *   the project the query targets
+    * @param query
+    *   the query to execute
+    * @param qp
+    *   the extra query parameters for the elasticsearch index
+    */
+  def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json]
 
   /**
     * Retrieves a list of resources from the provided search request on the set of projects
@@ -37,6 +49,13 @@ object DefaultIndexQuery {
       client: ElasticSearchClient,
       config: DefaultIndexConfig
   )(implicit baseUri: BaseUri): DefaultIndexQuery = new DefaultIndexQuery {
+
+    override def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] = {
+      val index = defaultProjectTargetAlias(config, project)
+      client
+        .search(query, Set(index.value), qp)(SortList.empty)
+        .adaptError { case e: HttpClientError => ElasticSearchClientError(e) }
+    }
 
     override def list(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] = {
       val query =
