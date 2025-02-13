@@ -8,9 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
@@ -49,7 +48,8 @@ object DefaultIndexingCoordinator {
       fetchProjects: Offset => ElemStream[ProjectDef],
       graphStream: GraphResourceStream,
       supervisor: Supervisor,
-      sink: Sink
+      sink: Sink,
+      createAlias: ProjectRef => IO[Unit]
   )(implicit cr: RemoteContextResolution)
       extends DefaultIndexingCoordinator {
 
@@ -64,7 +64,7 @@ object DefaultIndexingCoordinator {
     private def compile(project: ProjectRef): IO[CompiledProjection] =
       IO.fromEither(
         CompiledProjection.compile(
-          defaultIndexingMetadata(project),
+          defaultIndexingProjectionMetadata(project),
           ExecutionStrategy.PersistentSingleNode,
           Source(graphStream.continuous(project, SelectFilter.latest, _)),
           defaultIndexingPipeline,
@@ -76,6 +76,7 @@ object DefaultIndexingCoordinator {
     private def start(project: ProjectRef): IO[Unit] =
       for {
         compiled <- compile(project)
+        _        <- createAlias(project)
         status   <- supervisor.describe(compiled.metadata.name)
         _        <- status match {
                       case Some(value) if value.status == ExecutionStatus.Running =>
@@ -90,21 +91,10 @@ object DefaultIndexingCoordinator {
     private def destroy(project: ProjectRef): IO[Unit] = {
       logger.info(s"Project '$project' has been marked as deleted, stopping the default indexing...") >>
         supervisor
-          .destroy(projectionName(project))
+          .destroy(defaultIndexingProjection(project))
           .void
     }
   }
-
-  val defaultIndexingId: IriOrBNode.Iri = nxv + "default-indexing"
-
-  private[indexing] def projectionName(ref: ProjectRef): String = s"default-indexing-$ref"
-
-  def defaultIndexingMetadata(project: ProjectRef): ProjectionMetadata = ProjectionMetadata(
-    "default-indexing",
-    projectionName(project),
-    Some(project),
-    Some(defaultIndexingId)
-  )
 
   def defaultIndexingPipeline(implicit cr: RemoteContextResolution): NonEmptyChain[Operation] =
     NonEmptyChain(
@@ -123,21 +113,21 @@ object DefaultIndexingCoordinator {
       defaultMapping: DefaultMapping,
       defaultSettings: DefaultSettings,
       config: ElasticSearchViewsConfig
-  )(implicit cr: RemoteContextResolution): IO[DefaultIndexingCoordinator] =
+  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[DefaultIndexingCoordinator] =
     if (config.indexingEnabled) {
-      client.createIndex(config.defaultIndex.index, Some(defaultMapping.value), Some(defaultSettings.value)) >>
-        apply(
-          projects.states(_).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) }),
-          graphStream,
-          supervisor,
-          ElasticSearchSink.defaultIndexing(
-            client,
-            config.batch.maxElements,
-            config.batch.maxInterval,
-            config.defaultIndex.index,
-            Refresh.False
-          )
-        )
+      val batch       = config.batch
+      val targetIndex = config.defaultIndex.index
+
+      def fetchProjects(offset: Offset) =
+        projects.states(offset).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) })
+
+      def elasticsearchSink =
+        ElasticSearchSink.defaultIndexing(client, batch.maxElements, batch.maxInterval, targetIndex, Refresh.False)
+
+      def createAlias(project: ProjectRef) = client.createAlias(indexingAlias(config.defaultIndex, project))
+
+      client.createIndex(targetIndex, Some(defaultMapping.value), Some(defaultSettings.value)) >>
+        apply(fetchProjects, graphStream, supervisor, elasticsearchSink, createAlias)
     } else {
       Noop.log.as(Noop)
     }
@@ -146,14 +136,10 @@ object DefaultIndexingCoordinator {
       fetchProjects: Offset => ElemStream[ProjectDef],
       graphStream: GraphResourceStream,
       supervisor: Supervisor,
-      sink: Sink
+      sink: Sink,
+      createAlias: ProjectRef => IO[Unit]
   )(implicit cr: RemoteContextResolution): IO[DefaultIndexingCoordinator] = {
-    val coordinator = new Active(
-      fetchProjects,
-      graphStream,
-      supervisor,
-      sink
-    )
+    val coordinator = new Active(fetchProjects, graphStream, supervisor, sink, createAlias)
     val compiled    =
       CompiledProjection.fromStream(metadata, ExecutionStrategy.EveryNode, offset => coordinator.run(offset))
     supervisor.run(compiled).as(coordinator)

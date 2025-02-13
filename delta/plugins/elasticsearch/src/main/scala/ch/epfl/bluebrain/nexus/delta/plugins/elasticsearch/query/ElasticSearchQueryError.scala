@@ -23,7 +23,9 @@ object ElasticSearchQueryError {
     * Error returned when interacting with the elasticserch client
     */
   final case class ElasticSearchClientError(error: HttpClientError)
-      extends ElasticSearchQueryError("Error while interacting with the underlying ElasticSearch index")
+      extends ElasticSearchQueryError(
+        s"Error while interacting with the underlying ElasticSearch index: '${error.getMessage}'"
+      )
 
   /**
     * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.

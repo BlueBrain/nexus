@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -32,7 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
 
@@ -219,12 +217,6 @@ class ElasticSearchViewsQuerySuite
         ids      = extract(sources)
       } yield ids
     }.rightValue
-
-    /**
-      * Extract ids from documents from results from [[SearchResults]]
-      */
-    def extractAll(results: SearchResults[JsonObject])(implicit loc: Location): Seq[Iri] =
-      extract(results.sources.map(_.asJson))
 
     def extract(results: Seq[Json])(implicit loc: Location): Seq[Iri] =
       results.traverse(extract).rightValue

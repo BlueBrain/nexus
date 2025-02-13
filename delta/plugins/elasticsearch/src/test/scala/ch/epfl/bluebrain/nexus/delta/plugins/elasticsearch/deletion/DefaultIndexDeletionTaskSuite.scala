@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.indexingAlias
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
@@ -56,6 +57,7 @@ class DefaultIndexDeletionTaskSuite
     for {
       // Indexing and checking count
       _ <- client.createIndex(index, Some(defaultMapping.value), Some(defaultSettings.value))
+      _ <- client.createAlias(indexingAlias(defaultIndexConfig, projectToDelete))
       _ <- client.bulk(bulk)
       _ <- client.refresh(index)
       _ <- client.count(index.value).assertEquals(4L)

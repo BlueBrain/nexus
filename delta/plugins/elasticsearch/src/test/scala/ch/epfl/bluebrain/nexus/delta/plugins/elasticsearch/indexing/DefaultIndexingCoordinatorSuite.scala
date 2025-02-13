@@ -4,15 +4,16 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.DefaultIndexingCoordinator.ProjectDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ExecutionStatus, NoopSink, ProjectionProgress, PullRequestStream, RemainingElems, SupervisorSetup}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
@@ -21,6 +22,7 @@ import io.circe.Json
 import munit.AnyFixture
 
 import java.time.Instant
+import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
 class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture with Fixtures {
@@ -28,6 +30,8 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 10.millis)
+
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private lazy val (sv, projections, _) = unapply(supervisor())
 
@@ -65,6 +69,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
   }
 
   private val expectedProgress = ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)
+  private val createdAliases   = MutableSet.empty[ProjectRef]
 
   test("Start the coordinator") {
     for {
@@ -72,7 +77,8 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
              _ => projectStream,
              graphResourceStream,
              sv,
-             new NoopSink[Json]
+             new NoopSink[Json],
+             project => IO(createdAliases.add(project)).void
            )
       _ <- sv.describe(DefaultIndexingCoordinator.metadata.name)
              .map(_.map(_.progress))
@@ -89,6 +95,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
              .assertEquals(Some(ExecutionStatus.Completed))
              .eventually
       _ <- projections.progress(projectionName).assertEquals(Some(expectedProgress))
+      _  = assert(createdAliases.contains(project1), s"The alias for $project1 should have been created.")
     } yield ()
   }
 
@@ -100,6 +107,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
              .assertEquals(Some(ExecutionStatus.Completed))
              .eventually
       _ <- projections.progress(projectionName).assertEquals(Some(expectedProgress))
+      _  = assert(createdAliases.contains(project2), s"The alias for $project2 should have been created.")
     } yield ()
   }
 

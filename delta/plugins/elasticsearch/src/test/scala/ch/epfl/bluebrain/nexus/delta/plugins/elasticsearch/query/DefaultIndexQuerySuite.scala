@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
+import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.indexingAlias
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.{And, Or}
@@ -111,8 +113,8 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
   private val updatedByAlice          = List(epfl)
   private val allResources            = List(bbp, epfl, trace, cell)
 
-  private val defaultIndex           = IndexLabel.unsafe("nexus_default")
-  private val defaultIndexConfig     = DefaultIndexConfig("nexus", "default", 2, 100)
+  private val defaultIndexConfig     = DefaultIndexConfig("nexus", "default", 1, 100)
+  private val defaultIndex           = defaultIndexConfig.index
   private lazy val defaultIndexQuery = DefaultIndexQuery(client, defaultIndexConfig)
 
   object Ids {
@@ -162,6 +164,8 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
     val defaultSettings = jsonObjectContentOf("defaults/default-settings.json")
     for {
       _    <- client.createIndex(defaultIndex, Some(defaultMapping), Some(defaultSettings))
+      _    <- client.createAlias(indexingAlias(defaultIndexConfig, project1))
+      _    <- client.createAlias(indexingAlias(defaultIndexConfig, project2))
       bulk <- allResources.traverse { r =>
                 r.asDocument.map { d =>
                   ElasticSearchAction.Index(defaultIndex, genString(), Some(r.project.toString), d)
@@ -270,6 +274,22 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
     }
   }
 
+  private val matchAllSorted = jobj"""{ "size": 100, "sort": [{ "_createdAt": "asc" }, { "@id": "asc" }] }"""
+
+  test(s"Search only among $project1") {
+    defaultIndexQuery
+      .search(project1, matchAllSorted, Query.Empty)
+      .map(Ids.extractAll)
+      .assertEquals(orgs.map(_.id))
+  }
+
+  test(s"Search only among $project2") {
+    defaultIndexQuery
+      .search(project2, matchAllSorted, Query.Empty)
+      .map(Ids.extractAll)
+      .assertEquals(List(trace.id, cell.id))
+  }
+
 }
 
 object DefaultIndexQuerySuite {
@@ -311,7 +331,6 @@ object DefaultIndexQuerySuite {
       val metadata = Resource.fileMetadataEncoder(Resource.Metadata(tag.toList))
       asResourceF.toCompactedJsonLd.map(_.json.deepMerge(metadata))
     }
-
   }
 
   case class Bucket(key: String, doc_count: Int)

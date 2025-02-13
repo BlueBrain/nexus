@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult.{MultipleResults, SingleResult}
@@ -40,6 +41,8 @@ class IdResolutionSuite extends NexusSuite with Fixtures {
 
   private def defaultIndexQuery(searchResults: SearchResults[JsonObject]): DefaultIndexQuery = {
     new DefaultIndexQuery {
+      override def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] = IO.pure(Json.Null)
+
       override def list(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] =
         IO.pure(searchResults)
 

@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.Decoder
 
-class IdResolutionRoutesSuite extends ElasticSearchViewsRoutesFixtures {
+class IdResolutionRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val encodedIri = UrlUtils.encode("https://bbp.epfl.ch/data/resource")
 

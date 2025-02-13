@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.DefaultIndexingCoordinator.{defaultIndexingId, defaultIndexingPipeline}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.DefaultIndexingCoordinator.defaultIndexingPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -25,7 +25,7 @@ final class DefaultIndexingAction(sink: Sink, override val timeout: FiniteDurati
 
   private def compile(project: ProjectRef, elem: Elem[GraphResource]) =
     CompiledProjection.compile(
-      DefaultIndexingCoordinator.defaultIndexingMetadata(project),
+      defaultIndexingProjectionMetadata(project),
       ExecutionStrategy.TransientSingleNode,
       Source(_ => Stream(elem)),
       defaultIndexingPipeline,

@@ -158,7 +158,12 @@ final class ElasticSearchViewsRoutes(
                 // Query an elasticsearch view
                 (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                   (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                    emit(viewsQuery.query(id, project, query, qp).attemptNarrow[ElasticSearchViewRejection])
+                    emit(
+                      viewsQuery
+                        .query(id, project, query, qp)
+                        .attemptNarrow[ElasticSearchViewRejection]
+                        .rejectOn[ViewNotFound]
+                    )
                   }
                 },
                 // Create a point in time for the given view

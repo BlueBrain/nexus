@@ -111,6 +111,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(api, uuidF)
   }
 
+  make[MigrateDefaultIndexing].from { (xas: Transactors) => MigrateDefaultIndexing(xas) }
+
   make[ElasticSearchCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
@@ -119,16 +121,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate")
+        cr: RemoteContextResolution @Id("aggregate"),
+        migration: MigrateDefaultIndexing
     ) =>
-      ElasticSearchCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config
-      )(cr)
+      migration.run >>
+        ElasticSearchCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config
+        )(cr)
   }
 
   make[DefaultIndexingCoordinator].fromEffect {
@@ -139,6 +143,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         files: ElasticSearchFiles,
         config: ElasticSearchViewsConfig,
+        baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
       DefaultIndexingCoordinator(
@@ -149,7 +154,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         files.defaultMapping,
         files.defaultSettings,
         config
-      )(cr)
+      )(baseUri, cr)
   }
 
   make[EventMetricsProjection].fromEffect {
@@ -227,6 +232,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         ordering,
         fusionConfig
       )
+  }
+
+  make[DefaultIndexRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        defaultIndexQuery: DefaultIndexQuery,
+        projections: Projections,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) => new DefaultIndexRoutes(identities, aclCheck, defaultIndexQuery, projections)(cr, ordering)
   }
 
   make[ListingRoutes].from {
@@ -385,6 +401,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (
         es: ElasticSearchViewsRoutes,
         query: ListingRoutes,
+        defaultIndex: DefaultIndexRoutes,
         indexing: ElasticSearchIndexingRoutes,
         idResolutionRoute: IdResolutionRoutes,
         historyRoutes: ElasticSearchHistoryRoutes,
@@ -397,6 +414,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           schemeDirectives,
           es.routes,
           query.routes,
+          defaultIndex.routes,
           indexing.routes,
           idResolutionRoute.routes,
           historyRoutes.routes
