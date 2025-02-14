@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyti
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, PropertiesStatistics}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -46,7 +47,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
   private val fetchContext = FetchContextDummy(List(project))
 
   private lazy val endpoint                       = docker.esHostConfig.endpoint
-  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000, emptyResults)
+  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val prefix                              = "test"
   private lazy val graphAnalytics: GraphAnalytics =
     GraphAnalytics(client, fetchContext, "test", TermAggregationsConfig(100, 300))
@@ -54,19 +55,19 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
   "GraphAnalytics" should {
 
     "initialize" in {
-      val idx    = GraphAnalytics.index(prefix, project.ref)
+      val idx                             = GraphAnalytics.index(prefix, project.ref)
       client.createIndex(idx, Some(jsonObjectContentOf("elasticsearch/mappings.json")), None).accepted
-      val robert = iri"http://localhost/Robert"
-      val sam    = iri"http://localhost/Sam"
-      val fred   = iri"http://localhost/fred"
-      val anna   = iri"http://localhost/Anna"
+      val robert                          = iri"http://localhost/Robert"
+      val sam                             = iri"http://localhost/Sam"
+      val fred                            = iri"http://localhost/fred"
+      val anna                            = iri"http://localhost/Anna"
+      def source(self: Iri, brother: Iri) = jsonContentOf("document-source.json", "id" -> self, "brother" -> brother)
       client
         .bulk(
           List(
-            ElasticSearchAction.Index(idx, "1", jsonContentOf("document-source.json", "id" -> sam, "brother" -> sam)),
-            ElasticSearchAction
-              .Index(idx, "2", jsonContentOf("document-source.json", "id" -> anna, "brother" -> robert)),
-            ElasticSearchAction.Index(idx, "3", jsonContentOf("document-source.json", "id" -> sam, "brother" -> fred))
+            ElasticSearchAction.Index(idx, "1", None, source(sam, sam)),
+            ElasticSearchAction.Index(idx, "2", None, source(anna, robert)),
+            ElasticSearchAction.Index(idx, "3", None, source(sam, fred))
           )
         )
         .accepted

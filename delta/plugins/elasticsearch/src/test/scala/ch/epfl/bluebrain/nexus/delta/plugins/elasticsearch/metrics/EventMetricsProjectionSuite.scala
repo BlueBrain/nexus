@@ -25,13 +25,15 @@ class EventMetricsProjectionSuite
     extends NexusSuite
     with SupervisorSetup.Fixture
     with ElasticSearchClientSetup.Fixture
+    with EventMetricsIndex.Fixture
     with Fixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor, esClient)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor, esClient, metricsIndex)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(2.seconds, 10.millis)
 
-  private val index = eventMetricsIndex("nexus")
+  private lazy val mIndex = metricsIndex()
+  private lazy val index  = mIndex.name
 
   private lazy val sv     = supervisor().supervisor
   private lazy val client = esClient()
@@ -39,7 +41,7 @@ class EventMetricsProjectionSuite
 
   test("Start the metrics projection and index metrics") {
     def createIndex = client
-      .createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value))
+      .createIndex(index, Some(mIndex.mapping), Some(mIndex.settings))
       .assertEquals(true)
     for {
       _ <- EventMetricsProjection(sink, sv, _ => EventMetricsProjectionSuite.stream, createIndex)

@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidResourceId, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchIndexingRoutes.FetchIndexingView
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -66,6 +67,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
+  private val defaultIndexDef = DefaultIndexDef(JsonObject(), JsonObject())
+
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
     fetchContext,
     ResolverContextResolution(rcr),
@@ -76,14 +79,12 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       "prefix",
       5,
       xas,
-      defaultMapping,
-      defaultSettings
+      defaultIndexDef
     ),
     eventLogConfig,
     "prefix",
     xas,
-    defaultMapping,
-    defaultSettings,
+    defaultIndexDef,
     clock
   ).accepted
 

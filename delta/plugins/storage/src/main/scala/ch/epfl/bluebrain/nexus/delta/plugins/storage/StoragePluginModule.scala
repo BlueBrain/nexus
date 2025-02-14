@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives.concat
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
@@ -108,12 +108,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     (
         client: ElasticSearchClient,
         storages: Storages,
-        config: ElasticSearchViewsConfig
+        metricsIndex: MetricsIndexDef
     ) =>
       StoragesStatistics(
         client,
         storages.fetch(_, _).map(_.id),
-        config.prefix
+        metricsIndex.name
       )
   }
 

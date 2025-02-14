@@ -31,6 +31,10 @@ import scala.concurrent.duration.FiniteDuration
   *   the index to push into
   * @param documentId
   *   a function that maps an elem to a documentId
+  * @param routing
+  *   a function that maps an elem to a routing value
+  * @see
+  *   https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html
   * @param refresh
   *   the value for the `refresh` Elasticsearch parameter
   */
@@ -40,6 +44,7 @@ final class ElasticSearchSink private (
     override val maxWindow: FiniteDuration,
     index: IndexLabel,
     documentId: Elem[Json] => String,
+    routing: Elem[Json] => Option[String],
     refresh: Refresh
 ) extends Sink {
   override type In = Json
@@ -53,11 +58,11 @@ final class ElasticSearchSink private (
     val actions = elements.foldLeft(Vector.empty[ElasticSearchAction]) {
       case (actions, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
         if (json.isEmpty()) {
-          actions :+ Delete(index, documentId(successElem))
+          actions :+ Delete(index, documentId(successElem), routing(successElem))
         } else
-          actions :+ Index(index, documentId(successElem), json)
+          actions :+ Index(index, documentId(successElem), routing(successElem), json)
       case (actions, droppedElem: Elem.DroppedElem)                          =>
-        actions :+ Delete(index, documentId(droppedElem))
+        actions :+ Delete(index, documentId(droppedElem), routing(droppedElem))
       case (actions, _: Elem.FailedElem)                                     => actions
     }
 
@@ -131,6 +136,7 @@ object ElasticSearchSink {
       maxWindow,
       index,
       eventDocumentId,
+      _ => None,
       refresh
     )
 
@@ -161,6 +167,36 @@ object ElasticSearchSink {
       maxWindow,
       index,
       elem => elem.id.toString,
+      _ => None,
+      refresh
+    )
+
+  /**
+    * @param client
+    *   the ES client
+    * @param chunkSize
+    *   the maximum number of documents to be pushed at once
+    * @param maxWindow
+    *   the maximum window before a document is pushed
+    * @param index
+    *   the index to push into
+    * @param refresh
+    *   the value for the `refresh` Elasticsearch parameter
+    */
+  def mainIndexing(
+      client: ElasticSearchClient,
+      chunkSize: Int,
+      maxWindow: FiniteDuration,
+      index: IndexLabel,
+      refresh: Refresh
+  ): ElasticSearchSink =
+    new ElasticSearchSink(
+      client,
+      chunkSize,
+      maxWindow,
+      index,
+      elem => s"${elem.project}_${elem.id}",
+      elem => Some(elem.project.toString),
       refresh
     )
 

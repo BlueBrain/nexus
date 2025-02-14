@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, ElasticSearchViewType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -21,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -32,7 +32,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
 
@@ -76,25 +75,25 @@ class ElasticSearchViewsQuerySuite
     (charlie.subject, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
   ).accepted
 
+  private val defaultIndexDef = DefaultIndexDef(loader).unsafeRunSync()
+
   private val indexingValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
       pipeline = List(PipeStep.noConfig(FilterDeprecated.ref), PipeStep.noConfig(DiscardMetadata.ref)),
-      mapping = Some(defaultMapping.value),
+      mapping = Some(defaultIndexDef.mapping),
       settings = None,
       permission = queryPermission,
       context = None
     )
 
   // Indexing views for project 1
-  private val defaultView = ViewRef(project1.ref, defaultViewId)
-  private val view1Proj1  = ViewRef(project1.ref, nxv + "view1Proj1")
-  private val view2Proj1  = ViewRef(project1.ref, nxv + "view2Proj1")
+  private val view1Proj1 = ViewRef(project1.ref, nxv + "view1Proj1")
+  private val view2Proj1 = ViewRef(project1.ref, nxv + "view2Proj1")
 
   // Indexing views for project 2
-  private val defaultView2 = ViewRef(project2.ref, defaultViewId)
-  private val view1Proj2   = ViewRef(project2.ref, nxv + "view1Proj2")
-  private val view2Proj2   = ViewRef(project2.ref, nxv + "view2Proj2")
+  private val view1Proj2 = ViewRef(project2.ref, nxv + "view1Proj2")
+  private val view2Proj2 = ViewRef(project2.ref, nxv + "view2Proj2")
 
   // Aggregates all views of project1
   private val aggregate1      = ViewRef(project1.ref, nxv + "aggregate1")
@@ -124,8 +123,7 @@ class ElasticSearchViewsQuerySuite
     NonEmptySet.of(view2Proj2, aggregate2)
   )
 
-  private val allDefaultViews                 = List(defaultView, defaultView2)
-  private val allIndexingViews: List[ViewRef] = allDefaultViews ++ List(view1Proj1, view2Proj1, view1Proj2, view2Proj2)
+  private val allIndexingViews: List[ViewRef] = List(view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   // Resources are indexed in every view
   private def epochPlus(plus: Long) = Instant.EPOCH.plusSeconds(plus)
@@ -191,14 +189,12 @@ class ElasticSearchViewsQuerySuite
       prefix,
       10,
       xas,
-      defaultMapping,
-      defaultSettings
+      defaultIndexDef
     ),
     eventLogConfig,
     prefix,
     xas,
-    defaultMapping,
-    defaultSettings,
+    defaultIndexDef,
     clock
   ).unsafeRunSync()
 
@@ -222,12 +218,6 @@ class ElasticSearchViewsQuerySuite
         ids      = extract(sources)
       } yield ids
     }.rightValue
-
-    /**
-      * Extract ids from documents from results from [[SearchResults]]
-      */
-    def extractAll(results: SearchResults[JsonObject])(implicit loc: Location): Seq[Iri] =
-      extract(results.sources.map(_.asJson))
 
     def extract(results: Seq[Json])(implicit loc: Location): Seq[Iri] =
       results.traverse(extract).rightValue
@@ -266,7 +256,7 @@ class ElasticSearchViewsQuerySuite
         bulk <- allResources.traverse { r =>
                   r.asDocument(ref).map { d =>
                     // We create a unique id across all indices
-                    ElasticSearchAction.Index(view.index, genString(), d)
+                    ElasticSearchAction.Index(view.index, genString(), None, d)
                   }
                 }
         _    <- client.bulk(bulk)

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{MetricsMapping, MetricsSettings}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
@@ -43,8 +42,8 @@ object EventMetricsProjection {
     *   Elasticsearch batch config
     * @param queryConfig
     *   query config for fetching scoped events
-    * @param indexPrefix
-    *   the prefix to use for the index name
+    * @param metricIndex
+    *   the index configuration for metrics
     * @return
     *   a Task that registers a projection with the supervisor which reads all scoped events and pushes their metrics to
     *   Elasticsearch. Events of implementations of ScopedEvents that do not have an instance of
@@ -58,9 +57,7 @@ object EventMetricsProjection {
       xas: Transactors,
       batchConfig: BatchConfig,
       queryConfig: QueryConfig,
-      indexPrefix: String,
-      metricMappings: MetricsMapping,
-      metricsSettings: MetricsSettings,
+      metricIndex: MetricsIndexDef,
       indexingEnabled: Boolean
   ): IO[EventMetricsProjection] = if (indexingEnabled) {
     val allEntityTypes = metricEncoders.map(_.entityType).toList
@@ -71,12 +68,12 @@ object EventMetricsProjection {
     // define how to get metrics from a given offset
     val metrics                                                  = (offset: Offset) => EventStreaming.fetchScoped(Scope.root, allEntityTypes, offset, queryConfig, xas)
 
-    val index = eventMetricsIndex(indexPrefix)
+    val index = metricIndex.name
 
     val sink =
       ElasticSearchSink.events(client, batchConfig.maxElements, batchConfig.maxInterval, index, Refresh.False)
 
-    val createIndex = client.createIndex(index, Some(metricMappings.value), Some(metricsSettings.value)).void
+    val createIndex = client.createIndex(index, Some(metricIndex.mapping), Some(metricIndex.settings)).void
 
     for {
       shouldRestart     <- Env[IO].get("RESET_EVENT_METRICS").map(_.getOrElse("false").toBoolean)

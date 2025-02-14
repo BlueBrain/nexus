@@ -7,22 +7,22 @@ import akka.testkit.TestKit
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import io.circe.syntax.KeyOps
 import io.circe.{Json, JsonObject}
 import org.scalatest.Assertion
 import org.scalatest.concurrent.Eventually
@@ -72,7 +72,7 @@ class ElasticSearchClientSpec
     }
 
     "delete an index" in {
-      val settings = jsonObjectContentOf("defaults/default-settings.json")
+      val settings = jsonObjectContentOf("defaults/default-settings.json", "number_of_shards" -> 1)
       val mappings = jsonObjectContentOf("defaults/default-mapping.json")
       esClient.createIndex(IndexLabel("other").rightValue, Some(mappings), Some(settings)).accepted
       esClient.deleteIndex(IndexLabel("other").rightValue).accepted shouldEqual true
@@ -107,12 +107,12 @@ class ElasticSearchClientSpec
     "run bulk operation" in {
       val index      = IndexLabel(genString()).rightValue
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : "value1" }"""),
-        ElasticSearchAction.Delete(index, "2"),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : "value1" }"""),
-        ElasticSearchAction.Delete(index, "2"),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : "value3" }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", Some("routing"), json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2", Some("routing2")),
+        ElasticSearchAction.Index(index, "2", Some("routing2"), json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2", Some("routing2")),
+        ElasticSearchAction.Create(index, "3", Some("routing"), json"""{ "field1" : "value3" }"""),
+        ElasticSearchAction.Update(index, "1", Some("routing"), json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations).accepted
       eventually {
@@ -124,23 +124,22 @@ class ElasticSearchClientSpec
     "run bulk operation with errors" in {
       val index      = IndexLabel(genString()).rightValue
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : "value1" }"""),
-        ElasticSearchAction.Delete(index, "2"),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 27 }"""),
-        ElasticSearchAction.Delete(index, "3"),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : "value3" }"""),
-        ElasticSearchAction.Update(index, "5", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : "value1" }"""),
+        ElasticSearchAction.Delete(index, "2", None),
+        ElasticSearchAction.Index(index, "2", None, json"""{ "field1" : 27 }"""),
+        ElasticSearchAction.Delete(index, "3", None),
+        ElasticSearchAction.Create(index, "3", None, json"""{ "field1" : "value3" }"""),
+        ElasticSearchAction.Update(index, "5", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
       val result     = esClient.bulk(operations).accepted
       result match {
         case BulkResponse.Success              => fail("errors expected")
-        case BulkResponse.MixedOutcomes(items) => {
+        case BulkResponse.MixedOutcomes(items) =>
           items.size shouldEqual 4
           items.get("1").value shouldEqual Outcome.Success
           items.get("2").value shouldEqual Outcome.Success
           items.get("3").value shouldEqual Outcome.Success
           items.get("5").value shouldBe an[Outcome.Error]
-        }
       }
     }
 
@@ -148,7 +147,7 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
       val doc   = json"""{ "field1" : 1 }"""
 
-      val operations = List(ElasticSearchAction.Index(index, "1", doc))
+      val operations = List(ElasticSearchAction.Index(index, "1", None, doc))
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
       esClient.getSource[Json](index, "1").accepted shouldEqual doc
@@ -159,9 +158,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 2 }"""),
-        ElasticSearchAction.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Index(index, "2", None, json"""{ "field1" : 2 }"""),
+        ElasticSearchAction.Index(index, "3", None, json"""{ "doc" : {"field2" : 4} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
@@ -176,9 +175,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Index(index, "2", json"""{ "field1" : 2 }"""),
-        ElasticSearchAction.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Index(index, "2", None, json"""{ "field1" : 2 }"""),
+        ElasticSearchAction.Index(index, "3", None, json"""{ "doc" : {"field2" : 4} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
 
@@ -189,9 +188,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : 3 }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "3", None, json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations, Refresh.WaitFor).accepted
       val query      = QueryBuilder(jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }""")
@@ -210,9 +209,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Create(index, "3", json"""{ "field1" : 3 }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "3", None, json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
       esClient.bulk(operations).accepted
       val query2     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
@@ -225,39 +224,13 @@ class ElasticSearchClientSpec
       }
     }
 
-    "aggregate" in {
-      val index       = IndexLabel(genString()).rightValue
-      val operations  = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "_project": "proj1", "@type" : "Person" }"""),
-        ElasticSearchAction.Index(index, "2", json"""{ "_project": "proj2", "@type" : "Person" }"""),
-        ElasticSearchAction.Index(index, "3", json"""{ "_project": "proj3", "@type" : "Dog" }""")
-      )
-      val params      = ResourcesSearchParams()
-      val expectedAgg = jsonContentOf("elasticsearch-agg-results.json").asObject.get
-
-      val mapping =
-        json"""{ "properties": {
-               "@type": { "type": "keyword" },
-               "_project": { "type": "keyword" } } }""".asObject
-
-      val aggregate = for {
-        _   <- esClient.createIndex(index, mapping, None)
-        _   <- esClient.bulk(operations)
-        agg <- esClient.aggregate(params, Set(index.value), Query.Empty, 100)
-      } yield agg
-
-      eventually {
-        aggregate.accepted shouldEqual AggregationResult(3, expectedAgg)
-      }
-    }
-
     "delete documents by" in {
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchAction.Index(index, "1", json"""{ "field1" : 1 }"""),
-        ElasticSearchAction.Create(index, "2", json"""{ "field1" : 3 }"""),
-        ElasticSearchAction.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
+        ElasticSearchAction.Create(index, "2", None, json"""{ "field1" : 3 }"""),
+        ElasticSearchAction.Update(index, "1", None, json"""{ "doc" : {"field2" : "value2"} }""")
       )
 
       def theCountShouldBe(count: Long): IO[Assertion] =
@@ -291,5 +264,29 @@ class ElasticSearchClientSpec
         _   <- esClient.deletePointInTime(pit)
       } yield ()
     }.accepted
+
+    "create an alias for an index and delete it" in {
+      val index      = IndexLabel.unsafe(genString())
+      val alias      = IndexLabel.unsafe(genString())
+      val indexAlias = IndexAlias(index, alias, Some("routing"), Some(JsonObject("match_all" := Json.obj())))
+      for {
+        _           <- esClient.createIndex(index)
+        _           <- esClient.createAlias(indexAlias)
+        aliasExists <- esClient.existsIndex(alias)
+        _            = aliasExists shouldEqual true
+        _           <- esClient.removeAlias(index, alias)
+        aliasExists <- esClient.existsIndex(alias)
+        _            = aliasExists shouldEqual false
+        indexExists <- esClient.existsIndex(index)
+        _            = indexExists shouldEqual true
+      } yield ()
+    }.accepted
+
+    "create an alias for a non existing index should fail" in {
+      val index      = IndexLabel.unsafe(genString())
+      val alias      = IndexLabel.unsafe(genString())
+      val indexAlias = IndexAlias(index, alias, Some("routing"), Some(JsonObject("match_all" := Json.obj())))
+      esClient.createAlias(indexAlias).rejectedWith[HttpClientStatusError]
+    }
   }
 }

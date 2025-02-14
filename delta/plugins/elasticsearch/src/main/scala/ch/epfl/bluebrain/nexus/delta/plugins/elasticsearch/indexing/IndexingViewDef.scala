@@ -6,9 +6,10 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, DefaultMapping, DefaultSettings, ElasticSearchViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
@@ -33,8 +34,6 @@ sealed trait IndexingViewDef extends Product with Serializable {
 object IndexingViewDef {
 
   private val logger = Logger[IndexingViewDef]
-
-  private val defaultContext = ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
 
   /**
     * Active view eligible to be run as a projection by the supervisor
@@ -68,8 +67,7 @@ object IndexingViewDef {
 
   def apply(
       state: ElasticSearchViewState,
-      defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings,
+      defaultDefinition: DefaultIndexDef,
       prefix: String
   ): Option[IndexingViewDef] =
     state.value.asIndexingValue.map { indexing =>
@@ -84,8 +82,8 @@ object IndexingViewDef {
           indexing.pipeChain,
           indexing.selectFilter,
           ElasticSearchViews.index(state.uuid, state.indexingRev, prefix),
-          indexing.mapping.getOrElse(defaultMapping.value),
-          indexing.settings.getOrElse(defaultSettings.value),
+          indexing.mapping.getOrElse(defaultDefinition.mapping),
+          indexing.settings.getOrElse(defaultDefinition.settings),
           indexing.context,
           state.indexingRev,
           state.rev
@@ -116,7 +114,7 @@ object IndexingViewDef {
       sink: Sink
   )(implicit cr: RemoteContextResolution): IO[CompiledProjection] = {
 
-    val mergedContext        = v.context.fold(defaultContext) { defaultContext.merge(_) }
+    val mergedContext        = v.context.fold(defaultIndexingContext) { defaultIndexingContext.merge(_) }
     val postPipes: Operation = new GraphResourceToDocument(mergedContext, false)
 
     val compiled = for {

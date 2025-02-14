@@ -33,7 +33,7 @@ trait ScalaTestElasticSearchClientSetup extends CirceLiteral with Fixtures {
   implicit private val credentials: Option[BasicHttpCredentials] = ElasticSearchContainer.Credentials
 
   lazy val esClient = {
-    val c = new ElasticSearchClient(HttpClient(), docker.esHostConfig.endpoint, 2000, emptyResults)
+    val c = new ElasticSearchClient(HttpClient(), docker.esHostConfig.endpoint, 2000)
     c.createIndexTemplate("test_template", template).unsafeRunSync()
     c
   }

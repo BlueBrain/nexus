@@ -55,8 +55,6 @@ final class AggregationsSpec extends BaseIntegrationSpec {
 
   "Aggregating resources within a project" should {
 
-    List("resources", "files", "schemas", "storages", "views")
-
     "get an error if the user has no access" in {
 
       deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Rose) { (_, response) =>

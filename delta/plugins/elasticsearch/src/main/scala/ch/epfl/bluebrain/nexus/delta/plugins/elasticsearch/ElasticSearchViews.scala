@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.nextIndexingRev
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -43,8 +44,7 @@ final class ElasticSearchViews private (
     log: ElasticsearchLog,
     fetchContext: FetchContext,
     sourceDecoder: ElasticSearchViewJsonLdSourceDecoder,
-    defaultElasticsearchMapping: DefaultMapping,
-    defaultElasticsearchSettings: DefaultSettings,
+    defaultViewDef: DefaultIndexDef,
     prefix: String
 )(implicit uuidF: UUIDF) {
 
@@ -133,23 +133,6 @@ final class ElasticSearchViews private (
       res       <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject))
     } yield res
   }.span("createElasticSearchView")
-
-  /**
-    * Creates a new ElasticSearchView without checking whether the provided project is deprecated or not.
-    *
-    * @param iri
-    *   id of the view to be created
-    * @param project
-    *   project in which the view has to be created
-    * @param value
-    *   configuration of the view to be created
-    */
-  private[elasticsearch] def internalCreate(
-      iri: Iri,
-      project: ProjectRef,
-      value: ElasticSearchViewValue
-  )(implicit subject: Subject): IO[ViewResource] =
-    eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject))
 
   /**
     * Updates an existing ElasticSearchView.
@@ -284,9 +267,7 @@ final class ElasticSearchViews private (
     *   the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[ViewResource] =
-    fetchState(id, project).map { state =>
-      state.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings)
-    }
+    fetchState(id, project).map { _.toResource(defaultViewDef) }
 
   def fetchState(
       id: IdSegmentRef,
@@ -321,7 +302,7 @@ final class ElasticSearchViews private (
   ): IO[ActiveViewDef] =
     fetchState(id, project)
       .flatMap { state =>
-        IndexingViewDef(state, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix) match {
+        IndexingViewDef(state, defaultViewDef, prefix) match {
           case Some(viewDef) =>
             viewDef match {
               case v: ActiveViewDef     => IO.pure(v)
@@ -364,13 +345,13 @@ final class ElasticSearchViews private (
 
   private def toIndexViewDef(elem: Elem.SuccessElem[ElasticSearchViewState]) =
     elem.traverse { v =>
-      IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
+      IndexingViewDef(v, defaultViewDef, prefix)
     }
 
   private def eval(cmd: ElasticSearchViewCommand): IO[ViewResource] =
     log
       .evaluate(cmd.project, cmd.id, cmd)
-      .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings))
+      .map(_._2.toResource(defaultViewDef))
 
   private def expandWithContext(
       fetchCtx: ProjectRef => IO[ProjectContext],
@@ -384,7 +365,7 @@ object ElasticSearchViews {
 
   final val entityType: EntityType = EntityType("elasticsearch")
 
-  type ElasticsearchLog = ScopedEventLog[
+  private type ElasticsearchLog = ScopedEventLog[
     Iri,
     ElasticSearchViewState,
     ElasticSearchViewCommand,
@@ -400,7 +381,7 @@ object ElasticSearchViews {
   /**
     * The default Elasticsearch API mappings
     */
-  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original)
 
   def projectionName(viewDef: ActiveViewDef): String =
     projectionName(viewDef.ref.project, viewDef.ref.viewId, viewDef.indexingRev)
@@ -422,8 +403,7 @@ object ElasticSearchViews {
       eventLogConfig: EventLogConfig,
       prefix: String,
       xas: Transactors,
-      defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings,
+      defaultViewDef: DefaultIndexDef,
       clock: Clock[IO]
   )(implicit uuidF: UUIDF): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
@@ -435,8 +415,7 @@ object ElasticSearchViews {
         ),
         fetchContext,
         decoder,
-        defaultMapping,
-        defaultSettings,
+        defaultViewDef,
         prefix
       )
     )

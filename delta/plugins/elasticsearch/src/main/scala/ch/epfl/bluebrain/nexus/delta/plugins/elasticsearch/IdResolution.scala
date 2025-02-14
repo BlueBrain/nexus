@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.RootSearch
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -20,21 +20,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectScopeResolver
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.JsonObject
 
-import java.rmi.UnexpectedException
-
-/**
-  * @param defaultViewsQuery
-  *   how to list resources from the default elasticsearch views
-  * @param fetchResource
-  *   how to fetch a resource given a resourceRef and the project it lives in
-  */
-class IdResolution(
-    defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
-    fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]]
-) {
+trait IdResolution {
 
   /**
     * Attempts to resolve the provided identifier across projects that the caller has access to
@@ -48,96 +40,106 @@ class IdResolution(
     * @param caller
     *   user having requested the resolution
     */
-  def resolve(
-      iri: Iri
-  )(implicit caller: Caller): IO[Result] = {
-    val locate  = ResourcesSearchParams(id = Some(iri))
-    val request = RootSearch(locate, FromPagination(0, 10000), SortList.empty)
-
-    def fetchSingleResult: ProjectRef => IO[Result] = { projectRef =>
-      val resourceRef = ResourceRef(iri)
-      fetchResource(resourceRef, projectRef)
-        .map {
-          _.map(SingleResult(resourceRef, projectRef, _))
-        }
-        .flatMap {
-          case Some(result) => IO.pure(result)
-          case None         => IO.raiseError(new UnexpectedException("Resource found in ES payload but could not be fetched."))
-        }
-    }
-
-    defaultViewsQuery
-      .list(request)
-      .flatMap { searchResults =>
-        searchResults.results match {
-          case Nil         => IO.raiseError(AuthorizationFailed("No resource matches the provided id."))
-          case Seq(result) => projectRefFromSource(result.source).flatMap(fetchSingleResult)
-          case _           => IO.pure(MultipleResults(searchResults))
-        }
-      }
-  }
-
-  /** Extract the _project field of a given [[JsonObject]] as projectRef */
-  private def projectRefFromSource(source: JsonObject) =
-    source("_project")
-      .flatMap(_.as[Iri].toOption)
-      .flatMap(projectRefFromIri) match {
-      case Some(projectRef) => IO.pure(projectRef)
-      case None             => IO.raiseError(new UnexpectedException("Could not read '_project' field as IRI."))
-    }
-
-  private val projectRefRegex =
-    s"^.+/projects/(${Label.regex.regex})/(${Label.regex.regex})".r
-
-  private def projectRefFromIri(iri: Iri) =
-    iri.toString match {
-      case projectRefRegex(org, proj) =>
-        Some(ProjectRef(Label.unsafe(org), Label.unsafe(proj)))
-      case _                          =>
-        None
-    }
+  def apply(iri: Iri)(implicit caller: Caller): IO[ResolutionResult]
 }
 
-object IdResolutionResponse {
-  sealed trait Result
+object IdResolution {
 
-  final case class SingleResult[A](id: ResourceRef, project: ProjectRef, content: JsonLdContent[A, _]) extends Result
+  sealed trait ResolutionResult
 
-  case class MultipleResults(searchResults: SearchResults[JsonObject]) extends Result
+  object ResolutionResult {
 
-  private val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
-    searchResultsJsonLdEncoder(ContextValue(contexts.search))
+    final case class SingleResult[A](id: ResourceRef, project: ProjectRef, content: JsonLdContent[A, _])
+        extends ResolutionResult
 
-  implicit def resultJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[Result] =
-    new JsonLdEncoder[Result] {
+    case class MultipleResults(searchResults: SearchResults[JsonObject]) extends ResolutionResult
 
-      private def encoder[A](value: JsonLdContent[A, _])(implicit baseUri: BaseUri): JsonLdEncoder[ResourceF[A]] = {
-        implicit val encoder: JsonLdEncoder[A] = value.encoder
-        resourceFAJsonLdEncoder[A](ContextValue.empty)
-      }
+    private val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
+      searchResultsJsonLdEncoder(ContextValue(contexts.search))
 
-      override def context(value: Result): ContextValue = value match {
-        case SingleResult(_, _, content)    => encoder(content).context(content.resource)
-        case MultipleResults(searchResults) => searchJsonLdEncoder.context(searchResults)
-      }
+    implicit def resultJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ResolutionResult] =
+      new JsonLdEncoder[ResolutionResult] {
 
-      override def expand(
-          value: Result
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
-        value match {
-          case SingleResult(_, _, content)    => encoder(content).expand(content.resource)
-          case MultipleResults(searchResults) => searchJsonLdEncoder.expand(searchResults)
+        private def encoder[A](value: JsonLdContent[A, _])(implicit baseUri: BaseUri): JsonLdEncoder[ResourceF[A]] = {
+          implicit val encoder: JsonLdEncoder[A] = value.encoder
+          resourceFAJsonLdEncoder[A](ContextValue.empty)
         }
 
-      override def compact(
-          value: Result
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
-        value match {
-          case SingleResult(_, _, content)    => encoder(content).compact(content.resource)
-          case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)
+        override def context(value: ResolutionResult): ContextValue = value match {
+          case SingleResult(_, _, content)    => encoder(content).context(content.resource)
+          case MultipleResults(searchResults) => searchJsonLdEncoder.context(searchResults)
         }
+
+        override def expand(
+            value: ResolutionResult
+        )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
+          value match {
+            case SingleResult(_, _, content)    => encoder(content).expand(content.resource)
+            case MultipleResults(searchResults) => searchJsonLdEncoder.expand(searchResults)
+          }
+
+        override def compact(
+            value: ResolutionResult
+        )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
+          value match {
+            case SingleResult(_, _, content)    => encoder(content).compact(content.resource)
+            case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)
+          }
+      }
+
+    implicit val resultHttpResponseFields: HttpResponseFields[ResolutionResult] = HttpResponseFields.defaultOk
+
+  }
+
+  def apply(
+      projectScopeResolver: ProjectScopeResolver,
+      mainIndexQuery: MainIndexQuery,
+      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]]
+  ): IdResolution = new IdResolution {
+
+    override def apply(iri: Iri)(implicit caller: Caller): IO[ResolutionResult] = {
+      val locate  = ResourcesSearchParams(id = Some(iri))
+      val request = MainIndexRequest(locate, FromPagination(0, 10000), SortList.empty)
+
+      def fetchSingleResult: ProjectRef => IO[ResolutionResult] = { projectRef =>
+        val resourceRef = ResourceRef(iri)
+        fetchResource(resourceRef, projectRef)
+          .map {
+            _.map(SingleResult(resourceRef, projectRef, _))
+          }
+          .flatMap {
+            case Some(result) => IO.pure(result)
+            case None         =>
+              IO.raiseError(new IllegalStateException("Resource found in ES payload but could not be fetched."))
+          }
+      }
+
+      for {
+        projects      <- projectScopeResolver(Scope.Root, resources.read)
+        searchResults <- mainIndexQuery.list(request, projects)
+        result        <- searchResults.results match {
+                           case Nil         => IO.raiseError(AuthorizationFailed("No resource matches the provided id."))
+                           case Seq(result) => projectRefFromSource(result.source).flatMap(fetchSingleResult)
+                           case _           => IO.pure(MultipleResults(searchResults))
+                         }
+      } yield result
     }
 
-  implicit val reultHttpResponseFields: HttpResponseFields[Result] = HttpResponseFields.defaultOk
+    /** Extract the _project field of a given [[JsonObject]] as projectRef */
+    private def projectRefFromSource(source: JsonObject) = {
+      val projectOpt = source("_project").flatMap(_.as[Iri].toOption).flatMap(projectRefFromIri)
+      IO.fromOption(projectOpt)(new IllegalStateException("Could not read '_project' field as IRI."))
+    }
 
+    private val projectRefRegex =
+      s"^.+/projects/(${Label.regex.regex})/(${Label.regex.regex})".r
+
+    private def projectRefFromIri(iri: Iri) =
+      iri.toString match {
+        case projectRefRegex(org, proj) =>
+          Some(ProjectRef(Label.unsafe(org), Label.unsafe(proj)))
+        case _                          =>
+          None
+      }
+  }
 }

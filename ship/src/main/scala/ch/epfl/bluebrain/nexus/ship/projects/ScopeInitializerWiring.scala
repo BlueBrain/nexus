@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.ship.config.InputConfig
 import ch.epfl.bluebrain.nexus.ship.search.SearchWiring
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring
 import ch.epfl.bluebrain.nexus.ship.storages.StorageWiring.s3StorageInitializer
-import ch.epfl.bluebrain.nexus.ship.views.ViewWiring.{blazegraphViews, compositeViews, elasticSearchViews, viewInitializers}
+import ch.epfl.bluebrain.nexus.ship.views.ViewWiring.{blazegraphViews, compositeViews, viewInitializers}
 
 object ScopeInitializerWiring {
 
@@ -24,7 +24,6 @@ object ScopeInitializerWiring {
       xas: Transactors
   )(implicit baseUri: BaseUri): IO[ScopeInitializer] =
     for {
-      esViews        <- elasticSearchViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
       bgViews        <- blazegraphViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
       compositeViews <- compositeViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
       searchInit     <- SearchWiring.searchInitializer(
@@ -35,7 +34,7 @@ object ScopeInitializerWiring {
                         )
       storages       <- StorageWiring.storages(fetchContext, rcr, config, clock, xas)
       storageInit    <- s3StorageInitializer(storages, config)
-      allInits        = viewInitializers(esViews, bgViews, config) + searchInit + storageInit
+      allInits        = viewInitializers(bgViews, config) + searchInit + storageInit
       errorStore      = ScopeInitializationErrorStore(xas, clock)
     } yield ScopeInitializer(allInits, errorStore)
 

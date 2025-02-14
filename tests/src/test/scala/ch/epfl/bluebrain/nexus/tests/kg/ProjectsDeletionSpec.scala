@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
@@ -24,6 +25,9 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
 
   private val ref1Iri = s"${config.deltaUri}/projects/$ref1"
 
+  private val elasticsearchViewId        = "http://localhost/nexus/default-view"
+  private val encodedElasticsearchViewId = UrlUtils.encode(elasticsearchViewId)
+
   private var elasticsearchViewsRef1Uuids = List.empty[String]
   private var blazegraphViewsRef1Uuids    = List.empty[String]
   private var compositeViewsRef1Uuids     = List.empty[String]
@@ -34,13 +38,22 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
   "Setting up" should {
     "succeed in setting up orgs, projects and acls" in {
       for {
-        _ <- aclDsl.addPermissions("/", Bojack, Set(Organizations.Create, Projects.Delete, Resources.Read, Events.Read))
+        _            <- aclDsl.addPermissions("/", Bojack, Set(Organizations.Create, Projects.Delete, Resources.Read, Events.Read))
         // First org and projects
-        _ <- adminDsl.createOrganization(org, org, Bojack)
-        _ <- adminDsl.createProjectWithName(org, proj1, name = proj1, Bojack)
-        _ <- adminDsl.createProjectWithName(org, proj2, name = proj2, Bojack)
-        _ <- aclDsl.addPermission(s"/$ref1", PrincessCarolyn, Resources.Read)
+        _            <- adminDsl.createOrganization(org, org, Bojack)
+        _            <- adminDsl.createProjectWithName(org, proj1, name = proj1, Bojack)
+        _            <- adminDsl.createProjectWithName(org, proj2, name = proj2, Bojack)
+        _            <- aclDsl.addPermission(s"/$ref1", PrincessCarolyn, Resources.Read)
+        esViewPayload = jsonContentOf("kg/views/elasticsearch/pipeline.json", "withTag" -> false)
+        _            <- deltaClient.put[Json](s"/views/$ref1/$encodedElasticsearchViewId", esViewPayload, Bojack) { expectCreated }
+        _            <- deltaClient.put[Json](s"/views/$ref2/$encodedElasticsearchViewId", esViewPayload, Bojack) { expectCreated }
       } yield succeed
+    }
+
+    s"have resources for $ref1" in eventually {
+      deltaClient.get[Json](s"/resources/$ref1", Bojack) { (json, _) =>
+        listing._total.getOption(json).value should be > 0L
+      }
     }
 
     "wait for elasticsearch views to be created" in eventually {
@@ -116,8 +129,8 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
                "esAggView",
                ref1,
                Bojack,
-               ref1 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
-               ref2 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
+               ref1 -> elasticsearchViewId,
+               ref2 -> elasticsearchViewId
              )
         _ <- deltaClient.uploadFile(ref1, None, FileInput.randomTextFile, None)(expectCreated)
         _ <- deltaClient.uploadFile(ref2, None, FileInput.randomTextFile, None)(expectCreated)

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewState, ElasticSearchViewValue, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
@@ -67,5 +68,5 @@ object ElasticSearchViewGen {
       tags,
       createdBy,
       updatedBy
-    ).toResource(DefaultMapping(JsonObject.empty), DefaultSettings(JsonObject.empty))
+    ).toResource(DefaultIndexDef(JsonObject.empty, JsonObject.empty))
 }

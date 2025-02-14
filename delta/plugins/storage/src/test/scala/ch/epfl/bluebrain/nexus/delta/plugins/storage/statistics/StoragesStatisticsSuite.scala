@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{eventMetricsIndex, EventMetricsProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsIndex, EventMetricsProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics.StoragesStatisticsSuite.{metricsStream, projectRef1, projectRef2}
@@ -30,25 +30,26 @@ import scala.concurrent.duration.DurationInt
 class StoragesStatisticsSuite
     extends NexusSuite
     with ElasticSearchClientSetup.Fixture
+    with EventMetricsIndex.Fixture
     with SupervisorSetup.Fixture
     with Fixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, supervisor)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, supervisor, metricsIndex)
 
   implicit private val patience: PatienceConfig = PatienceConfig(2.seconds, 10.milliseconds)
 
   private lazy val client     = esClient()
+  private lazy val mIndex     = metricsIndex()
   private lazy val (sv, _, _) = unapply(supervisor())
 
-  private lazy val sink   = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.False)
-  private val indexPrefix = "delta"
-  private val index       = eventMetricsIndex(indexPrefix)
+  private lazy val sink  = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.False)
+  private lazy val index = mIndex.name
 
   private def stats = (client: ElasticSearchClient) =>
-    StoragesStatistics.apply(client, (storage, _) => IO.pure(Iri.unsafe(storage.toString)), indexPrefix)
+    StoragesStatistics.apply(client, (storage, _) => IO.pure(Iri.unsafe(storage.toString)), mIndex.name)
 
   test("Run the event metrics projection") {
-    val createIndex       = client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value)).void
+    val createIndex       = client.createIndex(index, Some(mIndex.mapping), Some(mIndex.settings)).void
     val metricsProjection = EventMetricsProjection(sink, sv, _ => metricsStream, createIndex)
     metricsProjection.accepted
   }

@@ -7,7 +7,7 @@ services:
         condition: service_healthy
       postgres:
         condition: service_started
-    image: bluebrain/nexus-delta:1.10.0
+    image: bluebrain/nexus-delta:1.11.0
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta.conf"
@@ -24,7 +24,7 @@ services:
           memory: 1024M
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:8.16.1"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:8.17.1"
     environment:
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
@@ -44,7 +44,7 @@ services:
           memory: 512M
 
   postgres:
-    image: library/postgres:17.2
+    image: library/postgres:17.3
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"

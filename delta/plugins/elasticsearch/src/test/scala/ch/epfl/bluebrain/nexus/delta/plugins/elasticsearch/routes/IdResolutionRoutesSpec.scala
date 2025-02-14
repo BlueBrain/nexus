@@ -4,50 +4,33 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultViewsQuery.{aggregationResponse, Aggregation, Result}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult.SingleResult
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.Decoder
 
-class IdResolutionRoutesSuite extends ElasticSearchViewsRoutesFixtures {
+class IdResolutionRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val encodedIri = UrlUtils.encode("https://bbp.epfl.ch/data/resource")
 
   private val successId      = nxv + "success"
   private val jsonResource   = jsonContentOf("resources/resource.json", "id" -> successId)
-  private val successContent =
-    ResourceGen.jsonLdContent(successId, projectRef, jsonResource)
-  private def fetchResource  =
-    (_: ResourceRef, _: ProjectRef) => IO.pure(successContent.some)
+  private val successContent = ResourceGen.jsonLdContent(successId, projectRef, jsonResource)
 
   implicit private val f: FusionConfig = fusionConfig
 
-  private val listResponse = jobj"""{"_project": "https://bbp.epfl.ch/nexus/v1/projects/$projectRef"}"""
+  private val idResolution = new IdResolution {
 
-  private lazy val dummyDefaultViewsQuery =
-    new DefaultViewsQuery[Result, Aggregation] {
-      override def list(searchRequest: DefaultSearchRequest)(implicit
-          caller: Caller
-      ): IO[Result] =
-        IO.pure(SearchResults(1, List(listResponse)))
-
-      override def aggregate(searchRequest: DefaultSearchRequest)(implicit
-          caller: Caller
-      ): IO[Aggregation] =
-        IO.pure(AggregationResult(1, aggregationResponse))
-    }
-
-  private val idResolution = new IdResolution(dummyDefaultViewsQuery, fetchResource)
-  private val route        =
+    override def apply(iri: Iri)(implicit caller: Caller): IO[IdResolution.ResolutionResult] =
+      IO.pure(SingleResult(ResourceRef.Latest(successId), projectRef, successContent))
+  }
+  private val route =
     Route.seal(new IdResolutionRoutes(identities, aclCheck, idResolution).routes)
 
   private val addressOfProject = baseUri.toString + "/projects/" + projectRef.toString

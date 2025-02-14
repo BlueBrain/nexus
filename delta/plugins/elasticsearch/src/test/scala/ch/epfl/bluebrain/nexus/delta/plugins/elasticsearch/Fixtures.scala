@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.syntax.all._
-import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchFiles}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -19,14 +18,6 @@ object Fixtures {
 trait Fixtures {
 
   import Fixtures._
-
-  private lazy val files: ElasticSearchFiles = ElasticSearchFiles.mk(loader).unsafeRunSync()
-
-  protected lazy val defaultMapping  = files.defaultMapping
-  protected lazy val defaultSettings = files.defaultSettings
-  protected lazy val metricsMapping  = files.metricsMapping
-  protected lazy val metricsSettings = files.metricsSettings
-  protected lazy val emptyResults    = files.emptyResults
 
   private val listingsMetadataCtx =
     List(

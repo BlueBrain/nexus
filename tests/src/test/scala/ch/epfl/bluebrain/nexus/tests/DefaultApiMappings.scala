@@ -9,7 +9,6 @@ object DefaultApiMappings {
     "_"               -> "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
     "resource"        -> "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
     "view"            -> "https://bluebrain.github.io/nexus/schemas/views.json",
-    "documents"       -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
     "graph"           -> "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
     "storage"         -> "https://bluebrain.github.io/nexus/schemas/storages.json",
     "defaultStorage"  -> "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",

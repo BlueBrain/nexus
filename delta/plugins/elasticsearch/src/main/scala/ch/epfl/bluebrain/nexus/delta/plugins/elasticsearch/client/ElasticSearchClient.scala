@@ -14,18 +14,16 @@ import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.Serv
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpUnexpectedError}
 import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{EmptyResults, ResourcesSearchParams}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, ResultEntry, SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe._
+import io.circe.literal._
 import io.circe.syntax._
 
 import scala.concurrent.duration._
@@ -34,8 +32,7 @@ import scala.reflect.ClassTag
 /**
   * A client that provides some of the functionality of the elasticsearch API.
   */
-class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int, esEmptyResults: EmptyResults)(
-    implicit
+class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int)(implicit
     credentials: Option[BasicHttpCredentials],
     as: ActorSystem
 ) {
@@ -45,6 +42,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val scriptPath                                            = "_scripts"
   private val docPath                                               = "_doc"
   private val allIndexPath                                          = "_all"
+  private val aliasPath                                             = "_aliases"
   private val bulkPath                                              = "_bulk"
   private val refreshPath                                           = "_refresh"
   private val indexTemplate                                         = "_index_template"
@@ -343,58 +341,6 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   }
 
   /**
-    * Search for the provided ''query'' inside the ''index''
-    *
-    * @param params
-    *   the filter parameters
-    * @param indices
-    *   the indices to use on search (if empty, searches in all the indices)
-    * @param qp
-    *   the query parameters
-    * @param page
-    *   the pagination information
-    * @param sort
-    *   the sorting criteria
-    */
-  def search(params: ResourcesSearchParams, indices: Set[String], qp: Query)(
-      page: Pagination,
-      sort: SortList
-  )(implicit base: BaseUri): IO[SearchResults[JsonObject]] =
-    search(
-      QueryBuilder(params).withPage(page).withTotalHits(true).withSort(sort),
-      indices,
-      qp
-    )
-
-  /**
-    * Search for the provided ''query'' inside the ''index''
-    *
-    * @param params
-    *   the filter parameters
-    * @param index
-    *   the indices to use on search
-    * @param qp
-    *   the query parameters
-    * @param page
-    *   the pagination information
-    * @param sort
-    *   the sorting criteria
-    */
-  def search(
-      params: ResourcesSearchParams,
-      index: String,
-      qp: Query
-  )(
-      page: Pagination,
-      sort: SortList
-  )(implicit base: BaseUri): IO[SearchResults[JsonObject]] =
-    search(
-      QueryBuilder(params).withPage(page).withTotalHits(true).withSort(sort),
-      Set(index),
-      qp
-    )
-
-  /**
     * Search for the provided ''query'' inside the ''index'' returning a parsed result as a [[SearchResults]].
     *
     * @param query
@@ -430,7 +376,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   )(
       sort: SortList = SortList.empty
   ): IO[Json] =
-    if (indices.isEmpty) IO.pure(esEmptyResults.value)
+    if (indices.isEmpty) IO.pure(emptyResults)
     else {
       val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
       val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
@@ -481,29 +427,6 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   }
 
   /**
-    * Perform an aggregation for the ''query'' inside the given indices
-    *
-    * @param params
-    *   the filter parameters
-    * @param indices
-    *   the indices to use (if empty, searches in all the indices)
-    * @param qp
-    *   the query parameters
-    * @param bucketSize
-    *   the maximum number of terms returned by a term aggregation
-    * @see
-    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html#search-aggregations-bucket-terms-aggregation-size
-    */
-  def aggregate(params: ResourcesSearchParams, indices: Set[String], qp: Query, bucketSize: Int)(implicit
-      base: BaseUri
-  ): IO[AggregationResult] = {
-    val query          = QueryBuilder(params).aggregation(bucketSize)
-    val (indexPath, q) = indexPathAndQuery(indices, query)
-    val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-    client.fromJsonTo[AggregationResult](Post(searchEndpoint, q.build).withHttpCredentials)
-  }
-
-  /**
     * Refresh the given index
     */
   def refresh(index: IndexLabel): IO[Boolean] =
@@ -543,6 +466,31 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       case resp if resp.status.isSuccess() => discardEntity(resp)
     }
 
+  def createAlias(indexAlias: IndexAlias): IO[Unit] = {
+    val aliasPayload = Json.obj(
+      "index"   := indexAlias.index.value,
+      "alias"   := indexAlias.alias.value,
+      "routing" := indexAlias.routing,
+      "filter"  := indexAlias.filter
+    )
+    aliasAction(Json.obj("add" := aliasPayload))
+  }
+
+  def removeAlias(index: IndexLabel, alias: IndexLabel): IO[Unit] = {
+    val aliasPayload = Json.obj(
+      "index" := index.value,
+      "alias" := alias.value
+    )
+    aliasAction(Json.obj("remove" := aliasPayload))
+  }
+
+  private def aliasAction(aliasAction: Json) = {
+    val aliasWrap = Json.obj("actions" := Json.arr(aliasAction))
+    client.run(Post(endpoint / aliasPath, aliasWrap).withHttpCredentials) {
+      case resp if resp.status.isSuccess() => discardEntity(resp)
+    }
+  }
+
   private def discardEntity(resp: HttpResponse) =
     IO.delay(resp.discardEntityBytes()) >> IO.unit
 
@@ -560,6 +508,16 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 }
 
 object ElasticSearchClient {
+
+  private val emptyResults = json"""{
+                                     "hits": {
+                                        "hits": [],
+                                        "total": {
+                                         "relation": "eq",
+                                           "value": 0
+                                        }
+                                     }
+                                   }"""
 
   sealed trait Refresh {
     def value: String
@@ -602,7 +560,7 @@ object ElasticSearchClient {
   private def decodeScoredResults(maxScore: Float): Decoder[SearchResults[JsonObject]] =
     Decoder.decodeJsonObject.emap { json =>
       queryResults(json, scored = true) match {
-        case Right(list)   => Right(ScoredSearchResults(fetchTotal(json), maxScore, list, token(json)))
+        case Right(list)   => Right(ScoredSearchResults(Hits.fetchTotal(json), maxScore, list, token(json)))
         case Left(errJson) => Left(s"Could not decode source from value '$errJson'")
       }
     }
@@ -610,13 +568,10 @@ object ElasticSearchClient {
   private val decodeUnscoredResults: Decoder[SearchResults[JsonObject]] =
     Decoder.decodeJsonObject.emap { json =>
       queryResults(json, scored = false) match {
-        case Right(list)   => Right(UnscoredSearchResults(fetchTotal(json), list, token(json)))
+        case Right(list)   => Right(UnscoredSearchResults(Hits.fetchTotal(json), list, token(json)))
         case Left(errJson) => Left(s"Could not decode source from value '$errJson'")
       }
     }
-
-  private def fetchTotal(json: JsonObject): Long =
-    json.asJson.hcursor.downField("hits").downField("total").get[Long]("value").getOrElse(0L)
 
   implicit val decodeQueryResults: Decoder[SearchResults[JsonObject]] =
     Decoder.decodeJsonObject.flatMap(
@@ -629,17 +584,6 @@ object ElasticSearchClient {
         case None           => decodeUnscoredResults
       }
     )
-
-  implicit val aggregationDecoder: Decoder[AggregationResult] =
-    Decoder.decodeJsonObject.emap { result =>
-      result.asJson.hcursor
-        .downField("aggregations")
-        .focus
-        .flatMap(_.asObject) match {
-        case Some(aggs) => Right(AggregationResult(fetchTotal(result), aggs))
-        case None       => Left("The response did not contain a valid 'aggregations' field.")
-      }
-    }
 
   final private[client] case class Count(value: Long)
   private[client] object Count {
