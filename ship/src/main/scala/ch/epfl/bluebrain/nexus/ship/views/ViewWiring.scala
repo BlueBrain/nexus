@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewVal
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphScopeInitialization, BlazegraphViews, ValidateBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, ValidateCompositeView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchFiles, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
@@ -38,7 +39,7 @@ object ViewWiring {
       override def apply(uuid: UUID, indexingRev: IndexingRev, v: ElasticSearchViewValue): IO[Unit] = IO.unit
     }
 
-    ElasticSearchFiles.mk(loader).flatMap { files =>
+    DefaultIndexDef(loader).flatMap { defaultIndex =>
       ElasticSearchViews(
         fetchContext,
         rcr,
@@ -46,8 +47,7 @@ object ViewWiring {
         config,
         prefix,
         xas,
-        files.defaultMapping,
-        files.defaultSettings,
+        defaultIndex,
         clock
       )(jsonLdApi, uuidF)
     }
