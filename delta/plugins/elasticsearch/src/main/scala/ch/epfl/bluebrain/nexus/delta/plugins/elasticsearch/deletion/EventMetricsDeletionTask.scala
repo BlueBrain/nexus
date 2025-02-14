@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.eventMetricsIndex
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
@@ -12,12 +11,10 @@ import io.circe.parser.parse
   * Creates a project deletion task that deletes event metrics pushed for this project
   * @param client
   *   the elasticsearch client
-  * @param prefix
-  *   the prefix for the elasticsearch index
+  * @param index
+  *   the name of the index for metrics
   */
-final class EventMetricsDeletionTask(client: ElasticSearchClient, prefix: String) extends ProjectDeletionTask {
-
-  private val index = eventMetricsIndex(prefix)
+final class EventMetricsDeletionTask(client: ElasticSearchClient, index: IndexLabel) extends ProjectDeletionTask {
 
   override def apply(project: ProjectRef)(implicit subject: Identity.Subject): IO[ProjectDeletionReport.Stage] =
     searchByProject(project).flatMap { search =>
@@ -35,5 +32,5 @@ final class EventMetricsDeletionTask(client: ElasticSearchClient, prefix: String
 }
 
 object EventMetricsDeletionTask {
-  def apply(client: ElasticSearchClient, prefix: String) = new EventMetricsDeletionTask(client, prefix)
+  def apply(client: ElasticSearchClient, index: IndexLabel) = new EventMetricsDeletionTask(client, index)
 }

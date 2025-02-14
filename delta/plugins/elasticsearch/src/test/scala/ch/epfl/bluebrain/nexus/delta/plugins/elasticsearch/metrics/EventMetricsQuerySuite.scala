@@ -10,17 +10,20 @@ import io.circe.JsonObject
 import io.circe.syntax.{EncoderOps, KeyOps}
 import munit.AnyFixture
 
-class EventMetricsQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fixture with Fixtures {
+class EventMetricsQuerySuite
+    extends NexusSuite
+    with ElasticSearchClientSetup.Fixture
+    with EventMetricsIndex.Fixture
+    with Fixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, metricsIndex)
 
   private lazy val client = esClient()
+  private lazy val mIndex = metricsIndex()
 
-  private val prefix = "nexus"
+  private lazy val index = mIndex.name
 
-  private val index = eventMetricsIndex(prefix)
-
-  private lazy val eventMetricsQuery = EventMetricsQuery(client, prefix)
+  private lazy val eventMetricsQuery = EventMetricsQuery(client, mIndex.name)
 
   private val project1 = ProjectRef.unsafe("org", "project1")
   private val project2 = ProjectRef.unsafe("org", "project2")
@@ -51,7 +54,7 @@ class EventMetricsQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
 
   test("Query for a resource history") {
     for {
-      _      <- client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value)).assertEquals(true)
+      _      <- client.createIndex(index, Some(mIndex.mapping), Some(mIndex.settings)).assertEquals(true)
       bulk    = List(event11, event12, event21).zipWithIndex.map { case (event, i) =>
                   ElasticSearchAction.Index(index, i.toString, None, event.asJson)
                 }

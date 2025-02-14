@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.DefaultIndexingCoordinator.ProjectDef
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MainIndexingCoordinator.ProjectDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
@@ -25,7 +25,7 @@ import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture with Fixtures {
+class MainIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture with Fixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -73,14 +73,14 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
 
   test("Start the coordinator") {
     for {
-      _ <- DefaultIndexingCoordinator(
+      _ <- MainIndexingCoordinator(
              _ => projectStream,
              graphResourceStream,
              sv,
              new NoopSink[Json],
              project => IO(createdAliases.add(project)).void
            )
-      _ <- sv.describe(DefaultIndexingCoordinator.metadata.name)
+      _ <- sv.describe(MainIndexingCoordinator.metadata.name)
              .map(_.map(_.progress))
              .assertEquals(Some(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0)))
              .eventually
@@ -88,7 +88,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
   }
 
   test(s"Projection for '$project1' processed all items and completed") {
-    val projectionName = s"default-indexing-$project1"
+    val projectionName = s"main-indexing-$project1"
     for {
       _ <- sv.describe(projectionName)
              .map(_.map(_.status))
@@ -100,7 +100,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
   }
 
   test(s"Projection for '$project2' processed all items and completed too") {
-    val projectionName = s"default-indexing-$project2"
+    val projectionName = s"main-indexing-$project2"
     for {
       _ <- sv.describe(projectionName)
              .map(_.map(_.status))
@@ -114,7 +114,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
   test("Resume the stream of projects") {
     for {
       _ <- resumeSignal.set(true)
-      _ <- sv.describe(DefaultIndexingCoordinator.metadata.name)
+      _ <- sv.describe(MainIndexingCoordinator.metadata.name)
              .map(_.map(_.progress))
              .assertEquals(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 0, 0)))
              .eventually
@@ -122,7 +122,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
   }
 
   test(s"Projection for '$project1' should not be restarted by the new project state.") {
-    val projectionName = s"default-indexing-$project1"
+    val projectionName = s"main-indexing-$project1"
     for {
       _ <- sv.describe(projectionName).map(_.map(_.restarts)).assertEquals(Some(0)).eventually
       _ <- projections.progress(projectionName).assertEquals(Some(expectedProgress))
@@ -130,7 +130,7 @@ class DefaultIndexingCoordinatorSuite extends NexusSuite with SupervisorSetup.Fi
   }
 
   test(s"'$project2' is marked for deletion, the associated projection should be destroyed.") {
-    val projectionName = s"ga-$project2"
+    val projectionName = s"main-indexing-$project2"
     for {
       _ <- sv.describe(projectionName).assertEquals(None).eventually
       _ <- projections.progress(projectionName).assertEquals(None)

@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, QueryBuilder}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.indexingAlias
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingAlias
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
-class DefaultIndexDeletionTaskSuite
+class MainIndexDeletionTaskSuite
     extends NexusSuite
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
@@ -27,12 +28,12 @@ class DefaultIndexDeletionTaskSuite
   private lazy val client = esClient()
 
   test("Delete all entries for a given project") {
-    val defaultIndexConfig = DefaultIndexConfig("test", "default", 1, 100)
-    val index              = defaultIndexConfig.index
-    val projectToDelete    = ProjectRef.unsafe("org", "marked-for-deletion")
-    val anotherProject     = ProjectRef.unsafe("org", "another")
+    val mainIndexConfig = MainIndexConfig("test", "default", 1, 100)
+    val index           = mainIndexConfig.index
+    val projectToDelete = ProjectRef.unsafe("org", "marked-for-deletion")
+    val anotherProject  = ProjectRef.unsafe("org", "another")
 
-    val task = new DefaultIndexDeletionTask(client, defaultIndexConfig)
+    val task = new MainIndexDeletionTask(client, index)
 
     def toProjectUri(project: ProjectRef) = ResourceUris.project(project).accessUri
 
@@ -56,17 +57,18 @@ class DefaultIndexDeletionTaskSuite
 
     for {
       // Indexing and checking count
-      _ <- client.createIndex(index, Some(defaultMapping.value), Some(defaultSettings.value))
-      _ <- client.createAlias(indexingAlias(defaultIndexConfig, projectToDelete))
-      _ <- client.bulk(bulk)
-      _ <- client.refresh(index)
-      _ <- client.count(index.value).assertEquals(4L)
+      mainIndexDef <- MainIndexDef(mainIndexConfig, loader)
+      _            <- client.createIndex(index, Some(mainIndexDef.mapping), Some(mainIndexDef.settings))
+      _            <- client.createAlias(mainIndexingAlias(index, projectToDelete))
+      _            <- client.bulk(bulk)
+      _            <- client.refresh(index)
+      _            <- client.count(index.value).assertEquals(4L)
       // Running the task and checking the index again
-      _ <- task(projectToDelete)
-      _ <- client.refresh(index)
-      _ <- client.count(index.value).assertEquals(2L)
-      _ <- countInIndex(projectToDelete).assertEquals(0L)
-      _ <- countInIndex(anotherProject).assertEquals(2L)
+      _            <- task(projectToDelete)
+      _            <- client.refresh(index)
+      _            <- client.count(index.value).assertEquals(2L)
+      _            <- countInIndex(projectToDelete).assertEquals(0L)
+      _            <- countInIndex(anotherProject).assertEquals(2L)
     } yield ()
   }
 

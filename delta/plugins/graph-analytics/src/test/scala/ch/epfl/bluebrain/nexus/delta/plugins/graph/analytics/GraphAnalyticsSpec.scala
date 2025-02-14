@@ -47,7 +47,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
   private val fetchContext = FetchContextDummy(List(project))
 
   private lazy val endpoint                       = docker.esHostConfig.endpoint
-  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000, emptyResults)
+  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val prefix                              = "test"
   private lazy val graphAnalytics: GraphAnalytics =
     GraphAnalytics(client, fetchContext, "test", TermAggregationsConfig(100, 300))

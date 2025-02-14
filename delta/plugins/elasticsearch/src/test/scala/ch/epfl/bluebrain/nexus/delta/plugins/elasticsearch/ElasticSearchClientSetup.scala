@@ -31,12 +31,8 @@ object ElasticSearchClientSetup extends CirceLiteral with Fixtures {
     } yield {
       implicit val as: ActorSystem                           = actorSystem
       implicit val credentials: Option[BasicHttpCredentials] = ElasticSearchContainer.credentials
-      new ElasticSearchClient(
-        httpClient,
-        s"http://${container.getHost}:${container.getMappedPort(9200)}",
-        2000,
-        emptyResults
-      )
+      val endpoint                                           = s"http://${container.getHost}:${container.getMappedPort(9200)}"
+      new ElasticSearchClient(httpClient, endpoint, 2000)
     }
   }.evalTap { client =>
     client.createIndexTemplate("test_template", template)

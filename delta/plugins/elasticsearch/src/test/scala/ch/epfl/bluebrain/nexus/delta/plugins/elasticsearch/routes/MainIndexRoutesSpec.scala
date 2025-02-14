@@ -4,9 +4,9 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.defaultIndexingProjectionMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingProjectionMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions => esPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultIndexQuery, DefaultIndexRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -17,7 +17,7 @@ import io.circe.{Json, JsonObject}
 
 import java.time.Instant
 
-class DefaultIndexRoutesSpec extends ElasticSearchViewsRoutesFixtures {
+class MainIndexRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private lazy val projections = Projections(xas, queryConfig, clock)
 
@@ -45,21 +45,21 @@ class DefaultIndexRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val encodedDefaultViewId = UrlUtils.encode(defaultViewId.toString)
 
-  private val defaultIndexQuery = new DefaultIndexQuery {
+  private val mainIndexQuery = new MainIndexQuery {
     override def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] =
       IO.pure(searchResult)
 
-    override def list(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] = ???
+    override def list(request: MainIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] = ???
 
-    override def aggregate(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult] = ???
+    override def aggregate(request: MainIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult] = ???
   }
 
   private lazy val routes =
     Route.seal(
-      new DefaultIndexRoutes(
+      new MainIndexRoutes(
         identities,
         aclCheck,
-        defaultIndexQuery,
+        mainIndexQuery,
         projections
       ).routes
     )
@@ -68,7 +68,7 @@ class DefaultIndexRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     super.beforeAll()
     val setup = for {
       _ <- aclCheck.append(AclAddress.Project(project1), reader -> Set(esPermissions.query, esPermissions.read))
-      _ <- projections.save(defaultIndexingProjectionMetadata(project1), progress)
+      _ <- projections.save(mainIndexingProjectionMetadata(project1), progress)
     } yield ()
 
     setup.accepted

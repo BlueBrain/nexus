@@ -46,7 +46,7 @@ class DefaultIndexingActionSuite extends NexusSuite with Fixtures {
     rev = 1
   )
 
-  private val defaultIndexingAction = new DefaultIndexingAction(new NoopSink[Json], patienceConfig.timeout)
+  private val defaultIndexingAction = new MainIndexingAction(new NoopSink[Json], patienceConfig.timeout)
 
   test("A valid elem should be indexed") {
     defaultIndexingAction(project, elem).assertEquals(List.empty)

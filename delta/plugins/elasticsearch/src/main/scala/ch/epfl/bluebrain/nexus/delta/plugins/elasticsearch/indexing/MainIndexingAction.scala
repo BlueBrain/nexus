@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.DefaultIndexingCoordinator.defaultIndexingPipeline
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MainIndexingCoordinator.mainIndexingPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -19,41 +19,41 @@ import fs2.Stream
 import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 
-final class DefaultIndexingAction(sink: Sink, override val timeout: FiniteDuration)(implicit
+final class MainIndexingAction(sink: Sink, override val timeout: FiniteDuration)(implicit
     cr: RemoteContextResolution
 ) extends IndexingAction {
 
   private def compile(project: ProjectRef, elem: Elem[GraphResource]) =
     CompiledProjection.compile(
-      defaultIndexingProjectionMetadata(project),
+      mainIndexingProjectionMetadata(project),
       ExecutionStrategy.TransientSingleNode,
       Source(_ => Stream(elem)),
-      defaultIndexingPipeline,
+      mainIndexingPipeline,
       sink
     )
 
   override def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection] = {
     // TODO: get rid of elem here
-    val entityType = EntityType("default-indexing")
+    val entityType = EntityType("main-indexing")
     Stream.fromEither[IO](
       compile(project, elem).map { projection =>
-        SuccessElem(entityType, defaultIndexingId, project, Instant.EPOCH, Start, projection, 1)
+        SuccessElem(entityType, mainIndexingId, project, Instant.EPOCH, Start, projection, 1)
       }
     )
   }
 }
 
-object DefaultIndexingAction {
+object MainIndexingAction {
   def apply(
       client: ElasticSearchClient,
-      config: DefaultIndexConfig,
+      config: MainIndexConfig,
       timeout: FiniteDuration,
       syncIndexingRefresh: Refresh
-  )(implicit cr: RemoteContextResolution): DefaultIndexingAction = {
+  )(implicit cr: RemoteContextResolution): MainIndexingAction = {
     val batchConfig = BatchConfig.individual
-    new DefaultIndexingAction(
+    new MainIndexingAction(
       ElasticSearchSink
-        .defaultIndexing(client, batchConfig.maxElements, batchConfig.maxInterval, config.index, syncIndexingRefresh),
+        .mainIndexing(client, batchConfig.maxElements, batchConfig.maxInterval, config.index, syncIndexingRefresh),
       timeout
     )
   }

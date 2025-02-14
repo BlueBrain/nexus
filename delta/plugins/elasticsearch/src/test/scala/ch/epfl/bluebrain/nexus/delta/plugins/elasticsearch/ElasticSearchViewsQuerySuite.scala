@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchA
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, ElasticSearchViewType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -74,11 +75,13 @@ class ElasticSearchViewsQuerySuite
     (charlie.subject, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
   ).accepted
 
+  private val defaultIndexDef = DefaultIndexDef(loader).unsafeRunSync()
+
   private val indexingValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
       pipeline = List(PipeStep.noConfig(FilterDeprecated.ref), PipeStep.noConfig(DiscardMetadata.ref)),
-      mapping = Some(defaultMapping.value),
+      mapping = Some(defaultIndexDef.mapping),
       settings = None,
       permission = queryPermission,
       context = None
@@ -186,14 +189,12 @@ class ElasticSearchViewsQuerySuite
       prefix,
       10,
       xas,
-      defaultMapping,
-      defaultSettings
+      defaultIndexDef
     ),
     eventLogConfig,
     prefix,
     xas,
-    defaultMapping,
-    defaultSettings,
+    defaultIndexDef,
     clock
   ).unsafeRunSync()
 

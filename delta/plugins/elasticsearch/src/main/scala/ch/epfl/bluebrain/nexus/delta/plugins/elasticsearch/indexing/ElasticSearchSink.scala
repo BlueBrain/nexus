@@ -183,7 +183,7 @@ object ElasticSearchSink {
     * @param refresh
     *   the value for the `refresh` Elasticsearch parameter
     */
-  def defaultIndexing(
+  def mainIndexing(
       client: ElasticSearchClient,
       chunkSize: Int,
       maxWindow: FiniteDuration,

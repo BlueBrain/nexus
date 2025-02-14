@@ -16,10 +16,10 @@ import pureconfig.generic.semiauto.deriveReader
   * @param bucketSize
   *   the maximum number of terms returned by a term aggregation for listing aggregations
   */
-final case class DefaultIndexConfig(prefix: String, name: String, shards: Int, bucketSize: Int) {
+final case class MainIndexConfig(prefix: String, name: String, shards: Int, bucketSize: Int) {
   val index: IndexLabel = IndexLabel.unsafe(s"${prefix}_$name")
 }
 
-object DefaultIndexConfig {
-  implicit final val defaultIndexConfigReader: ConfigReader[DefaultIndexConfig] = deriveReader[DefaultIndexConfig]
+object MainIndexConfig {
+  implicit final val defaultIndexConfigReader: ConfigReader[MainIndexConfig] = deriveReader[MainIndexConfig]
 }

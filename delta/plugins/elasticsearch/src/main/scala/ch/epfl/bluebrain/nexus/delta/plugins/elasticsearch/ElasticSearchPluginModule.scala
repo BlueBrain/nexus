@@ -7,12 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{DefaultIndexDeletionTask, ElasticSearchDeletionTask, EventMetricsDeletionTask}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{DefaultIndexingAction, DefaultIndexingCoordinator, ElasticSearchCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsProjection, EventMetricsQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchFiles, ElasticSearchView, ElasticSearchViewEvent}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultIndexQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask, MainIndexDeletionTask}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, MainIndexingAction, MainIndexingCoordinator}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsProjection, EventMetricsQuery, MetricsIndexDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -48,7 +50,15 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
-  make[ElasticSearchFiles].fromEffect { ElasticSearchFiles.mk(loader) }
+  make[MetricsIndexDef].fromEffect { (cfg: ElasticSearchViewsConfig) =>
+    MetricsIndexDef(cfg.prefix, loader)
+  }
+
+  make[DefaultIndexDef].fromEffect { DefaultIndexDef(loader) }
+
+  make[MainIndexDef].fromEffect { (cfg: ElasticSearchViewsConfig) =>
+    MainIndexDef(cfg.mainIndex, loader)
+  }
 
   make[HttpClient].named("elasticsearch-client").from {
     val httpConfig = HttpClientConfig.noRetry(true)
@@ -59,10 +69,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (
         cfg: ElasticSearchViewsConfig,
         client: HttpClient @Id("elasticsearch-client"),
-        as: ActorSystem,
-        files: ElasticSearchFiles
+        as: ActorSystem
     ) =>
-      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength, files.emptyResults)(cfg.credentials, as)
+      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as)
   }
 
   make[ValidateElasticSearchView].from {
@@ -71,7 +80,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         permissions: Permissions,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        files: ElasticSearchFiles,
+        defaultIndex: DefaultIndexDef,
         xas: Transactors
     ) =>
       ValidateElasticSearchView(
@@ -81,8 +90,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.prefix,
         config.maxViewRefs,
         xas,
-        files.defaultMapping,
-        files.defaultSettings
+        defaultIndex
       )
   }
 
@@ -92,7 +100,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         contextResolution: ResolverContextResolution,
         validateElasticSearchView: ValidateElasticSearchView,
         config: ElasticSearchViewsConfig,
-        files: ElasticSearchFiles,
+        defaultIndex: DefaultIndexDef,
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[IO],
@@ -105,8 +113,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.eventLog,
         config.prefix,
         xas,
-        files.defaultMapping,
-        files.defaultSettings,
+        defaultIndex,
         clock
       )(api, uuidF)
   }
@@ -135,25 +142,25 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         )(cr)
   }
 
-  make[DefaultIndexingCoordinator].fromEffect {
+  make[MainIndexingCoordinator].fromEffect {
     (
         projects: Projects,
         graphStream: GraphResourceStream,
         supervisor: Supervisor,
         client: ElasticSearchClient,
-        files: ElasticSearchFiles,
+        mainIndex: MainIndexDef,
         config: ElasticSearchViewsConfig,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      DefaultIndexingCoordinator(
+      MainIndexingCoordinator(
         projects,
         graphStream,
         supervisor,
         client,
-        files.defaultMapping,
-        files.defaultSettings,
-        config
+        mainIndex,
+        config.batch,
+        config.indexingEnabled
       )(baseUri, cr)
   }
 
@@ -165,7 +172,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projections: Projections,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        files: ElasticSearchFiles
+        metricIndex: MetricsIndexDef
     ) =>
       EventMetricsProjection(
         metricEncoders,
@@ -175,9 +182,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas,
         config.batch,
         config.metricsQuery,
-        config.prefix,
-        files.metricsMapping,
-        files.metricsSettings,
+        metricIndex,
         config.indexingEnabled
       )
   }
@@ -199,12 +204,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[DefaultIndexQuery].from {
+  make[MainIndexQuery].from {
     (
         client: ElasticSearchClient,
         baseUri: BaseUri,
         config: ElasticSearchViewsConfig
-    ) => DefaultIndexQuery(client, config.defaultIndex)(baseUri)
+    ) => MainIndexQuery(client, config.mainIndex)(baseUri)
   }
 
   make[ElasticSearchViewsRoutes].from {
@@ -234,15 +239,15 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[DefaultIndexRoutes].from {
+  make[MainIndexRoutes].from {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        defaultIndexQuery: DefaultIndexQuery,
+        defaultIndexQuery: MainIndexQuery,
         projections: Projections,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new DefaultIndexRoutes(identities, aclCheck, defaultIndexQuery, projections)(cr, ordering)
+    ) => new MainIndexRoutes(identities, aclCheck, defaultIndexQuery, projections)(cr, ordering)
   }
 
   make[ListingRoutes].from {
@@ -251,7 +256,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         projectScopeResolver: ProjectScopeResolver,
         schemeDirectives: DeltaSchemeDirectives,
-        defaultIndexQuery: DefaultIndexQuery,
+        defaultIndexQuery: MainIndexQuery,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
@@ -298,7 +303,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[IdResolution].from {
-    (projectScopeResolver: ProjectScopeResolver, defaultIndexQuery: DefaultIndexQuery, shifts: ResourceShifts) =>
+    (projectScopeResolver: ProjectScopeResolver, defaultIndexQuery: MainIndexQuery, shifts: ResourceShifts) =>
       IdResolution(
         projectScopeResolver,
         defaultIndexQuery,
@@ -324,8 +329,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[EventMetricsQuery].from { (client: ElasticSearchClient, config: ElasticSearchViewsConfig) =>
-    EventMetricsQuery(client, config.prefix)
+  make[EventMetricsQuery].from { (client: ElasticSearchClient, metricsIndex: MetricsIndexDef) =>
+    EventMetricsQuery(client, metricsIndex.name)
   }
 
   make[ElasticSearchHistoryRoutes].from {
@@ -341,12 +346,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ProjectDeletionTask].add { (views: ElasticSearchViews) => ElasticSearchDeletionTask(views) }
 
-  many[ProjectDeletionTask].add { (client: ElasticSearchClient, config: ElasticSearchViewsConfig) =>
-    new EventMetricsDeletionTask(client, config.prefix)
+  many[ProjectDeletionTask].add { (client: ElasticSearchClient, metricsIndex: MetricsIndexDef) =>
+    new EventMetricsDeletionTask(client, metricsIndex.name)
   }
 
   many[ProjectDeletionTask].add { (client: ElasticSearchClient, config: ElasticSearchViewsConfig, baseUri: BaseUri) =>
-    new DefaultIndexDeletionTask(client, config.defaultIndex)(baseUri)
+    new MainIndexDeletionTask(client, config.mainIndex.index)(baseUri)
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
@@ -401,7 +406,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (
         es: ElasticSearchViewsRoutes,
         query: ListingRoutes,
-        defaultIndex: DefaultIndexRoutes,
+        defaultIndex: MainIndexRoutes,
         indexing: ElasticSearchIndexingRoutes,
         idResolutionRoute: IdResolutionRoutes,
         historyRoutes: ElasticSearchHistoryRoutes,
@@ -443,11 +448,11 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
         cr: RemoteContextResolution @Id("aggregate")
-    ) => DefaultIndexingAction(client, config.defaultIndex, config.syncIndexingTimeout, config.syncIndexingRefresh)(cr)
+    ) => MainIndexingAction(client, config.mainIndex, config.syncIndexingTimeout, config.syncIndexingRefresh)(cr)
   }
 
-  make[ElasticSearchView.Shift].from { (views: ElasticSearchViews, base: BaseUri, files: ElasticSearchFiles) =>
-    ElasticSearchView.shift(views, files.defaultMapping, files.defaultSettings)(base)
+  make[ElasticSearchView.Shift].from { (views: ElasticSearchViews, base: BaseUri, defaultIndexDef: DefaultIndexDef) =>
+    ElasticSearchView.shift(views, defaultIndexDef)(base)
   }
 
   many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]

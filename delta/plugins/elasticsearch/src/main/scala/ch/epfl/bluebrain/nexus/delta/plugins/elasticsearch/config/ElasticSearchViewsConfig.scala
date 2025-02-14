@@ -48,7 +48,7 @@ final case class ElasticSearchViewsConfig(
     pagination: PaginationConfig,
     batch: BatchConfig,
     prefix: String,
-    defaultIndex: DefaultIndexConfig,
+    mainIndex: MainIndexConfig,
     maxViewRefs: Int,
     syncIndexingTimeout: FiniteDuration,
     syncIndexingRefresh: Refresh,
