@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -18,9 +18,7 @@ trait EventMetricsQuery {
 
 object EventMetricsQuery {
 
-  def apply(client: ElasticSearchClient, prefix: String): EventMetricsQuery = new EventMetricsQuery {
-
-    val index = eventMetricsIndex(prefix)
+  def apply(client: ElasticSearchClient, index: IndexLabel): EventMetricsQuery = new EventMetricsQuery {
 
     private def searchQuery(project: ProjectRef, id: Iri) =
       json"""{

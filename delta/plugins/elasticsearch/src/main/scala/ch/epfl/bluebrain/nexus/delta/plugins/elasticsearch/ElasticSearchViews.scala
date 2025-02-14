@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.nextIndexingRev
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -44,8 +45,7 @@ final class ElasticSearchViews private (
     log: ElasticsearchLog,
     fetchContext: FetchContext,
     sourceDecoder: ElasticSearchViewJsonLdSourceDecoder,
-    defaultElasticsearchMapping: DefaultMapping,
-    defaultElasticsearchSettings: DefaultSettings,
+    defaultViewDef: DefaultIndexDef,
     prefix: String
 )(implicit uuidF: UUIDF) {
 
@@ -268,9 +268,7 @@ final class ElasticSearchViews private (
     *   the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[ViewResource] =
-    fetchState(id, project).map { state =>
-      state.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings)
-    }
+    fetchState(id, project).map { _.toResource(defaultViewDef) }
 
   def fetchState(
       id: IdSegmentRef,
@@ -305,7 +303,7 @@ final class ElasticSearchViews private (
   ): IO[ActiveViewDef] =
     fetchState(id, project)
       .flatMap { state =>
-        IndexingViewDef(state, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix) match {
+        IndexingViewDef(state, defaultViewDef, prefix) match {
           case Some(viewDef) =>
             viewDef match {
               case v: ActiveViewDef     => IO.pure(v)
@@ -348,13 +346,13 @@ final class ElasticSearchViews private (
 
   private def toIndexViewDef(elem: Elem.SuccessElem[ElasticSearchViewState]) =
     elem.traverse { v =>
-      IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
+      IndexingViewDef(v, defaultViewDef, prefix)
     }
 
   private def eval(cmd: ElasticSearchViewCommand): IO[ViewResource] =
     log
       .evaluate(cmd.project, cmd.id, cmd)
-      .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings))
+      .map(_._2.toResource(defaultViewDef))
 
   private def expandWithContext(
       fetchCtx: ProjectRef => IO[ProjectContext],
@@ -368,7 +366,7 @@ object ElasticSearchViews {
 
   final val entityType: EntityType = EntityType("elasticsearch")
 
-  type ElasticsearchLog = ScopedEventLog[
+  private type ElasticsearchLog = ScopedEventLog[
     Iri,
     ElasticSearchViewState,
     ElasticSearchViewCommand,
@@ -406,8 +404,7 @@ object ElasticSearchViews {
       eventLogConfig: EventLogConfig,
       prefix: String,
       xas: Transactors,
-      defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings,
+      defaultViewDef: DefaultIndexDef,
       clock: Clock[IO]
   )(implicit
       api: JsonLdApi,
@@ -422,8 +419,7 @@ object ElasticSearchViews {
         ),
         fetchContext,
         decoder,
-        defaultMapping,
-        defaultSettings,
+        defaultViewDef,
         prefix
       )
     )

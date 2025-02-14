@@ -6,7 +6,8 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -66,8 +67,7 @@ object IndexingViewDef {
 
   def apply(
       state: ElasticSearchViewState,
-      defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings,
+      defaultDefinition: DefaultIndexDef,
       prefix: String
   ): Option[IndexingViewDef] =
     state.value.asIndexingValue.map { indexing =>
@@ -82,8 +82,8 @@ object IndexingViewDef {
           indexing.pipeChain,
           indexing.selectFilter,
           ElasticSearchViews.index(state.uuid, state.indexingRev, prefix),
-          indexing.mapping.getOrElse(defaultMapping.value),
-          indexing.settings.getOrElse(defaultSettings.value),
+          indexing.mapping.getOrElse(defaultDefinition.mapping),
+          indexing.settings.getOrElse(defaultDefinition.settings),
           indexing.context,
           state.indexingRev,
           state.rev

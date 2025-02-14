@@ -5,8 +5,8 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, Hits, QueryBuilder}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.defaultProjectTargetAlias
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainProjectTargetAlias
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, SortList}
@@ -15,12 +15,12 @@ import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 
 /**
-  * Allow to list resources from the default Elasticsearch index
+  * Allow to list resources from the main Elasticsearch index
   */
-trait DefaultIndexQuery {
+trait MainIndexQuery {
 
   /**
-    * Query the default index with the provided query limiting the search to the given project
+    * Query the main index with the provided query limiting the search to the given project
     * @param project
     *   the project the query targets
     * @param query
@@ -33,31 +33,31 @@ trait DefaultIndexQuery {
   /**
     * Retrieves a list of resources from the provided search request on the set of projects
     */
-  def list(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]]
+  def list(request: MainIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]]
 
   /**
     * Retrieves aggregations for the provided search request on the set of projects
     */
-  def aggregate(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult]
+  def aggregate(request: MainIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult]
 }
 
-object DefaultIndexQuery {
+object MainIndexQuery {
 
   private val excludeOriginalSource = "_source_excludes" -> "_original_source"
 
   def apply(
       client: ElasticSearchClient,
-      config: DefaultIndexConfig
-  )(implicit baseUri: BaseUri): DefaultIndexQuery = new DefaultIndexQuery {
+      config: MainIndexConfig
+  )(implicit baseUri: BaseUri): MainIndexQuery = new MainIndexQuery {
 
     override def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] = {
-      val index = defaultProjectTargetAlias(config, project)
+      val index = mainProjectTargetAlias(config.index, project)
       client
         .search(query, Set(index.value), qp)(SortList.empty)
         .adaptError { case e: HttpClientError => ElasticSearchClientError(e) }
     }
 
-    override def list(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] = {
+    override def list(request: MainIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] = {
       val query =
         QueryBuilder(request.params, projects).withPage(request.pagination).withTotalHits(true).withSort(request.sort)
       client
@@ -65,7 +65,7 @@ object DefaultIndexQuery {
         .adaptError { case e: HttpClientError => ElasticSearchClientError(e) }
     }
 
-    override def aggregate(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult] = {
+    override def aggregate(request: MainIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult] = {
       val query = QueryBuilder(request.params, projects).aggregation(config.bucketSize)
       client
         .searchAs[AggregationResult](query, config.index.value, Uri.Query.Empty)

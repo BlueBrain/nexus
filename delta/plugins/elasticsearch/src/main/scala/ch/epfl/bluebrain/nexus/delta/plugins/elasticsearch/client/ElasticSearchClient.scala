@@ -18,12 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.EmptyResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe._
+import io.circe.literal._
 import io.circe.syntax._
 
 import scala.concurrent.duration._
@@ -32,8 +32,7 @@ import scala.reflect.ClassTag
 /**
   * A client that provides some of the functionality of the elasticsearch API.
   */
-class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int, esEmptyResults: EmptyResults)(
-    implicit
+class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int)(implicit
     credentials: Option[BasicHttpCredentials],
     as: ActorSystem
 ) {
@@ -377,7 +376,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   )(
       sort: SortList = SortList.empty
   ): IO[Json] =
-    if (indices.isEmpty) IO.pure(esEmptyResults.value)
+    if (indices.isEmpty) IO.pure(emptyResults)
     else {
       val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
       val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
@@ -509,6 +508,16 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 }
 
 object ElasticSearchClient {
+
+  private val emptyResults = json"""{
+                                     "hits": {
+                                        "hits": [],
+                                        "total": {
+                                         "relation": "eq",
+                                           "value": 0
+                                        }
+                                     }
+                                   }"""
 
   sealed trait Refresh {
     def value: String

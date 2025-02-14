@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -28,8 +29,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.Json
 import io.circe.literal._
+import io.circe.{Json, JsonObject}
 import org.scalatest.Assertion
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
@@ -43,6 +44,8 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
+
+  private val defaultIndexDef = DefaultIndexDef(JsonObject.empty, JsonObject.empty)
 
   "An ElasticSearchViews" should {
 
@@ -119,7 +122,7 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         value,
         source,
         tags
-      ).toResource(defaultMapping, defaultSettings)
+      ).toResource(defaultIndexDef)
 
     val viewId          = iri"http://localhost/indexing"
     val aggregateViewId = iri"http://localhost/${genString()}"
@@ -141,14 +144,12 @@ class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture 
         "prefix",
         2,
         xas,
-        defaultMapping,
-        defaultSettings
+        defaultIndexDef
       ),
       eventLogConfig,
       "prefix",
       xas,
-      defaultMapping,
-      defaultSettings,
+      defaultIndexDef,
       clock
     ).accepted
 

@@ -72,7 +72,7 @@ class ElasticSearchClientSpec
     }
 
     "delete an index" in {
-      val settings = jsonObjectContentOf("defaults/default-settings.json")
+      val settings = jsonObjectContentOf("defaults/default-settings.json", "number_of_shards" -> 1)
       val mappings = jsonObjectContentOf("defaults/default-mapping.json")
       esClient.createIndex(IndexLabel("other").rightValue, Some(mappings), Some(settings)).accepted
       esClient.deleteIndex(IndexLabel("other").rightValue).accepted shouldEqual true

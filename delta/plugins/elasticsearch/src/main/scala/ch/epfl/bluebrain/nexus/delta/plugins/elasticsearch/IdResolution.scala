@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultIndexQuery, DefaultIndexRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -93,13 +93,13 @@ object IdResolution {
 
   def apply(
       projectScopeResolver: ProjectScopeResolver,
-      defaultIndexQuery: DefaultIndexQuery,
+      mainIndexQuery: MainIndexQuery,
       fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]]
   ): IdResolution = new IdResolution {
 
     override def apply(iri: Iri)(implicit caller: Caller): IO[ResolutionResult] = {
       val locate  = ResourcesSearchParams(id = Some(iri))
-      val request = DefaultIndexRequest(locate, FromPagination(0, 10000), SortList.empty)
+      val request = MainIndexRequest(locate, FromPagination(0, 10000), SortList.empty)
 
       def fetchSingleResult: ProjectRef => IO[ResolutionResult] = { projectRef =>
         val resourceRef = ResourceRef(iri)
@@ -116,7 +116,7 @@ object IdResolution {
 
       for {
         projects      <- projectScopeResolver(Scope.Root, resources.read)
-        searchResults <- defaultIndexQuery.list(request, projects)
+        searchResults <- mainIndexQuery.list(request, projects)
         result        <- searchResults.results match {
                            case Nil         => IO.raiseError(AuthorizationFailed("No resource matches the provided id."))
                            case Seq(result) => projectRefFromSource(result.source).flatMap(fetchSingleResult)

@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.eventMetricsIndex
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -28,18 +27,17 @@ object StoragesStatistics {
     *   the Elasticsearch client
     * @param fetchStorageId
     *   the function to fetch the storage ID
-    * @param indexPrefix
-    *   the index prefix
+    * @param index
+    *   the index containing the event metrics
     * @return
     *   StorageStatistics instance
     */
   def apply(
       client: ElasticSearchClient,
       fetchStorageId: (IdSegment, ProjectRef) => IO[Iri],
-      indexPrefix: String
+      index: IndexLabel
   ): StoragesStatistics = {
-    val search = (jsonObject: JsonObject) =>
-      client.search(jsonObject, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)()
+    val search = (jsonObject: JsonObject) => client.search(jsonObject, Set(index.value), Query.Empty)()
 
     (idSegment: IdSegment, project: ProjectRef) => {
       for {

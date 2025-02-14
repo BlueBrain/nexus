@@ -6,7 +6,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{aggregations, searchMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultIndexQuery._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyMainIndexQuery._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -38,7 +38,7 @@ class ListingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       IO.pure { Set.empty }
   }
 
-  private lazy val defaultIndexQuery = new DummyDefaultIndexQuery
+  private lazy val mainIndexQuery = new DummyMainIndexQuery
 
   private lazy val routes =
     Route.seal(
@@ -50,7 +50,7 @@ class ListingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
           projectResolver,
           resourceToSchemaMapping,
           groupDirectives,
-          defaultIndexQuery
+          mainIndexQuery
         ).routes
       )
     )

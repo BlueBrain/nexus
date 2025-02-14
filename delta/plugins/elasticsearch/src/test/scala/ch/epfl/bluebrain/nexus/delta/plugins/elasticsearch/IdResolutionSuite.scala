@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionSuite.searchResults
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultIndexQuery, DefaultIndexRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -39,14 +39,14 @@ class IdResolutionSuite extends NexusSuite with Fixtures {
       IO.pure { Set(project1, project2) }
   }
 
-  private def defaultIndexQuery(searchResults: SearchResults[JsonObject]): DefaultIndexQuery = {
-    new DefaultIndexQuery {
+  private def mainIndexQuery(searchResults: SearchResults[JsonObject]): MainIndexQuery = {
+    new MainIndexQuery {
       override def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] = IO.pure(Json.Null)
 
-      override def list(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] =
+      override def list(request: MainIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] =
         IO.pure(searchResults)
 
-      override def aggregate(request: DefaultIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult] =
+      override def aggregate(request: MainIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult] =
         IO.pure(AggregationResult(0, JsonObject.empty))
     }
   }
@@ -66,14 +66,14 @@ class IdResolutionSuite extends NexusSuite with Fixtures {
   )
 
   test("No listing results lead to AuthorizationFailed") {
-    val noListingResults = defaultIndexQuery(searchResults(Seq.empty))
+    val noListingResults = mainIndexQuery(searchResults(Seq.empty))
     IdResolution(projectResolver, noListingResults, fetchResource)
       .apply(iri)(alice)
       .intercept[AuthorizationFailed]
   }
 
   test("Single listing result leads to the resource being fetched") {
-    val singleListingResult = defaultIndexQuery(searchResults(Seq(res)))
+    val singleListingResult = mainIndexQuery(searchResults(Seq(res)))
     IdResolution(projectResolver, singleListingResult, fetchResource)
       .apply(iri)(alice)
       .assertEquals(SingleResult(ResourceRef(iri), project1, successContent))
@@ -81,7 +81,7 @@ class IdResolutionSuite extends NexusSuite with Fixtures {
 
   test("Multiple listing results lead to search results") {
     val searchRes            = searchResults(Seq(res, res))
-    val multipleQueryResults = defaultIndexQuery(searchRes)
+    val multipleQueryResults = mainIndexQuery(searchRes)
     IdResolution(projectResolver, multipleQueryResults, fetchResource)
       .apply(iri)(alice)
       .assertEquals(MultipleResults(searchRes))

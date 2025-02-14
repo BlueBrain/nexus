@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -24,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ElasticSearchViewErrors._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.scalatest.Assertion
 
 class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
@@ -53,6 +54,8 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
+  private val defaultIndexDef = DefaultIndexDef(JsonObject(), JsonObject())
+
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
     fetchContext,
     ResolverContextResolution(rcr),
@@ -63,14 +66,12 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       "prefix",
       5,
       xas,
-      defaultMapping,
-      defaultSettings
+      defaultIndexDef
     ),
     eventLogConfig,
     "prefix",
     xas,
-    defaultMapping,
-    defaultSettings,
+    defaultIndexDef,
     clock
   ).accepted
 

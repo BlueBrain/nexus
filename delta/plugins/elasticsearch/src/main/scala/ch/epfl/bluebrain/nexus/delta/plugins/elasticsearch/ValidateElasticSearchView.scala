@@ -2,12 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidElasticSearchIndexPayload, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences, WrappedElasticSearchClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidElasticSearchIndexPayload, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ValidateAggregate}
@@ -36,8 +37,7 @@ object ValidateElasticSearchView {
       prefix: String,
       maxViewRefs: Int,
       xas: Transactors,
-      defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings
+      defaultViewDef: DefaultIndexDef
   ): ValidateElasticSearchView =
     apply(
       validatePipeChain,
@@ -46,8 +46,7 @@ object ValidateElasticSearchView {
       prefix,
       maxViewRefs,
       xas,
-      defaultMapping,
-      defaultSettings
+      defaultViewDef
     )
 
   def apply(
@@ -57,8 +56,7 @@ object ValidateElasticSearchView {
       prefix: String,
       maxViewRefs: Int,
       xas: Transactors,
-      defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings
+      defaultViewDef: DefaultIndexDef
   ): ValidateElasticSearchView = new ValidateElasticSearchView {
 
     private val validateAggregate = ValidateAggregate(
@@ -77,8 +75,8 @@ object ValidateElasticSearchView {
         _ <- IO.fromEither(value.pipeChain.traverse(validatePipeChain).leftMap(InvalidPipeline))
         _ <- createIndex(
                IndexLabel.fromView(prefix, uuid, indexingRev),
-               value.mapping.orElse(Some(defaultMapping.value)),
-               value.settings.orElse(Some(defaultSettings.value))
+               value.mapping.orElse(Some(defaultViewDef.mapping)),
+               value.settings.orElse(Some(defaultViewDef.settings))
              )
                .adaptError {
                  case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)

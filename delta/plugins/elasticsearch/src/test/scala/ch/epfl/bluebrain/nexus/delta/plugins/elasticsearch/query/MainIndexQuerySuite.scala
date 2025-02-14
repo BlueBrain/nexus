@@ -6,12 +6,13 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.indexingAlias
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingAlias
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.{And, Or}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultIndexQuerySuite._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuerySuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -33,7 +34,7 @@ import munit.{AnyFixture, Location}
 
 import java.time.Instant
 
-class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fixture with Fixtures {
+class MainIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fixture with Fixtures {
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
   private lazy val client = esClient()
@@ -113,9 +114,9 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
   private val updatedByAlice          = List(epfl)
   private val allResources            = List(bbp, epfl, trace, cell)
 
-  private val defaultIndexConfig     = DefaultIndexConfig("nexus", "default", 1, 100)
-  private val defaultIndex           = defaultIndexConfig.index
-  private lazy val defaultIndexQuery = DefaultIndexQuery(client, defaultIndexConfig)
+  private val mainIndexConfig     = MainIndexConfig("nexus", "default", 1, 100)
+  private val mainIndex           = mainIndexConfig.index
+  private lazy val mainIndexQuery = MainIndexQuery(client, mainIndexConfig)
 
   object Ids {
 
@@ -151,29 +152,28 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
       pagination: Pagination,
       sort: SortList
   ) =
-    defaultIndexQuery.list(DefaultIndexRequest(params, pagination, sort), projects)
+    mainIndexQuery.list(MainIndexRequest(params, pagination, sort), projects)
 
   private def aggregate(params: ResourcesSearchParams, projects: Set[ProjectRef]) =
-    defaultIndexQuery.aggregate(
-      DefaultIndexRequest(params, Pagination.FromPagination(0, 100), SortList.byCreationDateAndId),
+    mainIndexQuery.aggregate(
+      MainIndexRequest(params, Pagination.FromPagination(0, 100), SortList.byCreationDateAndId),
       projects
     )
 
   test("Create the index and populate it ") {
-    val defaultMapping  = jsonObjectContentOf("defaults/default-mapping.json")
-    val defaultSettings = jsonObjectContentOf("defaults/default-settings.json")
     for {
-      _    <- client.createIndex(defaultIndex, Some(defaultMapping), Some(defaultSettings))
-      _    <- client.createAlias(indexingAlias(defaultIndexConfig, project1))
-      _    <- client.createAlias(indexingAlias(defaultIndexConfig, project2))
-      bulk <- allResources.traverse { r =>
-                r.asDocument.map { d =>
-                  ElasticSearchAction.Index(defaultIndex, genString(), Some(r.project.toString), d)
-                }
-              }
-      _    <- client.bulk(bulk)
+      mainIndexDef <- MainIndexDef(mainIndexConfig, loader)
+      _            <- client.createIndex(mainIndex, Some(mainIndexDef.mapping), Some(mainIndexDef.settings))
+      _            <- client.createAlias(mainIndexingAlias(mainIndex, project1))
+      _            <- client.createAlias(mainIndexingAlias(mainIndex, project2))
+      bulk         <- allResources.traverse { r =>
+                        r.asDocument.map { d =>
+                          ElasticSearchAction.Index(mainIndex, genString(), Some(r.project.toString), d)
+                        }
+                      }
+      _            <- client.bulk(bulk)
       // We refresh explicitly
-      _    <- client.refresh(defaultIndex)
+      _            <- client.refresh(mainIndex)
     } yield ()
   }
 
@@ -277,14 +277,14 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
   private val matchAllSorted = jobj"""{ "size": 100, "sort": [{ "_createdAt": "asc" }, { "@id": "asc" }] }"""
 
   test(s"Search only among $project1") {
-    defaultIndexQuery
+    mainIndexQuery
       .search(project1, matchAllSorted, Query.Empty)
       .map(Ids.extractAll)
       .assertEquals(orgs.map(_.id))
   }
 
   test(s"Search only among $project2") {
-    defaultIndexQuery
+    mainIndexQuery
       .search(project2, matchAllSorted, Query.Empty)
       .map(Ids.extractAll)
       .assertEquals(List(trace.id, cell.id))
@@ -292,7 +292,7 @@ class DefaultIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fi
 
 }
 
-object DefaultIndexQuerySuite {
+object MainIndexQuerySuite {
 
   final private case class Sample(
       suffix: String,

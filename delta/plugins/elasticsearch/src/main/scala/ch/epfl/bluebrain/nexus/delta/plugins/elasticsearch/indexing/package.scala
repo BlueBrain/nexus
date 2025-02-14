@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexAlias, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.DefaultIndexConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -18,28 +17,28 @@ package object indexing {
 
   val defaultIndexingContext: ContextValue = ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
 
-  def defaultProjectTargetAlias(config: DefaultIndexConfig, project: ProjectRef): IndexLabel =
-    IndexLabel.unsafe(s"${config.prefix}_${config.name}_${PartitionInit.projectRefHash(project)}")
+  def mainProjectTargetAlias(index: IndexLabel, project: ProjectRef): IndexLabel =
+    IndexLabel.unsafe(s"${index.value}_${PartitionInit.projectRefHash(project)}")
 
-  private def projectFilter(project: ProjectRef)(implicit baseUri: BaseUri): JsonObject                     =
+  private def projectFilter(project: ProjectRef)(implicit baseUri: BaseUri): JsonObject                =
     JsonObject("term" := Json.obj("_project" := ResourceUris.project(project).accessUri))
 
-  def indexingAlias(config: DefaultIndexConfig, project: ProjectRef)(implicit baseUri: BaseUri): IndexAlias =
+  def mainIndexingAlias(index: IndexLabel, project: ProjectRef)(implicit baseUri: BaseUri): IndexAlias =
     IndexAlias(
-      config.index,
-      defaultProjectTargetAlias(config, project),
+      index,
+      mainProjectTargetAlias(index, project),
       Some(project.toString),
       Some(projectFilter(project))
     )
 
-  val defaultIndexingId: IriOrBNode.Iri = nxv + "default-indexing"
+  val mainIndexingId: IriOrBNode.Iri = nxv + "main-indexing"
 
-  def defaultIndexingProjection(ref: ProjectRef): String = s"default-indexing-$ref"
+  def mainIndexingProjection(ref: ProjectRef): String = s"main-indexing-$ref"
 
-  def defaultIndexingProjectionMetadata(project: ProjectRef): ProjectionMetadata = ProjectionMetadata(
-    "default-indexing",
-    defaultIndexingProjection(project),
+  def mainIndexingProjectionMetadata(project: ProjectRef): ProjectionMetadata = ProjectionMetadata(
+    "main-indexing",
+    mainIndexingProjection(project),
     Some(project),
-    Some(defaultIndexingId)
+    Some(mainIndexingId)
   )
 }

@@ -5,7 +5,8 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewState, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -16,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindTypedPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -38,9 +39,8 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   implicit private val batch: BatchConfig = BatchConfig(2, 10.millis)
 
-  private val defaultEsMapping  = DefaultMapping(jobj"""{"defaultEsMapping": {}}""")
-  private val defaultEsSettings = DefaultSettings(jobj"""{"defaultEsSettings": {}}""")
-  private val prefix            = "prefix"
+  private val defaultIndexDef = DefaultIndexDef(jobj"""{"defaultEsMapping": {}}""", jobj"""{"defaultEsSettings": {}}""")
+  private val prefix          = "prefix"
 
   private val uuid             = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
   private val instant: Instant = Instant.EPOCH
@@ -100,7 +100,7 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   test("Build an active view def with a custom mapping and settings") {
     assertEquals(
-      IndexingViewDef(state(indexingCustom), defaultEsMapping, defaultEsSettings, prefix),
+      IndexingViewDef(state(indexingCustom), defaultIndexDef, prefix),
       Some(
         ActiveViewDef(
           viewRef,
@@ -120,7 +120,7 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   test("Build an active view def with no mapping and settings defined") {
     assertEquals(
-      IndexingViewDef(state(indexingDefault), defaultEsMapping, defaultEsSettings, prefix),
+      IndexingViewDef(state(indexingDefault), defaultIndexDef, prefix),
       Some(
         ActiveViewDef(
           viewRef,
@@ -128,8 +128,8 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
           indexingDefault.pipeChain,
           indexingDefault.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
-          defaultEsMapping.value,
-          defaultEsSettings.value,
+          defaultIndexDef.mapping,
+          defaultIndexDef.settings,
           indexingDefault.context,
           indexingRev,
           rev
@@ -140,7 +140,7 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   test("Build an deprecated view def") {
     assertEquals(
-      IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultEsMapping, defaultEsSettings, prefix),
+      IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultIndexDef, prefix),
       Some(
         DeprecatedViewDef(
           viewRef
@@ -151,7 +151,7 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
 
   test("Ignore aggregate views") {
     assertEquals(
-      IndexingViewDef(state(aggregate), defaultEsMapping, defaultEsSettings, prefix),
+      IndexingViewDef(state(aggregate), defaultIndexDef, prefix),
       None
     )
   }
@@ -163,8 +163,8 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultEsMapping.value,
-      defaultEsSettings.value,
+      defaultIndexDef.mapping,
+      defaultIndexDef.settings,
       indexingDefault.context,
       indexingRev,
       rev
@@ -195,8 +195,8 @@ class IndexingViewDefSuite extends NexusSuite with CirceLiteral with Fixtures {
       Some(PipeChain(FilterDeprecated())),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultEsMapping.value,
-      defaultEsSettings.value,
+      defaultIndexDef.mapping,
+      defaultIndexDef.settings,
       indexingDefault.context,
       indexingRev,
       rev

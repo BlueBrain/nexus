@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.{Directive, Route}
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.defaultIndexingProjection
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultIndexQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -26,10 +26,10 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
-final class DefaultIndexRoutes(
+final class MainIndexRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    defaultIndexQuery: DefaultIndexQuery,
+    defaultIndexQuery: MainIndexQuery,
     projections: Projections
 )(implicit cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
@@ -58,7 +58,7 @@ final class DefaultIndexRoutes(
               // Fetch statistics for the default indexing on this current project
               (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                 authorizeFor(project, Read).apply {
-                  val projection = defaultIndexingProjection(project)
+                  val projection = mainIndexingProjection(project)
                   emit(projections.statistics(project, SelectFilter.latest, projection))
                 }
               },

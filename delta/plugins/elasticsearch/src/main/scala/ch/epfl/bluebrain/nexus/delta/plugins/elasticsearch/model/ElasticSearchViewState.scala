@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
@@ -70,7 +71,7 @@ final case class ElasticSearchViewState(
   /**
     * Maps the current state to an [[ElasticSearchView]] value.
     */
-  def asElasticSearchView(defaultMapping: DefaultMapping, defaultSettings: DefaultSettings): ElasticSearchView =
+  def asElasticSearchView(defaultDef: DefaultIndexDef): ElasticSearchView =
     value match {
       case IndexingElasticSearchViewValue(
             name,
@@ -90,8 +91,8 @@ final case class ElasticSearchViewState(
           uuid = uuid,
           resourceTag = resourceTag,
           pipeline = pipeline,
-          mapping = mapping.getOrElse(defaultMapping.value),
-          settings = settings.getOrElse(defaultSettings.value),
+          mapping = mapping.getOrElse(defaultDef.mapping),
+          settings = settings.getOrElse(defaultDef.settings),
           context = context,
           permission = permission,
           tags = tags,
@@ -109,10 +110,7 @@ final case class ElasticSearchViewState(
         )
     }
 
-  def toResource(
-      defaultMapping: DefaultMapping,
-      defaultSettings: DefaultSettings
-  ): ViewResource = {
+  def toResource(defaultDef: DefaultIndexDef): ViewResource = {
     ResourceF(
       id = id,
       uris = ResourceUris("views", project, id),
@@ -124,7 +122,7 @@ final case class ElasticSearchViewState(
       updatedAt = updatedAt,
       updatedBy = updatedBy,
       schema = schema,
-      value = asElasticSearchView(defaultMapping, defaultSettings)
+      value = asElasticSearchView(defaultDef)
     )
   }
 }

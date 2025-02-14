@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.server._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultIndexQuery, DefaultIndexRequest, ElasticSearchQueryError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{ElasticSearchQueryError, MainIndexQuery, MainIndexRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -29,7 +29,7 @@ class ListingRoutes(
     projectScopeResolver: ProjectScopeResolver,
     resourcesToSchemas: ResourceToSchemaMappings,
     schemeDirectives: DeltaSchemeDirectives,
-    defaultIndexQuery: DefaultIndexQuery
+    defaultIndexQuery: MainIndexQuery
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -47,7 +47,7 @@ class ListingRoutes(
       extractCaller { implicit caller =>
         concat(
           (searchParametersAndSortList & paginated) { (params, sort, page) =>
-            val request = DefaultIndexRequest(params, page, sort)
+            val request = MainIndexRequest(params, page, sort)
             concat(
               // List/aggregate all resources
               pathEndOrSingleSlash {
@@ -72,7 +72,7 @@ class ListingRoutes(
                 concat(
                   // List/aggregate all resources inside a project
                   pathEndOrSingleSlash {
-                    val request = DefaultIndexRequest(params, page, sort)
+                    val request = MainIndexRequest(params, page, sort)
                     concat(
                       aggregate(request, scope),
                       list(request, scope)
@@ -83,7 +83,7 @@ class ListingRoutes(
                     pathEndOrSingleSlash {
                       underscoreToOption(schema) match {
                         case None                =>
-                          val request = DefaultIndexRequest(params, page, sort)
+                          val request = MainIndexRequest(params, page, sort)
                           concat(
                             aggregate(request, scope),
                             list(request, scope)
@@ -91,7 +91,7 @@ class ListingRoutes(
                         case Some(schemaSegment) =>
                           resourceRef(schemaSegment).apply { schemaRef =>
                             val request =
-                              DefaultIndexRequest(params.withSchema(schemaRef), page, sort)
+                              MainIndexRequest(params.withSchema(schemaRef), page, sort)
                             concat(
                               aggregate(request, scope),
                               list(request, scope)
@@ -114,7 +114,7 @@ class ListingRoutes(
         extractCaller { implicit caller =>
           concat(
             (searchParametersAndSortList & paginated) { (params, sort, page) =>
-              val request = DefaultIndexRequest(params.withSchema(resourceSchema), page, sort)
+              val request = MainIndexRequest(params.withSchema(resourceSchema), page, sort)
               concat(
                 // List all resources of type resourceSegment
                 pathEndOrSingleSlash {
@@ -137,7 +137,7 @@ class ListingRoutes(
               projectContext(project) { implicit pc =>
                 // List all resources of type resourceSegment inside a project
                 (searchParametersInProject & paginated & pathEndOrSingleSlash) { (params, sort, page) =>
-                  val request = DefaultIndexRequest(params.withSchema(resourceSchema), page, sort)
+                  val request = MainIndexRequest(params.withSchema(resourceSchema), page, sort)
                   val scope   = Scope.Project(project)
                   concat(
                     aggregate(request, scope),
@@ -151,7 +151,7 @@ class ListingRoutes(
       }
     }.toSeq: _*)
 
-  private def list(request: DefaultIndexRequest, scope: Scope)(implicit caller: Caller): Route =
+  private def list(request: MainIndexRequest, scope: Scope)(implicit caller: Caller): Route =
     (get & paginated & extractUri) { (page, uri) =>
       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
         searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
@@ -162,7 +162,7 @@ class ListingRoutes(
       }
     }
 
-  private def aggregate(request: DefaultIndexRequest, scope: Scope)(implicit caller: Caller): Route =
+  private def aggregate(request: MainIndexRequest, scope: Scope)(implicit caller: Caller): Route =
     (get & aggregated) {
       implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
         aggregationResultJsonLdEncoder(ContextValue(contexts.aggregations))

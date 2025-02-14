@@ -4,6 +4,7 @@ import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -268,13 +269,13 @@ object ElasticSearchView {
 
   type Shift = ResourceShift[ElasticSearchViewState, ElasticSearchView, Metadata]
 
-  def shift(views: ElasticSearchViews, defaultMapping: DefaultMapping, defaultSettings: DefaultSettings)(implicit
+  def shift(views: ElasticSearchViews, defaultDef: DefaultIndexDef)(implicit
       baseUri: BaseUri
   ): Shift =
     ResourceShift.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
       ElasticSearchViews.entityType,
       (ref, project) => views.fetch(IdSegmentRef(ref), project),
-      state => state.toResource(defaultMapping, defaultSettings),
+      state => state.toResource(defaultDef),
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 }

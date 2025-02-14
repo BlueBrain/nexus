@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 
 /**
-  * Search request on the default index
+  * Search request on the main index
   */
-final case class DefaultIndexRequest(params: ResourcesSearchParams, pagination: Pagination, sort: SortList)
+final case class MainIndexRequest(params: ResourcesSearchParams, pagination: Pagination, sort: SortList)
     extends Product
     with Serializable
