@@ -46,15 +46,6 @@
   "project": {
     "@type": "@id"
   },
-  "valueX": {
-    "@type": "http://www.w3.org/2001/XMLSchema#float"
-  },
-  "valueY": {
-    "@type": "http://www.w3.org/2001/XMLSchema#float"
-  },
-  "valueZ": {
-    "@type": "http://www.w3.org/2001/XMLSchema#float"
-  },
   "createdAt": {
     "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
   },

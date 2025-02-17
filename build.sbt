@@ -38,7 +38,7 @@ val fs2AwsVersion              = "6.2.0"
 val glassFishJakartaVersion    = "2.0.1"
 val handleBarsVersion          = "4.4.0"
 val hikariVersion              = "6.2.1"
-val jenaVersion                = "5.3.0"
+val jenaVersion                = "5.2.0"
 val kamonVersion               = "2.7.5"
 val kanelaAgentVersion         = "1.0.18"
 val kindProjectorVersion       = "0.13.3"
@@ -52,6 +52,7 @@ val postgresJdbcVersion        = "42.7.5"
 val pureconfigVersion          = "0.17.8"
 val scalaTestVersion           = "3.2.19"
 val scalaXmlVersion            = "2.3.0"
+val titaniumJsonLdVersion      = "1.5.0"
 val topBraidVersion            = "1.4.4"
 val testContainersVersion      = "1.20.4"
 val testContainersScalaVersion = "0.41.8"
@@ -114,7 +115,8 @@ lazy val pureconfigCats                = "com.github.pureconfig"        %% "pure
 lazy val scalaReflect                  = "org.scala-lang"                % "scala-reflect"                      % scalaCompilerVersion
 lazy val scalaTest                     = "org.scalatest"                %% "scalatest"                          % scalaTestVersion
 lazy val scalaXml                      = "org.scala-lang.modules"       %% "scala-xml"                          % scalaXmlVersion
-lazy val topBraidShacl                 = "org.topbraid"                  % "shacl"                              % topBraidVersion exclude ("com.apicatalog", "titanium-json-ld")
+lazy val titaniumJsonLd                = "com.apicatalog"                % "titanium-json-ld"                   % titaniumJsonLdVersion
+lazy val topBraidShacl                 = "org.topbraid"                  % "shacl"                              % topBraidVersion
 lazy val testContainers                = "org.testcontainers"            % "testcontainers"                     % testContainersVersion
 lazy val testContainersScala           = "com.dimafeng"                 %% "testcontainers-scala-munit"         % testContainersScalaVersion
 lazy val testContainersScalaLocalStack = "com.dimafeng"                 %% "testcontainers-scala-localstack-v2" % testContainersScalaVersion
@@ -295,6 +297,7 @@ lazy val rdf = project
       jenaArq,
       magnolia,
       scalaReflect,
+      titaniumJsonLd,
       topBraidShacl,
       logback % Test
     ),

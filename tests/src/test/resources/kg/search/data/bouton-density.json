@@ -10,7 +10,7 @@
   "annotation": {
     "@type": [
       "Annotation",
-      "MType:Annotation"
+      "MTypeAnnotation"
     ],
     "hasBody": {
       "@id": "http://uri.interlex.org/base/ilx_0738229",

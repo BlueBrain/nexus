@@ -229,9 +229,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
         json"""
           {
             "brainRegion" : {
-              "@id" : "http://purl.obolibrary.org/obo/UBERON_0008933",
-              "idLabel" : "http://purl.obolibrary.org/obo/UBERON_0008933|primary somatosensory cortex",
-              "identifier" : "http://purl.obolibrary.org/obo/UBERON_0008933",
+              "@id" : "http://purl.obolibrary.org/obo/uberon/0008933",
+              "idLabel" : "http://purl.obolibrary.org/obo/uberon/0008933|primary somatosensory cortex",
+              "identifier" : "http://purl.obolibrary.org/obo/uberon/0008933",
               "label" : "primary somatosensory cortex"
             }
           }
@@ -248,9 +248,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
         json"""{
              "layer" : [
               {
-                "@id" : "http://purl.obolibrary.org/obo/UBERON_0005391",
-                "idLabel" : "http://purl.obolibrary.org/obo/UBERON_0005391|layer 2",
-                "identifier" : "http://purl.obolibrary.org/obo/UBERON_0005391",
+                "@id" : "http://purl.obolibrary.org/obo/uberon/0005391",
+                "idLabel" : "http://purl.obolibrary.org/obo/uberon/0005391|layer 2",
+                "identifier" : "http://purl.obolibrary.org/obo/uberon/0005391",
                 "label" : "layer 2"
               }
             ]
@@ -268,9 +268,9 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
         json"""
         {
           "coordinatesInBrainAtlas" : {
-            "valueX" : "7124.0",
-            "valueY" : "1040.05",
-            "valueZ" : "5129.275"
+            "valueX" : 7124,
+            "valueY" : 1040.05,
+            "valueZ" : 5129.275
           }
         }
         """
@@ -572,10 +572,10 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
         json"""
         {
           "neuronDensity" : {
-            "label" : "35200.0 neurons/mm³ (N = 5)",
+            "label" : "35200 neurons/mm³ (N = 5)",
             "nValue" : 5,
             "unit" : "neurons/mm³",
-            "value" : 35200.0
+            "value" : 35200
           }
         }
           """
@@ -824,15 +824,15 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
             "preSynapticPathway",
             json"""[
               {
+                "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
+                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainCellType",
+                "label": "SO_BS"
+              },
+              {
                 "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
                 "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
                 "label": "Somatosensory areas",
                 "notation": "SS"
-              },
-              {
-                "@id": "http://bbp.epfl.ch/neurosciencegraph/ontologies/mtypes/TNJ_NwHgTKe1iv_XLR_0Yg",
-                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainCellType",
-                "label": "SO_BS"
               }
             ]"""
           )
@@ -1039,7 +1039,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val expectedFeature =
         json"""
                {
-                 "value" : 0.21388888888888888,
+                 "value" : 0.2138888888888889,
                  "unit" : "dimensionless",
                  "label" : "Partition Asymmetry",
                  "statistic": "mean",
@@ -1054,7 +1054,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
         json"""{
                  "emodel": {
                     "neuronMorphology": { "@id" : "https://bbp.epfl.ch/data/neuron-morphology", "name" : "sm080522a1-5_idA" },
-                    "score": 47.566230109706076
+                    "score": 47.56623010970608
                   }
                 }"""
 

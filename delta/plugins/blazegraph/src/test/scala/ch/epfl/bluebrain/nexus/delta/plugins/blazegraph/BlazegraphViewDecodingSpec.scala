@@ -187,13 +187,14 @@ class BlazegraphViewDecodingSpec extends CatsEffectSpec with Fixtures {
                      }
                    ]
                  }"""
+        println(decoder(context, source).rejected.printStackTrace())
         decoder(context, source).rejectedWith[InvalidJsonLdFormat]
         decoder(context, iri"http://localhost/id", source).rejectedWith[InvalidJsonLdFormat]
       }
       "there's no known type discriminator" in {
         val sources = List(
           json"""{"views": [ $viewRef1Json ]}""",
-          json"""{"@type": "UnknownSpaqrlView", "views": [ $viewRef1Json ]}"""
+          json"""{"@type": "UnknownSparqlView", "views": [ $viewRef1Json ]}"""
         )
         forAll(sources) { source =>
           decoder(context, source).rejectedWith[DecodingFailed]

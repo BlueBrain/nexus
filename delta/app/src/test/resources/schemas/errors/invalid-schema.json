@@ -11,15 +11,15 @@
     "result": {
       "@type": "sh:ValidationResult",
       "focusNode": "nxv:MyShape",
-      "result:Path": {
-        "@id": "node:Kind"
+      "sh:resultPath": {
+        "@id": "sh:nodeKind"
       },
       "resultMessage": "Not a value from the sh:in enumeration",
       "resultSeverity": "sh:Violation",
       "sourceConstraintComponent": "sh:InConstraintComponent",
       "sourceShape": {
       },
-      "value": "nxv:42"
+      "sh:value": 42
     },
     "targetedNodes": 412
   }

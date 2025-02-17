@@ -8,10 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig.ErrorHandlin
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.TitaniumJsonLdApi.tryExpensiveIO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
+import com.apicatalog.jsonld.JsonLdOptions.RdfDirection
 import com.apicatalog.jsonld.context.ActiveContext
 import com.apicatalog.jsonld.document.{JsonDocument, RdfDocument}
 import com.apicatalog.jsonld.loader.DocumentLoader
 import com.apicatalog.jsonld.processor.ProcessingRuntime
+import com.apicatalog.jsonld.uri.UriValidationPolicy
 import com.apicatalog.jsonld.{JsonLd, JsonLdError, JsonLdErrorCode, JsonLdOptions => TitaniumJsonLdOptions}
 import io.circe.jakartajson._
 import io.circe.syntax._
@@ -91,10 +93,16 @@ final class TitaniumJsonLdApi(config: JsonLdApiConfig) extends JsonLdApi {
         case ErrorHandling.Strict    => ErrorHandlerFactory.errorHandlerStrictNoLogging
         case ErrorHandling.NoWarning => ErrorHandlerFactory.errorHandlerNoWarnings
       }
-      val profile      = new CDTAwareParserProfile(
+
+      val iriResolver = IRIxResolver.create
+        .base(opts.base.map(_.toString).orNull)
+        .resolve(!config.strict)
+        .allowRelative(!config.strict)
+        .build()
+      val profile     = new CDTAwareParserProfile(
         RiotLib.factoryRDF,
         errorHandler,
-        IRIxResolver.create.noBase().resolve(!config.strict).allowRelative(!config.strict).build(),
+        iriResolver,
         PrefixMapFactory.create,
         RIOT.getContext.copy,
         config.extraChecks,
@@ -160,17 +168,19 @@ final class TitaniumJsonLdApi(config: JsonLdApiConfig) extends JsonLdApi {
     val opts = new TitaniumJsonLdOptions(dl)
     options.base.foreach(b => opts.setBase(new URI(b.toString)))
     opts.setCompactArrays(options.compactArrays)
-    opts.setCompactArrays(options.compactArrays)
+    opts.setCompactToRelative(options.compactToRelative)
+    opts.setOrdered(options.ordered)
     opts.setProcessingMode(options.processingMode)
     opts.setProduceGeneralizedRdf(options.produceGeneralizedRdf)
+    options.rdfDirection.foreach { dir => opts.setRdfDirection(RdfDirection.valueOf(dir)) }
     opts.setUseNativeTypes(options.useNativeTypes)
     opts.setUseRdfType(options.useRdfType)
     opts.setEmbed(options.embed)
     opts.setExplicit(options.explicit)
-    opts.setOmitGraph(options.omitGraph)
     opts.setOmitDefault(options.omitDefault)
+    opts.setOmitGraph(options.omitGraph)
     // Disabling uri validation, Jena handles it better at a later stage
-    opts.setUriValidation(false)
+    opts.setUriValidation(UriValidationPolicy.None)
     opts
   }
 
