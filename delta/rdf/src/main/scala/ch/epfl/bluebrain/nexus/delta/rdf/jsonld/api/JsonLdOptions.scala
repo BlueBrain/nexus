@@ -11,7 +11,7 @@ final case class JsonLdOptions(
     compactArrays: Boolean = true,
     compactToRelative: Boolean = true,
     extractAllScripts: Boolean = false,
-    ordered: Boolean = false,
+    ordered: Boolean = true,
     processingMode: JsonLdVersion = JsonLdVersion.V1_1,
     produceGeneralizedRdf: Boolean = true,
     rdfDirection: Option[String] = None,

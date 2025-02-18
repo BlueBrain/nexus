@@ -20,7 +20,7 @@
   "_mediaType" : "image/png",
   "_origin" : "Link",
   "_outgoing" : "http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx/outgoing",
-  "_project" : "http://delta:8080/v1/projects/hkrxvoxdyiiev1p/03vctrp70usfehq",
+  "_project" : "hkrxvoxdyiiev1p/03vctrp70usfehq",
   "_rev" : 1,
   "_self" : "http://delta:8080/v1/files/hkrxvoxdyiiev1p/03vctrp70usfehq/http:%2F%2Fdelta:8080%2Fv1%2Fresources%2Fhkrxvoxdyiiev1p%2F03vctrp70usfehq%2F_%2Fiwa41vwspwke6nx",
   "_storage" : {

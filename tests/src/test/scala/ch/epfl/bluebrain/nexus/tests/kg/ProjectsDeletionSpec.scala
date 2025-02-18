@@ -187,7 +187,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
 
     "not return any resource from this project" in {
       deltaClient.get[Json](s"/resources", Bojack) { (json, _) =>
-        listing.eachResult._project.string.exist(_ == ref1Iri)(json) shouldEqual false
+        listing.eachResult._project.string.exist(_ == ref1)(json) shouldEqual false
       }
     }
 

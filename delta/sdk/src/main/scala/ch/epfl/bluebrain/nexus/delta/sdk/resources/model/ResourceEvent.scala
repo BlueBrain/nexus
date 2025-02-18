@@ -466,30 +466,29 @@ object ResourceEvent {
       implicit val config: Configuration = Configuration.default
         .withDiscriminator(keywords.tpe)
         .copy(transformMemberNames = {
-          case "id"            => nxv.resourceId.prefix
-          case "types"         => nxv.types.prefix
-          case "source"        => nxv.source.prefix
-          case "project"       => nxv.project.prefix
-          case "rev"           => nxv.rev.prefix
-          case "instant"       => nxv.instant.prefix
-          case "subject"       => nxv.eventSubject.prefix
-          case "schemaProject" => nxv.schemaProject.prefix
-          case "schema"        => nxv.constrainedBy.prefix
-          case other           => other
+          case "id"      => nxv.resourceId.prefix
+          case "types"   => nxv.types.prefix
+          case "source"  => nxv.source.prefix
+          case "project" => nxv.project.prefix
+          case "rev"     => nxv.rev.prefix
+          case "instant" => nxv.instant.prefix
+          case "subject" => nxv.eventSubject.prefix
+          case "schema"  => nxv.constrainedBy.prefix
+          case other     => other
         })
 
       implicit val compactedJsonLdEncoder: Encoder[CompactedJsonLd]    = Encoder.instance(_.json)
       implicit val constrainedByEncoder: Encoder[ResourceRef.Revision] = Encoder.instance(_.iri.asJson)
       implicit val expandedJsonLdEncoder: Encoder[ExpandedJsonLd]      = Encoder.instance(_.json)
 
-      implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
-      implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
+      implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
       Encoder.encodeJsonObject.contramapObject { event =>
         val obj = deriveConfiguredEncoder[ResourceEvent].encodeObject(event)
         obj.dropNulls
           .remove("compacted")
           .remove("expanded")
           .remove("remoteContexts")
+          .remove("schemaProject")
           .add(keywords.context, context.value)
       }
     }

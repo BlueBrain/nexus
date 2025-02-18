@@ -14,9 +14,8 @@
       "_deprecated": false,
       "_incoming": "{{self}}/incoming",
       "_outgoing": "{{self}}/outgoing",
-      "_project": "{{deltaUri}}/projects/{{org}}/{{proj}}",
+      "_project": "{{org}}/{{proj}}",
       "_rev": 1,
-      "_schemaProject": "{{deltaUri}}/projects/{{org}}/{{proj}}",
       "_self": "{{self}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     }

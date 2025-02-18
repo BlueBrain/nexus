@@ -1,7 +1,6 @@
 <http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/self> <http://localhost:8080/v1/resources/myorg/albums/_/absolution> .
 <http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/updatedAt> "2021-05-17T14:36:44.992Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
 <http://music.com/absolution> <http://music.com/label> "Warner Bros." .
-<http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/schemaProject> <http://localhost:8080/v1/projects/myorg/albums> .
 <http://music.com/absolution> <http://music.com/released> "2003-09-15" .
 <http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
 <http://music.com/absolution> <http://music.com/label> "Taste" .
@@ -10,7 +9,7 @@
 <http://music.com/absolution> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://music.com/Album> .
 <http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/updatedBy> <http://localhost:8080/v1/anonymous> .
 <http://music.com/absolution> <http://music.com/by> <http://music.com/muse> .
-<http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/project> <http://localhost:8080/v1/projects/myorg/albums> .
+<http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/project> "myorg/albums" .
 <http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/createdAt> "2021-05-17T14:36:44.992Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
 <http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/constrainedBy> <https://bluebrain.github.io/nexus/schemas/unconstrained.json> .
 <http://music.com/absolution> <https://bluebrain.github.io/nexus/vocabulary/createdBy> <http://localhost:8080/v1/anonymous> .

@@ -6,9 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingAlias
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
@@ -20,8 +19,6 @@ class MainIndexDeletionTaskSuite
     with Fixtures {
 
   implicit private val subject: Subject = Anonymous
-
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
@@ -35,10 +32,8 @@ class MainIndexDeletionTaskSuite
 
     val task = new MainIndexDeletionTask(client, index)
 
-    def toProjectUri(project: ProjectRef) = ResourceUris.project(project).accessUri
-
     def indexAction(id: Int, project: ProjectRef) = {
-      val json = json"""{ "_project": "${toProjectUri(project)}", "number": $id }"""
+      val json = json"""{ "_project": "$project", "number": $id }"""
       ElasticSearchAction.Index(index, id.toString, Some(project.toString), json)
     }
 

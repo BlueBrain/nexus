@@ -10,7 +10,7 @@
   "_createdBy" : "{{createdBy}}",
   "_deprecated" : {{deprecated}},
   "_expiresInSeconds": {{expiresInSeconds}},
-  "_project" : "http://localhost/v1/projects/{{project}}",
+  "_project" : "{{project}}",
   "_rev" : {{rev}},
   "_self" : "{{self}}",
   "_updatedAt" : "1970-01-01T00:00:00Z",

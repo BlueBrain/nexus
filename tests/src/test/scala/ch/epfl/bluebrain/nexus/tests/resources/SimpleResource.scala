@@ -25,7 +25,7 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
         "priority"   -> priority.toString,
         "rev"        -> rev.toString,
         "self"       -> resourceSelf(project, resourceId),
-        "project"    -> s"${config.deltaUri}/projects/$project",
+        "project"    -> project,
         "resourceId" -> resourceId
       ): _*
     )
@@ -40,7 +40,7 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
         "priority"   -> priority.toString,
         "rev"        -> rev.toString,
         "self"       -> resourceSelf(project, resourceId),
-        "project"    -> s"${config.deltaUri}/projects/$project",
+        "project"    -> project,
         "resourceId" -> resourceId
       ): _*
     )

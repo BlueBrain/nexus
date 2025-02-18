@@ -6,7 +6,7 @@
   "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/outgoing",
   "_self": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
-  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_project": "myorg/myproj",
   "_rev": 1,
   "_deprecated": false,
   "_createdAt": "2021-04-17T14:54:42.939Z",

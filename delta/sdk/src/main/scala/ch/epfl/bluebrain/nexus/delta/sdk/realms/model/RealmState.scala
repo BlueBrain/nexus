@@ -80,8 +80,6 @@ final case class RealmState(
     updatedBy: Subject
 ) extends GlobalState {
 
-  private val uris = ResourceUris.realm(label)
-
   /**
     * The relative [[Iri]] of the realm
     */
@@ -127,7 +125,7 @@ final case class RealmState(
   def toResource: RealmResource =
     ResourceF(
       id = id,
-      uris = uris,
+      scope = ResourceScopeF.realm(label),
       rev = rev,
       types = types,
       deprecated = deprecated,

@@ -240,7 +240,6 @@ object StorageEvent {
 
       implicit val subjectEncoder: Encoder[Subject]           = IriEncoder.jsonEncoder[Subject]
       implicit val storageValueEncoder: Encoder[StorageValue] = Encoder.instance[StorageValue](_ => Json.Null)
-      implicit val projectRefEncoder: Encoder[ProjectRef]     = IriEncoder.jsonEncoder[ProjectRef]
 
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[StorageEvent]

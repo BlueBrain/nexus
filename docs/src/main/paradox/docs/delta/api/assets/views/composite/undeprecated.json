@@ -14,7 +14,7 @@
   "_deprecated": false,
   "_incoming": "http://localhost:8080/v1/views/myorg/bands/composite_view/incoming",
   "_outgoing": "http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing",
-  "_project": "http://localhost:8080/v1/projects/myorg/bands",
+  "_project": "myorg/bands",
   "_rev": 5,
   "_self": "http://localhost:8080/v1/views/myorg/bands/composite_view",
   "_updatedAt": "2021-05-17T15:50:39.555Z",

@@ -20,7 +20,7 @@
   "_mediaType": "application/pdf",
   "_origin": "Client",
   "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/myfile/outgoing",
-  "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_project": "myorg/myproject",
   "_rev": 2,
   "_self": "http://localhost:8080/v1/files/myorg/myproject/myfile",
   "_storage": {

@@ -11,6 +11,7 @@ prefix : <https://bluebrain.github.io/nexus/field/>
 CONSTRUCT {
   # Metadata
   ?alias  a                   ?type                  ;
+          :project            ?projectLabel          ;
           :name               ?name                  ;
           :description        ?description           ;
           :createdAt          ?createdAt             ;
@@ -19,10 +20,6 @@ CONSTRUCT {
           :updatedBy          ?updatedBy             ;
           :deprecated         ?deprecated            ;
           :self               ?self                  .
-
-  ?alias  :project          ?projectId             .
-                            ?projectId             :identifier  ?projectId    ;
-                                                   :label       ?projectLabel .
 
   # Common properties
   ## Annotations
@@ -277,8 +274,7 @@ CONSTRUCT {
        nxv:updatedBy   ?updatedByNode  ;
        nxv:deprecated  ?deprecated     ;
        nxv:self        ?self           ;
-       nxv:project     ?projectId      .
-  BIND( STRAFTER(STR(?projectId), "/v1/projects/") as ?projectLabel ) .
+       nxv:project     ?projectLabel   .
 
   # We read the following nodes as text. This is done in order to avoid conflict
   # when another triple uses the same @id. For instance, createdBy and updatedBy

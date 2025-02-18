@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextRemoteIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceScopeF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -23,7 +23,7 @@ class OriginalSourceSuite extends NexusSuite with CirceLiteral {
   private val project  = ProjectRef.unsafe("org", "proj")
   private val resource = ResourceF(
     id,
-    ResourceUris.resource(project, project, schemas.resources),
+    ResourceScopeF.resource(project, schemas.resources),
     5,
     Set(nxv + "Type"),
     deprecated = false,
@@ -43,9 +43,8 @@ class OriginalSourceSuite extends NexusSuite with CirceLiteral {
              "_deprecated" : false,
              "_incoming" : "http://localhost/v1/resources/org/proj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/incoming",
              "_outgoing" : "http://localhost/v1/resources/org/proj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/outgoing",
-             "_project" : "http://localhost/v1/projects/org/proj",
+             "_project" : "org/proj",
              "_rev" : 5,
-             "_schemaProject" : "http://localhost/v1/projects/org/proj",
              "_self" : "http://localhost/v1/resources/org/proj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json",
              "_updatedAt" : "1970-01-01T00:00:00Z",
              "_updatedBy" : "http://localhost/v1/anonymous"

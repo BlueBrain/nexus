@@ -5,15 +5,15 @@
       "buckets" : [
         {
           "doc_count" : 7,
-          "key" : "http://delta:8080/v1/projects/{{org1}}/{{proj11}}"
+          "key" : "{{org1}}/{{proj11}}"
         },
         {
           "doc_count" : 5,
-          "key" : "http://delta:8080/v1/projects/{{org1}}/{{proj12}}"
+          "key" : "{{org1}}/{{proj12}}"
         },
         {
           "doc_count" : 5,
-          "key" : "http://delta:8080/v1/projects/{{org2}}/{{proj21}}"
+          "key" : "{{org2}}/{{proj21}}"
         }
       ],
       "doc_count_error_upper_bound" : 0,

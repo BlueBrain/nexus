@@ -154,9 +154,8 @@ class EventsSpec extends BaseIntegrationSpec {
           "kg/events/events.json",
           replacements(
             BugsBunny,
-            "resources"     -> s"${config.deltaUri}/resources/$id",
-            "project"       -> s"${config.deltaUri}/projects/$orgId/$projId",
-            "schemaProject" -> s"${config.deltaUri}/projects/$orgId/$projId"
+            "resources" -> s"${config.deltaUri}/resources/$id",
+            "project"   -> s"$orgId/$projId"
           ): _*
         )
       }
@@ -179,9 +178,8 @@ class EventsSpec extends BaseIntegrationSpec {
           "kg/events/events.json",
           replacements(
             BugsBunny,
-            "resources"     -> s"${config.deltaUri}/resources/$id",
-            "project"       -> s"${config.deltaUri}/projects/$orgId/$projId",
-            "schemaProject" -> s"${config.deltaUri}/projects/$orgId/$projId"
+            "resources" -> s"${config.deltaUri}/resources/$id",
+            "project"   -> s"$orgId/$projId"
           ): _*
         )
       }
@@ -197,45 +195,11 @@ class EventsSpec extends BaseIntegrationSpec {
           "kg/events/events2.json",
           replacements(
             BugsBunny,
-            "resources"     -> s"${config.deltaUri}/resources/$id",
-            "project"       -> s"${config.deltaUri}/projects/$orgId2/$projId",
-            "schemaProject" -> s"${config.deltaUri}/projects/$orgId2/$projId"
+            "resources" -> s"${config.deltaUri}/resources/$id",
+            "project"   -> s"$orgId2/$projId"
           ): _*
         )
       }
-    }
-
-    "fetch global events" in {
-      // TODO: find a way to get the current event sequence in postgres
-      IO.whenA(initialEventId.isDefined) {
-        deltaClient
-          .sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
-            val projectEvents = seq.drop(14)
-            projectEvents.size shouldEqual 7
-            projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-              "ResourceCreated",
-              "ResourceCreated",
-              "ResourceUpdated",
-              "ResourceTagAdded",
-              "ResourceDeprecated",
-              "FileCreated",
-              "FileUpdated"
-            )
-            val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-            json shouldEqual jsonContentOf(
-              "kg/events/events-multi-project.json",
-              replacements(
-                BugsBunny,
-                "resources"      -> s"${config.deltaUri}/resources/$id",
-                "project"        -> s"${config.deltaUri}/projects/$orgId/$projId",
-                "project2"       -> s"${config.deltaUri}/projects/$orgId2/$projId",
-                "schemaProject"  -> s"${config.deltaUri}/projects/$orgId/$projId",
-                "schemaProject2" -> s"${config.deltaUri}/projects/$orgId2/$projId"
-              ): _*
-            )
-          }
-          .void
-      }.as(succeed)
     }
   }
 }

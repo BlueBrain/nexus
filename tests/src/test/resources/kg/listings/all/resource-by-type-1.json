@@ -12,9 +12,8 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": true,
-      "_project": "{{deltaUri}}/projects/{{org}}/{{proj}}",
+      "_project": "{{org}}/{{proj}}",
       "_rev": 2,
-      "_schemaProject": "{{deltaUri}}/projects/{{org}}/{{proj}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     }
   ]

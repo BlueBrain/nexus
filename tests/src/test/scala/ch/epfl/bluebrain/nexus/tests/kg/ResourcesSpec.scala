@@ -342,7 +342,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
           Rick,
           "project"        -> project1,
           "self"           -> resolverSelf(project2, "http://localhost/resolver"),
-          "project-parent" -> s"${config.deltaUri}/projects/$project2"
+          "project-parent" -> project2
         ): _*
       )
 

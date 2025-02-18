@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -82,7 +82,7 @@ final case class CompositeViewState(
   def toResource: ViewResource =
     ResourceF(
       id = id,
-      uris = ResourceUris("views", project, id),
+      scope = ResourceScopeF("views", project, id),
       rev = rev,
       types = Set(nxv.View, compositeViewType),
       deprecated = deprecated,

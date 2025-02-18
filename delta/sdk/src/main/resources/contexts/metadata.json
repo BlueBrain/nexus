@@ -42,12 +42,7 @@
       "@type": "@id"
     },
     "_project": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
-      "@type": "@id"
-    },
-    "_schemaProject": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
-      "@type": "@id"
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/project"
     }
   }
 }

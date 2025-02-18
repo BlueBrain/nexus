@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -75,7 +75,7 @@ final case class SchemaState(
   def toResource: SchemaResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.schema(project, id),
+      scope = ResourceScopeF.schema(project, id),
       rev = rev,
       types = types,
       schema = schema,

@@ -285,7 +285,6 @@ object BlazegraphViewEvent {
       implicit val viewValueEncoder: Encoder[BlazegraphViewValue] =
         Encoder.instance[BlazegraphViewValue](_ => Json.Null)
       implicit val viewTpeEncoder: Encoder[BlazegraphViewType]    = Encoder.instance[BlazegraphViewType](_ => Json.Null)
-      implicit val projectRefEncoder: Encoder[ProjectRef]         = IriEncoder.jsonEncoder[ProjectRef]
 
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[BlazegraphViewEvent]

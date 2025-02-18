@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Bin
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceScopeF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
@@ -52,14 +52,7 @@ object SparqlLink {
 
   object SparqlResourceLink {
 
-    private def projectRefFromId(id: Iri)(implicit base: BaseUri) =
-      ProjectRef.parse(id.stripPrefix(base.iriEndpoint / "projects")).toOption
-
-    private def resourceUrisFor(
-        project: ProjectRef,
-        schemaProject: ProjectRef,
-        id: Iri
-    ): ResourceUris = ResourceUris.resource(project, schemaProject, id)
+    private def resourceUrisFor(project: ProjectRef, id: Iri): ResourceScopeF = ResourceScopeF.resource(project, id)
 
     /**
       * Attempts to create a [[SparqlResourceLink]] from the given bindings
@@ -70,8 +63,7 @@ object SparqlLink {
     def apply(bindings: Map[String, Binding])(implicit base: BaseUri): Option[SparqlLink] =
       for {
         link         <- SparqlExternalLink(bindings)
-        project      <-
-          bindings.get(nxv.project.prefix).map(_.value).flatMap(Iri.reference(_).toOption).flatMap(projectRefFromId)
+        project      <- bindings.get(nxv.project.prefix).map(_.value).flatMap(ProjectRef.parse(_).toOption)
         rev          <- bindings.get(nxv.rev.prefix).map(_.value).flatMap(v => v.toIntOption)
         deprecated   <- bindings.get(nxv.deprecated.prefix).map(_.value).flatMap(v => v.toBooleanOption)
         created      <- bindings.get(nxv.createdAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
@@ -82,13 +74,7 @@ object SparqlLink {
         updatedBy    <- updatedByIri.as[Subject].toOption
         schema       <- bindings.get(nxv.constrainedBy.prefix).map(_.value).flatMap(Iri.reference(_).toOption)
         schemaRef     = ResourceRef(schema)
-        schemaProject = bindings
-                          .get(nxv.schemaProject.prefix)
-                          .map(_.value)
-                          .flatMap(Iri.reference(_).toOption)
-                          .flatMap(projectRefFromId)
-                          .getOrElse(project)
-        resourceUris  = resourceUrisFor(project, schemaProject, link.id)
+        resourceUris  = resourceUrisFor(project, link.id)
       } yield SparqlResourceLink(
         ResourceF(
           link.id,

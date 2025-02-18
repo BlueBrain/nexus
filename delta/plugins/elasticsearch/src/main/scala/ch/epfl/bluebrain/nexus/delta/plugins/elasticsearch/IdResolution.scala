@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectScopeResolver
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.JsonObject
 
 trait IdResolution {
@@ -127,19 +127,8 @@ object IdResolution {
 
     /** Extract the _project field of a given [[JsonObject]] as projectRef */
     private def projectRefFromSource(source: JsonObject) = {
-      val projectOpt = source("_project").flatMap(_.as[Iri].toOption).flatMap(projectRefFromIri)
-      IO.fromOption(projectOpt)(new IllegalStateException("Could not read '_project' field as IRI."))
+      val projectOpt = source("_project").flatMap(_.as[ProjectRef].toOption)
+      IO.fromOption(projectOpt)(new IllegalStateException("Could not read '_project' field as project reference."))
     }
-
-    private val projectRefRegex =
-      s"^.+/projects/(${Label.regex.regex})/(${Label.regex.regex})".r
-
-    private def projectRefFromIri(iri: Iri) =
-      iri.toString match {
-        case projectRefRegex(org, proj) =>
-          Some(ProjectRef(Label.unsafe(org), Label.unsafe(proj)))
-        case _                          =>
-          None
-      }
   }
 }

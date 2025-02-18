@@ -189,16 +189,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
     "have the correct project property" in {
       val query    = queryField(neuronMorphologyId, "project")
-      val expected =
-        json"""
-        {
-          "project" : {
-            "@id": "http://delta:8080/v1/projects/$id1",
-            "identifier" : "http://delta:8080/v1/projects/$id1",
-            "label" : "$id1"
-          }
-        }
-            """
+      val expected = json"""{ "project" : "$id1" }"""
 
       assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)

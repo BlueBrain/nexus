@@ -15,7 +15,7 @@
   "_deprecated": {{deprecated}},
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",
-  "_project": "http://localhost/v1/projects/org/proj",
+  "_project": "org/proj",
   "_rev": {{rev}},
   "_indexingRev": {{indexingRev}},
   "_self": "{{self}}",

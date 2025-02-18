@@ -5,13 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainProjectTargetAlias
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import io.circe.parser.parse
 
-final class MainIndexDeletionTask(client: ElasticSearchClient, mainIndex: IndexLabel)(implicit
-    baseUri: BaseUri
-) extends ProjectDeletionTask {
+final class MainIndexDeletionTask(client: ElasticSearchClient, mainIndex: IndexLabel) extends ProjectDeletionTask {
 
   private val reportStage =
     ProjectDeletionReport.Stage("default-index", "The project has been successfully removed from the default index.")
@@ -28,7 +25,7 @@ final class MainIndexDeletionTask(client: ElasticSearchClient, mainIndex: IndexL
 
   private[deletion] def searchByProject(project: ProjectRef) =
     IO.fromEither {
-      parse(s"""{"query": {"term": {"_project": "${ResourceUris.project(project).accessUri}"} } }""").flatMap(
+      parse(s"""{"query": {"term": {"_project": "$project"} } }""").flatMap(
         _.asObject.toRight(new IllegalStateException("Failed to convert to json object the search query."))
       )
     }

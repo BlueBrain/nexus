@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{model, Permissions}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
@@ -50,7 +50,7 @@ final case class PermissionsState(
   def toResource(minimum: Set[Permission]): PermissionsResource = {
     ResourceF(
       id = id,
-      uris = ResourceUris.permissions,
+      scope = ResourceScopeF.permissions,
       rev = rev,
       types = types,
       deprecated = deprecated,

@@ -23,7 +23,6 @@
     "_rev": 1,
     "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
     "_project": "{{project}}",
-    "_schemaProject": "{{schemaProject}}",
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   }
 ]

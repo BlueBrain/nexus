@@ -43,9 +43,6 @@
     "@type": "@id",
     "@id": "https://bluebrain.github.io/nexus/field/followedWorkflow"
   },
-  "project": {
-    "@type": "@id"
-  },
   "createdAt": {
     "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
   },

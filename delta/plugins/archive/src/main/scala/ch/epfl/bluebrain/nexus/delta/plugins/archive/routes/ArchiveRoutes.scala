@@ -83,7 +83,7 @@ class ArchiveRoutes(
 
   private def emitCreatedArchive(io: IO[ArchiveResource]): Route =
     Zip.checkHeader {
-      case true  => emitRedirect(SeeOther, io.map(_.uris.accessUri).attemptNarrow[ArchiveRejection])
+      case true  => emitRedirect(SeeOther, io.map(_.scope.accessUri).attemptNarrow[ArchiveRejection])
       case false => emitMetadata(Created, io)
     }
 

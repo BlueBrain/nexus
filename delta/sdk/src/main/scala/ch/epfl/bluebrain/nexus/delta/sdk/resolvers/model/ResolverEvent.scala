@@ -213,7 +213,6 @@ object ResolverEvent {
         })
       implicit val subjectEncoder: Encoder[Subject]             = IriEncoder.jsonEncoder[Subject]
       implicit val resolverValueEncoder: Encoder[ResolverValue] = Encoder.instance[ResolverValue](_ => Json.Null)
-      implicit val projectRefEncoder: Encoder[ProjectRef]       = IriEncoder.jsonEncoder[ProjectRef]
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[ResolverEvent]
           .encodeObject(event)

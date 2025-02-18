@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScopeF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -321,7 +321,7 @@ object ProjectEvent {
             case _: ProjectUndeprecated      => Undeprecated
             case _: ProjectMarkedForDeletion => TagDeleted
           },
-          ResourceUris.project(event.project).accessUri.toIri,
+          ResourceScopeF.project(event.project).accessUri.toIri,
           Set(nxv.Project),
           JsonObject.empty
         )
@@ -356,8 +356,8 @@ object ProjectEvent {
         Encoder.encodeJsonObject.contramapObject[ProjectEvent] { event =>
           deriveConfiguredEncoder[ProjectEvent]
             .encodeObject(event)
-            .add("_projectId", ResourceUris.project(event.project).accessUri.asJson)
-            .add(nxv.resourceId.prefix, ResourceUris.project(event.project).accessUri.asJson)
+            .add("_projectId", ResourceScopeF.project(event.project).accessUri.asJson)
+            .add(nxv.resourceId.prefix, ResourceScopeF.project(event.project).accessUri.asJson)
             .add(keywords.context, context.value)
         }
       }

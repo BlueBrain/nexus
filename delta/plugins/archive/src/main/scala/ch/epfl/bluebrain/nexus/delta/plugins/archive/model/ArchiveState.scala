@@ -4,7 +4,7 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRepresentation, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRepresentation, ResourceScopeF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -46,7 +46,7 @@ final case class ArchiveState(
   def toResource(ttl: FiniteDuration): ArchiveResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.ephemeral("archives", project, id),
+      scope = ResourceScopeF.ephemeral("archives", project, id),
       rev = this.rev,
       types = this.types,
       deprecated = this.deprecated,

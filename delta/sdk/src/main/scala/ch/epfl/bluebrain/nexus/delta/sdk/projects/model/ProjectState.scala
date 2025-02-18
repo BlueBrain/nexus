@@ -79,8 +79,6 @@ final case class ProjectState(
     */
   override def id: Iri = Projects.encodeId(project)
 
-  private val uris = ResourceUris.project(project)
-
   /**
     * @return
     *   the schema reference that projects conforms to
@@ -99,7 +97,7 @@ final case class ProjectState(
   def toResource(defaultApiMappings: ApiMappings): ProjectResource =
     ResourceF(
       id = id,
-      uris = uris,
+      scope = ResourceScopeF.project(project),
       rev = rev,
       types = types,
       deprecated = deprecated,

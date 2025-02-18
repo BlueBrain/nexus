@@ -4,21 +4,20 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScopeF.{EphemeralResourceF, ScopedResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class ResourceUrisSpec extends BaseSpec {
+class ResourceScopeFSpec extends BaseSpec {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "ResourceUris" should {
-    val projectRef       = ProjectRef.unsafe("myorg", "myproject")
-    val projectRefSchema = ProjectRef.unsafe("myorg", "myproject2")
+    val projectRef = ProjectRef.unsafe("myorg", "myproject")
 
     "be constructed for permissions" in {
       val expected = Uri("http://localhost/v1/permissions")
-      ResourceUris.permissions.accessUri shouldEqual expected
+      ResourceScopeF.permissions.accessUri shouldEqual expected
     }
 
     "be constructed for acls" in {
@@ -26,9 +25,9 @@ class ResourceUrisSpec extends BaseSpec {
       val proj = Label.unsafe("project")
       val list =
         List(
-          ResourceUris.acl(AclAddress.Root)               -> Uri("http://localhost/v1/acls"),
-          ResourceUris.acl(org)                           -> Uri("http://localhost/v1/acls/org"),
-          ResourceUris.acl(AclAddress.Project(org, proj)) -> Uri("http://localhost/v1/acls/org/project")
+          ResourceScopeF.acl(AclAddress.Root)               -> Uri("http://localhost/v1/acls"),
+          ResourceScopeF.acl(org)                           -> Uri("http://localhost/v1/acls/org"),
+          ResourceScopeF.acl(AclAddress.Project(org, proj)) -> Uri("http://localhost/v1/acls/org/project")
         )
       forAll(list) { case (resourceUris, expected) =>
         resourceUris.accessUri shouldEqual expected
@@ -38,37 +37,20 @@ class ResourceUrisSpec extends BaseSpec {
     "be constructed for realms" in {
       val myrealm      = Label.unsafe("myrealm")
       val expected     = Uri("http://localhost/v1/realms/myrealm")
-      val resourceUris = ResourceUris.realm(myrealm)
+      val resourceUris = ResourceScopeF.realm(myrealm)
       resourceUris.accessUri shouldEqual expected
     }
 
     "be constructed for organizations" in {
       val expected     = Uri("http://localhost/v1/orgs/myorg")
-      val resourceUris = ResourceUris.organization(projectRef.organization)
+      val resourceUris = ResourceScopeF.organization(projectRef.organization)
       resourceUris.accessUri shouldEqual expected
     }
 
     "be constructed for projects" in {
       val expected     = Uri("http://localhost/v1/projects/myorg/myproject")
-      val resourceUris = ResourceUris.project(projectRef)
+      val resourceUris = ResourceScopeF.project(projectRef)
       resourceUris.accessUri shouldEqual expected
-    }
-
-    "be constructed for resources" in {
-      val id          = nxv + "myid"
-      val encodedId   = UrlUtils.encode(id.toString)
-      val expected    = Uri(s"http://localhost/v1/resources/myorg/myproject/_/$encodedId")
-      val expectedIn  = Uri(s"http://localhost/v1/resources/myorg/myproject/_/$encodedId/incoming")
-      val expectedOut = Uri(s"http://localhost/v1/resources/myorg/myproject/_/$encodedId/outgoing")
-
-      val resourceUris =
-        ResourceUris.resource(projectRef, projectRefSchema, id).asInstanceOf[ResourceInProjectAndSchemaUris]
-
-      resourceUris.accessUri shouldEqual expected
-      resourceUris.incoming shouldEqual expectedIn
-      resourceUris.outgoing shouldEqual expectedOut
-      resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
-      resourceUris.schemaProject shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject2")
     }
 
     "be constructed for schemas" in {
@@ -77,12 +59,12 @@ class ResourceUrisSpec extends BaseSpec {
       val expectedIn  = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
       val expectedOut = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
 
-      val resourceUris = ResourceUris.schema(projectRef, id).asInstanceOf[ResourceInProjectUris]
+      val resourceUris = ResourceScopeF.schema(projectRef, id).asInstanceOf[ScopedResourceF]
 
       resourceUris.accessUri shouldEqual expected
       resourceUris.incoming shouldEqual expectedIn
       resourceUris.outgoing shouldEqual expectedOut
-      resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
+      resourceUris.project shouldEqual projectRef
     }
 
     "be constructed for resolvers" in {
@@ -91,11 +73,11 @@ class ResourceUrisSpec extends BaseSpec {
       val expectedIn  = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
       val expectedOut = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
 
-      val resourceUris = ResourceUris.resolver(projectRef, id).asInstanceOf[ResourceInProjectUris]
+      val resourceUris = ResourceScopeF.resolver(projectRef, id).asInstanceOf[ScopedResourceF]
       resourceUris.accessUri shouldEqual expected
       resourceUris.incoming shouldEqual expectedIn
       resourceUris.outgoing shouldEqual expectedOut
-      resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
+      resourceUris.project shouldEqual projectRef
     }
 
     "be constructed for resolvers with nxv as a base" in {
@@ -104,26 +86,24 @@ class ResourceUrisSpec extends BaseSpec {
       val expectedIn  = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
       val expectedOut = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
 
-      val resourceUris =
-        ResourceUris.resolver(projectRef, id).asInstanceOf[ResourceInProjectUris]
+      val resourceUris = ResourceScopeF.resolver(projectRef, id).asInstanceOf[ScopedResourceF]
       resourceUris.accessUri shouldEqual expected
       resourceUris.incoming shouldEqual expectedIn
       resourceUris.outgoing shouldEqual expectedOut
-      resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
+      resourceUris.project shouldEqual projectRef
     }
 
     "be constructed for ephemeral resources" in {
-      val segment         = genString()
-      val id              = nxv + "myid"
-      val expected        = Uri(s"http://localhost/v1/$segment/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedProject = Uri(s"http://localhost/v1/projects/myorg/myproject")
-      val resourceUris    = ResourceUris.ephemeral(segment, projectRef, id)
+      val segment      = genString()
+      val id           = nxv + "myid"
+      val expected     = Uri(s"http://localhost/v1/$segment/myorg/myproject/${UrlUtils.encode(id.toString)}")
+      val resourceUris = ResourceScopeF.ephemeral(segment, projectRef, id)
 
       resourceUris match {
-        case v: EphemeralResourceInProjectUris =>
+        case v: EphemeralResourceF =>
           v.accessUri shouldEqual expected
-          v.project shouldEqual expectedProject
-        case other                             =>
+          v.project shouldEqual projectRef
+        case other                 =>
           fail(
             s"Expected type 'EphemeralResourceInProjectUris', but got value '$other' of type '${other.getClass.getCanonicalName}'"
           )

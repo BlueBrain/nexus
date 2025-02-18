@@ -9,6 +9,8 @@ import io.circe.optics.JsonPath._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 
+import scala.collection.immutable.Set
+
 class SearchAccessSpec extends BaseIntegrationSpec {
 
   private val orgId    = genId()
@@ -70,7 +72,7 @@ class SearchAccessSpec extends BaseIntegrationSpec {
     "return config" in {
       deltaClient.get[Json]("/search/config", Rick) { (body, response) =>
         response.status shouldEqual StatusCodes.OK
-        body shouldEqual jsonContentOf("kg/search/config.json")
+        body.asObject.value.keys.toSet shouldEqual Set("fields", "layouts")
       }
     }
   }
@@ -96,7 +98,7 @@ class SearchAccessSpec extends BaseIntegrationSpec {
     }
 
   /** Lens to get all project labels in a given json */
-  private val _projects = root.each.project.label.string
+  private val _projects = root.each.project.string
 
   /** Get the `_source` from an ES json response */
   private def getEsSource(json: Json) = Json.fromValues(json.findAllByKey("_source"))

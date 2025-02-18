@@ -410,10 +410,10 @@ object FileEvent {
       override val selectors: Set[Label] = Set(Label.unsafe("files"), resourcesSelector)
 
       override val sseEncoder: Encoder.AsObject[FileEvent] = {
-        val context                                         = ContextValue(Vocabulary.contexts.metadata, contexts.files)
-        val metadataKeys: Set[String]                       =
+        val context                                   = ContextValue(Vocabulary.contexts.metadata, contexts.files)
+        val metadataKeys: Set[String]                 =
           Set("subject", "types", "source", "project", "rev", "instant", "digest", "mediaType", "attributes", "bytes")
-        implicit val circeConfig: Configuration             = Configuration.default
+        implicit val circeConfig: Configuration       = Configuration.default
           .withDiscriminator(keywords.tpe)
           .copy(transformMemberNames = {
             case "id"                                  => "_fileId"
@@ -421,8 +421,7 @@ object FileEvent {
             case field if metadataKeys.contains(field) => s"_$field"
             case other                                 => other
           })
-        implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
-        implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
+        implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
 
         Encoder.encodeJsonObject.contramapObject { event =>
           val storageAndType                    = event match {

@@ -79,7 +79,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
             ScoobyDoo,
             "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
             "self"           -> viewSelf(project1, viewId),
-            "project-parent" -> s"${config.deltaUri}/projects/$project1"
+            "project-parent" -> project1
           ): _*
         )
 
@@ -105,7 +105,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
             ScoobyDoo,
             "id"             -> viewId,
             "resources"      -> viewSelf(project2, viewId),
-            "project-parent" -> s"${config.deltaUri}/projects/$project2",
+            "project-parent" -> project2,
             "project1"       -> project1,
             "project2"       -> project2
           ): _*

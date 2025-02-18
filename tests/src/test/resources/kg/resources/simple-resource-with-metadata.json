@@ -16,7 +16,6 @@
   "_outgoing": "{{self}}/outgoing",
   "_self": "{{self}}",
   "_project": "{{project}}",
-  "_schemaProject": "{{project}}",
   "_rev": {{rev}},
   "other:priority": {{priority}},
   "other:projects": [

@@ -70,14 +70,7 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
       "@type": "@id"
     },
-    "_project": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
-      "@type": "@id"
-    },
-    "_schemaProject": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
-      "@type": "@id"
-    },
+    "_project": "https://bluebrain.github.io/nexus/vocabulary/project",
     "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
     "_namespace": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/_namespace",
