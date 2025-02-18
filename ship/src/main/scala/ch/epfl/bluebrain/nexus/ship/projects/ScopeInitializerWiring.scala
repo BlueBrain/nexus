@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship.projects
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ScopeInitializationErrorStore}
@@ -23,7 +22,7 @@ object ScopeInitializerWiring {
       config: InputConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi, baseUri: BaseUri): IO[ScopeInitializer] =
+  )(implicit baseUri: BaseUri): IO[ScopeInitializer] =
     for {
       bgViews        <- blazegraphViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)
       compositeViews <- compositeViews(fetchContext, rcr, config.eventLog, clock, UUIDF.random, xas)

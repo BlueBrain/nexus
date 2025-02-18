@@ -17,7 +17,7 @@ class IriSpec extends BaseSpec {
     val iri       = iri"$iriString"
 
     "fail to construct" in {
-      Iri.absolute("abc").leftValue
+      Iri.reference("abc").leftValue
       Iri.apply("a:*#").leftValue
     }
 
@@ -29,8 +29,8 @@ class IriSpec extends BaseSpec {
       iri.nonEmpty shouldEqual true
     }
 
-    "be absolute" in {
-      iri.isAbsolute shouldEqual true
+    "be reference" in {
+      iri.isReference shouldEqual true
     }
 
     "be a prefix mapping" in {

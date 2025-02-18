@@ -84,14 +84,6 @@ object RdfError {
   final case class UnexpectedIriOrBNode(expected: IriOrBNode, found: IriOrBNode)
       extends RdfError(s"Unexpected Iri or blank node value. Expected '$expected', found '$found'")
 
-  /**
-    * Circular dependency on remote context resolution
-    */
-  final case class RemoteContextCircularDependency(iri: Iri)
-      extends RdfError(
-        s"Remote context '$iri' has already been resolved once. Circular dependency detected"
-      )
-
   final case class SparqlConstructQueryError(query: SparqlConstructQuery, rootNode: IriOrBNode, message: String)
       extends RdfError(
         s"The query '${query.value}' on graph with root node '$rootNode' resulted in a error: '$message'"

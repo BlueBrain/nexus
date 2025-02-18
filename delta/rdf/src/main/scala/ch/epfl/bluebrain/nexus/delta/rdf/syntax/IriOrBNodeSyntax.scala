@@ -21,7 +21,7 @@ final class IriStringOps(private val string: String) extends AnyVal {
   /**
     * Attempts to construct an absolute Iri, returning a Left when it does not have the correct Iri format.
     */
-  def toIri: Either[String, Iri] = Iri.absolute(string)
+  def toIri: Either[String, Iri] = Iri.reference(string)
 }
 
 final class BNodeStringContextOps(private val sc: StringContext) extends AnyVal {

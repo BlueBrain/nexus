@@ -17,7 +17,7 @@
         "@id": "http://uri.interlex.org/base/ilx_0383207",
         "@type": [
           "MType",
-          "Annotation:Body"
+          "AnnotationBody"
         ],
         "label": "L2_IPC"
       },

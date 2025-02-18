@@ -5,14 +5,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.contexts.{blazegraph, blazegraphMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 
 trait Fixtures {
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
 
-  implicit val api: JsonLdApi = JsonLdJavaApi.strict
+  implicit val api: JsonLdApi = TitaniumJsonLdApi.strict
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
     blazegraph                     -> ContextValue.fromFile("contexts/sparql.json"),

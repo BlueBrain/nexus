@@ -203,7 +203,7 @@ class UriDirectivesSpec extends BaseSpec with RouteHelpers with UriDirectives wi
     }
 
     "return an IriSegment" in {
-      val iri     = iri"http://example.com/a/b?rev=1#frag"
+      val iri     = iri"http://example.com/a/b?rev=1"
       val encoded = UrlUtils.encode(iri.toString)
       Get(s"/base/id/$encoded") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"iri='$iri'"

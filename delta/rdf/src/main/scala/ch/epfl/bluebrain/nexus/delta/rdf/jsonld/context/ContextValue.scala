@@ -194,7 +194,7 @@ object ContextValue {
     // format: off
     (json.asObject.filter(_.nonEmpty).map(ContextObject.apply) orElse
       json.asArray.filter(_.nonEmpty).map(arr => ContextArray(arr.map(apply).collect { case c: ContextValueEntry => c })) orElse
-      json.as[Iri].toOption.filter(_.isAbsolute).map(ContextRemoteIri)).getOrElse(ContextEmpty)
+      json.as[Iri].toOption.filter(_.isReference).map(ContextRemoteIri)).getOrElse(ContextEmpty)
   // format: on
 
   implicit val contextValueEncoder: Encoder[ContextValue] = Encoder.instance(_.value)

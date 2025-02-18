@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileCont
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -107,7 +106,7 @@ object ContextWiring {
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): ResolverContextResolution = {
+  ): ResolverContextResolution = {
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
     ResolverContextResolution(alwaysAuthorize, resolvers, remoteContextResolution, fetchResource)
   }

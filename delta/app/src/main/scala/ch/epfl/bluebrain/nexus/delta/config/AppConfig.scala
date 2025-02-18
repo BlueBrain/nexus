@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSConfig
@@ -35,7 +34,6 @@ final case class AppConfig(
     description: DescriptionConfig,
     http: HttpConfig,
     database: DatabaseConfig,
-    jsonLdApi: JsonLdApiConfig,
     identities: CacheConfig,
     permissions: PermissionsConfig,
     realms: RealmsConfig,

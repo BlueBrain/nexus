@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -27,7 +27,7 @@ trait ResponseToOriginalSource {
 object ResponseToOriginalSource extends RdfMarshalling {
 
   // To serialize errors to compacted json-ld
-  implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
+  implicit private val api: JsonLdApi = TitaniumJsonLdApi.lenient
 
   implicit private def originalSourceMarshaller(implicit
       ordering: JsonKeyOrdering

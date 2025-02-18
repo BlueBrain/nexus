@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{fakeId, rdfType}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.TitaniumJsonLdApi._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
@@ -214,7 +214,7 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     */
   def toDot(
       contextValue: ContextValue = ContextValue.empty
-  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[Dot] =
+  )(implicit resolution: RemoteContextResolution, opts: JsonLdOptions): IO[Dot] =
     for {
       resolvedCtx <- JsonLdContext(contextValue)
       ctx          = dotContext(rootResource, resolvedCtx)

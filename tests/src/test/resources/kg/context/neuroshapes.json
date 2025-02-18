@@ -4329,7 +4329,7 @@
     "uHillCoefficient": {
       "@id": "https://bbp.epfl.ch/ontologies/core/parameters/uHillCoefficient"
     },
-    "uberon": "http://purl.obolibrary.org/obo/UBERON_",
+    "uberon": "http://purl.obolibrary.org/obo/uberon/",
     "uniprotID": {
       "@id": "https://bbp.epfl.ch/ontologies/core/bmo/uniprotID"
     },

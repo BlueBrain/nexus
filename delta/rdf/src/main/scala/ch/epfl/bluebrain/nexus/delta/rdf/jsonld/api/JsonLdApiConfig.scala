@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig.ErrorHandling
-import pureconfig.ConfigReader
-import pureconfig.generic.semiauto.{deriveEnumerationReader, deriveReader}
 
 /**
   * Configuration for the json
@@ -36,12 +34,5 @@ object JsonLdApiConfig {
       */
     case object NoWarning extends ErrorHandling
 
-    implicit final val flavourReader: ConfigReader[ErrorHandling] =
-      deriveEnumerationReader
-
   }
-
-  implicit final val jsonLdApiConfigReader: ConfigReader[JsonLdApiConfig] =
-    deriveReader[JsonLdApiConfig]
-
 }

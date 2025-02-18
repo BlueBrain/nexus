@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewE
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -83,8 +82,6 @@ object CompositeViewProcessor {
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit
-      jsonLdApi: JsonLdApi
   ): CompositeViewProcessor = {
     val views = (uuid: UUID) => ViewWiring.compositeViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
     new CompositeViewProcessor(views, projectMapper, clock)

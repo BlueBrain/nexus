@@ -7,10 +7,9 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
-import io.circe.{Codec, Decoder, Encoder, KeyDecoder, KeyEncoder}
+import io.circe._
 import org.apache.jena.iri.{IRI, IRIFactory}
 import pureconfig.ConfigReader
-
 import pureconfig.error.CannotConvert
 
 import java.util.UUID
@@ -106,7 +105,7 @@ object IriOrBNode {
       }
 
     /**
-      * Is valid according tot he IRI rfc
+      * Is valid according to the IRI rfc
       *
       * @param includeWarnings
       *   If true then warnings are reported as well as errors.
@@ -115,13 +114,13 @@ object IriOrBNode {
       value.hasViolation(includeWarnings)
 
     /**
-      * Does this Iri specify a scheme.
+      * Defines if the iri is suitable for a usage in RDF.
       *
       * @return
       *   true if this IRI has a scheme specified, false otherwise
       */
-    def isAbsolute: Boolean =
-      value.isAbsolute
+    def isReference: Boolean =
+      value.isRootless || value.getScheme != null
 
     /**
       * Is this Iri a relative reference without a scheme specified.
@@ -215,8 +214,8 @@ object IriOrBNode {
       * passed [[Iri]] is not absolute, there is nothing to resolve against and the current [[Iri]] is returned.
       */
     def resolvedAgainst(iri: Iri): Iri =
-      if (isAbsolute) this
-      else if (iri.isAbsolute) {
+      if (isReference) this
+      else if (iri.isReference) {
         val relative = if (toString.endsWith("/")) toString.takeRight(1) else toString
         val absolute = if (iri.toString.startsWith("/")) iri.toString.take(1) else iri.toString
         Iri.unsafe(s"$absolute/$relative")
@@ -336,13 +335,13 @@ object IriOrBNode {
     }
 
     /**
-      * Construct an absolute [[Iri]] safely.
+      * Construct a reference [[Iri]] safely.
       *
       * @param string
       *   the string from which to construct an [[Iri]]
       */
-    def absolute(string: String): Either[String, Iri] =
-      apply(string).flatMap(iri => Option.when(iri.isAbsolute)(iri).toRight(s"'$string' is not an absolute IRI"))
+    def reference(string: String): Either[String, Iri] =
+      apply(string).flatMap(iri => Option.when(iri.isReference)(iri).toRight(s"'$string' is not an absolute IRI"))
 
     /**
       * Construct an IRI without checking the validity of the format.
@@ -355,7 +354,7 @@ object IriOrBNode {
     implicit final val iriCodec: Codec[Iri]     = Codec.from(iriDecoder, iriEncoder)
 
     implicit val iriKeyEncoder: KeyEncoder[Iri] = KeyEncoder.encodeKeyString.contramap(_.toString)
-    implicit val iriKeyDecoder: KeyDecoder[Iri] = KeyDecoder.instance(absolute(_).toOption)
+    implicit val iriKeyDecoder: KeyDecoder[Iri] = KeyDecoder.instance(reference(_).toOption)
 
     implicit final val iriOrdering: Ordering[Iri] = Ordering.by(_.toString)
     implicit final val iriOrder: Order[Iri]       = Order.fromOrdering
@@ -403,7 +402,7 @@ object IriOrBNode {
   }
 
   implicit final val iriOrBNodeDecoder: Decoder[IriOrBNode] =
-    Decoder.decodeString.emap(Iri.absolute) or Decoder.decodeString.map(BNode.unsafe)
+    Decoder.decodeString.emap(Iri.reference) or Decoder.decodeString.map(BNode.unsafe)
 
   implicit final val iriOrBNodeEncoder: Encoder[IriOrBNode] =
     Encoder.encodeString.contramap(_.toString)

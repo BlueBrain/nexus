@@ -93,8 +93,7 @@ object JsonLdDecoder {
 
   implicit val iriJsonLdDecoder: JsonLdDecoder[Iri] =
     relativeOrAbsoluteIriDecoder.andThen { (cursor, iri) =>
-      if (iri.isAbsolute) Right(iri)
-      else Left(ParsingFailure("AbsoluteIri", iri.toString, cursor.history))
+      Either.cond(iri.isReference, iri, ParsingFailure("AbsoluteIri", iri.toString, cursor.history))
     }
 
   implicit val bNodeJsonLdDecoder: JsonLdDecoder[BNode]     = _ => Right(BNode.random)

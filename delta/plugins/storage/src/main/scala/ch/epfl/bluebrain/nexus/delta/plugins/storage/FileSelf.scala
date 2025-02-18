@@ -90,7 +90,7 @@ object FileSelf {
         validateSelfPrefix(input) >> parseSelf(input)
 
       private def validateSelfPrefix(self: Iri) =
-        if (self.isAbsolute)
+        if (self.isReference)
           IO.raiseUnless(self.startsWith(filePrefixIri))(ExternalLink(self))
         else
           IO.raiseError(ParsingError.NonAbsoluteLink(self))

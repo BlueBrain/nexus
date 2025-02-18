@@ -4,7 +4,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
@@ -26,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import io.circe.Json
 import munit.AnyFixture
 
 import java.util.UUID
@@ -41,8 +41,6 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-
-  implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
   implicit val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
@@ -124,7 +122,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
 
   test("Creating a schema fails if it does not validate against the SHACL schema") {
     val otherId     = nxv + "other"
-    val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
+    val wrongSource = sourceNoId.mapAllKeys("property", _ => Json.obj())
     schemas.create(otherId, projectRef, wrongSource).intercept[InvalidSchema]
   }
 
@@ -160,7 +158,7 @@ class SchemasImplSuite extends NexusSuite with Doobie.Fixture with ConfigFixture
   }
 
   test("Updating a schema fails if it does not validate against its schema") {
-    val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
+    val wrongSource = sourceNoId.mapAllKeys("property", _ => Json.obj())
     schemas.update(mySchema, projectRef, 2, wrongSource).intercept[InvalidSchema]
   }
 

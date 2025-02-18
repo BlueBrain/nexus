@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -102,7 +101,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config: ElasticSearchViewsConfig,
         defaultIndex: DefaultIndexDef,
         xas: Transactors,
-        api: JsonLdApi,
         clock: Clock[IO],
         uuidF: UUIDF
     ) =>
@@ -115,7 +113,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas,
         defaultIndex,
         clock
-      )(api, uuidF)
+      )(uuidF)
   }
 
   make[MigrateDefaultIndexing].from { (xas: Transactors) => MigrateDefaultIndexing(xas) }

@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -43,7 +42,7 @@ object SchemasModule extends ModuleDef {
 
   make[ValidateShacl].fromEffect { (rcr: RemoteContextResolution @Id("aggregate")) => ValidateShacl(rcr) }
 
-  make[ValidateSchema].from { (validateShacl: ValidateShacl, api: JsonLdApi) => ValidateSchema(validateShacl)(api) }
+  make[ValidateSchema].from { (validateShacl: ValidateShacl) => ValidateSchema(validateShacl) }
 
   make[SchemaDefinition].from { (validateSchema: ValidateSchema, clock: Clock[IO]) =>
     Schemas.definition(validateSchema, clock)
@@ -62,7 +61,6 @@ object SchemasModule extends ModuleDef {
         schemaLog: SchemaLog,
         fetchContext: FetchContext,
         schemaImports: SchemaImports,
-        api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
         uuidF: UUIDF
     ) =>
@@ -71,7 +69,7 @@ object SchemasModule extends ModuleDef {
         fetchContext,
         schemaImports,
         resolverContextResolution
-      )(api, uuidF)
+      )(uuidF)
   }
 
   make[SchemaImports].from {

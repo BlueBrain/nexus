@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, BlazegraphViewEvent}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -95,8 +94,6 @@ object BlazegraphViewProcessor {
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit
-      jsonLdApi: JsonLdApi
   ): BlazegraphViewProcessor = {
     val views = (uuid: UUID) => ViewWiring.blazegraphViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
     new BlazegraphViewProcessor(views, projectMapper, viewPatcher, clock)

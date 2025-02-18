@@ -4,7 +4,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -20,8 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{NoCh
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Json
 
@@ -215,10 +214,7 @@ object ResourcesImpl {
       scopedLog: ResourceLog,
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF = UUIDF.random
-  ): Resources =
+  )(implicit uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
       scopedLog,
       fetchContext,

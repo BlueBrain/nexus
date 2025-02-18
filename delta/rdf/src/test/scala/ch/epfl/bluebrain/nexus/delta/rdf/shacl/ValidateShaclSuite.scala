@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
@@ -11,7 +11,7 @@ import io.circe.Json
 
 class ValidateShaclSuite extends NexusSuite {
 
-  implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+  implicit val api: JsonLdApi = TitaniumJsonLdApi.strict
 
   private val schema           = jsonContentOf("shacl/schema.json")
   private val data             = jsonContentOf("shacl/resource.json")
@@ -54,12 +54,15 @@ class ValidateShaclSuite extends NexusSuite {
     shaclValidation(schemaGraph, reportDetails = true).assert(_.conformsWithTargetedNodes)
   }
 
-  test("Fail validating shapes if unexpected field value") {
-    val wrongSchema = schema.replace("minCount" -> 1, "wrong")
-    for {
-      wrongGraph <- toGraph(wrongSchema)
-      _          <- shaclValidation(wrongGraph, reportDetails = true).assert(_.conformsWithTargetedNodes == false)
-    } yield ()
+  test("Fail validating shapes if no property is defined") {
+    val wrongSchema = schema.mapAllKeys("property", _ => Json.obj())
+
+    toGraph(wrongSchema).flatMap { wrongGraph =>
+      shaclValidation(wrongGraph, reportDetails = true).assert(
+        _.conforms == false,
+        "Validation should fail as property requires at least one element"
+      )
+    }
   }
 
 }

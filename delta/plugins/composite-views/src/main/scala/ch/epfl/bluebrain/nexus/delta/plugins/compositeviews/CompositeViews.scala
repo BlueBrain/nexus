@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -477,10 +476,7 @@ object CompositeViews {
       eventLogConfig: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): IO[CompositeViews] =
+  )(implicit uuidF: UUIDF): IO[CompositeViews] =
     IO
       .delay(
         CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution, minIntervalRebuild)

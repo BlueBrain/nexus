@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{IncorrectRev, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, ElasticSearchViewEvent}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -96,8 +95,6 @@ object ElasticSearchViewProcessor {
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit
-      jsonLdApi: JsonLdApi
   ): ElasticSearchViewProcessor = {
     val views = (uuid: UUID) => ViewWiring.elasticSearchViews(fetchContext, rcr, config, clock, UUIDF.fixed(uuid), xas)
     new ElasticSearchViewProcessor(views, projectMapper, viewPatcher, clock)

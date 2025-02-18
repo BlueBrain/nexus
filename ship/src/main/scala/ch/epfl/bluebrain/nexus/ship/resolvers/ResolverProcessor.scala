@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.ship.resolvers
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
@@ -16,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity}
 import ch.epfl.bluebrain.nexus.ship.resolvers.ResolverProcessor.{logger, patchValue}
-import ch.epfl.bluebrain.nexus.ship.{EventClock, EventProcessor, ImportStatus, IriPatcher, ProjectMapper}
+import ch.epfl.bluebrain.nexus.ship._
 import io.circe.Decoder
 
 class ResolverProcessor private (
@@ -103,7 +102,7 @@ object ResolverProcessor {
       config: EventLogConfig,
       clock: EventClock,
       xas: Transactors
-  )(implicit api: JsonLdApi): ResolverProcessor = {
+  ): ResolverProcessor = {
     val resolvers = ResolverWiring.resolvers(fetchContext, config, clock, xas)
     new ResolverProcessor(resolvers, projectMapper, iriPatcher, clock)
   }

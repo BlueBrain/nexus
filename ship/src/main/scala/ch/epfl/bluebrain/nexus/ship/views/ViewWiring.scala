@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, Val
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -31,7 +30,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): IO[ElasticSearchViews] = {
+  ): IO[ElasticSearchViews] = {
     implicit val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
     val prefix                                   = "nexus" // TODO: use the config?
 
@@ -49,7 +48,7 @@ object ViewWiring {
         xas,
         defaultIndex,
         clock
-      )(jsonLdApi, uuidF)
+      )(uuidF)
     }
   }
 
@@ -60,7 +59,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi): IO[BlazegraphViews] = {
+  ): IO[BlazegraphViews] = {
     val noValidation = new ValidateBlazegraphView {
       override def apply(value: BlazegraphViewValue): IO[Unit] = IO.unit
     }
@@ -74,7 +73,7 @@ object ViewWiring {
       prefix,
       xas,
       clock
-    )(jsonLdApi, uuidF)
+    )(uuidF)
   }
 
   def compositeViews(
@@ -84,7 +83,7 @@ object ViewWiring {
       clock: EventClock,
       uuidF: UUIDF,
       xas: Transactors
-  )(implicit jsonLdApi: JsonLdApi) = {
+  ) = {
     val noValidation = new ValidateCompositeView {
       override def apply(uuid: UUID, value: CompositeViewValue): IO[Unit] = IO.unit
     }
@@ -96,7 +95,7 @@ object ViewWiring {
       config,
       xas,
       clock
-    )(jsonLdApi, uuidF)
+    )(uuidF)
   }
 
   def viewInitializers(

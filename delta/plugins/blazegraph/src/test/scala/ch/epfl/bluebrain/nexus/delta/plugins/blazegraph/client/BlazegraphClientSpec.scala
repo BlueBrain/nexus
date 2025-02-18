@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Bin
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery.replace
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
@@ -39,7 +39,7 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
     with Eventually {
 
   implicit private val httpCfg: HttpClientConfig    = httpClientConfig
-  implicit private val api: JsonLdApi               = JsonLdJavaApi.strict
+  implicit private val api: JsonLdApi               = TitaniumJsonLdApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private lazy val endpoint = docker.hostConfig.endpoint

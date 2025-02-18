@@ -3,13 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.stream.scaladsl.Source
 import cats.data.NonEmptySet
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -34,8 +33,6 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.random
-
-  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
   private val usersRealm: Label       = Label.unsafe("users")
   private val bob: Subject            = User("bob", usersRealm)

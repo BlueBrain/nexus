@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -160,10 +159,7 @@ object ResolversImpl {
       config: EventLogConfig,
       xas: Transactors,
       clock: Clock[IO]
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): Resolvers = {
+  )(implicit uuidF: UUIDF): Resolvers = {
     new ResolversImpl(
       ScopedEventLog(Resolvers.definition(validatePriority, clock), config, xas),
       fetchContext,

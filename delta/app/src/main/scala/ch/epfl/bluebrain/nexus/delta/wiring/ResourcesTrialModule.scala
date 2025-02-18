@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes
@@ -29,7 +28,6 @@ object ResourcesTrialModule extends ModuleDef {
         validate: ValidateResource,
         fetchContext: FetchContext,
         contextResolution: ResolverContextResolution,
-        api: JsonLdApi,
         clock: Clock[IO],
         uuidF: UUIDF
     ) =>
@@ -39,7 +37,7 @@ object ResourcesTrialModule extends ModuleDef {
         fetchContext,
         contextResolution,
         clock
-      )(api, uuidF)
+      )(uuidF)
   }
 
   make[ResourcesTrialRoutes].from {

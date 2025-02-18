@@ -83,7 +83,7 @@ object GraphAnalytics {
     }
 
   private[analytics] def toPaths(key: String): Either[String, NonEmptySeq[Iri]] =
-    key.split(" / ").toVector.foldM(Vector.empty[Iri])((acc, k) => Iri.absolute(k).map(acc :+ _)).flatMap {
+    key.split(" / ").toVector.foldM(Vector.empty[Iri])((acc, k) => Iri.reference(k).map(acc :+ _)).flatMap {
       case Seq(first, tail @ _*) => Right(NonEmptySeq(first, tail))
       case _                     => Left("Empty Path")
     }

@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeResta
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeGraphStream, RemoteGraphStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -122,7 +122,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         validate: ValidateCompositeView,
         config: CompositeViewsConfig,
         xas: Transactors,
-        api: JsonLdApi,
         uuidF: UUIDF,
         clock: Clock[IO]
     ) =>
@@ -134,10 +133,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         config.eventLog,
         xas,
         clock
-      )(
-        api,
-        uuidF
-      )
+      )(uuidF)
   }
 
   make[CompositeRestartStore].from { (xas: Transactors) =>
@@ -192,10 +188,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[MetadataPredicates].fromEffect {
     (
         listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
-        api: JsonLdApi,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
+      JsonLdContext(listingsMetadataCtx.value)(cr, JsonLdOptions.defaults)
         .map(_.aliasesInv.keySet.map(Triple.predicate))
         .map(MetadataPredicates)
   }

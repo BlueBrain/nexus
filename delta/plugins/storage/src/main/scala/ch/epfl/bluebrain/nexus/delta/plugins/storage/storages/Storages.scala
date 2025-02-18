@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -490,10 +489,7 @@ object Storages {
       config: StoragesConfig,
       serviceAccount: ServiceAccount,
       clock: Clock[IO]
-  )(implicit
-      api: JsonLdApi,
-      uuidF: UUIDF
-  ): IO[Storages] = {
+  )(implicit uuidF: UUIDF): IO[Storages] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
     StorageDecoderConfiguration.apply

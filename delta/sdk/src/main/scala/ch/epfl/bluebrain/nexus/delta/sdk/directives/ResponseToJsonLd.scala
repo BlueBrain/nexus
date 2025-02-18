@@ -11,7 +11,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -50,7 +50,7 @@ object ResponseToJsonLd extends FileBytesInstances {
 
       // Some resources may not have been created in the system with a strict configuration
       // (and if they are, there is no need to check them again)
-      implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+      implicit val api: JsonLdApi = TitaniumJsonLdApi.lenient
 
       override def apply(statusOverride: Option[StatusCode]): Route = {
 

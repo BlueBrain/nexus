@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -8,9 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{entityType, expan
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
@@ -184,7 +183,7 @@ object Archives {
       cfg: ArchivePluginConfig,
       xas: Transactors,
       clock: Clock[IO]
-  )(implicit api: JsonLdApi, uuidF: UUIDF, rcr: RemoteContextResolution): Archives = new Archives(
+  )(implicit uuidF: UUIDF, rcr: RemoteContextResolution): Archives = new Archives(
     EphemeralLog(
       definition(clock),
       cfg.ephemeral,
@@ -204,7 +203,7 @@ object Archives {
       onUniqueViolation = (id: Iri, c: CreateArchive) => ResourceAlreadyExists(id, c.project)
     )
 
-  private[archive] def sourceDecoder(implicit api: JsonLdApi, uuidF: UUIDF): JsonLdSourceDecoder[ArchiveValue] =
+  private[archive] def sourceDecoder(implicit uuidF: UUIDF): JsonLdSourceDecoder[ArchiveValue] =
     new JsonLdSourceDecoder[ArchiveValue](contexts.archives, uuidF)
 
   private[archive] def evaluate(clock: Clock[IO])(

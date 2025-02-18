@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -30,10 +29,8 @@ object RunShip {
       config: InputConfig,
       xas: Transactors
   ): IO[ImportReport] = {
-    val clock                         = Clock[IO]
-    val uuidF                         = UUIDF.random
-    // Resources may have been created with different configurations so we adopt the lenient one for the import
-    implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
+    val clock = Clock[IO]
+    val uuidF = UUIDF.random
     for {
       report <- {
         val orgProvider                     =
@@ -60,7 +57,7 @@ object RunShip {
                     // Processors
           fileSelf                     = FileSelf(originalProjectContext)(originalBaseUri)
           sourcePatcher                = SourcePatcher(fileSelf, projectMapper, iriPatcher, targetBaseUri, eventClock, xas, config)
-          projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, originalProjectContext, projectMapper, iriPatcher, config, eventClock, xas)(targetBaseUri, jsonLdApi)
+          projectProcessor            <- ProjectProcessor(fetchActiveOrg, fetchContext, rcr, originalProjectContext, projectMapper, iriPatcher, config, eventClock, xas)(targetBaseUri)
           resolverProcessor            = ResolverProcessor(fetchContext, projectMapper, iriPatcher, eventLogConfig, eventClock, xas)
           schemaProcessor              = SchemaProcessor(schemaLog, fetchContext, schemaImports, rcr, projectMapper, sourcePatcher, eventClock)
                     resourceProcessor            = ResourceProcessor(resourceLog, rcr, projectMapper, fetchContext, sourcePatcher, iriPatcher, config.resourceTypesToIgnore, eventClock)

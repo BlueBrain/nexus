@@ -4,7 +4,6 @@ import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
@@ -76,7 +75,7 @@ object ResourcesTrial {
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       clock: Clock[IO]
-  )(implicit api: JsonLdApi, uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
+  )(implicit uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
 
     private val sourceParser = JsonLdSourceResolvingParser(contextResolution, uuidF)
 
