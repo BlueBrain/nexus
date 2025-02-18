@@ -41,8 +41,6 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
       "@type": "@id"
     },
-    "_project": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/project"
-    }
+    "_project": "https://bluebrain.github.io/nexus/vocabulary/project"
   }
 }
