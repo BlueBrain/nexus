@@ -36,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -176,7 +176,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
       "deprecated"       -> deprecated,
       "createdBy"        -> createdBy.asIri,
       "updatedBy"        -> updatedBy.asIri,
-      "self"             -> ResourceUris.ephemeral("archives", project, id).accessUri,
+      "self"             -> ResourceScope.ephemeral("archives", project, id).accessUri,
       "expiresInSeconds" -> expiresInSeconds.toString
     )
 

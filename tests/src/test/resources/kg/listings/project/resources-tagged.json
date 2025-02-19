@@ -14,9 +14,8 @@
       "_deprecated": false,
       "_incoming": "{{self1}}/incoming",
       "_outgoing": "{{self1}}/outgoing",
-      "_project": "{{deltaUri}}/projects/{{org}}/{{proj1}}",
+      "_project": "{{org}}/{{proj1}}",
       "_rev": 2,
-      "_schemaProject": "{{deltaUri}}/projects/{{org}}/{{proj1}}",
       "_self": "{{self1}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_tags": ["v1.0.0"]
@@ -29,9 +28,8 @@
       "_deprecated": false,
       "_incoming": "{{self2}}/incoming",
       "_outgoing": "{{self2}}/outgoing",
-      "_project": "{{deltaUri}}/projects/{{org}}/{{proj2}}",
+      "_project": "{{org}}/{{proj2}}",
       "_rev": 3,
-      "_schemaProject": "{{deltaUri}}/projects/{{org}}/{{proj2}}",
       "_self": "{{self2}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_tags": ["v1.0.0", "v1.0.1"]

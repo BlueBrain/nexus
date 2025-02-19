@@ -148,7 +148,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         mainIndex: MainIndexDef,
         config: ElasticSearchViewsConfig,
-        baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
       MainIndexingCoordinator(
@@ -159,7 +158,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         mainIndex,
         config.batch,
         config.indexingEnabled
-      )(baseUri, cr)
+      )(cr)
   }
 
   make[EventMetricsProjection].fromEffect {
@@ -348,8 +347,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     new EventMetricsDeletionTask(client, metricsIndex.name)
   }
 
-  many[ProjectDeletionTask].add { (client: ElasticSearchClient, config: ElasticSearchViewsConfig, baseUri: BaseUri) =>
-    new MainIndexDeletionTask(client, config.mainIndex.index)(baseUri)
+  many[ProjectDeletionTask].add { (client: ElasticSearchClient, config: ElasticSearchViewsConfig) =>
+    new MainIndexDeletionTask(client, config.mainIndex.index)
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))

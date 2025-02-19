@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{Compute
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.defaultS3StorageId
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.ship.resources.DistributionPatcher._
@@ -96,7 +96,7 @@ final class DistributionPatcher(
   }
 
   private def createContentUrl(project: ProjectRef, resourceRef: ResourceRef): Uri = {
-    val withoutVersioning = ResourceUris("files", project, resourceRef.iri).accessUri(targetBase)
+    val withoutVersioning = ResourceScope("files", project, resourceRef.iri).accessUri(targetBase)
     resourceRef match {
       case Latest(_)           => withoutVersioning
       case Revision(_, _, rev) => withoutVersioning.withQuery(Uri.Query("rev" -> rev.toString))

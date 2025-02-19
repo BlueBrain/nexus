@@ -93,10 +93,9 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
       val mapping = replacements(
         Delta,
-        "project-label" -> ref11,
-        "project"       -> s"${config.deltaUri}/projects/$ref11",
-        "id"            -> defaultResolverId,
-        "self"          -> resolverSelf(ref11, defaultResolverId)
+        "project" -> ref11,
+        "id"      -> defaultResolverId,
+        "self"    -> resolverSelf(ref11, defaultResolverId)
       )
 
       val expected = jsonContentOf("kg/listings/default-resolver.json", mapping: _*)
@@ -115,8 +114,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
       val mapping = replacements(
         Delta,
-        "project-label"         -> ref11,
-        "project"               -> s"${config.deltaUri}/projects/$ref11",
+        "project"               -> ref11,
         "defaultSparqlView"     -> defaultSparqlView,
         "defaultSparqlViewSelf" -> viewSelf(ref11, defaultSparqlView),
         "searchView"            -> searchView,
@@ -137,10 +135,9 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
       val mapping = replacements(
         Delta,
-        "project-label" -> ref11,
-        "project"       -> s"${config.deltaUri}/projects/$ref11",
-        "id"            -> defaultStorageId,
-        "self"          -> storageSelf(ref11, defaultStorageId)
+        "project" -> ref11,
+        "id"      -> defaultStorageId,
+        "self"    -> storageSelf(ref11, defaultStorageId)
       )
 
       val expected = jsonContentOf("kg/listings/default-storage.json", mapping: _*)
@@ -236,7 +233,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
   private def assertProjects(json: Json, projects: String*) = {
     val obtained = root._results.each._project.string.getAll(json).toSet
 
-    obtained should contain theSameElementsAs projects.map { ref => s"${config.deltaUri}/projects/$ref" }
+    obtained should contain theSameElementsAs projects
   }
 
   "Listing resources within an org" should {

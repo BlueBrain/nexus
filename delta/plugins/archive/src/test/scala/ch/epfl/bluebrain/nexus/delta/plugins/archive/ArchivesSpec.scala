@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInProjectUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope.EphemeralResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
@@ -95,7 +95,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
 
       val id        = resource.id
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
-      resource.uris shouldEqual EphemeralResourceInProjectUris(
+      resource.scope shouldEqual EphemeralResourceF(
         project.ref,
         s"archives/${project.ref}/$encodedId"
       )
@@ -195,7 +195,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       val resource  = archives.fetch(id, project.ref).accepted
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.id shouldEqual id
-      resource.uris shouldEqual EphemeralResourceInProjectUris(
+      resource.scope shouldEqual EphemeralResourceF(
         project.ref,
         s"archives/${project.ref}/$encodedId"
       )

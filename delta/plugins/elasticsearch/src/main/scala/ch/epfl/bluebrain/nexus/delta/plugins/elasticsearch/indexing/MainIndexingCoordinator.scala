@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -113,7 +112,7 @@ object MainIndexingCoordinator {
       mainIndex: MainIndexDef,
       batch: BatchConfig,
       indexingEnabled: Boolean
-  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[MainIndexingCoordinator] =
+  )(implicit cr: RemoteContextResolution): IO[MainIndexingCoordinator] =
     if (indexingEnabled) {
       val targetIndex = mainIndex.name
 

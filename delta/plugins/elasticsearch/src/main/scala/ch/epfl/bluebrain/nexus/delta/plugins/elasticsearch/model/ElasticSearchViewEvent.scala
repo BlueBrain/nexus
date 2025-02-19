@@ -266,7 +266,6 @@ object ElasticSearchViewEvent {
       implicit val subjectEncoder: Encoder[Subject]                  = IriEncoder.jsonEncoder[Subject]
       implicit val viewValueEncoder: Encoder[ElasticSearchViewValue] = Encoder.instance(_ => Json.Null)
       implicit val viewTpeEncoder: Encoder[ElasticSearchViewType]    = Encoder.instance(_ => Json.Null)
-      implicit val projectRefEncoder: Encoder[ProjectRef]            = IriEncoder.jsonEncoder[ProjectRef]
 
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[ElasticSearchViewEvent]

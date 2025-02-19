@@ -154,8 +154,8 @@
       },
       {
         "object": {
-          "type": "uri",
-          "value": "{{deltaUri}}/projects/{{project}}"
+          "type": "literal",
+          "value": "{{project}}"
         },
         "predicate": {
           "type": "uri",

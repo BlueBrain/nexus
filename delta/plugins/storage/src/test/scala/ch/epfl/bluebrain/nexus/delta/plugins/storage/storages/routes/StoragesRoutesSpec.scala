@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -407,5 +407,5 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
       "self"       -> self(id)
     )
 
-  def self(id: Iri): Uri = ResourceUris("storages", projectRef, id).accessUri
+  def self(id: Iri): Uri = ResourceScope("storages", projectRef, id).accessUri
 }

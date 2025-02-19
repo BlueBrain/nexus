@@ -5,11 +5,11 @@
       "buckets": [
         {
           "doc_count": 5,
-          "key": "http://delta:8080/v1/projects/myorg/myproject"
+          "key": "myorg/myproject"
         },
         {
           "doc_count": 5,
-          "key": "http://delta:8080/v1/projects/myorg/myproject2"
+          "key": "myorg/myproject2"
         }
       ],
       "doc_count_error_upper_bound": 0,

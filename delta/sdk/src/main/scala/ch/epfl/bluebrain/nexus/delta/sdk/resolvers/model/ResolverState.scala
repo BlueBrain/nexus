@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -79,7 +79,7 @@ final case class ResolverState(
   def toResource: ResolverResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.resolver(project, id),
+      scope = ResourceScope.resolver(project, id),
       rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,

@@ -16,7 +16,7 @@
   "_self": "http://localhost:8080/v1/views/org/proj/nxv:myview",
   "_incoming": "http://localhost:8080/v1/views/org/proj/nxv:myview/incoming",
   "_outgoing": "http://localhost:8080/v1/views/org/proj/nxv:myview/outgoing",
-  "_project": "http://localhost:8080/v1/projects/org/proj",
+  "_project": "org/proj",
   "_rev": 2,
   "_updatedAt": "2021-04-20T08:05:10.014Z",
   "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/Bob"

@@ -33,15 +33,13 @@ class IdResolutionRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   private val route =
     Route.seal(new IdResolutionRoutes(identities, aclCheck, idResolution).routes)
 
-  private val addressOfProject = baseUri.toString + "/projects/" + projectRef.toString
-
   "The IdResolution route" should {
 
     "return a resolved resource with project metadata" in {
       Get(s"/resolve/$encodedIri") ~> route ~> check {
         response.status shouldEqual StatusCodes.OK
         response.topLevelField[Iri]("@id") shouldEqual successId
-        response.topLevelField[String]("_project") shouldEqual addressOfProject
+        response.topLevelField[String]("_project") shouldEqual projectRef.toString
       }
     }
 

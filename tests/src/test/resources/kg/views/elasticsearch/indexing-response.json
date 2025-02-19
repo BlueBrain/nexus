@@ -12,7 +12,7 @@
   "_deprecated": false,
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",
-  "_project": "{{deltaUri}}/projects/{{project}}",
+  "_project": "{{project}}",
   "_rev": 1,
   "_self": "{{self}}",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

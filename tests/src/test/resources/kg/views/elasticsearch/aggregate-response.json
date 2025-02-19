@@ -22,7 +22,7 @@
   "_outgoing": "{{self}}/outgoing",
   "_self": "{{self}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
-  "_project": "{{project-parent}}",
+  "_project": "{{project2}}",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_rev": 1,

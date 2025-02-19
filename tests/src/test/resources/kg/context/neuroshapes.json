@@ -4479,15 +4479,8 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
       "@type": "@id"
     },
-    "_project": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
-      "@type": "@id"
-    },
+    "_project": "https://bluebrain.github.io/nexus/vocabulary/project",
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
-    "_schemaProject": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
-      "@type": "@id"
-    },
     "_self": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/self",
       "@type": "@id"

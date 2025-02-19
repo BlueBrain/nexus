@@ -5,8 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
@@ -20,10 +18,10 @@ package object indexing {
   def mainProjectTargetAlias(index: IndexLabel, project: ProjectRef): IndexLabel =
     IndexLabel.unsafe(s"${index.value}_${PartitionInit.projectRefHash(project)}")
 
-  private def projectFilter(project: ProjectRef)(implicit baseUri: BaseUri): JsonObject                =
-    JsonObject("term" := Json.obj("_project" := ResourceUris.project(project).accessUri))
+  private def projectFilter(project: ProjectRef): JsonObject                =
+    JsonObject("term" := Json.obj("_project" := project))
 
-  def mainIndexingAlias(index: IndexLabel, project: ProjectRef)(implicit baseUri: BaseUri): IndexAlias =
+  def mainIndexingAlias(index: IndexLabel, project: ProjectRef): IndexAlias =
     IndexAlias(
       index,
       mainProjectTargetAlias(index, project),

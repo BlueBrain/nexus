@@ -12,7 +12,7 @@
         "@type": "At",
         "value": 42
       },
-      "project": "myorg/myproject",
+      "_project": "myorg/myproject",
       "_rev": 1,
       "reason": {
         "type": "UnexpectedError",
@@ -28,7 +28,7 @@
         "@type": "At",
         "value": 43
       },
-      "project": "myorg/myproject",
+      "_project": "myorg/myproject",
       "_rev": 1,
       "reason": {
         "type": "UnexpectedError",

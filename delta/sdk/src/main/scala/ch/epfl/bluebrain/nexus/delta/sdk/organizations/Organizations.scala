@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
@@ -146,7 +146,7 @@ object Organizations {
   /**
     * Encode the organization label as an [[Iri]]
     */
-  def encodeId(label: Label): Iri = ResourceUris.organization(label).relativeAccessUri.toIri
+  def encodeId(label: Label): Iri = ResourceScope.organization(label).relativeAccessUri.toIri
 
   private[delta] def next(state: Option[OrganizationState], ev: OrganizationEvent): Option[OrganizationState] =
     (state, ev) match {

@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -88,11 +88,7 @@ trait BlazegraphViewRoutesFixtures
         SparqlResourceLink(
           ResourceF(
             iri"http://example.com/id1",
-            ResourceUris.resource(
-              projectRef,
-              projectRef,
-              iri"http://example.com/id1"
-            ),
+            ResourceScope.resource(projectRef, iri"http://example.com/id1"),
             1,
             Set(iri"http://example.com/type1", iri"http://example.com/type2"),
             false,

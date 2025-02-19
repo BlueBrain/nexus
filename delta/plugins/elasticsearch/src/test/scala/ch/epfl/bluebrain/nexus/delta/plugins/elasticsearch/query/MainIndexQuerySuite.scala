@@ -259,8 +259,8 @@ class MainIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fixtu
   test("Aggregate projects correctly") {
     assertAggregation(all) { agg =>
       assertEquals(agg.projects.buckets.size, 2)
-      assert(agg.projects.buckets.contains(Bucket("http://localhost/v1/projects/org/proj1", 2)))
-      assert(agg.projects.buckets.contains(Bucket("http://localhost/v1/projects/org/proj2", 2)))
+      assert(agg.projects.buckets.contains(Bucket("org/proj1", 2)))
+      assert(agg.projects.buckets.contains(Bucket("org/proj2", 2)))
     }
   }
 

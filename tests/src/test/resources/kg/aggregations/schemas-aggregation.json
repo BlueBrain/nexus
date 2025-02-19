@@ -4,7 +4,7 @@
     "projects" : {
       "buckets" : {
         "doc_count" : 1,
-        "key" : "http://delta:8080/v1/projects/{{org}}/{{project}}"
+        "key" : "{{org}}/{{project}}"
       },
       "doc_count_error_upper_bound" : 0,
       "sum_other_doc_count" : 0

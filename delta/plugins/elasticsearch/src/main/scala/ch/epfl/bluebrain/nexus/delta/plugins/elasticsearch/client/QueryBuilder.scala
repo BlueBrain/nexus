@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -70,9 +70,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     */
   def withFilters(params: ResourcesSearchParams, projects: Set[ProjectRef])(implicit baseUri: BaseUri): QueryBuilder = {
     val (includeTypes, excludeTypes) = params.types.partition(_.include)
-    val projectsTerm                 = or(projects.map { project =>
-      term("_project", ResourceUris.project(project).accessUri)
-    }.toSeq: _*)
+    val projectsTerm                 = or(projects.map { project => term("_project", project) }.toSeq: _*)
     QueryBuilder(
       query deepMerge queryPayload(
         mustTerms = typesTerms(params.typeOperator, includeTypes) ++

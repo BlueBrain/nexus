@@ -68,7 +68,7 @@ class DefaultIndexSpec extends BaseIntegrationSpec {
     s"get a response with only resources from project '$ref11'" in eventually {
       deltaClient.post[Json](s"/views/$ref11/$defaultViewsId/_search", matchAll, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        hitProjects.getAll(json) should contain only s"${config.deltaUri}/projects/$ref11"
+        hitProjects.getAll(json) should contain only ref11
       }
     }
   }

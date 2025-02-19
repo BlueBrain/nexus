@@ -160,8 +160,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
           "filename"    -> "attachment.json",
           "storageId"   -> storageId,
           "storageType" -> storageType,
-          "projId"      -> s"$projectRef",
-          "project"     -> s"${config.deltaUri}/projects/$projectRef"
+          "project"     -> projectRef
         ): _*
       )
 
@@ -391,8 +390,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
           "storageId"   -> storageId,
           "self"        -> fileSelf(projectRef, id),
           "storageType" -> storageType,
-          "projId"      -> s"$projectRef",
-          "project"     -> s"${config.deltaUri}/projects/$projectRef",
+          "project"     -> projectRef,
           "storageType" -> storageType
         ): _*
       )

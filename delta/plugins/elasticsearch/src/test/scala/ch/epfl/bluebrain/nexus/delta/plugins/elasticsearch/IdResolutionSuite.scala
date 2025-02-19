@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import io.circe.syntax.KeyOps
 import io.circe.{Json, JsonObject}
 
 class IdResolutionSuite extends NexusSuite with Fixtures {
@@ -60,10 +61,7 @@ class IdResolutionSuite extends NexusSuite with Fixtures {
   private def fetchResource  =
     (_: ResourceRef, _: ProjectRef) => IO.pure(successContent.some)
 
-  private val res = JsonObject(
-    "@id"      -> Json.fromString(iri.toString),
-    "_project" -> Json.fromString(s"https://bbp.epfl.ch/nexus/v1/projects/$project1")
-  )
+  private val res = JsonObject("@id" := iri, "_project" := project1)
 
   test("No listing results lead to AuthorizationFailed") {
     val noListingResults = mainIndexQuery(searchResults(Seq.empty))

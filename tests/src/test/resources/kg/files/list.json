@@ -21,7 +21,7 @@
       "_mediaType": "application/json",
       "_origin" : "Client",
       "_outgoing": "{{fileSelfPrefix}}attachment.json/outgoing",
-      "_project": "{{deltaUri}}/projects/{{project}}",
+      "_project": "{{project}}",
       "_rev": 3,
       "_self": "{{fileSelfPrefix}}attachment.json",
       "_storage": {
@@ -47,7 +47,7 @@
       "_mediaType": "text/plain; charset=UTF-8",
       "_origin" : "Client",
       "_outgoing": "{{fileSelfPrefix}}empty/outgoing",
-      "_project": "{{deltaUri}}/projects/{{project}}",
+      "_project": "{{project}}",
       "_rev": 1,
       "_self": "{{fileSelfPrefix}}empty",
       "_storage": {
@@ -73,7 +73,7 @@
       "_mediaType": "application/octet-stream",
       "_origin" : "Client",
       "_outgoing": "{{fileSelfPrefix}}attachment2/outgoing",
-      "_project": "{{deltaUri}}/projects/{{project}}",
+      "_project": "{{project}}",
       "_rev": 1,
       "_self": "{{fileSelfPrefix}}attachment2",
       "_storage": {
@@ -99,7 +99,7 @@
       "_mediaType": "application/octet-stream",
       "_origin" : "Client",
       "_outgoing": "{{fileSelfPrefix}}attachment3/outgoing",
-      "_project": "{{deltaUri}}/projects/{{project}}",
+      "_project": "{{project}}",
       "_rev": 1,
       "_self": "{{fileSelfPrefix}}attachment3",
       "_storage": {

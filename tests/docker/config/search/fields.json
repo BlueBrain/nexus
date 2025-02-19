@@ -2,22 +2,9 @@
   "fields": [
     {
       "array": false,
-      "fields": [
-        {
-          "name": "identifier",
-          "format": [
-            "uri"
-          ],
-          "optional": false
-        },
-        {
-          "name": "label",
-          "format": [
-            "keyword",
-            "text"
-          ],
-          "optional": false
-        }
+      "format": [
+        "keyword",
+        "text"
       ],
       "label": "Project",
       "name": "project",

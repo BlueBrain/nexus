@@ -114,10 +114,9 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
             "kg/views/elasticsearch/indexing-response.json",
             replacements(
               ScoobyDoo,
-              "id"             -> id,
-              "self"           -> viewSelf(project, id),
-              "project-parent" -> s"${config.deltaUri}/projects/$project",
-              "project"        -> project
+              "id"      -> id,
+              "self"    -> viewSelf(project, id),
+              "project" -> project
             ): _*
           )
 
@@ -145,11 +144,10 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
           "kg/views/elasticsearch/aggregate-response.json",
           replacements(
             ScoobyDoo,
-            "id"             -> id,
-            "self"           -> viewSelf(project2, id),
-            "project-parent" -> s"${config.deltaUri}/projects/$project2",
-            "project1"       -> project1,
-            "project2"       -> project2
+            "id"       -> id,
+            "self"     -> viewSelf(project2, id),
+            "project1" -> project1,
+            "project2" -> project2
           ): _*
         )
 

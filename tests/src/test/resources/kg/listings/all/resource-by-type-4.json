@@ -12,9 +12,8 @@
       "_constrainedBy": "https://dev.nexus.test.com/test-schema",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_project": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
+      "_project": "{{org1}}/{{proj1}}",
       "_rev": 1,
-      "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -23,10 +22,9 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_project": "{{deltaUri}}/projects/{{org2}}/{{proj4}}",
+      "_project": "{{org2}}/{{proj4}}",
       "_rev": 2,
       "_tags": ["v1.0.2"],
-      "_schemaProject": "{{deltaUri}}/projects/{{org2}}/{{proj4}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -35,9 +33,8 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": true,
-      "_project": "{{deltaUri}}/projects/{{org1}}/{{proj2}}",
+      "_project": "{{org1}}/{{proj2}}",
       "_rev": 2,
-      "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj2}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -46,10 +43,9 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_project": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
+      "_project": "{{org1}}/{{proj1}}",
       "_rev": 2,
       "_tags": ["v1.0.0"],
-      "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -58,10 +54,9 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_project": "{{deltaUri}}/projects/{{org1}}/{{proj3}}",
+      "_project": "{{org1}}/{{proj3}}",
       "_rev": 3,
       "_tags": ["v1.0.0", "v1.0.1"],
-      "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj3}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     }
   ]

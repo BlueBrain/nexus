@@ -12,7 +12,7 @@
         "@type": "At",
         "value": 42
       },
-      "project": "org/proj",
+      "_project": "org/proj",
       "_rev": 1,
       "reason": {
         "type": "UnexpectedError",
@@ -28,7 +28,7 @@
         "@type": "At",
         "value": 43
       },
-      "project": "org/proj",
+      "_project": "org/proj",
       "_rev": 1,
       "reason": {
         "type": "UnexpectedError",

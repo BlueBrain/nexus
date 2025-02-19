@@ -23,7 +23,6 @@ class RemoteGraphStreamSuite extends NexusSuite {
       nxv.updatedAt.iri,
       nxv.createdBy.iri,
       nxv.createdAt.iri,
-      nxv.schemaProject.iri,
       nxv.constrainedBy.iri,
       nxv.incoming.iri,
       nxv.outgoing.iri,
@@ -47,7 +46,7 @@ class RemoteGraphStreamSuite extends NexusSuite {
       _         = assertEquals(resource.schema, Latest(iri"https://bluebrain.github.io/nexus/schemas/unconstrained.json"))
       _         = assertEquals(resource.types, Set(iri"https://example.com/Type1"))
       _         = assertEquals(resource.graph.triples.size, 2)
-      _         = assertEquals(resource.metadataGraph.triples.size, 12)
+      _         = assertEquals(resource.metadataGraph.triples.size, 11)
     } yield ()
   }
 

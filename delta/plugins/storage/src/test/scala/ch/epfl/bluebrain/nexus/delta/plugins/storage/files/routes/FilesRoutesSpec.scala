@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -836,7 +836,7 @@ object FilesRoutesSpec extends CirceLiteral {
       createdBy: Subject,
       updatedBy: Subject
   )(implicit baseUri: BaseUri): Json = {
-    val self               = ResourceUris("files", project, id).accessUri
+    val self               = ResourceScope("files", project, id).accessUri
     val keywordsJson: Json = attributes.keywords.isEmpty match {
       case false =>
         Json.obj(
@@ -880,7 +880,7 @@ object FilesRoutesSpec extends CirceLiteral {
         "_deprecated" : $deprecated,
         "_incoming" : "$self/incoming",
         "_outgoing" : "$self/outgoing",
-        "_project" : "http://localhost/v1/projects/$project",
+        "_project" : "$project",
         "_rev" : $rev,
         "_self" : "$self",
         "_updatedAt" : "1970-01-01T00:00:00Z",

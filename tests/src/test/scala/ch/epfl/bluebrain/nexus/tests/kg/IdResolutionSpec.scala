@@ -36,8 +36,6 @@ class IdResolutionSpec extends BaseIntegrationSpec {
   private val uniqueResourcePayload = resource(uniqueId)
   private val reusedResourcePayload = resource(reusedId)
 
-  private val addressOfProjectWithUniqueResource = "http://delta:8080/v1/projects/" + ref11
-
   private val neurosciencegraphSegment   = "neurosciencegraph/data/segment"
   private val proxyIdBase                = "http://localhost:8081"
   private val neurosciencegraphId        = s"$proxyIdBase/$neurosciencegraphSegment"
@@ -77,7 +75,7 @@ class IdResolutionSpec extends BaseIntegrationSpec {
         deltaClient.get[Json](s"/resolve/$encodedUniqueId", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json.topLevelField[String]("@id") shouldEqual uniqueId
-          json.topLevelField[String]("_project") shouldEqual addressOfProjectWithUniqueResource
+          json.topLevelField[String]("_project") shouldEqual ref11
         }
       }
     }

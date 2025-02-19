@@ -291,7 +291,6 @@ object SchemaEvent {
       implicit val compactedJsonLdEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
       implicit val expandedJsonLdEncoder: Encoder[ExpandedJsonLd]   = Encoder.instance(_.json)
       implicit val subjectEncoder: Encoder[Subject]                 = IriEncoder.jsonEncoder[Subject]
-      implicit val projectRefEncoder: Encoder[ProjectRef]           = IriEncoder.jsonEncoder[ProjectRef]
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[SchemaEvent]
           .encodeObject(event)

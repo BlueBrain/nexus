@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
@@ -204,7 +204,7 @@ object Acls {
   /**
     * Encode the acl address as an uri
     */
-  def encodeId(address: AclAddress): Iri = ResourceUris.acl(address).relativeAccessUri.toIri
+  def encodeId(address: AclAddress): Iri = ResourceScope.acl(address).relativeAccessUri.toIri
 
   def findUnknownRealms(labels: Set[Label], existing: Set[Label]): IO[Unit] = {
     val unknown = labels.diff(existing)

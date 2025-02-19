@@ -53,14 +53,11 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   private val indexingSource  = indexingValue.toJson(indexingId)
   private val aggregateSource = aggregateValue.toJson(aggregateId)
 
-  private val defaultIndexingValue  = IndexingElasticSearchViewValue(name = None, description = None)
-  private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
+  private val defaultIndexingValue = IndexingElasticSearchViewValue(name = None, description = None)
 
   // format: off
-  private val created    = ElasticSearchViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)
   private val created1   = ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)
   private val created2   = ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)
-  private val updated    = ElasticSearchViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)
   private val updated1   = ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)
   private val updated2   = ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)
   private val tagged     = ElasticSearchViewTagAdded(indexingId, projectRef, ElasticSearchType, uuid, targetRev = 1, tag, 3, instant, subject)
@@ -69,10 +66,8 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   // format: on
 
   private val elasticsearchViewsMapping = List(
-    (created, loadEvents("elasticsearch", "default-indexing-view-created.json"), Created),
     (created1, loadEvents("elasticsearch", "indexing-view-created.json"), Created),
     (created2, loadEvents("elasticsearch", "aggregate-view-created.json"), Created),
-    (updated, loadEvents("elasticsearch", "default-indexing-view-updated.json"), Updated),
     (updated1, loadEvents("elasticsearch", "indexing-view-updated.json"), Updated),
     (updated2, loadEvents("elasticsearch", "aggregate-view-updated.json"), Updated),
     (tagged, loadEvents("elasticsearch", "view-tag-added.json"), Tagged),
