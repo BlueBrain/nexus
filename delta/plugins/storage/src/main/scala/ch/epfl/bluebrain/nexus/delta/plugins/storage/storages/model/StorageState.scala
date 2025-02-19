@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{Dis
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -66,7 +66,7 @@ final case class StorageState(
   def toResource: StorageResource =
     ResourceF(
       id = id,
-      scope = ResourceScopeF("storages", project, id),
+      scope = ResourceScope("storages", project, id),
       rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,

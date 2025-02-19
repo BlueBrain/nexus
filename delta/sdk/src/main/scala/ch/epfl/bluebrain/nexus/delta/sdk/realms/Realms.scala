@@ -6,7 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScopeF
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
@@ -111,7 +111,7 @@ object Realms {
   /**
     * Encode the realm label as an [[Iri]]
     */
-  def encodeId(l: Label): Iri = ResourceScopeF.realm(l).relativeAccessUri.toIri
+  def encodeId(l: Label): Iri = ResourceScope.realm(l).relativeAccessUri.toIri
 
   private[delta] def next(state: Option[RealmState], event: RealmEvent): Option[RealmState] = {
     // format: off

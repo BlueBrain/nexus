@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.InvalidJsonLdFormat
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -89,7 +89,7 @@ final case class ResourceState(
   def toResource: DataResource =
     ResourceF(
       id = id,
-      scope = ResourceScopeF.resource(project, id),
+      scope = ResourceScope.resource(project, id),
       rev = rev,
       types = types,
       schema = schema,

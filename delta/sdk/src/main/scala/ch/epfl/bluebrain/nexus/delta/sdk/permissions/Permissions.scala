@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScopeF
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
@@ -118,7 +118,7 @@ object Permissions {
   /**
     * Id of the singleton permissions entity
     */
-  val id: Iri = ResourceScopeF.permissions.relativeAccessUri.toIri
+  val id: Iri = ResourceScope.permissions.relativeAccessUri.toIri
 
   /**
     * The constant entity id.

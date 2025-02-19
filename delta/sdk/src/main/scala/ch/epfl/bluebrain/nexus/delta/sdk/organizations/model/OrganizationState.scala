@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -53,7 +53,7 @@ final case class OrganizationState(
   def toResource: OrganizationResource =
     ResourceF(
       id = id,
-      scope = ResourceScopeF.organization(label),
+      scope = ResourceScope.organization(label),
       rev = rev,
       types = types,
       deprecated = deprecated,

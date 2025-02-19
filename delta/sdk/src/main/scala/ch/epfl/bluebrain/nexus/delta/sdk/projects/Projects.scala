@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
@@ -162,7 +162,7 @@ object Projects {
   /**
     * Encode the project reference as an [[Iri]]
     */
-  def encodeId(project: ProjectRef): Iri = ResourceScopeF.project(project).relativeAccessUri.toIri
+  def encodeId(project: ProjectRef): Iri = ResourceScope.project(project).relativeAccessUri.toIri
 
   private[delta] def next(state: Option[ProjectState], event: ProjectEvent): Option[ProjectState] =
     (state, event) match {

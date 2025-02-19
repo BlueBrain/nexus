@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextRemoteIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -23,7 +23,7 @@ class OriginalSourceSuite extends NexusSuite with CirceLiteral {
   private val project  = ProjectRef.unsafe("org", "proj")
   private val resource = ResourceF(
     id,
-    ResourceScopeF.resource(project, schemas.resources),
+    ResourceScope.resource(project, schemas.resources),
     5,
     Set(nxv + "Type"),
     deprecated = false,

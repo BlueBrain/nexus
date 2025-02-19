@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
@@ -124,7 +124,7 @@ object ShouldDeleteProjectSuite extends Assertions with CatsEffectAssertions wit
 
       ResourceF[Project](
         id = id,
-        scope = ResourceScopeF.project(project.ref),
+        scope = ResourceScope.project(project.ref),
         rev = 0,
         types = Set.empty,
         deprecated = deprecated,

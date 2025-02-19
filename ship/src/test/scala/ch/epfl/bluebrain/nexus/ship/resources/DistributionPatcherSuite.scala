@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -41,9 +41,9 @@ class DistributionPatcherSuite extends NexusSuite {
   private val digest   = "6e9eb5e1169ee937c37651e7ff6c60de47dc3c2e58a5d1cf22c6ee44d2023b50"
 
   private def sourceFileSelf(project: ProjectRef, id: Iri)      =
-    ResourceScopeF("files", project, id).accessUri(sourceBaseUri)
+    ResourceScope("files", project, id).accessUri(sourceBaseUri)
   private def destinationFileSelf(project: ProjectRef, id: Iri) =
-    ResourceScopeF("files", project, id).accessUri(destinationBaseUri)
+    ResourceScope("files", project, id).accessUri(destinationBaseUri)
 
   private val projectContext = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base, enforceSchema = false)
 

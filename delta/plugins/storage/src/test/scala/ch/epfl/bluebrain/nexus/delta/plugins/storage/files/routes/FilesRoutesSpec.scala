@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -836,7 +836,7 @@ object FilesRoutesSpec extends CirceLiteral {
       createdBy: Subject,
       updatedBy: Subject
   )(implicit baseUri: BaseUri): Json = {
-    val self               = ResourceScopeF("files", project, id).accessUri
+    val self               = ResourceScope("files", project, id).accessUri
     val keywordsJson: Json = attributes.keywords.isEmpty match {
       case false =>
         Json.obj(

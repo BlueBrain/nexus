@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScopeF.{EphemeralResourceF, GlobalResourceF, ScopedResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope.{EphemeralResourceF, GlobalResourceF, ScopedResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.syntax._
@@ -51,7 +51,7 @@ import java.time.Instant
   */
 final case class ResourceF[A](
     id: Iri,
-    scope: ResourceScopeF,
+    scope: ResourceScope,
     rev: Int,
     types: Set[Iri],
     deprecated: Boolean,
@@ -117,7 +117,7 @@ object ResourceF {
     }
 
   final private case class ResourceMetadata(
-      scope: ResourceScopeF,
+      scope: ResourceScope,
       rev: Int,
       deprecated: Boolean,
       createdAt: Instant,
@@ -133,7 +133,7 @@ object ResourceF {
       ResourceMetadata(r.scope, r.rev, r.deprecated, r.createdAt, r.createdBy, r.updatedAt, r.updatedBy, r.schema)
   }
 
-  implicit private def resourceUrisEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceScopeF] =
+  implicit private def resourceUrisEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceScope] =
     Encoder.AsObject.instance {
       case global: GlobalResourceF    =>
         JsonObject("_self" := global.accessUri)

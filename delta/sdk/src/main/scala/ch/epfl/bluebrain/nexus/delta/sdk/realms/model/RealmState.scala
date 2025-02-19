@@ -125,7 +125,7 @@ final case class RealmState(
   def toResource: RealmResource =
     ResourceF(
       id = id,
-      scope = ResourceScopeF.realm(label),
+      scope = ResourceScope.realm(label),
       rev = rev,
       types = types,
       deprecated = deprecated,

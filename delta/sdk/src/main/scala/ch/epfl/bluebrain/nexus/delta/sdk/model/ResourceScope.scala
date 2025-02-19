@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 /**
   * Holds information about resources depending on theirs scopes
   */
-sealed trait ResourceScopeF extends Product with Serializable {
+sealed trait ResourceScope extends Product with Serializable {
 
   /**
     * @return
@@ -25,17 +25,17 @@ sealed trait ResourceScopeF extends Product with Serializable {
     relativeAccessUri.resolvedAgainst(base.endpoint.finalSlash())
 }
 
-object ResourceScopeF {
+object ResourceScope {
 
   /**
     * A resource that is not rooted in a project
     */
-  final case class GlobalResourceF(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri) extends ResourceScopeF
+  final case class GlobalResourceF(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri) extends ResourceScope
 
   /**
     * A resource that is rooted in a project
     */
-  final case class ScopedResourceF(project: ProjectRef, relativeAccessUri: Uri) extends ResourceScopeF {
+  final case class ScopedResourceF(project: ProjectRef, relativeAccessUri: Uri) extends ResourceScope {
     def incoming(implicit base: BaseUri): Uri = accessUri / "incoming"
     def outgoing(implicit base: BaseUri): Uri = accessUri / "outgoing"
   }
@@ -43,10 +43,10 @@ object ResourceScopeF {
   /**
     * A resource that is rooted in a project but not persisted or indexed.
     */
-  final case class EphemeralResourceF(project: ProjectRef, relativeAccessUri: Uri) extends ResourceScopeF
+  final case class EphemeralResourceF(project: ProjectRef, relativeAccessUri: Uri) extends ResourceScope
 
   /**
-    * Constructs [[ResourceScopeF]] from the passed arguments and an ''id'' that can be compacted based on the project
+    * Constructs [[ResourceScope]] from the passed arguments and an ''id'' that can be compacted based on the project
     * mappings and base.
     *
     * @param resourceTypeSegment
@@ -56,30 +56,30 @@ object ResourceScopeF {
     * @param id
     *   the id that can be compacted
     */
-  final def apply(resourceTypeSegment: String, projectRef: ProjectRef, id: Iri): ResourceScopeF = {
+  final def apply(resourceTypeSegment: String, projectRef: ProjectRef, id: Iri): ResourceScope = {
     val relative = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     ScopedResourceF(projectRef, relative / id.toString)
   }
 
   /**
-    * Constructs [[ResourceScopeF]] from a relative [[Uri]].
+    * Constructs [[ResourceScope]] from a relative [[Uri]].
     *
     * @param relative
     *   the relative base [[Uri]]
     */
-  final def apply(relative: Uri): ResourceScopeF =
+  final def apply(relative: Uri): ResourceScope =
     GlobalResourceF(relative, relative)
 
   /**
     * Resource scope for permissions
     */
-  val permissions: ResourceScopeF =
+  val permissions: ResourceScope =
     apply("permissions")
 
   /**
     * Resource scope for an acl
     */
-  def acl(address: AclAddress): ResourceScopeF =
+  def acl(address: AclAddress): ResourceScope =
     address match {
       case AclAddress.Root                  => apply("acls")
       case AclAddress.Organization(org)     => apply(s"acls/$org")
@@ -89,25 +89,25 @@ object ResourceScopeF {
   /**
     * Resource scope for a realm
     */
-  def realm(label: Label): ResourceScopeF =
+  def realm(label: Label): ResourceScope =
     apply(s"realms/$label")
 
   /**
     * Resource scope for an organization
     */
-  def organization(label: Label): ResourceScopeF =
+  def organization(label: Label): ResourceScope =
     apply(s"orgs/$label")
 
   /**
     * Resource scope for a project
     */
-  def project(ref: ProjectRef): ResourceScopeF =
+  def project(ref: ProjectRef): ResourceScope =
     apply(s"projects/$ref")
 
   /**
     * Resource scope for a resource
     */
-  def resource(projectRef: ProjectRef, id: Iri): ResourceScopeF = {
+  def resource(projectRef: ProjectRef, id: Iri): ResourceScope = {
     val relative = Uri("resources") / projectRef.organization.value / projectRef.project.value
     ScopedResourceF(projectRef, relative / "_" / id.toString)
   }
@@ -115,16 +115,16 @@ object ResourceScopeF {
   /**
     * Resource scope for a schema
     */
-  def schema(ref: ProjectRef, id: Iri): ResourceScopeF =
+  def schema(ref: ProjectRef, id: Iri): ResourceScope =
     apply("schemas", ref, id)
 
   /**
     * Resource scope for a resolver
     */
-  def resolver(ref: ProjectRef, id: Iri): ResourceScopeF =
+  def resolver(ref: ProjectRef, id: Iri): ResourceScope =
     apply("resolvers", ref, id)
 
-  def typeHierarchy: ResourceScopeF =
+  def typeHierarchy: ResourceScope =
     apply("type-hierarchy")
 
   /**
@@ -134,7 +134,7 @@ object ResourceScopeF {
       resourceTypeSegment: String,
       ref: ProjectRef,
       id: Iri
-  ): ResourceScopeF = {
+  ): ResourceScope = {
     val relative       = Uri(resourceTypeSegment) / ref.organization.value / ref.project.value
     val relativeAccess = relative / id.toString
     EphemeralResourceF(ref, relativeAccess)

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.TypeHierarchyResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScopeF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchy.typeHierarchyId
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy.TypeHierarchyMapping
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -38,7 +38,7 @@ final case class TypeHierarchyState(
   def toResource: TypeHierarchyResource =
     ResourceF(
       id = id,
-      scope = ResourceScopeF.typeHierarchy,
+      scope = ResourceScope.typeHierarchy,
       rev = rev,
       types = types,
       deprecated = deprecated,
