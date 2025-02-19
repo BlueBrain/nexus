@@ -33,7 +33,6 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
-      - /tmp/ship:/tmp
     extra_hosts:
       - "delta:127.0.0.1"
     dns:
@@ -181,12 +180,3 @@ services:
 #      mode: global
 #    volumes:
 #      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
-
-#  ship:
-#    depends_on:
-#      - postgres
-#    image: bluebrain/nexus-ship:latest
-#    command: run --path "/tmp/export.json" --config "/config/external-ship.conf"
-#    volumes:
-#      - /tmp/ship:/tmp # put the export file in /tmp/ship locally
-#      - ./config:/config

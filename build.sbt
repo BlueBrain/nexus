@@ -30,7 +30,6 @@ val circeVersion               = "0.14.10"
 val circeOpticsVersion         = "0.15.0"
 val circeExtrasVersions        = "0.14.4"
 val classgraphVersion          = "4.8.179"
-val declineVersion             = "2.5.0"
 val distageVersion             = "1.2.16"
 val doobieVersion              = "1.0.0-RC7"
 val fs2Version                 = "3.11.0"
@@ -84,7 +83,6 @@ lazy val circeOptics                   = "io.circe"                     %% "circ
 lazy val circeParser                   = "io.circe"                     %% "circe-parser"                       % circeVersion
 lazy val classgraph                    = "io.github.classgraph"          % "classgraph"                         % classgraphVersion
 lazy val distageCore                   = "io.7mind.izumi"               %% "distage-core"                       % distageVersion
-lazy val declineEffect                 = "com.monovore"                 %% "decline-effect"                     % declineVersion
 lazy val doobiePostgres                = "org.tpolecat"                 %% "doobie-postgres"                    % doobieVersion
 lazy val doobie                        = Seq(
   doobiePostgres,
@@ -668,34 +666,6 @@ lazy val delta = project
   .settings(shared, compilation, noPublish)
   .aggregate(kernel, testkit, sourcingPsql, rdf, sdk, app, plugins)
 
-lazy val ship = project
-  .in(file("ship"))
-  .settings(
-    name                     := "nexus-ship",
-    moduleName               := "nexus-ship",
-    Test / parallelExecution := false,
-    addCompilerPlugin(betterMonadicFor)
-  )
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, servicePackaging, assertJavaVersion, coverage, release)
-  .dependsOn(
-    sdk                  % "compile->compile;test->test",
-    blazegraphPlugin     % "compile->compile",
-    compositeViewsPlugin % "compile->compile",
-    elasticsearchPlugin  % "compile->compile",
-    storagePlugin        % "compile->compile;test->test",
-    searchPlugin,
-    tests                % "test->compile;test->test"
-  )
-  .settings(
-    libraryDependencies ++= Seq(declineEffect, logback, circeOptics),
-    addCompilerPlugin(betterMonadicFor),
-    run / fork           := true,
-    buildInfoKeys        := Seq[BuildInfoKey](version),
-    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.ship",
-    Docker / packageName := "nexus-ship"
-  )
-
 lazy val tests = project
   .in(file("tests"))
   .dependsOn(testkit)
@@ -732,7 +702,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(compilation, shared, noPublish)
-  .aggregate(docs, delta, ship, tests)
+  .aggregate(docs, delta, tests)
 
 lazy val noPublish = Seq(
   publish / skip                         := true,
@@ -948,6 +918,4 @@ addCommandAlias("app-unit-tests", runTestsCommandsForModules(List("app")))
 addCommandAlias("app-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("app")))
 addCommandAlias("plugins-unit-tests", runTestsCommandsForModules(List("plugins")))
 addCommandAlias("plugins-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("plugins")))
-addCommandAlias("ship-unit-tests", runTestsCommandsForModules(List("ship")))
-addCommandAlias("ship-unit-tests-with-coverage", runTestsWithCoverageCommandsForModules(List("ship")))
 addCommandAlias("integration-tests", runTestsCommandsForModules(List("tests")))
