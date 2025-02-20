@@ -2,15 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.Fetch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{DeprecationCheck, ResolverResolutionResult}
@@ -19,10 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.{CrossProjectR
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.{ResolverFailedReport, ResolverReport, ResolverSuccessReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverRejection, ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResource, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 
-import java.time.Instant
 import scala.collection.immutable.VectorMap
 
 /**
@@ -229,10 +225,6 @@ object ResolverResolution {
 
   type ResolverResolutionResult[R] = (ResolverReport, Option[R])
 
-  private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => IO.pure(true))
-
-  private val resolverOrdering: Ordering[ResolverResource] = Ordering[Instant] on (r => r.createdAt)
-
   /**
     * Allows to check and exclude deprecated resources from the resolution
     * @param enabled
@@ -264,17 +256,21 @@ object ResolverResolution {
       extractTypes: R => Set[Iri],
       readPermission: Permission,
       deprecationCheck: DeprecationCheck[R]
-  ) = new ResolverResolution(
-    checkAcls = (p: ProjectRef, identities: Set[Identity]) => aclCheck.authorizeFor(p, readPermission, identities),
-    listResolvers = (projectRef: ProjectRef) =>
-      resolvers
-        .list(projectRef, Pagination.OnePage, resolverSearchParams, resolverOrdering)
-        .map { r => r.results.map { r: ResultEntry[ResolverResource] => r.source.value }.toList },
-    fetchResolver = (id: Iri, projectRef: ProjectRef) => resolvers.fetchActiveResolver(id, projectRef),
-    fetch = fetch,
-    extractTypes,
-    deprecationCheck
-  )
+  ) = {
+    def fetchActiveResolvers(project: ProjectRef) = resolvers
+      .list(project)
+      .map { r =>
+        r.results.mapFilter { r => Option.unless(r.source.deprecated)(r.source.value) }.toList
+      }
+    new ResolverResolution(
+      checkAcls = (p: ProjectRef, identities: Set[Identity]) => aclCheck.authorizeFor(p, readPermission, identities),
+      listResolvers = fetchActiveResolvers,
+      fetchResolver = (id: Iri, projectRef: ProjectRef) => resolvers.fetchActiveResolver(id, projectRef),
+      fetch = fetch,
+      extractTypes,
+      deprecationCheck
+    )
+  }
 
   /**
     * Resolution based on resolvers and reference exchanges

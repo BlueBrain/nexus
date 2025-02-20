@@ -74,18 +74,6 @@ final class AggregationsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "aggregate resolvers" in {
-      val expected = jsonContentOf(
-        "kg/aggregations/resolvers-aggregation.json",
-        "org"     -> org1,
-        "project" -> proj11
-      )
-      deltaClient.get[Json](s"/resolvers/$ref11?aggregations=true", Charlie) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        json should equalIgnoreArrayOrder(expected)
-      }
-    }
-
     "aggregate views" in {
       val expected = jsonContentOf(
         "kg/aggregations/views-aggregation.json",

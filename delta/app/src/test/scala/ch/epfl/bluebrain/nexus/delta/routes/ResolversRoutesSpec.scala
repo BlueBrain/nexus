@@ -8,7 +8,6 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -121,9 +120,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private lazy val multiResolution = MultiResolution(fetchContext, resolverResolution)
 
   private lazy val routes =
-    Route.seal(
-      ResolversRoutes(identities, aclCheck, resolvers, multiResolution, groupDirectives, IndexingAction.noop)
-    )
+    Route.seal(ResolversRoutes(identities, aclCheck, resolvers, multiResolution, groupDirectives))
 
   private def withId(id: String, payload: Json)   =
     payload.deepMerge(Json.obj("@id" -> id.asJson))
@@ -569,6 +566,21 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           request ~> check {
             response.shouldBeForbidden
           }
+        }
+      }
+    }
+
+    "listing resolvers" should {
+      "succeed if the user has read access to the given project" in {
+        Get(s"/v1/resolvers/${project.ref}") ~> asBob ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson.asObject.value("_total").value shouldEqual Json.fromLong(3L)
+        }
+      }
+
+      "fail if the user has no read access to the given project" in {
+        Get(s"/v1/resolvers/${project.ref}") ~> routes ~> check {
+          response.shouldBeForbidden
         }
       }
     }

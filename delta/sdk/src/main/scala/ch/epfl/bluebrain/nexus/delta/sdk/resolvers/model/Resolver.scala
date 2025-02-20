@@ -4,13 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.IdentityInstances
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -90,15 +88,5 @@ object Resolver {
     JsonLdEncoder.computeFromCirce(_.id, context)
 
   implicit val resolverOrderingFields: OrderingFields[Resolver] = OrderingFields.empty
-
-  type Shift = ResourceShift[ResolverState, Resolver, Nothing]
-
-  def shift(resolvers: Resolvers)(implicit baseUri: BaseUri): Shift =
-    ResourceShift.apply[ResolverState, Resolver](
-      Resolvers.entityType,
-      (ref, project) => resolvers.fetch(IdSegmentRef(ref), project),
-      state => state.toResource,
-      value => JsonLdContent(value, value.value.source, None)
-    )
 
 }

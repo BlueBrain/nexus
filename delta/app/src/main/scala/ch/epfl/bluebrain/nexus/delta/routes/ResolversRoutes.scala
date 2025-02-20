@@ -20,6 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, OriginalSource, RdfMarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
@@ -40,16 +42,13 @@ import io.circe.Json
   *   the resolvers module
   * @param schemeDirectives
   *   directives related to orgs and projects
-  * @param indexAction
-  *   the indexing action on write operations
   */
 final class ResolversRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     resolvers: Resolvers,
     multiResolution: MultiResolution,
-    schemeDirectives: DeltaSchemeDirectives,
-    indexAction: IndexingAction.Execute[Resolver]
+    schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -86,17 +85,22 @@ final class ResolversRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
       pathPrefix("resolvers") {
         extractCaller { implicit caller =>
-          (projectRef & indexingMode) { (project, indexingMode) =>
-            def index(resolver: ResolverResource): IO[Unit] =
-              indexAction(resolver.value.project, resolver, indexingMode)
-            val authorizeRead                               = authorizeFor(project, Read)
-            val authorizeWrite                              = authorizeFor(project, Write)
+          projectRef { project =>
+            val authorizeRead  = authorizeFor(project, Read)
+            val authorizeWrite = authorizeFor(project, Write)
             concat(
+              pathEndOrSingleSlash {
+                (get & authorizeRead) {
+                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ResolverResource]] =
+                    searchResultsJsonLdEncoder(Resolver.context)
+                  emit(resolvers.list(project).widen[SearchResults[ResolverResource]])
+                }
+              },
               pathEndOrSingleSlash {
                 // Create a resolver without an id segment
                 (post & noParameter("rev") & entity(as[Json])) { payload =>
                   authorizeWrite {
-                    emitMetadata(Created, resolvers.create(project, payload).flatTap(index))
+                    emitMetadata(Created, resolvers.create(project, payload))
                   }
                 }
               },
@@ -109,17 +113,17 @@ final class ResolversRoutes(
                           (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, payload)      =>
                               // Create a resolver with an id segment
-                              emitMetadata(Created, resolvers.create(resolver, project, payload).flatTap(index))
+                              emitMetadata(Created, resolvers.create(resolver, project, payload))
                             case (Some(rev), payload) =>
                               // Update a resolver
-                              emitMetadata(resolvers.update(resolver, project, rev, payload).flatTap(index))
+                              emitMetadata(resolvers.update(resolver, project, rev, payload))
                           }
                         }
                       },
                       (delete & parameter("rev".as[Int])) { rev =>
                         authorizeWrite {
                           // Deprecate a resolver
-                          emitMetadataOrReject(resolvers.deprecate(resolver, project, rev).flatTap(index))
+                          emitMetadataOrReject(resolvers.deprecate(resolver, project, rev))
                         }
                       },
                       // Fetches a resolver
@@ -226,14 +230,13 @@ object ResolversRoutes {
       aclCheck: AclCheck,
       resolvers: Resolvers,
       multiResolution: MultiResolution,
-      schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction.Execute[Resolver]
+      schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
   ): Route =
-    new ResolversRoutes(identities, aclCheck, resolvers, multiResolution, schemeDirectives, index).routes
+    new ResolversRoutes(identities, aclCheck, resolvers, multiResolution, schemeDirectives).routes
 
 }

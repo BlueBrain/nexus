@@ -81,7 +81,7 @@ class IncomingOutgoingBlazegraphSpec extends BaseIntegrationSpec {
       eventually {
         deltaClient.get[Json](s"/views/$orgLabel/$projLabel/graph/statistics", Radar) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          root.processedEvents.long.getOption(json).value shouldEqual 6L
+          root.processedEvents.long.getOption(json).value shouldEqual 5L
         }
       }
     }

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -13,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
@@ -573,52 +571,9 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
       }
     }
 
-    "list resolvers" should {
-      val order = ResourceF.defaultSort[Resolver]
-
-      "return deprecated resolvers" in {
-        val results = resolvers
-          .list(
-            FromPagination(0, 10),
-            ResolverSearchParams(deprecated = Some(true), filter = _ => IO.pure(true)),
-            order
-          )
-          .accepted
-
-        results.total shouldEqual 2
-        results.results.map(_.source) should contain theSameElementsAs Vector(inProjectExpected, crossProjectExpected)
-      }
-
-      "return resolvers created by alice" in {
-        val results = resolvers
-          .list(
-            FromPagination(0, 10),
-            ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => IO.pure(true)),
-            order
-          )
-          .accepted
-
-        results.total shouldEqual 2
-        val inProj    = inProjectValue.copy(priority = Priority.unsafe(46))
-        val crossProj = crossProjectValue.copy(identityResolution = UseCurrentCaller, priority = Priority.unsafe(47))
-        results.results.map(_.source) should contain theSameElementsAs Vector(
-          resolverResourceFor(
-            nxv + "in-project-both",
-            projectRef,
-            inProj,
-            sourceFrom(nxv + "in-project-both", inProj),
-            subject = alice.subject
-          ),
-          resolverResourceFor(
-            nxv + "cross-project-both",
-            projectRef,
-            crossProj,
-            sourceFrom(nxv + "cross-project-both", crossProj),
-            subject = alice.subject
-          )
-        )
-      }
-
+    "list resolvers" in {
+      val result = resolvers.list(projectRef).accepted
+      result.total shouldEqual 9L
     }
 
     "validating priority" should {

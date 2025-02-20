@@ -7,10 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 
 /**
   * Enumeration of the possible Search Parameters
@@ -154,40 +153,6 @@ object SearchParams {
             organization.forall(_ == resource.value.organizationLabel) &&
             label.forall(lb => resource.value.label.value.toLowerCase.contains(lb.toLowerCase.trim))
         )
-  }
-
-  /**
-    * Search parameters for resolvers
-    *
-    * @param project
-    *   the option project of the resolver resources
-    * @param deprecated
-    *   the optional deprecation status of resolver project resources
-    * @param rev
-    *   the optional revision of the resolver resources
-    * @param createdBy
-    *   the optional subject who created the resolver resource
-    * @param updatedBy
-    *   the optional subject who updated the resolver
-    * @param types
-    *   the types the resolver should contain
-    * @param filter
-    *   the additional filter to select resolvers
-    */
-  final case class ResolverSearchParams(
-      project: Option[ProjectRef] = None,
-      deprecated: Option[Boolean] = None,
-      rev: Option[Int] = None,
-      createdBy: Option[Subject] = None,
-      updatedBy: Option[Subject] = None,
-      types: Set[Iri] = Set(nxv.Resolver),
-      filter: Resolver => IO[Boolean]
-  ) extends SearchParams[Resolver] {
-    override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.resolvers))
-
-    override def matches(resource: ResourceF[Resolver]): IO[Boolean] =
-      super.matches(resource).map(_ && project.forall(_ == resource.value.project))
-
   }
 
 }
