@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.clie
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -124,8 +123,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storages: Storages,
         storagesStatistics: StoragesStatistics,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: AggregateIndexingAction,
-        shift: Storage.Shift,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
@@ -137,8 +134,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           aclCheck,
           storages,
           storagesStatistics,
-          schemeDirectives,
-          indexingAction(_, _, _)(shift)
+          schemeDirectives
         )(
           baseUri,
           cr,
@@ -147,12 +143,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         )
       }
   }
-
-  make[Storage.Shift].from { (storages: Storages, base: BaseUri) =>
-    Storage.shift(storages)(base)
-  }
-
-  many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
   make[FilesLog].from { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[IO]) =>
     ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
@@ -299,7 +289,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ResourceToSchemaMappings].add(
-    ResourceToSchemaMappings(Label.unsafe("storages") -> storagesSchemaId, Label.unsafe("files") -> filesSchemaId)
+    ResourceToSchemaMappings(Label.unsafe("files") -> filesSchemaId)
   )
 
   many[ApiMappings].add(Storages.mappings + Files.mappings)
@@ -310,7 +300,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ScopedEventMetricEncoder[_]].add { FileEvent.fileEventMetricEncoder }
-  many[ScopedEventMetricEncoder[_]].add { () => StorageEvent.storageEventMetricEncoder }
 
   many[PriorityRoute].add { (storagesRoutes: StoragesRoutes) =>
     PriorityRoute(priority, storagesRoutes.routes, requiresStrictEntity = true)

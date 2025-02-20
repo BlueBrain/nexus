@@ -9,9 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -194,34 +192,12 @@ object StorageEvent {
     Serializer.dropNulls()
   }
 
-  def storageEventMetricEncoder: ScopedEventMetricEncoder[StorageEvent] =
-    new ScopedEventMetricEncoder[StorageEvent] {
-      override def databaseDecoder: Decoder[StorageEvent] = serializer.codec
-
-      override def entityType: EntityType = Storages.entityType
-
-      override def eventToMetric: StorageEvent => ProjectScopedMetric = event =>
-        ProjectScopedMetric.from(
-          event,
-          event match {
-            case _: StorageCreated      => Created
-            case _: StorageUpdated      => Updated
-            case _: StorageTagAdded     => Tagged
-            case _: StorageDeprecated   => Deprecated
-            case _: StorageUndeprecated => Undeprecated
-          },
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-    }
-
   def sseEncoder(implicit base: BaseUri): SseEncoder[StorageEvent] = new SseEncoder[StorageEvent] {
     override val databaseDecoder: Decoder[StorageEvent] = serializer.codec
 
     override def entityType: EntityType = Storages.entityType
 
-    override val selectors: Set[Label] = Set(Label.unsafe("storages"), resourcesSelector)
+    override val selectors: Set[Label] = Set(Label.unsafe("storages"))
 
     override val sseEncoder: Encoder.AsObject[StorageEvent] = {
       val context = ContextValue(Vocabulary.contexts.metadata, contexts.storages)

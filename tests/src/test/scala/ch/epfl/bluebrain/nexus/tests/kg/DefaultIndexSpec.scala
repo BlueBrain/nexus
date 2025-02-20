@@ -44,9 +44,9 @@ class DefaultIndexSpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "kg/views/statistics.json",
-          "total"     -> "3",
-          "processed" -> "3",
-          "evaluated" -> "3",
+          "total"     -> "2",
+          "processed" -> "2",
+          "evaluated" -> "2",
           "discarded" -> "0",
           "remaining" -> "0"
         )

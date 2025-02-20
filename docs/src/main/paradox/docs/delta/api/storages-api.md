@@ -81,14 +81,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).
 - `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-max-file-size` (10G).
 
-## Indexing
-
-All the API calls modifying a storage (creation, update, deprecation) can specify whether the storage should be indexed
-synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
-
-- `async` - (default value) the storage will be indexed asynchronously
-- `sync` - the storage will be indexed synchronously and the API call won't return until the indexing is finished
-
 ## Create using POST
 
 ```
@@ -241,85 +233,6 @@ Request
 
 Response
 :   @@snip [fetched-source.json](assets/storages/fetched-source.json)
-
-## List
-
-There are three available endpoints to list storages in different scopes.
-
-### Within a project
-
-```
-GET /v1/storages/{org_label}/{project_label}?from={from}
-                                             &size={size}
-                                             &deprecated={deprecated}
-                                             &rev={rev}
-                                             &type={type}
-                                             &createdBy={createdBy}
-                                             &updatedBy={updatedBy}
-                                             &q={search}
-                                             &sort={sort}
-                                             &aggregations={aggregations}
-```
-
-### Within an organization
-
-This operation returns only storages from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
-
-```
-GET /v1/storages/{org_label}?from={from}
-                            &size={size}
-                            &deprecated={deprecated}
-                            &rev={rev}
-                            &type={type}
-                            &createdBy={createdBy}
-                            &updatedBy={updatedBy}
-                            &q={search}
-                            &sort={sort}
-                            &aggregations={aggregations}
-```
-
-### Within all projects
-
-This operation returns only storages from projects where the caller has the `resources/read` permission.
-
-```
-GET /v1/storages?from={from}
-                &size={size}
-                &deprecated={deprecated}
-                &rev={rev}
-                &type={type}
-                &createdBy={createdBy}
-                &updatedBy={updatedBy}
-                &q={search}
-                &sort={sort}
-                &aggregations={aggregations}
-```
-
-### Parameter description
-
-- `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
-- `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{deprecated}`: Boolean - can be used to filter the resulting storages based on their deprecation status
-- `{rev}`: Number - can be used to filter the resulting storages based on their revision value
-- `{type}`: Iri - can be used to filter the resulting storages based on their `@type` value. This parameter can appear
-  multiple times, filtering further the `@type` value.
-- `{createdBy}`: Iri - can be used to filter the resulting storages based on their creator
-- `{updatedBy}`: Iri - can be used to filter the resulting storages based on the person which performed the last update
-- `{search}`: String - can be provided to select only the storages in the collection that have attribute values matching
-  (containing) the provided string
-- `{sort}`: String - can be used to sort storages based on a payloads' field. This parameter can appear multiple times
-  to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
-- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](resources-api.md#aggregations).
-
-
-**Example**
-
-Request
-:   @@snip [list.sh](assets/storages/list.sh)
-
-Response
-:   @@snip [listed.json](assets/storages/listed.json)
-
 
 ## Server Sent Events
 
