@@ -4,7 +4,6 @@ import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 
 import java.time.Instant
 
@@ -163,19 +162,19 @@ class ResolverSerializationSuite extends SerializationSuite {
     )
 
   private val resolversMapping = List(
-    (created, loadEvents("resolvers", "resolver-in-project-created.json"), Created),
-    (created1, loadEvents("resolvers", "resolver-cross-project-created-1.json"), Created),
-    (created2, loadEvents("resolvers", "resolver-cross-project-created-2.json"), Created),
-    (updated, loadEvents("resolvers", "resolver-in-project-updated.json"), Updated),
-    (updated1, loadEvents("resolvers", "resolver-cross-project-updated-1.json"), Updated),
-    (updated2, loadEvents("resolvers", "resolver-cross-project-updated-2.json"), Updated),
-    (tagged, loadEvents("resolvers", "resolver-tagged.json"), Tagged),
-    (deprecated, loadEvents("resolvers", "resolver-deprecated.json"), Deprecated),
-    (createdNamedInProject, loadEvents("resolvers", "resolver-in-project-created-named.json"), Created),
-    (createdNamedCrossProject, loadEvents("resolvers", "resolver-cross-project-created-named.json"), Created)
+    (created, loadEvents("resolvers", "resolver-in-project-created.json")),
+    (created1, loadEvents("resolvers", "resolver-cross-project-created-1.json")),
+    (created2, loadEvents("resolvers", "resolver-cross-project-created-2.json")),
+    (updated, loadEvents("resolvers", "resolver-in-project-updated.json")),
+    (updated1, loadEvents("resolvers", "resolver-cross-project-updated-1.json")),
+    (updated2, loadEvents("resolvers", "resolver-cross-project-updated-2.json")),
+    (tagged, loadEvents("resolvers", "resolver-tagged.json")),
+    (deprecated, loadEvents("resolvers", "resolver-deprecated.json")),
+    (createdNamedInProject, loadEvents("resolvers", "resolver-in-project-created-named.json")),
+    (createdNamedCrossProject, loadEvents("resolvers", "resolver-cross-project-created-named.json"))
   )
 
-  resolversMapping.foreach { case (event, (database, sse), action) =>
+  resolversMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutputIgnoreOrder(ResolverEvent.serializer, event, database)
     }
@@ -188,22 +187,6 @@ class ResolverSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
-    }
-
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
-      ResolverEvent.resolverEventMetricEncoder.toMetric.decodeJson(database).assertRight {
-        ProjectScopedMetric(
-          instant,
-          subject,
-          event.rev,
-          Set(action),
-          ProjectRef(org, proj),
-          org,
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-      }
     }
   }
 

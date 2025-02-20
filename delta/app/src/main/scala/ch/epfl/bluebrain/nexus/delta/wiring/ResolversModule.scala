@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
@@ -90,8 +89,6 @@ object ResolversModule extends ModuleDef {
   }
 
   many[SseEncoder[_]].add { base: BaseUri => ResolverEvent.sseEncoder(base) }
-
-  many[ScopedEventMetricEncoder[_]].add { ResolverEvent.resolverEventMetricEncoder }
 
   make[ResolverScopeInitialization].from { (resolvers: Resolvers, serviceAccount: ServiceAccount, config: AppConfig) =>
     ResolverScopeInitialization(resolvers, serviceAccount, config.resolvers.defaults)
