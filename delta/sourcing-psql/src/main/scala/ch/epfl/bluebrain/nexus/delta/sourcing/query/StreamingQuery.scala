@@ -18,7 +18,7 @@ import java.time.Instant
 import cats.effect.kernel.Resource
 
 /**
-  * Provide utility methods to stream results from the database according to a [[QueryConfig]].
+  * Provide utility methods to stream results from the database according to a [[RefreshStrategy]].
   */
 object StreamingQuery {
 
@@ -39,9 +39,10 @@ object StreamingQuery {
       start: Offset,
       xas: Transactors
   ): IO[Option[RemainingElems]] = {
+    val whereClause = Fragments.whereAndOpt(stateFilter(scope, start, selectFilter))
     sql"""SELECT count(ordering), max(instant)
          |FROM public.scoped_states
-         |${stateFilter(scope, start, selectFilter)}
+         |$whereClause
          |""".stripMargin
       .query[(Long, Option[Instant])]
       .map { case (count, maxInstant) =>
@@ -54,7 +55,7 @@ object StreamingQuery {
   /**
     * Streams the results of a query starting with the provided offset.
     *
-    * The stream termination depends on the provided [[QueryConfig]].
+    * The stream termination depends on the provided [[RefreshStrategy]].
     *
     * @param start
     *   the offset to start with
@@ -102,8 +103,7 @@ object StreamingQuery {
   def stateFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter) = {
     val typeFragment =
       selectFilter.types.asRestrictedTo.map(restriction => fr"value -> 'types' ??| ${typesSqlArray(restriction)}")
-    Fragments.whereAndOpt(
-      selectFilter.entityType.map { entityType => fr"type = $entityType" },
+    Fragments.andOpt(
       scope.asFragment,
       offset.asFragment,
       selectFilter.tag.asFragment,

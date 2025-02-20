@@ -13,6 +13,8 @@ import scala.concurrent.duration.FiniteDuration
   */
 sealed trait ElemQueryConfig {
 
+  override def equals(obj: Any): Boolean = super.equals(obj)
+
   /**
     * @return
     *   the maximum number of elements to fetch with one query

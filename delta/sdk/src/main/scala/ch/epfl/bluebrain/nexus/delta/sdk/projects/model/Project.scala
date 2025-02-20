@@ -4,11 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project.{Metadata, Source}
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -157,15 +154,4 @@ object Project {
       case "_organizationUuid"  => Ordering[UUID] on (_.organizationUuid)
       case "_markedForDeletion" => Ordering[Boolean] on (_.markedForDeletion)
     }
-
-  type Shift = ResourceShift[ProjectState, Project, Metadata]
-
-  def shift(projects: Projects, defaultMappings: ApiMappings)(implicit baseUri: BaseUri): Shift =
-    ResourceShift.withMetadata[ProjectState, Project, Metadata](
-      Projects.entityType,
-      (_, ref) => projects.fetch(ref),
-      state => state.toResource(defaultMappings),
-      value => JsonLdContent(value, value.value.asJson, Some(value.value.metadata))
-    )
-
 }

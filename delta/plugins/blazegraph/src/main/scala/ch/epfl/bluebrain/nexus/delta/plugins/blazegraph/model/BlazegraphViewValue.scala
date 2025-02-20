@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.generic.extras
@@ -100,8 +100,7 @@ object BlazegraphViewValue {
     /**
       * Creates a [[SelectFilter]] for this view
       */
-    def selectFilter: SelectFilter =
-      SelectFilter(None, resourceTypes, resourceTag.getOrElse(Latest))
+    def selectFilter: SelectFilter = SelectFilter.tagOpt(resourceTag)
   }
 
   /**
