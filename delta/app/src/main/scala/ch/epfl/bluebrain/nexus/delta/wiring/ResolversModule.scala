@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -16,11 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -70,8 +68,6 @@ object ResolversModule extends ModuleDef {
         aclCheck: AclCheck,
         resolvers: Resolvers,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: AggregateIndexingAction,
-        shift: Resolver.Shift,
         multiResolution: MultiResolution,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -83,8 +79,7 @@ object ResolversModule extends ModuleDef {
         aclCheck,
         resolvers,
         multiResolution,
-        schemeDirectives,
-        indexingAction(_, _, _)(shift)
+        schemeDirectives
       )(
         baseUri,
         cr,
@@ -95,16 +90,12 @@ object ResolversModule extends ModuleDef {
 
   many[SseEncoder[_]].add { base: BaseUri => ResolverEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { ResolverEvent.resolverEventMetricEncoder }
-
   make[ResolverScopeInitialization].from { (resolvers: Resolvers, serviceAccount: ServiceAccount, config: AppConfig) =>
     ResolverScopeInitialization(resolvers, serviceAccount, config.resolvers.defaults)
   }
   many[ScopeInitialization].ref[ResolverScopeInitialization]
 
   many[ApiMappings].add(Resolvers.mappings)
-
-  many[ResourceToSchemaMappings].add(Resolvers.resourcesToSchemas)
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/resolvers-metadata.json"))
 
@@ -120,10 +111,4 @@ object ResolversModule extends ModuleDef {
   many[PriorityRoute].add { (route: ResolversRoutes) =>
     PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = true)
   }
-
-  make[Resolver.Shift].from { (resolvers: Resolvers, base: BaseUri) =>
-    Resolver.shift(resolvers)(base)
-  }
-
-  many[ResourceShift[_, _, _]].ref[Resolver.Shift]
 }

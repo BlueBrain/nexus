@@ -7,10 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -19,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 
@@ -169,34 +167,13 @@ object ResolverEvent {
     Serializer.dropNulls()
   }
 
-  val resolverEventMetricEncoder: ScopedEventMetricEncoder[ResolverEvent] =
-    new ScopedEventMetricEncoder[ResolverEvent] {
-      override def databaseDecoder: Decoder[ResolverEvent] = serializer.codec
-
-      override def entityType: EntityType = Resolvers.entityType
-
-      override def eventToMetric: ResolverEvent => ProjectScopedMetric = event =>
-        ProjectScopedMetric.from(
-          event,
-          event match {
-            case _: ResolverCreated    => Created
-            case _: ResolverUpdated    => Updated
-            case _: ResolverTagAdded   => Tagged
-            case _: ResolverDeprecated => Deprecated
-          },
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-    }
-
   def sseEncoder(implicit base: BaseUri): SseEncoder[ResolverEvent] = new SseEncoder[ResolverEvent] {
 
     override val databaseDecoder: Decoder[ResolverEvent] = serializer.codec
 
     override def entityType: EntityType = Resolvers.entityType
 
-    override val selectors: Set[Label] = Set(Label.unsafe("resolvers"), resourcesSelector)
+    override val selectors: Set[Label] = Set(Label.unsafe("resolvers"))
 
     override val sseEncoder: Encoder.AsObject[ResolverEvent] = {
       val context                                               = ContextValue(contexts.metadata, contexts.resolvers)

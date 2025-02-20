@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -11,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
@@ -128,18 +126,15 @@ final class ResolversImpl private (
     } yield state.toResource
   }.span("fetchResolver")
 
-  def list(
-      pagination: FromPagination,
-      params: ResolverSearchParams,
-      ordering: Ordering[ResolverResource]
-  ): IO[UnscoredSearchResults[ResolverResource]] = {
-    val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
-    SearchResults(
-      log.currentStates(scope, _.toResource).evalFilter(params.matches),
-      pagination,
-      ordering
-    ).span("listResolvers")
-  }
+  def list(project: ProjectRef): IO[UnscoredSearchResults[ResolverResource]] =
+    log
+      .currentStates(Scope.Project(project), _.toResource)
+      .compile
+      .toList
+      .map { results =>
+        SearchResults(results.size.toLong, results)
+      }
+      .span("listResolvers")
 
   private def eval(cmd: ResolverCommand): IO[ResolverResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)

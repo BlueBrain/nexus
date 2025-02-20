@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -9,9 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
@@ -23,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
 
@@ -130,40 +128,12 @@ trait Resolvers {
   /**
     * Lists all resolvers.
     *
-    * @param pagination
-    *   the pagination settings
-    * @param params
-    *   filter parameters for the listing
-    * @param ordering
-    *   the response ordering
-    * @return
-    *   a paginated results list
-    */
-  def list(
-      pagination: FromPagination,
-      params: ResolverSearchParams,
-      ordering: Ordering[ResolverResource]
-  ): IO[UnscoredSearchResults[ResolverResource]]
-
-  /**
-    * List resolvers within a project
-    *
-    * @param projectRef
+    * @param project
     *   the project the resolvers belong to
-    * @param pagination
-    *   the pagination settings
-    * @param params
-    *   filter parameters
-    * @param ordering
-    *   the response ordering
+    * @return
+    *   the list of resolvers in that project
     */
-  def list(
-      projectRef: ProjectRef,
-      pagination: FromPagination,
-      params: ResolverSearchParams,
-      ordering: Ordering[ResolverResource]
-  ): IO[UnscoredSearchResults[ResolverResource]] =
-    list(pagination, params.copy(project = Some(projectRef)), ordering)
+  def list(project: ProjectRef): IO[UnscoredSearchResults[ResolverResource]]
 }
 
 object Resolvers {
@@ -181,13 +151,6 @@ object Resolvers {
     * The default resolver API mappings
     */
   val mappings: ApiMappings = ApiMappings("resolver" -> schemas.resolvers, "defaultResolver" -> nxv.defaultResolver)
-
-  /**
-    * The resolver resource to schema mapping
-    */
-  val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(
-    Label.unsafe("resolvers") -> schemas.resolvers
-  )
 
   private[delta] def next(state: Option[ResolverState], event: ResolverEvent): Option[ResolverState] = {
 
