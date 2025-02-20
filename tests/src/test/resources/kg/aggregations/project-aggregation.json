@@ -3,7 +3,7 @@
   "aggregations" : {
     "projects" : {
       "buckets" : {
-        "doc_count" : 6,
+        "doc_count" : 5,
         "key" : "{{org}}/{{project}}"
       },
       "doc_count_error_upper_bound" : 0,
@@ -25,24 +25,16 @@
         },
         {
           "doc_count" : 1,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
-        },
-        {
-          "doc_count" : 1,
           "key" : "https://bluebrain.github.io/nexus/vocabulary/Schema"
         },
         {
           "doc_count" : 1,
           "key" : "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
-        },
-        {
-          "doc_count" : 1,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/Storage"
         }
       ],
       "doc_count_error_upper_bound" : 0,
       "sum_other_doc_count" : 0
     }
   },
-  "total" : 6
+  "total" : 5
 }

@@ -55,15 +55,6 @@ abstract class StorageSpec extends BaseIntegrationSpec {
     s"succeed for a $storageName storage" in {
       createStorages(projectRef, storageId, storageName)
     }
-
-    "wait for storages to be indexed" in {
-      eventually {
-        deltaClient.get[Json](s"/storages/$projectRef", Coyote) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 3
-        }
-      }
-    }
   }
 
   "An empty file" should {

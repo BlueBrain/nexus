@@ -130,26 +130,6 @@ final class ListingsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "get default storage" in {
-      val defaultStorageId = "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault"
-
-      val mapping = replacements(
-        Delta,
-        "project" -> ref11,
-        "id"      -> defaultStorageId,
-        "self"    -> storageSelf(ref11, defaultStorageId)
-      )
-
-      val expected = jsonContentOf("kg/listings/default-storage.json", mapping: _*)
-
-      eventually {
-        deltaClient.get[Json](s"/storages/$ref11", Bob) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
-        }
-      }
-    }
-
     val resource11WithSchemaId     = s"${config.deltaUri}/resources/$proj11/_/resource11_with_schema"
     val resource11WithSchemaSelf   = resourceSelf(ref11, resource11WithSchemaId)
     val resource11WithSchemaResult = jsonContentOf(

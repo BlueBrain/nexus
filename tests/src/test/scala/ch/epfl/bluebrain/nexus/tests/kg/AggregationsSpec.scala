@@ -97,19 +97,6 @@ final class AggregationsSpec extends BaseIntegrationSpec {
         json should equalIgnoreArrayOrder(expected)
       }
     }
-
-    "aggregate storages" in {
-      val expected = jsonContentOf(
-        "kg/aggregations/storages-aggregation.json",
-        "org"     -> org1,
-        "project" -> proj11
-      )
-      deltaClient.get[Json](s"/storages/$ref11?aggregations=true", Charlie) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        json should equalIgnoreArrayOrder(expected)
-      }
-    }
-
   }
 
   "Aggregating resources within an org" should {
@@ -120,7 +107,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "aggregate correctly for a user that has " in eventually {
+    "aggregate correctly for a user that has access" in eventually {
       val expected = jsonContentOf(
         "kg/aggregations/org-aggregation.json",
         "org1"   -> org1,

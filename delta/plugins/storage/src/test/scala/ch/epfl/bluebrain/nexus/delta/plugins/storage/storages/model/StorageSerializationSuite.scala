@@ -5,12 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe.JsonObject
 
 import java.time.Instant
 import scala.collection.immutable.VectorMap
@@ -33,20 +31,19 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
   private val diskUndeprecated = StorageUndeprecated(dId, projectRef, DiskStorageType, 5, instant, subject)
 
   private val storagesMapping = List(
-    (diskCreated, loadEvents("storages", "disk-storage-created.json"), Created),
-    (s3Created, loadEvents("storages", "s3-storage-created.json"), Created),
-    (diskUpdated, loadEvents("storages", "disk-storage-updated.json"), Updated),
-    (s3Updated, loadEvents("storages", "s3-storage-updated.json"), Updated),
-    (diskTagged, loadEvents("storages", "storage-tag-added.json"), Tagged),
-    (diskDeprecated, loadEvents("storages", "storage-deprecated.json"), Deprecated),
-    (diskUndeprecated, loadEvents("storages", "storage-undeprecated.json"), Undeprecated)
+    (diskCreated, loadEvents("storages", "disk-storage-created.json")),
+    (s3Created, loadEvents("storages", "s3-storage-created.json")),
+    (diskUpdated, loadEvents("storages", "disk-storage-updated.json")),
+    (s3Updated, loadEvents("storages", "s3-storage-updated.json")),
+    (diskTagged, loadEvents("storages", "storage-tag-added.json")),
+    (diskDeprecated, loadEvents("storages", "storage-deprecated.json")),
+    (diskUndeprecated, loadEvents("storages", "storage-undeprecated.json"))
   )
 
-  private val storageEventSerializer    = StorageEvent.serializer
-  private val storageSseEncoder         = StorageEvent.sseEncoder
-  private val storageEventMetricEncoder = StorageEvent.storageEventMetricEncoder
+  private val storageEventSerializer = StorageEvent.serializer
+  private val storageSseEncoder      = StorageEvent.sseEncoder
 
-  storagesMapping.foreach { case (event, (database, sse), action) =>
+  storagesMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getSimpleName} for ${event.tpe}") {
       assertEquals(storageEventSerializer.codec(event), database)
     }
@@ -59,22 +56,6 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
       storageSseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
-    }
-
-    test(s"Correctly encode ${event.getClass.getSimpleName} for ${event.tpe} to metric") {
-      storageEventMetricEncoder.toMetric.decodeJson(database).assertRight {
-        ProjectScopedMetric(
-          instant,
-          subject,
-          event.rev,
-          Set(action),
-          projectRef,
-          Label.unsafe("myorg"),
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-      }
     }
   }
 

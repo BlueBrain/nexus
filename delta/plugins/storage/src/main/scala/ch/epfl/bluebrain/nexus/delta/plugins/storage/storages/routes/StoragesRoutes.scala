@@ -6,12 +6,11 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragePluginExceptionHandler.handleStorageExceptions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
@@ -33,16 +32,13 @@ import io.circe.Json
   *   the storages module
   * @param schemeDirectives
   *   directives related to orgs and projects
-  * @param index
-  *   the indexing action on write operations
   */
 final class StoragesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     storages: Storages,
     storagesStatistics: StoragesStatistics,
-    schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction.Execute[Storage]
+    schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -62,16 +58,16 @@ final class StoragesRoutes(
             concat(
               pathEndOrSingleSlash {
                 // Create a storage without id segment
-                (post & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
+                (post & noParameter("rev") & entity(as[Json])) { source =>
                   authorizeFor(project, Write).apply {
                     emit(
                       Created,
-                      storages.create(project, source).flatTap(index(project, _, mode)).mapValue(_.metadata)
+                      storages.create(project, source).mapValue(_.metadata)
                     )
                   }
                 }
               },
-              (idSegment & indexingMode) { (id, mode) =>
+              idSegment { id =>
                 concat(
                   pathEndOrSingleSlash {
                     concat(
@@ -85,7 +81,6 @@ final class StoragesRoutes(
                                 Created,
                                 storages
                                   .create(id, project, source)
-                                  .flatTap(index(project, _, mode))
                                   .mapValue(_.metadata)
                               )
                             case (Some(rev), source) =>
@@ -93,7 +88,6 @@ final class StoragesRoutes(
                               emit(
                                 storages
                                   .update(id, project, rev, source)
-                                  .flatTap(index(project, _, mode))
                                   .mapValue(_.metadata)
                               )
                           }
@@ -105,7 +99,6 @@ final class StoragesRoutes(
                           emit(
                             storages
                               .deprecate(id, project, rev)
-                              .flatTap(index(project, _, mode))
                               .mapValue(_.metadata)
                               .attemptNarrow[StorageRejection]
                               .rejectOn[StorageNotFound]
@@ -135,7 +128,6 @@ final class StoragesRoutes(
                       emit(
                         storages
                           .undeprecate(id, project, rev)
-                          .flatTap(index(project, _, mode))
                           .mapValue(_.metadata)
                           .attemptNarrow[StorageRejection]
                           .rejectOn[StorageNotFound]
@@ -176,14 +168,13 @@ object StoragesRoutes {
       aclCheck: AclCheck,
       storages: Storages,
       storagesStatistics: StoragesStatistics,
-      schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction.Execute[Storage]
+      schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
   ): Route =
-    new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, index).routes
+    new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives).routes
 
 }

@@ -7,9 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -108,15 +106,4 @@ object Storage {
     OrderingFields { case "_algorithm" =>
       Ordering[String] on (_.storageValue.algorithm.value)
     }
-
-  type Shift = ResourceShift[StorageState, Storage, Metadata]
-
-  def shift(storages: Storages)(implicit baseUri: BaseUri): Shift =
-    ResourceShift.withMetadata[StorageState, Storage, Metadata](
-      Storages.entityType,
-      (ref, project) => storages.fetch(IdSegmentRef(ref), project),
-      state => state.toResource,
-      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
-    )
-
 }
