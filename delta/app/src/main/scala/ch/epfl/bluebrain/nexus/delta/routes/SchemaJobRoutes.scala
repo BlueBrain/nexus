@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.SchemaValidationCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -77,7 +76,7 @@ class SchemaJobRoutes(
                       projectExists(project) >> projections
                         .statistics(
                           project,
-                          SelectFilter.latestOfEntity(Resources.entityType),
+                          SelectFilter.latest,
                           projectionName(project)
                         )
                     )

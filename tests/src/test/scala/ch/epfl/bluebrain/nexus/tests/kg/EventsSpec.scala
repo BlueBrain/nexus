@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
+import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
 
 class EventsSpec extends BaseIntegrationSpec {
@@ -19,64 +19,18 @@ class EventsSpec extends BaseIntegrationSpec {
   private val id2                            = s"$orgId2/$projId"
   private val initialEventId: Option[String] = None
 
-  "creating projects" should {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
 
-    "add necessary permissions for user" in {
-      aclDsl.addPermissions(
-        "/",
-        BugsBunny,
-        Set(Organizations.Create, Events.Read, Resources.Read)
-      )
-    }
-
-    "succeed creating project 1 if payload is correct" in {
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, BugsBunny)
-        _ <- adminDsl.createProjectWithName(orgId, projId, name = id, BugsBunny)
-      } yield succeed
-    }
-
-    "succeed creating project 2 if payload is correct" in {
-      for {
-        _ <- adminDsl.createOrganization(orgId2, orgId2, BugsBunny)
-        _ <- adminDsl.createProjectWithName(orgId2, projId, name = id2, BugsBunny)
-      } yield succeed
-    }
-
-    "wait for default project events" in {
-      val endpoints = List(
-        s"/views/$id/nxv:defaultSparqlIndex",
-        s"/resolvers/$id/nxv:defaultInProject",
-        s"/storages/$id/nxv:diskStorageDefault",
-        s"/views/$id2/nxv:defaultSparqlIndex",
-        s"/resolvers/$id2/nxv:defaultInProject",
-        s"/storages/$id2/nxv:diskStorageDefault"
-      )
-
-      forAll(endpoints) { endpoint =>
-        eventually {
-          deltaClient.get[Json](endpoint, BugsBunny) { (_, response) =>
-            response.status shouldEqual StatusCodes.OK
-          }
-        }
-      }
-    }
-
-    "wait for storages to be indexed" in {
-      val endpoints = List(
-        s"/storages/$id",
-        s"/storages/$id2"
-      )
-
-      forAll(endpoints) { endpoint =>
-        eventually {
-          deltaClient.get[Json](endpoint, BugsBunny) { (json, response) =>
-            response.status shouldEqual StatusCodes.OK
-            _total.getOption(json).value shouldEqual 1
-          }
-        }
-      }
-    }
+    val permissions = Set(Organizations.Create, Events.Read, Resources.Read)
+    val setup       = for {
+      _ <- aclDsl.addPermissions("/", BugsBunny, permissions)
+      _ <- adminDsl.createOrganization(orgId, orgId, BugsBunny)
+      _ <- adminDsl.createProjectWithName(orgId, projId, name = id, BugsBunny)
+      _ <- adminDsl.createOrganization(orgId2, orgId2, BugsBunny)
+      _ <- adminDsl.createProjectWithName(orgId2, projId, name = id2, BugsBunny)
+    } yield ()
+    setup.accepted
   }
 
   "fetching events" should {
@@ -86,60 +40,37 @@ class EventsSpec extends BaseIntegrationSpec {
       val resourceId = "https://dev.nexus.test.com/simplified-resource/1"
       val payload    = SimpleResource.sourcePayload(resourceId, 3).accepted
 
-      val fileContent =
-        """|{
-           |  "this": ["is", "a", "test", "attachment"]
-           |}""".stripMargin
-
-      val updatedFileContent =
-        """|{
-           |  "this": ["is", "a", "test", "attachment", "2"]
-           |}""".stripMargin
+      val fileContent        = """{ "this": ["is", "a", "test", "attachment"]}"""
+      val updatedFileContent = """{ "this": ["is", "a", "test", "attachment", "2"] }"""
 
       implicit val identity: Identity = BugsBunny
 
       for {
         //ResourceCreated event
-        _          <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1", payload, BugsBunny) { (_, response) =>
-                        response.status shouldEqual StatusCodes.Created
-                      }
-        _          <- deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, BugsBunny) { (_, response) =>
-                        response.status shouldEqual StatusCodes.Created
-                      }
+        _          <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1", payload, BugsBunny) { expectCreated }
+        _          <- deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, BugsBunny) { expectCreated }
         //ResourceUpdated event
         payload    <- SimpleResource.sourcePayload(resourceId, 5)
-        _          <- deltaClient.put[Json](
-                        s"/resources/$id/_/test-resource:1?rev=1",
-                        payload,
-                        BugsBunny
-                      ) { (_, response) =>
-                        response.status shouldEqual StatusCodes.OK
-                      }
+        _          <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1?rev=1", payload, BugsBunny) { expectOk }
         //ResourceTagAdded event
-        _          <- deltaClient.post[Json](
-                        s"/resources/$id/_/test-resource:1/tags?rev=2",
-                        tag("v1.0.0", 1),
-                        BugsBunny
-                      ) { (_, response) =>
-                        response.status shouldEqual StatusCodes.Created
+        tagPayload  = tag("v1.0.0", 1)
+        _          <- deltaClient.post[Json](s"/resources/$id/_/test-resource:1/tags?rev=2", tagPayload, BugsBunny) {
+                        expectCreated
                       }
         // ResourceDeprecated event
-        _          <- deltaClient.delete[Json](s"/resources/$id/_/test-resource:1?rev=3", BugsBunny) { (_, response) =>
-                        response.status shouldEqual StatusCodes.OK
-                      }
+        _          <- deltaClient.delete[Json](s"/resources/$id/_/test-resource:1?rev=3", BugsBunny) { expectOk }
         //FileCreated event
-        fileCreated = FileInput("attachment.json", "attachment.json", ContentTypes.`application/json`, fileContent)
+        fileCreated = FileInput("attachment.json", "attachment.json", `application/json`, fileContent)
         _          <- deltaClient.uploadFile(id, None, fileCreated, None) { expectCreated }
         //FileUpdated event
-        fileUpdated =
-          FileInput("attachment.json", "attachment.json", ContentTypes.`application/json`, updatedFileContent)
+        fileUpdated = FileInput("attachment.json", "attachment.json", `application/json`, updatedFileContent)
         _          <- deltaClient.uploadFile(id, None, fileUpdated, Some(1)) { expectOk }
       } yield succeed
     }
 
     "fetch resource events filtered by project" in eventually {
       deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { seq =>
-        val projectEvents = seq.drop(5)
+        val projectEvents = seq.drop(4)
         projectEvents.size shouldEqual 6
         projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
           "ResourceCreated",
@@ -150,20 +81,13 @@ class EventsSpec extends BaseIntegrationSpec {
           "FileUpdated"
         )
         val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-        json shouldEqual jsonContentOf(
-          "kg/events/events.json",
-          replacements(
-            BugsBunny,
-            "resources" -> s"${config.deltaUri}/resources/$id",
-            "project"   -> s"$orgId/$projId"
-          ): _*
-        )
+        json shouldEqual expectedEvents("kg/events/events.json", orgId, projId)
       }
     }
 
     "fetch resource events filtered by organization 1" in {
       deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
-        val projectEvents = seq.drop(5)
+        val projectEvents = seq.drop(4)
         projectEvents.size shouldEqual 6
         projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
           "ResourceCreated",
@@ -174,32 +98,28 @@ class EventsSpec extends BaseIntegrationSpec {
           "FileUpdated"
         )
         val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-        json shouldEqual jsonContentOf(
-          "kg/events/events.json",
-          replacements(
-            BugsBunny,
-            "resources" -> s"${config.deltaUri}/resources/$id",
-            "project"   -> s"$orgId/$projId"
-          ): _*
-        )
+        json shouldEqual expectedEvents("kg/events/events.json", orgId, projId)
       }
     }
 
     "fetch resource events filtered by organization 2" in {
       deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
-        val projectEvents = seq.drop(5)
+        val projectEvents = seq.drop(4)
         projectEvents.size shouldEqual 1
         projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
         val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-        json shouldEqual jsonContentOf(
-          "kg/events/events2.json",
-          replacements(
-            BugsBunny,
-            "resources" -> s"${config.deltaUri}/resources/$id",
-            "project"   -> s"$orgId2/$projId"
-          ): _*
-        )
+        json shouldEqual expectedEvents("kg/events/events2.json", orgId2, projId)
       }
     }
   }
+
+  private def expectedEvents(file: String, org: String, proj: String) =
+    jsonContentOf(
+      file,
+      replacements(
+        BugsBunny,
+        "resources" -> s"${config.deltaUri}/resources/$id",
+        "project"   -> s"$org/$proj"
+      ): _*
+    )
 }

@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.job.ProjectHealthJob
@@ -140,8 +139,6 @@ object ProjectsModule extends ModuleDef {
 
   many[SseEncoder[_]].add { base: BaseUri => ProjectEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { base: BaseUri => ProjectEvent.projectEventMetricEncoder(base) }
-
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/projects-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
@@ -157,11 +154,5 @@ object ProjectsModule extends ModuleDef {
   many[PriorityRoute].add { (route: ProjectsRoutes) =>
     PriorityRoute(pluginsMaxPriority + 7, route.routes, requiresStrictEntity = true)
   }
-
-  make[Project.Shift].from { (projects: Projects, mappings: ApiMappingsCollection, base: BaseUri) =>
-    Project.shift(projects, mappings.merge)(base)
-  }
-
-  many[ResourceShift[_, _, _]].ref[Project.Shift]
 
 }

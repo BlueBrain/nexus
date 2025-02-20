@@ -40,7 +40,7 @@ object ProjectLastUpdateWrites {
       batchConfig: BatchConfig
   ): IO[ProjectLastUpdateWrites] = {
     // We build an elem streaming based on a delay
-    val es         = ElemStreaming.delay(xas, batchConfig.maxElements, batchConfig.maxInterval)
+    val es         = ElemStreaming.delay(xas, None, batchConfig.maxElements, batchConfig.maxInterval)
     val elemStream = (offset: Offset) => es(Scope.root, offset, SelectFilter.latest)
     apply(supervisor, store, elemStream, batchConfig)
   }

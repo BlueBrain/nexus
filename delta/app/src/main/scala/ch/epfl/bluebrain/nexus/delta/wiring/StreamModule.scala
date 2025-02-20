@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import cats.data.NonEmptyList
 import cats.effect.{Clock, IO, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -20,8 +21,8 @@ object StreamModule extends ModuleDef {
   addImplicit[Sync[IO]]
 
   make[ElemStreaming].from {
-    (xas: Transactors, queryConfig: ElemQueryConfig, activitySignals: ProjectActivitySignals) =>
-      new ElemStreaming(xas, queryConfig, activitySignals)
+    (xas: Transactors, shifts: ResourceShifts, queryConfig: ElemQueryConfig, activitySignals: ProjectActivitySignals) =>
+      new ElemStreaming(xas, NonEmptyList.fromList(shifts.entityTypes.toList), queryConfig, activitySignals)
   }
 
   make[GraphResourceStream].from { (elemStreaming: ElemStreaming, shifts: ResourceShifts) =>

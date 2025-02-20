@@ -213,9 +213,9 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "kg/views/statistics.json",
-          "total"     -> "12",
-          "processed" -> "12",
-          "evaluated" -> "12",
+          "total"     -> "11",
+          "processed" -> "11",
+          "evaluated" -> "11",
           "discarded" -> "0",
           "remaining" -> "0"
         )

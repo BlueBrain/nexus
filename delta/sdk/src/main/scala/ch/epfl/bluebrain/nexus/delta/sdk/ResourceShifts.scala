@@ -16,6 +16,8 @@ import io.circe.Json
   */
 trait ResourceShifts {
 
+  def entityTypes: Set[EntityType]
+
   /**
     * Fetch a resource as a [[JsonLdContent]]
     */
@@ -39,6 +41,8 @@ object ResourceShifts {
       cr: RemoteContextResolution
   ): ResourceShifts = new ResourceShifts {
     private val shiftsMap = shifts.map { encoder => encoder.entityType -> encoder }.toMap
+
+    override def entityTypes: Set[EntityType] = shiftsMap.keySet
 
     private def findShift(entityType: EntityType): IO[ResourceShift[_, _, _]] = IO
       .fromOption(shiftsMap.get(entityType))(

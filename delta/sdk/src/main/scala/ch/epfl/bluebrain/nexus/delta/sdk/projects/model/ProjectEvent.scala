@@ -6,11 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScope}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -18,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, JsonObject}
+import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
 import java.util.UUID
@@ -305,28 +303,6 @@ object ProjectEvent {
     Serializer(Projects.encodeId)
   }
 
-  def projectEventMetricEncoder(implicit base: BaseUri): ScopedEventMetricEncoder[ProjectEvent] =
-    new ScopedEventMetricEncoder[ProjectEvent] {
-      override def databaseDecoder: Decoder[ProjectEvent] = serializer.codec
-
-      override def entityType: EntityType = Projects.entityType
-
-      override def eventToMetric: ProjectEvent => ProjectScopedMetric = event =>
-        ProjectScopedMetric.from(
-          event,
-          event match {
-            case _: ProjectCreated           => Created
-            case _: ProjectUpdated           => Updated
-            case _: ProjectDeprecated        => Deprecated
-            case _: ProjectUndeprecated      => Undeprecated
-            case _: ProjectMarkedForDeletion => TagDeleted
-          },
-          ResourceScope.project(event.project).accessUri.toIri,
-          Set(nxv.Project),
-          JsonObject.empty
-        )
-    }
-
   def sseEncoder(implicit base: BaseUri): SseEncoder[ProjectEvent] =
     new SseEncoder[ProjectEvent] {
 
@@ -334,7 +310,7 @@ object ProjectEvent {
 
       override def entityType: EntityType = Projects.entityType
 
-      override val selectors: Set[Label] = Set(Label.unsafe("projects"), resourcesSelector)
+      override val selectors: Set[Label] = Set(Label.unsafe("projects"))
 
       override val sseEncoder: Encoder.AsObject[ProjectEvent] = {
         val context = ContextValue(contexts.metadata, contexts.projects)

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import doobie.Fragments
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -27,14 +28,19 @@ import scala.concurrent.duration.FiniteDuration
   * Allow to stream elements from the database providing advanced configuration than the regular StreamingQuery
   * operations
   */
-final class ElemStreaming(xas: Transactors, queryConfig: ElemQueryConfig, activitySignals: ProjectActivitySignals) {
+final class ElemStreaming(
+    xas: Transactors,
+    entityTypes: Option[NonEmptyList[EntityType]],
+    queryConfig: ElemQueryConfig,
+    activitySignals: ProjectActivitySignals
+) {
 
   private val batchSize = queryConfig.batchSize
 
   /**
     * The stopping alternative for this elem streaming
     */
-  def stopping: ElemStreaming = ElemStreaming.stopping(xas, batchSize)
+  def stopping: ElemStreaming = ElemStreaming.stopping(xas, entityTypes, batchSize)
 
   /**
     * Get information about the remaining elements to stream
@@ -70,7 +76,7 @@ final class ElemStreaming(xas: Transactors, queryConfig: ElemQueryConfig, activi
     def query(offset: Offset): Query0[Elem[Unit]] = {
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
-           |${stateFilter(scope, offset, selectFilter)}
+           |${stateEntityFilter(scope, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT $batchSize)
            |UNION ALL
@@ -120,7 +126,7 @@ final class ElemStreaming(xas: Transactors, queryConfig: ElemQueryConfig, activi
     def query(offset: Offset): Query0[Elem[Json]] = {
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
-           |${stateFilter(scope, offset, selectFilter)}
+           |${stateEntityFilter(scope, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT $batchSize)
            |UNION ALL
@@ -196,17 +202,26 @@ final class ElemStreaming(xas: Transactors, queryConfig: ElemQueryConfig, activi
     Chunk.from(buffer)
   }
 
+  private def stateEntityFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter) =
+    Fragments.whereAndOpt(
+      entityTypeFilter,
+      stateFilter(scope, offset, selectFilter)
+    )
+
   private def tombstoneFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter) = {
     val typeFragment  =
       selectFilter.types.asRestrictedTo.map(includedTypes => fr"cause -> 'types' ??| ${typesSqlArray(includedTypes)}")
     val causeFragment = Fragments.orOpt(Some(fr"cause->>'deleted' = 'true'"), typeFragment)
     Fragments.whereAndOpt(
+      entityTypeFilter,
       scope.asFragment,
       offset.asFragment,
       selectFilter.tag.asFragment,
       causeFragment
     )
   }
+
+  private def entityTypeFilter = entityTypes.map { e => Fragments.in(fr"type", e) }
 
 }
 
@@ -219,18 +234,23 @@ object ElemStreaming {
   /**
     * Constructs an elem streaming with a stopping strategy
     */
-  def stopping(xas: Transactors, batchSize: Int): ElemStreaming = {
+  def stopping(xas: Transactors, entityTypes: Option[NonEmptyList[EntityType]], batchSize: Int): ElemStreaming = {
     val eqc     = ElemQueryConfig.StopConfig(batchSize)
     val signals = ProjectActivitySignals.noop
-    new ElemStreaming(xas, eqc, signals)
+    new ElemStreaming(xas, entityTypes, eqc, signals)
   }
 
   /**
     * Constructs an elem streaming with a delay strategy
     */
-  def delay(xas: Transactors, batchSize: Int, delay: FiniteDuration): ElemStreaming = {
+  def delay(
+      xas: Transactors,
+      entityTypes: Option[NonEmptyList[EntityType]],
+      batchSize: Int,
+      delay: FiniteDuration
+  ): ElemStreaming = {
     val eqc     = ElemQueryConfig.DelayConfig(batchSize, delay)
     val signals = ProjectActivitySignals.noop
-    new ElemStreaming(xas, eqc, signals)
+    new ElemStreaming(xas, entityTypes, eqc, signals)
   }
 }

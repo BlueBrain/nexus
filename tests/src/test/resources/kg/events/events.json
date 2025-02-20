@@ -84,10 +84,10 @@
     "_resourceId": "{{resources}}/_/attachment.json",
     "_fileId": "{{resources}}/_/attachment.json",
     "_attributes": {
-      "_bytes": 47,
+      "_bytes": 44,
       "_digest": {
         "_algorithm": "SHA-256",
-        "_value": "00ff4b34e3f3695c3abcdec61cba72c2238ed172ef34ae1196bfad6a4ec23dda"
+        "_value": "735f4adf98e01afc9b4e30157822cab3b3f63e3164623c2a9d5cba2f81e76df5"
       },
       "_filename": "attachment.json",
       "_mediaType": "application/json",
@@ -112,10 +112,10 @@
     "_resourceId": "{{resources}}/_/attachment.json",
     "_fileId": "{{resources}}/_/attachment.json",
     "_attributes": {
-      "_bytes": 52,
+      "_bytes": 50,
       "_digest": {
         "_algorithm": "SHA-256",
-        "_value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
+        "_value": "124e7e4df275db7eee665a462c435ade7374f6d9992068d1c9f889ac87616666"
       },
       "_filename": "attachment.json",
       "_mediaType": "application/json",

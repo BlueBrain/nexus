@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -36,7 +37,11 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
   private val qc = QueryConfig(2, RefreshStrategy.Stop)
 
   private lazy val xas           = doobie()
-  private lazy val elemStreaming = ElemStreaming.stopping(xas, 2)
+  private lazy val elemStreaming = ElemStreaming.stopping(
+    xas,
+    Some(NonEmptyList.of(PullRequest.entityType, Release.entityType)),
+    2
+  )
 
   private lazy val prStore = ScopedStateStore[Iri, PullRequestState](
     PullRequest.entityType,
@@ -147,7 +152,7 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
 
   test("Running a stream on latest states on project 1 from the beginning, filtering for types") {
     val allowedViewTypes = IriFilter.fromSet(Set(nxv + "Fix", nxv + "Feature"))
-    val (iri, void)      = stream(project1, Offset.start, SelectFilter(None, allowedViewTypes, Tag.Latest))
+    val (iri, void)      = stream(project1, Offset.start, SelectFilter(allowedViewTypes, Tag.Latest))
 
     val expected = List(
       SuccessElem(PullRequest.entityType, id3, project1, epoch, Offset.at(7L), id3, rev),
@@ -219,16 +224,6 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
       .assertEquals(
         Some(
           RemainingElems(6L, epoch)
-        )
-      )
-  }
-
-  test("Get the remaining elems for project 1 for the PullRequest type on latest from the beginning") {
-    StreamingQuery
-      .remaining(Scope(project1), SelectFilter.latestOfEntity(PullRequest.entityType), Offset.start, xas)
-      .assertEquals(
-        Some(
-          RemainingElems(4L, epoch)
         )
       )
   }

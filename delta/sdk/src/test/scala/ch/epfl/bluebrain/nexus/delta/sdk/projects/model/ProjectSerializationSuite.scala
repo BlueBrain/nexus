@@ -2,14 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUndeprecated, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe.JsonObject
 
 import java.time.Instant
 import java.util.UUID
@@ -87,13 +84,13 @@ class ProjectSerializationSuite extends SerializationSuite {
     )
 
   private val projectsMapping = List(
-    (created, loadEvents("projects", "project-created.json"), Created),
-    (updated, loadEvents("projects", "project-updated.json"), Updated),
-    (deprecated, loadEvents("projects", "project-deprecated.json"), Deprecated),
-    (undeprecated, loadEvents("projects", "project-undeprecated.json"), Undeprecated)
+    (created, loadEvents("projects", "project-created.json")),
+    (updated, loadEvents("projects", "project-updated.json")),
+    (deprecated, loadEvents("projects", "project-deprecated.json")),
+    (undeprecated, loadEvents("projects", "project-undeprecated.json"))
   )
 
-  projectsMapping.foreach { case (event, (database, sse), action) =>
+  projectsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertOutput(ProjectEvent.serializer, event, database)
     }
@@ -106,22 +103,6 @@ class ProjectSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
-    }
-
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
-      ProjectEvent.projectEventMetricEncoder.toMetric.decodeJson(database).assertRight {
-        ProjectScopedMetric(
-          instant,
-          subject,
-          rev,
-          Set(action),
-          ProjectRef(org, proj),
-          org,
-          iri"http://localhost/v1/projects/myorg/myproj",
-          Set(nxv.Project),
-          JsonObject.empty
-        )
-      }
     }
   }
 
