@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -85,8 +84,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
         identities,
         aclCheck,
         SchemasImpl(schemaLog, fetchContext, schemaImports, resolverContextResolution),
-        groupDirectives,
-        IndexingAction.noop
+        groupDirectives
       )
     )
 
@@ -115,6 +113,19 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       Put("/v1/schemas/myorg/myproject/myid2", payloadNoId.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual schemaMetadata(projectRef, myId2)
+      }
+    }
+
+    "fail to list schemas" in {
+      Get("/v1/schemas/myorg/myproject") ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
+    "list schemas in the project with the appropriate permission" in {
+      Get("/v1/schemas/myorg/myproject") ~> asReader ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson.asObject.value("_total").value shouldEqual Json.fromLong(2L)
       }
     }
 

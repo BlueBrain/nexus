@@ -11,6 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{expandIri, kamonComponent, SchemaLog}
@@ -152,6 +154,14 @@ final class SchemasImpl private (
 
   private def resolveImports(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd)(implicit caller: Caller) =
     schemaImports.resolve(id, projectRef, expanded.addType(nxv.Schema))
+
+  def list(project: ProjectRef): IO[UnscoredSearchResults[SchemaResource]] =
+    log
+      .currentStates(Scope.Project(project), _.toResource)
+      .compile
+      .toList
+      .map { results => SearchResults(results.size.toLong, results) }
+      .span("listSchemas")
 }
 
 object SchemasImpl {

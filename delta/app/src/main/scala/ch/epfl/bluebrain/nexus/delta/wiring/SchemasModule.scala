@@ -9,14 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{SchemaJobRoutes, SchemasRoutes}
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
@@ -24,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.{FetchResource, Resources, Va
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaDefinition, SchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.{SchemaValidationCoordinator, SchemaValidationStream}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
@@ -104,14 +102,12 @@ object SchemasModule extends ModuleDef {
         aclCheck: AclCheck,
         schemas: Schemas,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: AggregateIndexingAction,
-        shift: Schema.Shift,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, indexingAction(_, _, _)(shift))(
+      new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives)(
         baseUri,
         cr,
         ordering,
@@ -147,11 +143,7 @@ object SchemasModule extends ModuleDef {
 
   many[SseEncoder[_]].add { base: BaseUri => SchemaEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { SchemaEvent.schemaEventMetricEncoder }
-
   many[ApiMappings].add(Schemas.mappings)
-
-  many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/schemas-metadata.json"))
 
@@ -172,10 +164,4 @@ object SchemasModule extends ModuleDef {
   many[PriorityRoute].add { (route: SchemaJobRoutes) =>
     PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
   }
-
-  make[Schema.Shift].from { (schemas: Schemas, base: BaseUri) =>
-    Schema.shift(schemas)(base)
-  }
-
-  many[ResourceShift[_, _, _]].ref[Schema.Shift]
 }

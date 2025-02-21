@@ -38,16 +38,12 @@ final class AggregationsSpec extends BaseIntegrationSpec {
     } yield ()
 
     val resourcePayload = SimpleResource.sourcePayload(5).accepted
-    val schemaPayload   = SchemaPayload.loadSimple().accepted
     val postResources   = for {
       // Creation
-      _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Charlie)(expectCreated)
-      _ <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Charlie)(expectCreated)
-      _ <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Charlie)(
-             expectCreated
-           )
-      _ <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Charlie)(expectCreated)
-      _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Charlie)(expectCreated)
+      _ <- deltaClient.put[Json](s"/resources/$ref11/_/r11_1", resourcePayload, Charlie)(expectCreated)
+      _ <- deltaClient.put[Json](s"/resources/$ref11/_/r11_2", resourcePayload, Charlie)(expectCreated)
+      _ <- deltaClient.put[Json](s"/resources/$ref12/_/r12_1", resourcePayload, Charlie)(expectCreated)
+      _ <- deltaClient.put[Json](s"/resources/$ref21/_/r21_1", resourcePayload, Charlie)(expectCreated)
     } yield ()
 
     (setup >> postResources).accepted
@@ -56,10 +52,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
   "Aggregating resources within a project" should {
 
     "get an error if the user has no access" in {
-
-      deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Rose) { (_, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-      }
+      deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Rose) { expectForbidden }
     }
 
     "aggregate correctly for a user that has project permissions" in eventually {
@@ -85,26 +78,12 @@ final class AggregationsSpec extends BaseIntegrationSpec {
         json should equalIgnoreArrayOrder(expected)
       }
     }
-
-    "aggregate schemas" in {
-      val expected = jsonContentOf(
-        "kg/aggregations/schemas-aggregation.json",
-        "org"     -> org1,
-        "project" -> proj11
-      )
-      deltaClient.get[Json](s"/schemas/$ref11?aggregations=true", Charlie) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        json should equalIgnoreArrayOrder(expected)
-      }
-    }
   }
 
   "Aggregating resources within an org" should {
 
     "get an error if the user has no access on the org" in {
-      deltaClient.get[Json](s"/resources/$org2?aggregations=true", Rose) { (_, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-      }
+      deltaClient.get[Json](s"/resources/$org2?aggregations=true", Rose) { expectForbidden }
     }
 
     "aggregate correctly for a user that has access" in eventually {
@@ -125,9 +104,7 @@ final class AggregationsSpec extends BaseIntegrationSpec {
   "Aggregating resources within all accessible projects in the system" should {
 
     "get an error for anonymous" in {
-      deltaClient.get[Json](s"/resources?aggregations=true", Anonymous) { (_, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-      }
+      deltaClient.get[Json](s"/resources?aggregations=true", Anonymous) { expectForbidden }
     }
 
     "aggregate correctly for a user that has permissions on at least one project" in eventually {

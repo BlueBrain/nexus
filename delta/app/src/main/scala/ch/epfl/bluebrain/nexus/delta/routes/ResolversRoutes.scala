@@ -89,6 +89,7 @@ final class ResolversRoutes(
             val authorizeRead  = authorizeFor(project, Read)
             val authorizeWrite = authorizeFor(project, Write)
             concat(
+              // List resolvers
               pathEndOrSingleSlash {
                 (get & authorizeRead) {
                   implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ResolverResource]] =

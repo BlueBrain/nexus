@@ -19,6 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.FetchSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -51,14 +53,18 @@ object ResolversModule extends ModuleDef {
 
   make[MultiResolution].from {
     (
-        aclCheck: AclCheck,
         fetchContext: FetchContext,
+        aclCheck: AclCheck,
         resolvers: Resolvers,
-        shifts: ResourceShifts
+        fetchResource: FetchResource,
+        fetchSchema: FetchSchema
     ) =>
       MultiResolution(
         fetchContext,
-        ResolverResolution(aclCheck, resolvers, shifts, excludeDeprecated = false)
+        aclCheck,
+        resolvers,
+        fetchResource,
+        fetchSchema
       )
   }
 
