@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
@@ -270,27 +269,6 @@ object ResolverResolution {
       extractTypes,
       deprecationCheck
     )
-  }
-
-  /**
-    * Resolution based on resolvers and reference exchanges
-    *
-    * @param aclCheck
-    *   how to check acls
-    * @param resolvers
-    *   a resolvers instance
-    * @param shifts
-    *   how to fetch the resource
-    * @param excludeDeprecated
-    *   to exclude deprecated resources from the resolution
-    */
-  def apply(
-      aclCheck: AclCheck,
-      resolvers: Resolvers,
-      shifts: ResourceShifts,
-      excludeDeprecated: Boolean
-  ): ResolverResolution[JsonLdContent[_, _]] = {
-    apply(aclCheck, resolvers, shifts.fetch(_, _), excludeDeprecated)
   }
 
   def apply(

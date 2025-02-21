@@ -5,12 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.SchemaGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe.JsonObject
 
 import java.time.Instant
 
@@ -101,38 +99,22 @@ class SchemaSerializationSuite extends SerializationSuite {
     )
 
   private val schemasMapping = List(
-    (created, jsonContentOf("schemas/schema-created.json"), Created),
-    (updated, jsonContentOf("schemas/schema-updated.json"), Updated),
-    (refreshed, jsonContentOf("schemas/schema-refreshed.json"), Refreshed),
-    (tagged, jsonContentOf("schemas/schema-tagged.json"), Tagged),
-    (tagDeleted, jsonContentOf("schemas/schema-tag-deleted.json"), TagDeleted),
-    (deprecated, jsonContentOf("schemas/schema-deprecated.json"), Deprecated),
-    (undeprecated, jsonContentOf("schemas/schema-undeprecated.json"), Undeprecated)
+    (created, jsonContentOf("schemas/schema-created.json")),
+    (updated, jsonContentOf("schemas/schema-updated.json")),
+    (refreshed, jsonContentOf("schemas/schema-refreshed.json")),
+    (tagged, jsonContentOf("schemas/schema-tagged.json")),
+    (tagDeleted, jsonContentOf("schemas/schema-tag-deleted.json")),
+    (deprecated, jsonContentOf("schemas/schema-deprecated.json")),
+    (undeprecated, jsonContentOf("schemas/schema-undeprecated.json"))
   )
 
-  schemasMapping.foreach { case (event, json, action) =>
+  schemasMapping.foreach { case (event, json) =>
     test(s"Correctly serialize ${event.getClass.getSimpleName}") {
       assertOutput(SchemaEvent.serializer, event, json)
     }
 
     test(s"Correctly deserialize ${event.getClass.getSimpleName}") {
       assertEquals(SchemaEvent.serializer.codec.decodeJson(json), Right(event))
-    }
-
-    test(s"Correctly encode ${event.getClass.getSimpleName} to metric") {
-      SchemaEvent.schemaEventMetricEncoder.toMetric.decodeJson(json).assertRight {
-        ProjectScopedMetric(
-          instant,
-          subject,
-          event.rev,
-          Set(action),
-          ProjectRef(org, proj),
-          org,
-          event.id,
-          Set(nxv.Schema),
-          JsonObject.empty
-        )
-      }
     }
   }
 

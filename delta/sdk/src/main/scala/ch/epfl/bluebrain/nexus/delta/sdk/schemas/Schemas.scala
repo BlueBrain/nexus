@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
@@ -195,6 +196,15 @@ trait Schemas {
       projectRef: ProjectRef
   ): IO[SchemaResource] = fetch(IdSegmentRef(resourceRef), projectRef)
 
+  /**
+    * Lists all resolvers.
+    *
+    * @param project
+    *   the project the resolvers belong to
+    * @return
+    *   the list of resolvers in that project
+    */
+  def list(project: ProjectRef): IO[UnscoredSearchResults[SchemaResource]]
 }
 
 object Schemas {
@@ -212,13 +222,6 @@ object Schemas {
     * The default schema API mappings
     */
   val mappings: ApiMappings = ApiMappings(ArrowAssoc("schema") -> schemas.shacl)
-
-  /**
-    * The schema resource to schema mapping
-    */
-  val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(
-    ArrowAssoc(Label.unsafe("schemas")) -> schemas.shacl
-  )
 
   private[delta] def next(state: Option[SchemaState], event: SchemaEvent): Option[SchemaState] = {
 

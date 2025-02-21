@@ -4,7 +4,7 @@
     "projects" : {
       "buckets" : [
         {
-          "doc_count" : 5,
+          "doc_count" : 4,
           "key" : "{{org1}}/{{proj11}}"
         },
         {
@@ -32,15 +32,11 @@
         {
           "doc_count" : 2,
           "key" : "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
-        },
-        {
-          "doc_count" : 1,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/Schema"
         }
       ],
       "doc_count_error_upper_bound" : 0,
       "sum_other_doc_count" : 0
     }
   },
-  "total" : 8
+  "total" : 7
 }

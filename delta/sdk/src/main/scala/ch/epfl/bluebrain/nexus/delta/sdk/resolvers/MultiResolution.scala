@@ -1,18 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{ExpandIri, JsonLdContent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.Fetch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.FetchSchema
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 /**
-  * Allow to attempt resolutions for the different resource types available
+  * Allow to attempt resolutions for data resources and schemas
   * @param fetchProject
   *   how to fetch a project
   * @param resourceResolution
@@ -80,6 +86,28 @@ final class MultiResolution(
 }
 
 object MultiResolution {
+
+  def apply(
+      fetchContext: FetchContext,
+      aclCheck: AclCheck,
+      resolvers: Resolvers,
+      fetchResource: FetchResource,
+      fetchSchema: FetchSchema
+  ): MultiResolution = {
+    def combinedFetch(resourceRef: ResourceRef, project: ProjectRef): Fetch[JsonLdContent[_, _]] =
+      fetchResource.fetch(resourceRef, project).flatMap {
+        case Some(resource) => IO.some(Resource.toJsonLdContent(resource))
+        case None           => fetchSchema.option(resourceRef, project).map(_.map(Schema.toJsonLdContent))
+      }
+
+    val combinedResolution = ResolverResolution(
+      aclCheck,
+      resolvers,
+      combinedFetch,
+      excludeDeprecated = false
+    )
+    apply(fetchContext, combinedResolution)
+  }
 
   /**
     * Create a multi resolution instance

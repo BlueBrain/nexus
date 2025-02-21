@@ -12,16 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions, T
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema.Metadata
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import io.circe.syntax.EncoderOps
-import io.circe.{Encoder, Json}
+import io.circe.Json
 
 /**
   * A schema representation
@@ -72,13 +67,12 @@ final case class Schema(
       }
       .map { triples => Graph.empty(id).add(triples) }
   }
-
-  def metadata: Metadata = Metadata(tags.tags)
 }
 
 object Schema {
 
-  final case class Metadata(tags: List[UserTag])
+  def toJsonLdContent(schema: ResourceF[Schema]): JsonLdContent[Schema, Nothing] =
+    JsonLdContent(schema, schema.value.source, None)
 
   implicit val schemaJsonLdEncoder: JsonLdEncoder[Schema] =
     new JsonLdEncoder[Schema] {
@@ -96,22 +90,4 @@ object Schema {
       override def context(value: Schema): ContextValue =
         value.source.topContextValueOrEmpty.merge(ContextValue(contexts.shacl))
     }
-
-  implicit private val fileMetadataEncoder: Encoder[Metadata] = { m =>
-    Json.obj("_tags" -> m.tags.asJson)
-  }
-
-  implicit val fileMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
-
-  type Shift = ResourceShift[SchemaState, Schema, Metadata]
-
-  def shift(schemas: Schemas)(implicit baseUri: BaseUri): Shift =
-    ResourceShift.withMetadata[SchemaState, Schema, Metadata](
-      Schemas.entityType,
-      (ref, project) => schemas.fetch(IdSegmentRef(ref), project),
-      state => state.toResource,
-      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
-    )
-
 }

@@ -20,11 +20,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
 import io.circe.Json
 
 /**
@@ -38,15 +40,12 @@ import io.circe.Json
   *   the schemas module
   * @param schemeDirectives
   *   directives related to orgs and projects
-  * @param indexAction
-  *   the indexing action on write operations
   */
 final class SchemasRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     schemas: Schemas,
-    schemeDirectives: DeltaSchemeDirectives,
-    indexAction: IndexingAction.Execute[Schema]
+    schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -72,13 +71,12 @@ final class SchemasRoutes(
   private def emitMetadataOrReject(io: IO[SchemaResource]): Route =
     emit(io.map(_.void).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
 
-  private def emitSource(io: IO[SchemaResource], annotate: Boolean): Route = {
+  private def emitSource(io: IO[SchemaResource], annotate: Boolean): Route =
     emit(
       io.map { resource => OriginalSource(resource, resource.value.source, annotate) }
         .attemptNarrow[SchemaRejection]
         .rejectOn[SchemaNotFound]
     )
-  }
 
   private def emitTags(io: IO[SchemaResource]): Route =
     emit(io.map(_.value.tags).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
@@ -87,13 +85,22 @@ final class SchemasRoutes(
     (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl)) {
       pathPrefix("schemas") {
         extractCaller { implicit caller =>
-          (projectRef & indexingMode) { (ref, mode) =>
-            def index(schema: SchemaResource): IO[Unit] = indexAction(schema.value.project, schema, mode)
+          projectRef { project =>
+            val authorizeRead  = authorizeFor(project, Read)
+            val authorizeWrite = authorizeFor(project, Write)
             concat(
+              // List schemas
+              pathEndOrSingleSlash {
+                (get & authorizeRead) {
+                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ResourceF[Unit]]] =
+                    searchResultsJsonLdEncoder(ContextValue.empty)
+                  emit(schemas.list(project).map(_.map(_.void)).widen[SearchResults[ResourceF[Unit]]])
+                }
+              },
               // Create a schema without id segment
               (pathEndOrSingleSlash & post & noParameter("rev") & entity(as[Json])) { source =>
-                authorizeFor(ref, Write).apply {
-                  emitMetadata(Created, schemas.create(ref, source).flatTap(index))
+                authorizeWrite {
+                  emitMetadata(Created, schemas.create(project, source))
                 }
               },
               idSegment { id =>
@@ -102,75 +109,69 @@ final class SchemasRoutes(
                     concat(
                       // Create or update a schema
                       put {
-                        authorizeFor(ref, Write).apply {
+                        authorizeWrite {
                           (parameter("rev".as[Int].?) & entity(as[Json])) {
                             case (None, source)      =>
                               // Create a schema with id segment
-                              emitMetadata(Created, schemas.create(id, ref, source).flatTap(index))
+                              emitMetadata(Created, schemas.create(id, project, source))
                             case (Some(rev), source) =>
                               // Update a schema
-                              emitMetadata(schemas.update(id, ref, rev, source).flatTap(index))
+                              emitMetadata(schemas.update(id, project, rev, source))
                           }
                         }
                       },
                       // Deprecate a schema
                       (delete & parameter("rev".as[Int])) { rev =>
-                        authorizeFor(ref, Write).apply {
-                          emitMetadataOrReject(schemas.deprecate(id, ref, rev).flatTap(index))
+                        authorizeWrite {
+                          emitMetadataOrReject(schemas.deprecate(id, project, rev))
                         }
                       },
                       // Fetch a schema
                       (get & idSegmentRef(id)) { id =>
                         emitOrFusionRedirect(
-                          ref,
+                          project,
                           id,
-                          authorizeFor(ref, Read).apply {
-                            emitFetch(schemas.fetch(id, ref))
+                          authorizeRead {
+                            emitFetch(schemas.fetch(id, project))
                           }
                         )
                       }
                     )
                   },
                   (pathPrefix("undeprecate") & put & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
-                    authorizeFor(ref, Write).apply {
-                      emitMetadataOrReject(schemas.undeprecate(id, ref, rev).flatTap(index))
+                    authorizeWrite {
+                      emitMetadataOrReject(schemas.undeprecate(id, project, rev))
                     }
                   },
                   (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
-                    authorizeFor(ref, Write).apply {
-                      emitMetadata(schemas.refresh(id, ref).flatTap(index))
+                    authorizeWrite {
+                      emitMetadata(schemas.refresh(id, project))
                     }
                   },
                   // Fetch a schema original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & annotateSource) {
                     (id, annotate) =>
-                      authorizeFor(ref, Read).apply {
-                        emitSource(schemas.fetch(id, ref), annotate)
+                      authorizeRead {
+                        emitSource(schemas.fetch(id, project), annotate)
                       }
                   },
                   pathPrefix("tags") {
                     concat(
                       // Fetch a schema tags
-                      (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                        emitTags(schemas.fetch(id, ref))
+                      (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeRead) { id =>
+                        emitTags(schemas.fetch(id, project))
                       },
                       // Tag a schema
                       (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
-                        authorizeFor(ref, Write).apply {
+                        authorizeWrite {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
-                            emitMetadata(
-                              Created,
-                              schemas.tag(id, ref, tag, tagRev, rev).flatTap(index)
-                            )
+                            emitMetadata(Created, schemas.tag(id, project, tag, tagRev, rev))
                           }
                         }
                       },
                       // Delete a tag
-                      (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
-                        ref,
-                        Write
-                      )) { (tag, rev) =>
-                        emitMetadataOrReject(schemas.deleteTag(id, ref, tag, rev).flatTap(index))
+                      (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeWrite) {
+                        (tag, rev) => emitMetadataOrReject(schemas.deleteTag(id, project, tag, rev))
                       }
                     )
                   }
@@ -193,13 +194,12 @@ object SchemasRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       schemas: Schemas,
-      schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction.Execute[Schema]
+      schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, index).routes
+  ): Route = new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives).routes
 
 }
