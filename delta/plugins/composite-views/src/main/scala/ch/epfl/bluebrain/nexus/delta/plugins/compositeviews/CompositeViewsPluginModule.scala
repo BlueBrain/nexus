@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -330,15 +329,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       CompositeSupervisionRoutes(views, client, identities, aclCheck, config.prefix)(cr, ordering)
   }
 
-  make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri) =>
-    CompositeView.shift(views)(base)
-  }
-
-  many[ResourceShift[_, _, _]].ref[CompositeView.Shift]
-
   many[SseEncoder[_]].add { (base: BaseUri) => CompositeViewEvent.sseEncoder(base) }
-
-  many[ScopedEventMetricEncoder[_]].add { () => CompositeViewEvent.compositeViewMetricEncoder }
 
   many[PriorityRoute].add {
     (

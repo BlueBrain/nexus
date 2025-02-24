@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import io.circe.syntax.KeyOps
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -27,10 +25,5 @@ object AggregationResult {
         aggregations := agg.value
       )
     }
-
-  def aggregationResultJsonLdEncoder(
-      contextValue: ContextValue
-  ): JsonLdEncoder[AggregationResult] =
-    JsonLdEncoder.computeFromCirce(contextValue)
 
 }

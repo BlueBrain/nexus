@@ -9,9 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -220,34 +218,12 @@ object ElasticSearchViewEvent {
     Serializer.dropNulls()
   }
 
-  val esViewMetricEncoder: ScopedEventMetricEncoder[ElasticSearchViewEvent] =
-    new ScopedEventMetricEncoder[ElasticSearchViewEvent] {
-      override def databaseDecoder: Decoder[ElasticSearchViewEvent] = serializer.codec
-
-      override def entityType: EntityType = ElasticSearchViews.entityType
-
-      override def eventToMetric: ElasticSearchViewEvent => ProjectScopedMetric = event =>
-        ProjectScopedMetric.from(
-          event,
-          event match {
-            case _: ElasticSearchViewCreated      => Created
-            case _: ElasticSearchViewUpdated      => Updated
-            case _: ElasticSearchViewTagAdded     => Tagged
-            case _: ElasticSearchViewDeprecated   => Deprecated
-            case _: ElasticSearchViewUndeprecated => Undeprecated
-          },
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-    }
-
   def sseEncoder(implicit base: BaseUri): SseEncoder[ElasticSearchViewEvent] = new SseEncoder[ElasticSearchViewEvent] {
     override val databaseDecoder: Decoder[ElasticSearchViewEvent] = serializer.codec
 
     override def entityType: EntityType = ElasticSearchViews.entityType
 
-    override val selectors: Set[Label] = Set(Label.unsafe("views"), resourcesSelector)
+    override val selectors: Set[Label] = Set(Label.unsafe("views"))
 
     override val sseEncoder: Encoder.AsObject[ElasticSearchViewEvent] = {
       val context                                                    = ContextValue(Vocabulary.contexts.metadata, contexts.elasticsearch)

@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -76,8 +75,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
           views,
           viewsQuery,
           identities,
-          aclCheck,
-          IndexingAction.noop
+          aclCheck
         )
       )
     )

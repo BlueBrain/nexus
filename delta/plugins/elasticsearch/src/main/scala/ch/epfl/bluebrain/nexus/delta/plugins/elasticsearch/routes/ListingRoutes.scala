@@ -12,16 +12,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.AggregationResult.aggregationResultJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectScopeResolver
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.JsonObject
+import io.circe.syntax.EncoderOps
 
 class ListingRoutes(
     identities: Identities,
@@ -36,7 +36,8 @@ class ListingRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
-    with ElasticSearchViewsDirectives {
+    with ElasticSearchViewsDirectives
+    with RdfMarshalling {
 
   import schemeDirectives._
 
@@ -164,14 +165,10 @@ class ListingRoutes(
 
   private def aggregate(request: MainIndexRequest, scope: Scope)(implicit caller: Caller): Route =
     (get & aggregated) {
-      implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
-        aggregationResultJsonLdEncoder(ContextValue(contexts.aggregations))
-
-      implicit val reultHttpResponseFields: HttpResponseFields[AggregationResult] = HttpResponseFields.defaultOk
 
       emit {
         projectScopeResolver(scope, resources.read).flatMap { projects =>
-          defaultIndexQuery.aggregate(request, projects).attemptNarrow[ElasticSearchQueryError]
+          defaultIndexQuery.aggregate(request, projects).map(_.asJson).attemptNarrow[ElasticSearchQueryError]
         }
       }
 

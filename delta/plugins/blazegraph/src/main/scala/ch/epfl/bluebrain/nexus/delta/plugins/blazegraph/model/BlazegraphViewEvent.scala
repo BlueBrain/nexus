@@ -9,9 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -238,34 +236,12 @@ object BlazegraphViewEvent {
     Serializer.dropNulls()
   }
 
-  val bgViewMetricEncoder: ScopedEventMetricEncoder[BlazegraphViewEvent] =
-    new ScopedEventMetricEncoder[BlazegraphViewEvent] {
-      override def databaseDecoder: Decoder[BlazegraphViewEvent] = serializer.codec
-
-      override def entityType: EntityType = BlazegraphViews.entityType
-
-      override def eventToMetric: BlazegraphViewEvent => ProjectScopedMetric = event =>
-        ProjectScopedMetric.from(
-          event,
-          event match {
-            case _: BlazegraphViewCreated      => Created
-            case _: BlazegraphViewUpdated      => Updated
-            case _: BlazegraphViewTagAdded     => Tagged
-            case _: BlazegraphViewDeprecated   => Deprecated
-            case _: BlazegraphViewUndeprecated => Undeprecated
-          },
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-    }
-
   def sseEncoder(implicit base: BaseUri): SseEncoder[BlazegraphViewEvent] = new SseEncoder[BlazegraphViewEvent] {
     override val databaseDecoder: Decoder[BlazegraphViewEvent] = serializer.codec
 
     override def entityType: EntityType = BlazegraphViews.entityType
 
-    override val selectors: Set[Label] = Set(Label.unsafe("views"), resourcesSelector)
+    override val selectors: Set[Label] = Set(Label.unsafe("views"))
 
     override val sseEncoder: Encoder.AsObject[BlazegraphViewEvent] = {
       val context                                                 = ContextValue(Vocabulary.contexts.metadata, contexts.blazegraph)
