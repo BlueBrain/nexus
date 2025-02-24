@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, SourceAsText}
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 
 import java.time.Instant
 import java.util.UUID
@@ -66,18 +65,18 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   // format: on
 
   private val elasticsearchViewsMapping = List(
-    (created1, loadEvents("elasticsearch", "indexing-view-created.json"), Created),
-    (created2, loadEvents("elasticsearch", "aggregate-view-created.json"), Created),
-    (updated1, loadEvents("elasticsearch", "indexing-view-updated.json"), Updated),
-    (updated2, loadEvents("elasticsearch", "aggregate-view-updated.json"), Updated),
-    (tagged, loadEvents("elasticsearch", "view-tag-added.json"), Tagged),
-    (deprecated, loadEvents("elasticsearch", "view-deprecated.json"), Deprecated),
-    (undeprecated, loadEvents("elasticsearch", "view-undeprecated.json"), Undeprecated)
+    (created1, loadEvents("elasticsearch", "indexing-view-created.json")),
+    (created2, loadEvents("elasticsearch", "aggregate-view-created.json")),
+    (updated1, loadEvents("elasticsearch", "indexing-view-updated.json")),
+    (updated2, loadEvents("elasticsearch", "aggregate-view-updated.json")),
+    (tagged, loadEvents("elasticsearch", "view-tag-added.json")),
+    (deprecated, loadEvents("elasticsearch", "view-deprecated.json")),
+    (undeprecated, loadEvents("elasticsearch", "view-undeprecated.json"))
   )
 
   private val sseEncoder = ElasticSearchViewEvent.sseEncoder
 
-  elasticsearchViewsMapping.foreach { case (event, (database, sse), action) =>
+  elasticsearchViewsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getSimpleName}") {
       assertOutput(ElasticSearchViewEvent.serializer, event, database)
     }
@@ -90,22 +89,6 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
-    }
-
-    test(s"Correctly encode ${event.getClass.getSimpleName} to metric") {
-      ElasticSearchViewEvent.esViewMetricEncoder.toMetric.decodeJson(database).assertRight {
-        ProjectScopedMetric(
-          instant,
-          subject,
-          event.rev,
-          Set(action),
-          projectRef,
-          Label.unsafe("myorg"),
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-      }
     }
   }
 

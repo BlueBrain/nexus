@@ -24,7 +24,6 @@ package object model {
     * ElasticSearch views contexts.
     */
   object contexts {
-    val aggregations          = nxvContexts + "aggregations.json"
     val elasticsearch         = nxvContexts + "elasticsearch.json"
     val elasticsearchMetadata = nxvContexts + "elasticsearch-metadata.json"
     val elasticsearchIndexing = nxvContexts + "elasticsearch-indexing.json"

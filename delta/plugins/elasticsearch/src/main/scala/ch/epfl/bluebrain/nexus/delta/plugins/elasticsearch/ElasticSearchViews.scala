@@ -213,9 +213,8 @@ final class ElasticSearchViews private (
     } yield res
   }.span("deprecateElasticSearchView")
 
-  private def validateNotDefaultView(iri: Iri): IO[Unit] = {
+  private def validateNotDefaultView(iri: Iri): IO[Unit] =
     IO.raiseWhen(iri == defaultViewId)(ViewIsDefaultView)
-  }
 
   /**
     * Undeprecates an existing ElasticSearchView. View undeprecation implies unblocking any query capabilities and in

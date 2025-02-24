@@ -1,18 +1,17 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/aggregations.json",
   "aggregations" : {
     "projects" : {
       "buckets" : [
         {
-          "doc_count" : 4,
+          "doc_count" : 2,
           "key" : "{{org1}}/{{proj11}}"
         },
         {
-          "doc_count" : 3,
+          "doc_count" : 1,
           "key" : "{{org1}}/{{proj12}}"
         },
         {
-          "doc_count" : 3,
+          "doc_count" : 1,
           "key" : "{{org2}}/{{proj21}}"
         }
       ],
@@ -22,25 +21,13 @@
     "types" : {
       "buckets" : [
         {
-          "doc_count" : 6,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/View"
-        },
-        {
           "doc_count" : 4,
           "key" : "http://schema.org/TestResource"
-        },
-        {
-          "doc_count" : 3,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/CompositeView"
-        },
-        {
-          "doc_count" : 3,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
         }
       ],
       "doc_count_error_upper_bound" : 0,
       "sum_other_doc_count" : 0
     }
   },
-  "total" : 10
+  "total" : 4
 }

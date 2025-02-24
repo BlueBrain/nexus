@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
+import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{PurgeConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
@@ -100,7 +101,12 @@ trait Projections {
 
 object Projections {
 
-  def apply(xas: Transactors, config: QueryConfig, clock: Clock[IO]): Projections =
+  def apply(
+      xas: Transactors,
+      entityTypes: Option[NonEmptyList[EntityType]],
+      config: QueryConfig,
+      clock: Clock[IO]
+  ): Projections =
     new Projections {
       private val projectionStore        = ProjectionStore(xas, config, clock)
       private val projectionRestartStore = new ProjectionRestartStore(xas, config)
@@ -135,7 +141,13 @@ object Projections {
         for {
           current   <- progress(projectionId)
           remaining <-
-            StreamingQuery.remaining(Scope(project), selectFilter, current.fold(Offset.start)(_.offset), xas)
+            StreamingQuery.remaining(
+              Scope(project),
+              entityTypes,
+              selectFilter,
+              current.fold(Offset.start)(_.offset),
+              xas
+            )
         } yield ProgressStatistics(current, remaining)
     }
 

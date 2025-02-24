@@ -1,15 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -94,8 +90,6 @@ object BlazegraphView {
     *   whether to consider deprecated resources for indexing
     * @param permission
     *   the permission required for querying this view
-    * @param tags
-    *   the collection of tags for this resource
     * @param source
     *   the original json value provided by the caller
     */
@@ -128,8 +122,6 @@ object BlazegraphView {
     *   a reference to the parent project
     * @param views
     *   the collection of views where queries will be delegated (if necessary permissions are met)
-    * @param tags
-    *   the collection of tags for this resource
     * @param source
     *   the original json value provided by the caller
     */
@@ -180,14 +172,4 @@ object BlazegraphView {
 
   implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.blazegraphMetadata))
-
-  type Shift = ResourceShift[BlazegraphViewState, BlazegraphView, Metadata]
-
-  def shift(views: BlazegraphViews)(implicit baseUri: BaseUri): Shift =
-    ResourceShift.withMetadata[BlazegraphViewState, BlazegraphView, Metadata](
-      BlazegraphViews.entityType,
-      (ref, project) => views.fetch(IdSegmentRef(ref), project),
-      state => state.toResource,
-      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
-    )
 }

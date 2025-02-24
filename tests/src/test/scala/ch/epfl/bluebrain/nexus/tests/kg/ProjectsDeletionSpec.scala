@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
-import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
+import ch.epfl.bluebrain.nexus.tests.Optics.{_uuid, admin, listing, supervision}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
@@ -25,12 +25,12 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
 
   private val ref1Iri = s"${config.deltaUri}/projects/$ref1"
 
-  private val elasticsearchViewId        = "http://localhost/nexus/default-view"
-  private val encodedElasticsearchViewId = UrlUtils.encode(elasticsearchViewId)
+  private val elasticId        = "http://localhost/nexus/custom-view"
+  private val encodedElasticId = UrlUtils.encode(elasticId)
 
-  private var elasticsearchViewsRef1Uuids = List.empty[String]
-  private var blazegraphViewsRef1Uuids    = List.empty[String]
-  private var compositeViewsRef1Uuids     = List.empty[String]
+  private var elasticsearchViewToDeleteUuid: Option[String] = None
+  private var blazegraphViewToDeleteUuid: Option[String]    = None
+  private var compositeViewToDeleteUuid: Option[String]     = None
 
   private def graphAnalyticsIndex(org: String, project: String) =
     s"delta_ga_${org}_$project"
@@ -45,50 +45,38 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
         _            <- adminDsl.createProjectWithName(org, proj2, name = proj2, Bojack)
         _            <- aclDsl.addPermission(s"/$ref1", PrincessCarolyn, Resources.Read)
         esViewPayload = jsonContentOf("kg/views/elasticsearch/pipeline.json", "withTag" -> false)
-        _            <- deltaClient.put[Json](s"/views/$ref1/$encodedElasticsearchViewId", esViewPayload, Bojack) { expectCreated }
-        _            <- deltaClient.put[Json](s"/views/$ref2/$encodedElasticsearchViewId", esViewPayload, Bojack) { expectCreated }
+        _            <- deltaClient.put[Json](s"/views/$ref1/$encodedElasticId", esViewPayload, Bojack) { expectCreated }
+        _            <- deltaClient.put[Json](s"/views/$ref2/$encodedElasticId", esViewPayload, Bojack) { expectCreated }
       } yield succeed
-    }
-
-    s"have resources for $ref1" in eventually {
-      deltaClient.get[Json](s"/resources/$ref1", Bojack) { (json, _) =>
-        listing._total.getOption(json).value should be > 0L
-      }
     }
 
     "wait for elasticsearch views to be created" in eventually {
       for {
-        uuids   <- deltaClient
-                     .getJson[Json](s"/views/$ref1?type=nxv:ElasticSearchView", Bojack)
-                     .map(listing.eachResult._uuid.string.getAll(_))
+        uuids   <- deltaClient.getJson[Json](s"/views/$ref1/$encodedElasticId", Bojack).map(_uuid.getOption)
         indices <- elasticsearchDsl.allIndices
       } yield {
         uuids should not be empty
         uuids.forall { uuid => indices.exists(_.contains(uuid)) } shouldEqual true
-        elasticsearchViewsRef1Uuids = uuids
+        elasticsearchViewToDeleteUuid = uuids
         succeed
       }
     }
 
     "wait for blazegraph views to be created" in eventually {
       for {
-        uuids      <- deltaClient
-                        .getJson[Json](s"/views/$ref1?type=nxv:SparqlView", Bojack)
-                        .map(listing.eachResult._uuid.string.getAll(_))
+        uuids      <- deltaClient.getJson[Json](s"/views/$ref1/graph", Bojack).map(_uuid.getOption)
         namespaces <- blazegraphDsl.allNamespaces
       } yield {
         uuids should not be empty
         uuids.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual true
-        blazegraphViewsRef1Uuids = uuids
+        blazegraphViewToDeleteUuid = uuids
         succeed
       }
     }
 
     "wait for composite views to be created" in eventually {
       for {
-        uuids      <- deltaClient
-                        .getJson[Json](s"/views/$ref1?type=nxv:CompositeView", Bojack)
-                        .map(listing.eachResult._uuid.string.getAll(_))
+        uuids      <- deltaClient.getJson[Json](s"/views/$ref1/search", Bojack).map(_uuid.getOption)
         indices    <- elasticsearchDsl.allIndices
         namespaces <- blazegraphDsl.allNamespaces
       } yield {
@@ -96,7 +84,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
         uuids.forall { uuid =>
           namespaces.exists(_.contains(uuid)) && indices.exists(_.contains(uuid))
         } shouldEqual true
-        compositeViewsRef1Uuids = uuids
+        compositeViewToDeleteUuid = uuids
         succeed
       }
     }
@@ -129,8 +117,8 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
                "esAggView",
                ref1,
                Bojack,
-               ref1 -> elasticsearchViewId,
-               ref2 -> elasticsearchViewId
+               ref1 -> elasticId,
+               ref2 -> elasticId
              )
         _ <- deltaClient.uploadFile(ref1, None, FileInput.randomTextFile, None)(expectCreated)
         _ <- deltaClient.uploadFile(ref2, None, FileInput.randomTextFile, None)(expectCreated)
@@ -227,25 +215,25 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
 
     "have deleted elasticsearch indices for es views for the project" in {
       elasticsearchDsl.allIndices.map { indices =>
-        elasticsearchViewsRef1Uuids.forall { uuid => indices.exists(_.contains(uuid)) } shouldEqual false
+        elasticsearchViewToDeleteUuid.forall { uuid => indices.exists(_.contains(uuid)) } shouldEqual false
       }
     }
 
     "have deleted blazegraph namespaces for blazegraph views for the project" in {
       blazegraphDsl.allNamespaces.map { namespaces =>
-        blazegraphViewsRef1Uuids.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
+        blazegraphViewToDeleteUuid.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
       }
     }
 
     "have deleted elasticsearch indices and blazegraph namespaces for composite views for the project" in {
       for {
         _ <- elasticsearchDsl.allIndices.map { indices =>
-               compositeViewsRef1Uuids.forall { uuid =>
+               compositeViewToDeleteUuid.forall { uuid =>
                  indices.exists(_.contains(uuid))
                } shouldEqual false
              }
         _ <- blazegraphDsl.allNamespaces.map { namespaces =>
-               compositeViewsRef1Uuids.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
+               compositeViewToDeleteUuid.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
              }
       } yield succeed
     }

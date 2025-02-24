@@ -69,10 +69,9 @@ class EventsSpec extends BaseIntegrationSpec {
     }
 
     "fetch resource events filtered by project" in eventually {
-      deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { seq =>
-        val projectEvents = seq.drop(2)
-        projectEvents.size shouldEqual 6
-        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+      deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { sses =>
+        sses.size shouldEqual 6
+        sses.flatMap(_._1) should contain theSameElementsInOrderAs List(
           "ResourceCreated",
           "ResourceUpdated",
           "ResourceTagAdded",
@@ -80,16 +79,15 @@ class EventsSpec extends BaseIntegrationSpec {
           "FileCreated",
           "FileUpdated"
         )
-        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields)): _*)
         json shouldEqual expectedEvents("kg/events/events.json", orgId, projId)
       }
     }
 
     "fetch resource events filtered by organization 1" in {
-      deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
-        val projectEvents = seq.drop(2)
-        projectEvents.size shouldEqual 6
-        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+      deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { sses =>
+        sses.size shouldEqual 6
+        sses.flatMap(_._1) should contain theSameElementsInOrderAs List(
           "ResourceCreated",
           "ResourceUpdated",
           "ResourceTagAdded",
@@ -97,17 +95,16 @@ class EventsSpec extends BaseIntegrationSpec {
           "FileCreated",
           "FileUpdated"
         )
-        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields)): _*)
         json shouldEqual expectedEvents("kg/events/events.json", orgId, projId)
       }
     }
 
     "fetch resource events filtered by organization 2" in {
-      deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
-        val projectEvents = seq.drop(2)
-        projectEvents.size shouldEqual 1
-        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
-        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+      deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { sses =>
+        sses.size shouldEqual 1
+        sses.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
+        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields)): _*)
         json shouldEqual expectedEvents("kg/events/events2.json", orgId2, projId)
       }
     }

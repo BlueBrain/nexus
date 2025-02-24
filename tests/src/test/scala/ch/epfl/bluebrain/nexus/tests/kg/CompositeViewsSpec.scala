@@ -61,27 +61,6 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     } yield succeed
 
     setup.accepted
-
-    // wait until in project resolver is created
-    eventually {
-      deltaClient.get[Json](s"/resolvers/$orgId/$bandsProject", Jerry) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        _total.getOption(json).value shouldEqual 1
-      }
-    }
-    eventually {
-      deltaClient.get[Json](s"/resolvers/$orgId/$albumsProject", Jerry) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        _total.getOption(json).value shouldEqual 1
-      }
-    }
-    eventually {
-      deltaClient.get[Json](s"/resolvers/$orgId/$songsProject", Jerry) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        _total.getOption(json).value shouldEqual 1
-      }
-    }
-
     ()
   }
 
@@ -89,9 +68,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
     "upload context" in {
       val context = jsonContentOf("kg/views/composite/context.json")
       List(songsProject, albumsProject, bandsProject).parTraverse { projectId =>
-        deltaClient.post[Json](s"/resources/$orgId/$projectId", context, Jerry) { (_, response) =>
-          response.status shouldEqual StatusCodes.Created
-        }
+        deltaClient.post[Json](s"/resources/$orgId/$projectId", context, Jerry) { expectCreated }
       }
     }
 
@@ -101,9 +78,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           jsonContentOf("kg/views/composite/songs1.json")
         )
         .parTraverse { song =>
-          deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-          }
+          deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { expectCreated }
         }
     }
 
@@ -113,9 +88,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           jsonContentOf("kg/views/composite/albums.json")
         )
         .parTraverse { album =>
-          deltaClient.post[Json](s"/resources/$orgId/$albumsProject", album, Jerry) { (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-          }
+          deltaClient.post[Json](s"/resources/$orgId/$albumsProject", album, Jerry) { expectCreated }
         }
     }
 
@@ -125,9 +98,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           jsonContentOf("kg/views/composite/bands.json")
         )
         .parTraverse { band =>
-          deltaClient.post[Json](s"/resources/$orgId/$bandsProject", band, Jerry) { (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-          }
+          deltaClient.post[Json](s"/resources/$orgId/$bandsProject", band, Jerry) { expectCreated }
         }
     }
   }
@@ -172,9 +143,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
         ): _*
       )
 
-      deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (_, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-      }
+      deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { expectBadRequest }
     }
 
     "reject creating a composite view with remote source endpoint with a wrong hostname" in {
@@ -190,9 +159,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
         ): _*
       )
 
-      deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (_, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-      }
+      deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { expectBadRequest }
     }
   }
 
@@ -242,9 +209,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           jsonContentOf("kg/views/composite/songs2.json")
         )
         .parTraverse { song =>
-          deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-          }
+          deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { expectCreated }
         }
     }
   }

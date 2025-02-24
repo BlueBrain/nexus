@@ -184,13 +184,6 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "wait until in project view is indexed" in eventually {
-      deltaClient.get[Json](s"/views/$project1?type=nxv%3AElasticSearchView", ScoobyDoo) { (json, response) =>
-        _total.getOption(json).value shouldEqual 2
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
-
     "wait until all instances are indexed in default view of project 2" in eventually {
       deltaClient.get[Json](s"/resources/$project2/resource", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK

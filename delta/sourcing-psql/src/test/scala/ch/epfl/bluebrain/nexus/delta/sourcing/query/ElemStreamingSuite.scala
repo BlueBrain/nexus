@@ -37,11 +37,8 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
   private val qc = QueryConfig(2, RefreshStrategy.Stop)
 
   private lazy val xas           = doobie()
-  private lazy val elemStreaming = ElemStreaming.stopping(
-    xas,
-    Some(NonEmptyList.of(PullRequest.entityType, Release.entityType)),
-    2
-  )
+  private val entityTypes        = Some(NonEmptyList.of(PullRequest.entityType, Release.entityType))
+  private lazy val elemStreaming = ElemStreaming.stopping(xas, entityTypes, 2)
 
   private lazy val prStore = ScopedStateStore[Iri, PullRequestState](
     PullRequest.entityType,
@@ -219,38 +216,29 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
   }
 
   test("Get the remaining elems for project 1 on latest from the beginning") {
-    StreamingQuery
-      .remaining(Scope(project1), SelectFilter.latest, Offset.start, xas)
-      .assertEquals(
-        Some(
-          RemainingElems(6L, epoch)
-        )
-      )
+    val expected = Some(RemainingElems(6L, epoch))
+    elemStreaming
+      .remaining(Scope(project1), SelectFilter.latest, Offset.start)
+      .assertEquals(expected)
   }
 
   test("Get the remaining elems for project 1 on latest from offset 6") {
-    StreamingQuery
-      .remaining(Scope(project1), SelectFilter.latest, Offset.at(6L), xas)
-      .assertEquals(
-        Some(
-          RemainingElems(3L, epoch)
-        )
-      )
+    val expected = Some(RemainingElems(3L, epoch))
+    elemStreaming
+      .remaining(Scope(project1), SelectFilter.latest, Offset.at(6L))
+      .assertEquals(expected)
   }
 
   test(s"Get the remaining elems for project 1 on tag $customTag from the beginning") {
-    StreamingQuery
-      .remaining(Scope(project1), SelectFilter.tag(customTag), Offset.at(6L), xas)
-      .assertEquals(
-        Some(
-          RemainingElems(4L, epoch)
-        )
-      )
+    val expected = Some(RemainingElems(4L, epoch))
+    elemStreaming
+      .remaining(Scope(project1), SelectFilter.tag(customTag), Offset.at(6L))
+      .assertEquals(expected)
   }
 
   test(s"Get no remaining for an unknown project") {
-    StreamingQuery
-      .remaining(Scope(ProjectRef.unsafe("xxx", "xxx")), SelectFilter.latest, Offset.at(6L), xas)
+    elemStreaming
+      .remaining(Scope(ProjectRef.unsafe("xxx", "xxx")), SelectFilter.latest, Offset.at(6L))
       .assertEquals(None)
   }
 }

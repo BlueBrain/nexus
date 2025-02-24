@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.data.NonEmptyList
 import cats.effect.{Clock, IO, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -22,7 +21,7 @@ object StreamModule extends ModuleDef {
 
   make[ElemStreaming].from {
     (xas: Transactors, shifts: ResourceShifts, queryConfig: ElemQueryConfig, activitySignals: ProjectActivitySignals) =>
-      new ElemStreaming(xas, NonEmptyList.fromList(shifts.entityTypes.toList), queryConfig, activitySignals)
+      new ElemStreaming(xas, shifts.entityTypes, queryConfig, activitySignals)
   }
 
   make[GraphResourceStream].from { (elemStreaming: ElemStreaming, shifts: ResourceShifts) =>
@@ -44,8 +43,8 @@ object StreamModule extends ModuleDef {
     registry
   }
 
-  make[Projections].from { (xas: Transactors, cfg: ProjectionConfig, clock: Clock[IO]) =>
-    Projections(xas, cfg.query, clock)
+  make[Projections].from { (xas: Transactors, shifts: ResourceShifts, cfg: ProjectionConfig, clock: Clock[IO]) =>
+    Projections(xas, shifts.entityTypes, cfg.query, clock)
   }
 
   make[ProjectionErrors].from { (xas: Transactors, clock: Clock[IO], cfg: ProjectionConfig) =>

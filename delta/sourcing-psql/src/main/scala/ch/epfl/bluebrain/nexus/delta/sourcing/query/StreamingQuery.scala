@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, IriFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import doobie.Fragments
@@ -35,11 +36,15 @@ object StreamingQuery {
     */
   def remaining(
       scope: Scope,
+      entityTypes: Option[NonEmptyList[EntityType]],
       selectFilter: SelectFilter,
       start: Offset,
       xas: Transactors
   ): IO[Option[RemainingElems]] = {
-    val whereClause = Fragments.whereAndOpt(stateFilter(scope, start, selectFilter))
+    val whereClause = Fragments.whereAndOpt(
+      entityTypeFilter(entityTypes),
+      stateFilter(scope, start, selectFilter)
+    )
     sql"""SELECT count(ordering), max(instant)
          |FROM public.scoped_states
          |$whereClause
@@ -100,7 +105,7 @@ object StreamingQuery {
       logger.debug(s"Reached the end of the single evaluation of query '${query.sql}'.")
   }
 
-  def stateFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter) = {
+  def stateFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter): Option[doobie.Fragment] = {
     val typeFragment =
       selectFilter.types.asRestrictedTo.map(restriction => fr"value -> 'types' ??| ${typesSqlArray(restriction)}")
     Fragments.andOpt(
@@ -109,6 +114,10 @@ object StreamingQuery {
       selectFilter.tag.asFragment,
       typeFragment
     )
+  }
+
+  def entityTypeFilter(entityTypes: Option[NonEmptyList[EntityType]]): Option[doobie.Fragment] = entityTypes.map { e =>
+    Fragments.in(fr"type", e)
   }
 
   def typesSqlArray(includedTypes: IriFilter.Include): Fragment =

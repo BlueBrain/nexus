@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming.{logger, newState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery.{logQuery, stateFilter, typesSqlArray}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery.{entityTypeFilter, logQuery, stateFilter, typesSqlArray}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ProjectActivitySignals, RemainingElems}
 import doobie.syntax.all._
@@ -52,7 +52,7 @@ final class ElemStreaming(
     *   the offset to start from
     */
   def remaining(scope: Scope, selectFilter: SelectFilter, start: Offset): IO[Option[RemainingElems]] =
-    StreamingQuery.remaining(scope, selectFilter, start, xas)
+    StreamingQuery.remaining(scope, entityTypes, selectFilter, start, xas)
 
   /**
     * Streams states and tombstones as [[Elem]] s without fetching the state value.
@@ -204,7 +204,7 @@ final class ElemStreaming(
 
   private def stateEntityFilter(scope: Scope, offset: Offset, selectFilter: SelectFilter) =
     Fragments.whereAndOpt(
-      entityTypeFilter,
+      entityTypeFilter(entityTypes),
       stateFilter(scope, offset, selectFilter)
     )
 
@@ -213,16 +213,13 @@ final class ElemStreaming(
       selectFilter.types.asRestrictedTo.map(includedTypes => fr"cause -> 'types' ??| ${typesSqlArray(includedTypes)}")
     val causeFragment = Fragments.orOpt(Some(fr"cause->>'deleted' = 'true'"), typeFragment)
     Fragments.whereAndOpt(
-      entityTypeFilter,
+      entityTypeFilter(entityTypes),
       scope.asFragment,
       offset.asFragment,
       selectFilter.tag.asFragment,
       causeFragment
     )
   }
-
-  private def entityTypeFilter = entityTypes.map { e => Fragments.in(fr"type", e) }
-
 }
 
 object ElemStreaming {

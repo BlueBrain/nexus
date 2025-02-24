@@ -26,7 +26,7 @@ import java.time.Instant
 
 class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures {
 
-  private lazy val projections      = Projections(xas, queryConfig, clock)
+  private lazy val projections      = Projections(xas, None, queryConfig, clock)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
   private val myId         = nxv + "myid"

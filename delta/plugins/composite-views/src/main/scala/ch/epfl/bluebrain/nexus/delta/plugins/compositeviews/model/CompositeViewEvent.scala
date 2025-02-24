@@ -9,9 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -20,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 import java.util.UUID
@@ -200,35 +198,13 @@ object CompositeViewEvent {
     Serializer.dropNulls()
   }
 
-  val compositeViewMetricEncoder: ScopedEventMetricEncoder[CompositeViewEvent] =
-    new ScopedEventMetricEncoder[CompositeViewEvent] {
-      override def databaseDecoder: Decoder[CompositeViewEvent] = serializer.codec
-
-      override def entityType: EntityType = CompositeViews.entityType
-
-      override def eventToMetric: CompositeViewEvent => ProjectScopedMetric = event =>
-        ProjectScopedMetric.from(
-          event,
-          event match {
-            case _: CompositeViewCreated      => Created
-            case _: CompositeViewUpdated      => Updated
-            case _: CompositeViewTagAdded     => Tagged
-            case _: CompositeViewDeprecated   => Deprecated
-            case _: CompositeViewUndeprecated => Undeprecated
-          },
-          event.id,
-          Set(nxv.View, compositeViewType),
-          JsonObject.empty
-        )
-    }
-
   def sseEncoder(implicit base: BaseUri): SseEncoder[CompositeViewEvent] =
     new SseEncoder[CompositeViewEvent] {
       override val databaseDecoder: Decoder[CompositeViewEvent] = serializer.codec
 
       override def entityType: EntityType = CompositeViews.entityType
 
-      override val selectors: Set[Label] = Set(Label.unsafe("views"), resourcesSelector)
+      override val selectors: Set[Label] = Set(Label.unsafe("views"))
 
       override val sseEncoder: Encoder.AsObject[CompositeViewEvent] = {
         val context                                                = ContextValue(Vocabulary.contexts.metadata, contexts.compositeViews)
