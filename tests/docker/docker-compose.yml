@@ -18,6 +18,8 @@ services:
       localstack:
         condition: service_started
     environment:
+      # For new M3/4 chips
+      # _JAVA_OPTIONS: -XX:UseSVE=0
       - DELTA_PLUGINS
       - DELTA_EXTERNAL_CONF
       - KAMON_ENABLED
@@ -104,7 +106,7 @@ services:
       - 9090:8080
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
     environment:
       ES_JAVA_OPTS: "-Xmx2G"
       discovery.type: "single-node"
@@ -112,6 +114,8 @@ services:
       xpack.security.enabled: "true"
       ingest.geoip.downloader.enabled: "false"
       ELASTIC_PASSWORD: "password"
+      # For new M3/4 chips
+      # _JAVA_OPTIONS: -XX:UseSVE=0
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://elastic:password@localhost:9200/" ]
       interval: 1s
@@ -128,6 +132,8 @@ services:
     image: bluebrain/blazegraph-nexus:2.1.6-RC-21-jre
     environment:
       JAVA_OPTS: "-Dlog4j.configuration=/config/blazegraph/log4j.properties -DjettyXml=/config/blazegraph/jetty.xml -Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
+      # For new M3/4 chips
+      # _JAVA_OPTIONS: -XX:UseSVE=0
     ports:
       - 9999:9999
     healthcheck:
