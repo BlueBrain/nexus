@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -16,7 +17,7 @@ import io.circe.Json
   */
 trait ResourceShifts {
 
-  def entityTypes: Set[EntityType]
+  def entityTypes: Option[NonEmptyList[EntityType]]
 
   /**
     * Fetch a resource as a [[JsonLdContent]]
@@ -42,7 +43,7 @@ object ResourceShifts {
   ): ResourceShifts = new ResourceShifts {
     private val shiftsMap = shifts.map { encoder => encoder.entityType -> encoder }.toMap
 
-    override def entityTypes: Set[EntityType] = shiftsMap.keySet
+    override def entityTypes: Option[NonEmptyList[EntityType]] = NonEmptyList.fromList(shiftsMap.keys.toList)
 
     private def findShift(entityType: EntityType): IO[ResourceShift[_, _, _]] = IO
       .fromOption(shiftsMap.get(entityType))(

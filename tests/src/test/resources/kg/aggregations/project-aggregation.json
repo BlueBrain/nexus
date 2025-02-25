@@ -1,36 +1,25 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/aggregations.json",
-  "aggregations" : {
-    "projects" : {
-      "buckets" : {
-        "doc_count" : 4,
-        "key" : "{{org}}/{{project}}"
-      },
-      "doc_count_error_upper_bound" : 0,
-      "sum_other_doc_count" : 0
-    },
-    "types" : {
-      "buckets" : [
+  "aggregations": {
+    "projects": {
+      "buckets": [
         {
-          "doc_count" : 2,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/View"
-        },
-        {
-          "doc_count" : 2,
-          "key" : "http://schema.org/TestResource"
-        },
-        {
-          "doc_count" : 1,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/CompositeView"
-        },
-        {
-          "doc_count" : 1,
-          "key" : "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
+          "doc_count": 2,
+          "key": "{{org}}/{{project}}"
         }
       ],
-      "doc_count_error_upper_bound" : 0,
-      "sum_other_doc_count" : 0
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0
+    },
+    "types": {
+      "buckets": [
+        {
+          "doc_count": 2,
+          "key": "http://schema.org/TestResource"
+        }
+      ],
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0
     }
   },
-  "total" : 4
+  "total": 2
 }

@@ -40,7 +40,7 @@ class SchemaJobRoutesSpec extends BaseRouteSpec {
 
   private val aclCheck = AclSimpleCheck((alice, Root, Set(Permissions.schemas.run))).accepted
 
-  private lazy val projections      = Projections(xas, queryConfig, clock)
+  private lazy val projections      = Projections(xas, None, queryConfig, clock)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig, clock)
 
   private val progress = ProjectionProgress(Offset.at(15L), Instant.EPOCH, 9000L, 400L, 30L)

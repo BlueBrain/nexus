@@ -7,14 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 
 import java.time.Instant
 import java.util.UUID
@@ -61,20 +60,20 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
   // format: on
 
   private val blazegraphViewsMapping = List(
-    (created, loadEvents("blazegraph", "default-indexing-view-created.json"), Created),
-    (created1, loadEvents("blazegraph", "indexing-view-created.json"), Created),
-    (created2, loadEvents("blazegraph", "aggregate-view-created.json"), Created),
-    (updated, loadEvents("blazegraph", "default-indexing-view-updated.json"), Updated),
-    (updated1, loadEvents("blazegraph", "indexing-view-updated.json"), Updated),
-    (updated2, loadEvents("blazegraph", "aggregate-view-updated.json"), Updated),
-    (tagged, loadEvents("blazegraph", "view-tag-added.json"), Tagged),
-    (deprecated, loadEvents("blazegraph", "view-deprecated.json"), Deprecated),
-    (undeprecated, loadEvents("blazegraph", "view-undeprecated.json"), Undeprecated)
+    (created, loadEvents("blazegraph", "default-indexing-view-created.json")),
+    (created1, loadEvents("blazegraph", "indexing-view-created.json")),
+    (created2, loadEvents("blazegraph", "aggregate-view-created.json")),
+    (updated, loadEvents("blazegraph", "default-indexing-view-updated.json")),
+    (updated1, loadEvents("blazegraph", "indexing-view-updated.json")),
+    (updated2, loadEvents("blazegraph", "aggregate-view-updated.json")),
+    (tagged, loadEvents("blazegraph", "view-tag-added.json")),
+    (deprecated, loadEvents("blazegraph", "view-deprecated.json")),
+    (undeprecated, loadEvents("blazegraph", "view-undeprecated.json"))
   )
 
   private val sseEncoder = BlazegraphViewEvent.sseEncoder
 
-  blazegraphViewsMapping.foreach { case (event, (database, sse), action) =>
+  blazegraphViewsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getSimpleName}") {
       assertOutput(BlazegraphViewEvent.serializer, event, database)
     }
@@ -87,22 +86,6 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
-    }
-
-    test(s"Correctly encode ${event.getClass.getSimpleName} to metric") {
-      BlazegraphViewEvent.bgViewMetricEncoder.toMetric.decodeJson(database).assertRight {
-        ProjectScopedMetric(
-          instant,
-          subject,
-          event.rev,
-          Set(action),
-          projectRef,
-          Label.unsafe("myorg"),
-          event.id,
-          event.tpe.types,
-          JsonObject.empty
-        )
-      }
     }
   }
 

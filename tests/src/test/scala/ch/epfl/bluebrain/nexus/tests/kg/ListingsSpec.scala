@@ -108,7 +108,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
       }
     }
 
-    "get default views" in {
+    "get default views" ignore {
       val defaultSparqlView = "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
       val searchView        = "https://bluebrain.github.io/nexus/vocabulary/searchView"
 

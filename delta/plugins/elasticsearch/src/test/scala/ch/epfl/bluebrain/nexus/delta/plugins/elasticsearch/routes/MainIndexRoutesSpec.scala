@@ -19,7 +19,7 @@ import java.time.Instant
 
 class MainIndexRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
-  private lazy val projections = Projections(xas, queryConfig, clock)
+  private lazy val projections = Projections(xas, None, queryConfig, clock)
 
   private val project1 = ProjectRef.unsafe("org", "proj1")
   private val project2 = ProjectRef.unsafe("org", "proj2")

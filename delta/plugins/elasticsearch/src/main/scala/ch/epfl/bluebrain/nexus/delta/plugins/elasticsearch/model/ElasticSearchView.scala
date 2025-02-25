@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.NonEmptySet
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -12,9 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
@@ -109,8 +105,6 @@ object ElasticSearchView {
     *   the collection of tags for this resource
     * @param source
     *   the original json value provided by the caller
-    * @param indexingRev
-    *   the indexing revision
     */
   final case class IndexingElasticSearchView(
       id: Iri,
@@ -164,8 +158,6 @@ object ElasticSearchView {
     *
     * @param uuid
     *   the optionally available unique view identifier
-    * @param indexingRev
-    *   the optionally available indexing revision
     */
   final case class Metadata(uuid: Option[UUID])
 
@@ -266,16 +258,4 @@ object ElasticSearchView {
 
   implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.elasticsearchMetadata))
-
-  type Shift = ResourceShift[ElasticSearchViewState, ElasticSearchView, Metadata]
-
-  def shift(views: ElasticSearchViews, defaultDef: DefaultIndexDef)(implicit
-      baseUri: BaseUri
-  ): Shift =
-    ResourceShift.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
-      ElasticSearchViews.entityType,
-      (ref, project) => views.fetch(IdSegmentRef(ref), project),
-      state => state.toResource(defaultDef),
-      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
-    )
 }

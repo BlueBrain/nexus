@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSear
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, MainIndexingAction, MainIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsProjection, EventMetricsQuery, MetricsIndexDef}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
@@ -35,7 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -214,9 +212,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: ElasticSearchViews,
-        indexingAction: AggregateIndexingAction,
         viewsQuery: ElasticSearchViewsQuery,
-        shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
@@ -226,8 +222,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         views,
-        viewsQuery,
-        indexingAction(_, _, _)(shift)
+        viewsQuery
       )(
         baseUri,
         cr,
@@ -367,22 +362,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[SseEncoder[_]].add { base: BaseUri => ElasticSearchViewEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { ElasticSearchViewEvent.esViewMetricEncoder }
-
   many[RemoteContextResolution].addEffect {
     (
         searchMetadataCtx: MetadataContextValue @Id("search-metadata"),
         indexingMetadataCtx: MetadataContextValue @Id("indexing-metadata")
     ) =>
       for {
-        aggregationsCtx      <- ContextValue.fromFile("contexts/aggregations.json")
         elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")
         elasticsearchMetaCtx <- ContextValue.fromFile("contexts/elasticsearch-metadata.json")
         elasticsearchIdxCtx  <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
         offsetCtx            <- ContextValue.fromFile("contexts/offset.json")
         statisticsCtx        <- ContextValue.fromFile("contexts/statistics.json")
       } yield RemoteContextResolution.fixed(
-        contexts.aggregations          -> aggregationsCtx,
         contexts.elasticsearch         -> elasticsearchCtx,
         contexts.elasticsearchMetadata -> elasticsearchMetaCtx,
         contexts.elasticsearchIndexing -> elasticsearchIdxCtx,
@@ -392,10 +383,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         Vocabulary.contexts.statistics -> statisticsCtx
       )
   }
-
-  many[ResourceToSchemaMappings].add(
-    ResourceToSchemaMappings(Label.unsafe("views") -> viewsSchemaId.iri)
-  )
 
   many[ApiMappings].add(ElasticSearchViews.mappings)
 
@@ -447,11 +434,5 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate")
     ) => MainIndexingAction(client, config.mainIndex, config.syncIndexingTimeout, config.syncIndexingRefresh)(cr)
   }
-
-  make[ElasticSearchView.Shift].from { (views: ElasticSearchViews, base: BaseUri, defaultIndexDef: DefaultIndexDef) =>
-    ElasticSearchView.shift(views, defaultIndexDef)(base)
-  }
-
-  many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]
 
 }

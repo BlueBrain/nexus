@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{aggregations, searchMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyMainIndexQuery._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
@@ -143,7 +143,6 @@ class ListingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         response.asJson shouldEqual
           JsonObject("total" -> 1.asJson)
             .add("aggregations", aggregationResponse.asJson)
-            .addContext(aggregations)
             .asJson
       }
     }

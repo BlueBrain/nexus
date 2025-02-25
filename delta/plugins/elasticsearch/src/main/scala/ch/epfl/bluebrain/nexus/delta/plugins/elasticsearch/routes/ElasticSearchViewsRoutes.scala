@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{re
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -40,15 +39,12 @@ import scala.concurrent.duration.Duration
   *   the elasticsearch views operations bundle
   * @param viewsQuery
   *   the elasticsearch views query operations bundle
-  * @param index
-  *   the indexing action on write operations
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     views: ElasticSearchViews,
-    viewsQuery: ElasticSearchViewsQuery,
-    index: IndexingAction.Execute[ElasticSearchView]
+    viewsQuery: ElasticSearchViewsQuery
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
@@ -93,45 +89,47 @@ final class ElasticSearchViewsRoutes(
     pathPrefix("views") {
       extractCaller { implicit caller =>
         projectRef { project =>
+          val authorizeRead  = authorizeFor(project, Read)
+          val authorizeWrite = authorizeFor(project, Write)
           concat(
             pathEndOrSingleSlash {
               // Create an elasticsearch view without id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
-                authorizeFor(project, Write).apply {
+              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
+                authorizeWrite {
                   emitMetadataOrReject(
                     Created,
-                    views.create(project, source).flatTap(index(project, _, mode))
+                    views.create(project, source)
                   )
                 }
               }
             },
-            (idSegment & indexingMode) { (id, mode) =>
+            idSegment { id =>
               concat(
                 pathEndOrSingleSlash {
                   concat(
                     // Create or update an elasticsearch view
                     put {
-                      authorizeFor(project, Write).apply {
+                      authorizeWrite {
                         (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                           case (None, source)      =>
                             // Create an elasticsearch view with id segment
                             emitMetadataOrReject(
                               Created,
-                              views.create(id, project, source).flatTap(index(project, _, mode))
+                              views.create(id, project, source)
                             )
                           case (Some(rev), source) =>
                             // Update a view
                             emitMetadataOrReject(
-                              views.update(id, project, rev, source).flatTap(index(project, _, mode))
+                              views.update(id, project, rev, source)
                             )
                         }
                       }
                     },
                     // Deprecate an elasticsearch view
                     (delete & parameter("rev".as[Int])) { rev =>
-                      authorizeFor(project, Write).apply {
+                      authorizeWrite {
                         emitMetadataOrReject(
-                          views.deprecate(id, project, rev).flatTap(index(project, _, mode))
+                          views.deprecate(id, project, rev)
                         )
                       }
                     },
@@ -140,7 +138,7 @@ final class ElasticSearchViewsRoutes(
                       emitOrFusionRedirect(
                         project,
                         id,
-                        authorizeFor(project, Read).apply {
+                        authorizeRead {
                           emitFetch(views.fetch(id, project))
                         }
                       )
@@ -149,9 +147,9 @@ final class ElasticSearchViewsRoutes(
                 },
                 // Undeprecate an elasticsearch view
                 (pathPrefix("undeprecate") & put & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
-                  authorizeFor(project, Write).apply {
+                  authorizeWrite {
                     emitMetadataOrReject(
-                      views.undeprecate(id, project, rev).flatTap(index(project, _, mode))
+                      views.undeprecate(id, project, rev)
                     )
                   }
                 },
@@ -207,8 +205,7 @@ object ElasticSearchViewsRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       views: ElasticSearchViews,
-      viewsQuery: ElasticSearchViewsQuery,
-      index: IndexingAction.Execute[ElasticSearchView]
+      viewsQuery: ElasticSearchViewsQuery
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
@@ -219,7 +216,6 @@ object ElasticSearchViewsRoutes {
       identities,
       aclCheck,
       views,
-      viewsQuery,
-      index
+      viewsQuery
     ).routes
 }

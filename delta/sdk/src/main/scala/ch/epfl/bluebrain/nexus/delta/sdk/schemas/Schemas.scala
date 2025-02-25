@@ -197,12 +197,12 @@ trait Schemas {
   ): IO[SchemaResource] = fetch(IdSegmentRef(resourceRef), projectRef)
 
   /**
-    * Lists all resolvers.
+    * Lists all schemas.
     *
     * @param project
-    *   the project the resolvers belong to
+    *   the project the schemas belong to
     * @return
-    *   the list of resolvers in that project
+    *   the list of schemas in that project
     */
   def list(project: ProjectRef): IO[UnscoredSearchResults[SchemaResource]]
 }

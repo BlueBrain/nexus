@@ -8,12 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUID
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent, DefaultProperties}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewEvent, DefaultProperties}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphSupervisionRoutes, BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -30,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -52,11 +49,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     HttpClient()(cfg.indexingClient, as)
   }
 
-  make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
-    BlazegraphSlowQueryStore(
-      xas
-    )
-  }
+  make[BlazegraphSlowQueryStore].from { (xas: Transactors) => BlazegraphSlowQueryStore(xas) }
 
   make[BlazegraphSlowQueryDeleter].fromEffect {
     (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig, clock: Clock[IO]) =>
@@ -183,8 +176,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
-        indexingAction: AggregateIndexingAction,
-        shift: BlazegraphView.Shift,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -195,8 +186,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         views,
         viewsQuery,
         identities,
-        aclCheck,
-        indexingAction(_, _, _)(shift)
+        aclCheck
       )(
         baseUri,
         cr,
@@ -256,8 +246,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[SseEncoder[_]].add { base: BaseUri => BlazegraphViewEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { BlazegraphViewEvent.bgViewMetricEncoder }
-
   many[RemoteContextResolution].addEffect(
     for {
       blazegraphCtx     <- ContextValue.fromFile("contexts/sparql.json")
@@ -266,10 +254,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       contexts.blazegraph         -> blazegraphCtx,
       contexts.blazegraphMetadata -> blazegraphMetaCtx
     )
-  )
-
-  many[ResourceToSchemaMappings].add(
-    ResourceToSchemaMappings(Label.unsafe("views") -> viewsSchemaId.iri)
   )
 
   many[ApiMappings].add(BlazegraphViews.mappings)
@@ -308,11 +292,4 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     ) =>
       BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri)
   }
-
-  make[BlazegraphView.Shift].from { (views: BlazegraphViews, base: BaseUri) =>
-    BlazegraphView.shift(views)(base)
-  }
-
-  many[ResourceShift[_, _, _]].ref[BlazegraphView.Shift]
-
 }
