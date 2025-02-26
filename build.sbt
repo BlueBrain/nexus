@@ -53,7 +53,7 @@ val scalaTestVersion           = "3.2.19"
 val scalaXmlVersion            = "2.3.0"
 val titaniumJsonLdVersion      = "1.5.0"
 val topBraidVersion            = "1.4.4"
-val testContainersVersion      = "1.20.4"
+val testContainersVersion      = "1.20.5"
 val testContainersScalaVersion = "0.41.8"
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
