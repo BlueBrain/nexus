@@ -33,7 +33,7 @@ jobs:
             clean \
             app/Docker/publishLocal
       - name: Start services
-        run: docker compose -f tests/docker/docker-compose.yml up -d
+        run: docker compose --env-file tests/docker/.env.github -f tests/docker/docker-compose.yml up -d
       - name: Waiting for Delta to start
         run: |
           URL="http://localhost:8080/v1/version"
