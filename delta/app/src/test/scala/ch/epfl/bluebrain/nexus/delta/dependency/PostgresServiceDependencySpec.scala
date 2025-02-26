@@ -9,7 +9,7 @@ class PostgresServiceDependencySpec extends CatsEffectSpec with DoobieScalaTestF
   "PostgresServiceDependency" should {
 
     "fetch its service name and version" in {
-      new PostgresServiceDependency(xas).serviceDescription.accepted shouldEqual ServiceDescription("postgres", "17.3")
+      new PostgresServiceDependency(xas).serviceDescription.accepted shouldEqual ServiceDescription("postgres", "17.4")
     }
   }
 
