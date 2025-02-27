@@ -2,8 +2,6 @@
   "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
   "@id": "http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
   "@type": "http://localhost:8080/Custom",
-  "_incoming": "http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming",
-  "_outgoing": "http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing",
   "_self": "http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resource",
   "_project": "myorg/myproj",

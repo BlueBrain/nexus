@@ -12,8 +12,6 @@
         "https://bluebrain.github.io/nexus/vocabulary/View",
         "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView"
       ],
-      "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultElasticSearchIndex/incoming",
-      "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultElasticSearchIndex/outgoing",
       "_self": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultElasticSearchIndex",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views",
       "_project": "myorg/myproj",
@@ -30,8 +28,6 @@
         "https://bluebrain.github.io/nexus/vocabulary/View",
         "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
       ],
-      "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex/incoming",
-      "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex/outgoing",
       "_self": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views",
       "_project": "myorg/myproj",
@@ -48,8 +44,6 @@
         "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
         "https://bluebrain.github.io/nexus/vocabulary/View"
       ],
-      "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview/incoming",
-      "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview/outgoing",
       "_self": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
       "_project": "myorg/myproj",

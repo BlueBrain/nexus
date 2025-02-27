@@ -16,10 +16,8 @@
     "_value": "4c9f4292e3c0c5fc23cd60722adb8a1535f1dd7f0cf9203140d61fb889eef3cf"
   },
   "_filename": "myfile2.pdf",
-  "_incoming": "http://localhost:8080/v1/files/myorg/myproject/myfile/incoming",
   "_mediaType": "application/pdf",
   "_origin": "Client",
-  "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/myfile/outgoing",
   "_project": "myorg/myproject",
   "_rev": 2,
   "_self": "http://localhost:8080/v1/files/myorg/myproject/myfile",

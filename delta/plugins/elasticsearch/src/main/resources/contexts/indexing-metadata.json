@@ -55,14 +55,6 @@
       "@type": "@id"
     },
     "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
-    "_incoming": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
-      "@type": "@id"
-    },
-    "_outgoing": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
-      "@type": "@id"
-    },
     "_project": "https://bluebrain.github.io/nexus/vocabulary/project",
     "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
     "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",

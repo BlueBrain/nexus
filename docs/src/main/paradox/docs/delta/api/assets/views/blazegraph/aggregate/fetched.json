@@ -13,8 +13,6 @@
   "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/Bob",
   "_deprecated": false,
   "_self": "http://localhost:8080/v1/views/org/proj/nxv:myview",
-  "_incoming": "http://localhost:8080/v1/views/org/proj/nxv:myview/incoming",
-  "_outgoing": "http://localhost:8080/v1/views/org/proj/nxv:myview/outgoing",
   "_project": "org/proj",
   "_rev": 1,
   "_updatedAt": "2021-04-18T17:10:22.748Z",

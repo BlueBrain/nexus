@@ -14,8 +14,6 @@
     "testProject"
   ],
   "other:priority": {{priority}},
-  "_incoming": "{{self}}/incoming",
-  "_outgoing": "{{self}}/outgoing",
   "_self" : "{{self}}",
   "_project" : "{{project}}",
   "_constrainedBy": "https://dev.nexus.test.com/test-schema",

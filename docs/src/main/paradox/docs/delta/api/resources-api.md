@@ -41,8 +41,6 @@ When using the endpoints described on this page, the responses will contain glob
 @ref:[Nexus Metadata](../metadata.md) page. In addition, the following resource specific metadata can be present
 
 - `_project`: address of the resource's project
-- `_incoming`: address to query to obtain the @ref:[list of incoming links](#list-incoming-links)
-- `_outgoing`: address to query to obtain the @ref:[list of outgoing links](#list-outgoing-links)
 - `_constrainedBy`: `@id` of the schema used to validate the resource. If no schema has been used to validate the resource, it will indicate the
   unconstrained identifier.
 

@@ -41,8 +41,6 @@ class OriginalSourceSuite extends NexusSuite with CirceLiteral {
              "_createdAt" : "1970-01-01T00:00:00Z",
              "_createdBy" : "http://localhost/v1/anonymous",
              "_deprecated" : false,
-             "_incoming" : "http://localhost/v1/resources/org/proj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/incoming",
-             "_outgoing" : "http://localhost/v1/resources/org/proj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/outgoing",
              "_project" : "org/proj",
              "_rev" : 5,
              "_self" : "http://localhost/v1/resources/org/proj/_/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json",

@@ -35,10 +35,7 @@ object ResourceScope {
   /**
     * A resource that is rooted in a project
     */
-  final case class ScopedResourceF(project: ProjectRef, relativeAccessUri: Uri) extends ResourceScope {
-    def incoming(implicit base: BaseUri): Uri = accessUri / "incoming"
-    def outgoing(implicit base: BaseUri): Uri = accessUri / "outgoing"
-  }
+  final case class ScopedResourceF(project: ProjectRef, relativeAccessUri: Uri) extends ResourceScope
 
   /**
     * A resource that is rooted in a project but not persisted or indexed.

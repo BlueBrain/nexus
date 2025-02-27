@@ -269,8 +269,6 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         |           :rev                ?rev            ;
         |           :project            ?project        ;
         |           :self               ?self           ;
-        |           :incoming           ?incoming       ;
-        |           :outgoing           ?outgoing       ;
         |} WHERE {
         |      BIND(<$id> as ?id) .
         |
@@ -288,8 +286,6 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         |           nxv:rev         ?rev;
         |           nxv:project     ?project;
         |           nxv:self        ?self;
-        |           nxv:incoming    ?incoming;
-        |           nxv:outgoing    ?outgoing;
         |}
         |
       """.stripMargin

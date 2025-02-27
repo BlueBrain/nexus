@@ -17,10 +17,8 @@
         "_value": "9144c8a8c435aff3262ba0a4620590f774c1d86a13956619723052eca6546c64"
       },
       "_filename": "attachment.json",
-      "_incoming": "{{fileSelfPrefix}}attachment.json/incoming",
       "_mediaType": "application/json",
       "_origin" : "Client",
-      "_outgoing": "{{fileSelfPrefix}}attachment.json/outgoing",
       "_project": "{{project}}",
       "_rev": 3,
       "_self": "{{fileSelfPrefix}}attachment.json",
@@ -43,10 +41,8 @@
         "_value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "_filename": "empty",
-      "_incoming": "{{fileSelfPrefix}}empty/incoming",
       "_mediaType": "text/plain; charset=UTF-8",
       "_origin" : "Client",
-      "_outgoing": "{{fileSelfPrefix}}empty/outgoing",
       "_project": "{{project}}",
       "_rev": 1,
       "_self": "{{fileSelfPrefix}}empty",
@@ -69,10 +65,8 @@
         "_value": "2b67fbb2c302811c3e4941183b1b2037774ee7dfc8b633eef1afa2231d001615"
       },
       "_filename": "attachment2",
-      "_incoming": "{{fileSelfPrefix}}attachment2/incoming",
       "_mediaType": "application/octet-stream",
       "_origin" : "Client",
-      "_outgoing": "{{fileSelfPrefix}}attachment2/outgoing",
       "_project": "{{project}}",
       "_rev": 1,
       "_self": "{{fileSelfPrefix}}attachment2",
@@ -95,10 +89,8 @@
         "_value": "2b67fbb2c302811c3e4941183b1b2037774ee7dfc8b633eef1afa2231d001615"
       },
       "_filename": "attachment2",
-      "_incoming": "{{fileSelfPrefix}}attachment3/incoming",
       "_mediaType": "application/octet-stream",
       "_origin" : "Client",
-      "_outgoing": "{{fileSelfPrefix}}attachment3/outgoing",
       "_project": "{{project}}",
       "_rev": 1,
       "_self": "{{fileSelfPrefix}}attachment3",

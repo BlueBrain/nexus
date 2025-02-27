@@ -40,8 +40,6 @@
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/realms/wonderland/users/writer",
   "_deprecated": false,
-  "_incoming": "http://localhost/v1/schemas/myorg/myproject/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyid2/incoming",
-  "_outgoing": "http://localhost/v1/schemas/myorg/myproject/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyid2/outgoing",
   "_project": "myorg/myproject",
   "_rev": {{rev}},
   "_self": "{{self}}",

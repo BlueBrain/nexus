@@ -71,14 +71,6 @@
       "type": "keyword",
       "copy_to": "_all_fields"
     },
-    "_incoming": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
-    },
-    "_outgoing": {
-      "type": "keyword",
-      "copy_to": "_all_fields"
-    },
     "_original_source": {
       "type": "text",
       "analyzer": "standard",

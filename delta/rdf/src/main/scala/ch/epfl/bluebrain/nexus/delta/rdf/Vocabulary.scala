@@ -169,8 +169,6 @@ object Vocabulary {
     val userInfoEndpoint      = Metadata("userInfoEndpoint")
     val uuid                  = Metadata("uuid")
     val path                  = Metadata("path")
-    val incoming              = Metadata("incoming")
-    val outgoing              = Metadata("outgoing")
     val originalSource        = Metadata("original_source")
     val effectiveApiMappings  = Metadata("effectiveApiMappings")
 

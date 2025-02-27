@@ -10,8 +10,6 @@
   ],
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
   "_deprecated": false,
-  "_incoming": "{{self}}/incoming",
-  "_outgoing": "{{self}}/outgoing",
   "_project": "{{project}}",
   "_rev": 1,
   "_self": "{{self}}",

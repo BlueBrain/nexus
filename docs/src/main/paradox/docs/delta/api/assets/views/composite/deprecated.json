@@ -12,8 +12,6 @@
   "_createdAt": "2021-05-17T14:43:41.763Z",
   "_createdBy": "http://localhost:8080/v1/anonymous",
   "_deprecated": true,
-  "_incoming": "http://localhost:8080/v1/views/myorg/bands/composite_view/incoming",
-  "_outgoing": "http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing",
   "_project": "myorg/bands",
   "_rev": 4,
   "_self": "http://localhost:8080/v1/views/myorg/bands/composite_view",

@@ -10,8 +10,6 @@
   "_createdBy" : "{{createdBy}}",
   "_deprecated" : {{deprecated}},
   "_uuid" : "{{uuid}}",
-  "_incoming" : "{{self}}/incoming",
-  "_outgoing" : "{{self}}/outgoing",
   "_project" : "{{project}}",
   "_rev" : {{rev}},
   "_self" : "{{self}}",

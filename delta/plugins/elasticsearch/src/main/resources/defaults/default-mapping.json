@@ -72,9 +72,6 @@
     "_deprecated": {
       "type": "boolean"
     },
-    "_markedForDeletion": {
-      "type": "boolean"
-    },
     "_createdAt": {
       "type": "date",
       "fields": {
@@ -124,12 +121,6 @@
       "type": "keyword"
     },
     "_self": {
-      "type": "keyword"
-    },
-    "_incoming": {
-      "type": "keyword"
-    },
-    "_outgoing": {
       "type": "keyword"
     },
     "_original_source": {
@@ -203,28 +194,6 @@
           }
         },
         "@type": {
-          "type": "keyword",
-          "fields": {
-            "fulltext": {
-              "type": "text",
-              "analyzer": "path_hierarchy"
-            }
-          }
-        }
-      }
-    },
-    "_effectiveApiMappings": {
-      "properties": {
-        "_prefix": {
-          "type": "keyword",
-          "fields": {
-            "fulltext": {
-              "type": "text",
-              "analyzer": "nexus"
-            }
-          }
-        },
-        "_namespace": {
           "type": "keyword",
           "fields": {
             "fulltext": {

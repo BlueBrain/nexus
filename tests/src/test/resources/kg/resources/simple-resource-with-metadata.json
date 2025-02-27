@@ -12,8 +12,6 @@
   "_constrainedBy": "https://dev.nexus.test.com/test-schema",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-  "_incoming": "{{self}}/incoming",
-  "_outgoing": "{{self}}/outgoing",
   "_self": "{{self}}",
   "_project": "{{project}}",
   "_rev": {{rev}},
