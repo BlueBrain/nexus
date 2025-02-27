@@ -12,8 +12,6 @@
   "_createdAt": "2021-05-11T12:22:19.195Z",
   "_createdBy": "http://localhost:8080/v1/anonymous",
   "_deprecated": false,
-  "_incoming": "http://localhost:8080/v1/storages/myorg/myproject/s3/incoming",
-  "_outgoing": "http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing",
   "_project": "myorg/myproject",
   "_rev": 1,
   "_self": "http://localhost:8080/v1/storages/myorg/myproject/s3",

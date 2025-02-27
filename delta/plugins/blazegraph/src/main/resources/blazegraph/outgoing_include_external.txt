@@ -10,7 +10,7 @@ WITH {
         ?mid (!<>)* ?x .
         ?x ?p ?y .
         ?y (!<>)* ?s .
-          FILTER(isIri(?s) && ?p NOT IN (nxv:updatedBy, nxv:createdBy, nxv:constrainedBy, rdf:type, nxv:self, nxv:incoming, nxv:outgoing) && NOT EXISTS {?ss rdf:type ?s})
+          FILTER(isIri(?s) && ?p NOT IN (nxv:updatedBy, nxv:createdBy, nxv:constrainedBy, rdf:type, nxv:self) && NOT EXISTS {?ss rdf:type ?s})
       }
       OPTIONAL {
         GRAPH ?g2 {

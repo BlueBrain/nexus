@@ -12,8 +12,6 @@
   "_createdAt": "2021-05-12T12:56:09.676Z",
   "_createdBy": "http://localhost:8080/v1/anonymous",
   "_deprecated": true,
-  "_incoming": "http://localhost:8080/v1/views/myorg/myproj/myview/incoming",
-  "_outgoing": "http://localhost:8080/v1/views/myorg/myproj/myview/outgoing",
   "_project": "myorg/myproj",
   "_rev": 4,
   "_self": "http://localhost:8080/v1/views/myorg/myproj/myview",

@@ -122,8 +122,6 @@ object IncomingOutgoingBlazegraphSpec {
         _createdAt: Instant,
         _createdBy: String,
         _deprecated: Boolean,
-        _incoming: String,
-        _outgoing: String,
         _project: String,
         _rev: Int,
         _self: String,

@@ -878,8 +878,6 @@ object FilesRoutesSpec extends CirceLiteral {
         "_origin": "${attributes.origin}",
         "_mediaType": "${attributes.mediaType.fold("")(_.value)}",
         "_deprecated" : $deprecated,
-        "_incoming" : "$self/incoming",
-        "_outgoing" : "$self/outgoing",
         "_project" : "$project",
         "_rev" : $rev,
         "_self" : "$self",

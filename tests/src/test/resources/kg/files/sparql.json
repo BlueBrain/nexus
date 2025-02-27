@@ -179,34 +179,6 @@
           "type": "uri",
           "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
         }
-      },
-      {
-        "object": {
-          "type": "uri",
-          "value": "{{self}}/incoming"
-        },
-        "predicate": {
-          "type": "uri",
-          "value": "https://bluebrain.github.io/test/incoming"
-        },
-        "subject": {
-          "type": "uri",
-          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
-        }
-      },
-      {
-        "object": {
-          "type": "uri",
-          "value": "{{self}}/outgoing"
-        },
-        "predicate": {
-          "type": "uri",
-          "value": "https://bluebrain.github.io/test/outgoing"
-        },
-        "subject": {
-          "type": "uri",
-          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
-        }
       }
     ]
   }

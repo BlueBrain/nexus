@@ -1,4 +1,4 @@
-# Files
+f# Files
 
 Files are attachment resources rooted in the `/v1/files/{org_label}/{project_label}/` collection.
 
@@ -29,8 +29,6 @@ When using the endpoints described on this page, the responses will contain glob
 - `_storage`: `@id`, `@type`, and revision of the @ref:[Storage](storages-api.md) used for the file
 - `_uuid`: @link:[UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier){ open=new } of the file
 - `_project`: address of the file's project
-- `_incoming`: address to query to obtain the @ref:[list of incoming links](resources-api.md#list-incoming-links)
-- `_outgoing`: address to query to obtain the @ref:[list of outgoing links](resources-api.md#list-outgoing-links)
 
 ## Custom file metadata
 

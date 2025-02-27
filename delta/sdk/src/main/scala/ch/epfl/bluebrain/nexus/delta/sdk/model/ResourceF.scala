@@ -139,10 +139,8 @@ object ResourceF {
         JsonObject("_self" := global.accessUri)
       case scoped: ScopedResourceF    =>
         JsonObject(
-          "_self"     := scoped.accessUri,
-          "_project"  := scoped.project,
-          "_incoming" := scoped.incoming,
-          "_outgoing" := scoped.outgoing
+          "_self"    := scoped.accessUri,
+          "_project" := scoped.project
         )
       case global: EphemeralResourceF =>
         JsonObject(

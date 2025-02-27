@@ -18,8 +18,6 @@
       "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
     }
   ],
-  "_incoming": "{{resources}}/incoming",
-  "_outgoing": "{{resources}}/outgoing",
   "_self": "{{resources}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
   "_project": "{{project-parent}}",

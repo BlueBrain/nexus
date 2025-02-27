@@ -4470,15 +4470,7 @@
       "@type": "@id"
     },
     "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
-    "_incoming": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
-      "@type": "@id"
-    },
     "_instant": "https://bluebrain.github.io/nexus/vocabulary/instant",
-    "_outgoing": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
-      "@type": "@id"
-    },
     "_project": "https://bluebrain.github.io/nexus/vocabulary/project",
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
     "_self": {

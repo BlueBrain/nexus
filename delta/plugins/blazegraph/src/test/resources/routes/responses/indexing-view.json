@@ -12,8 +12,6 @@
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/realms/myrealm/users/writer",
   "_deprecated": {{deprecated}},
-  "_incoming": "{{self}}/incoming",
-  "_outgoing": "{{self}}/outgoing",
   "_project": "org/proj",
   "_rev": {{rev}},
   "_indexingRev": {{indexingRev}},

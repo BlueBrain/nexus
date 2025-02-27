@@ -12,8 +12,6 @@
         "View",
         "SparqlView"
       ],
-      "_incoming": "{{defaultSparqlViewSelf}}/incoming",
-      "_outgoing": "{{defaultSparqlViewSelf}}/outgoing",
       "_self": "{{defaultSparqlViewSelf}}",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_project": "{{project}}",
@@ -34,8 +32,6 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_incoming": "{{searchViewSelf}}/incoming",
-      "_outgoing": "{{searchViewSelf}}/outgoing",
       "_self": "{{searchViewSelf}}",
       "_project": "{{project}}",
       "_rev": 1,

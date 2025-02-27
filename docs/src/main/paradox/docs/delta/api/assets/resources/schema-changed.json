@@ -2,8 +2,6 @@
   "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
   "@id": "http://localhost:8080/v1/resources/myorg/myproj/myId",
   "@type": "http://localhost:8080/Custom",
-  "_incoming": "http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/incoming",
-  "_outgoing": "http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/outgoing",
   "_self": "http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId",
   "_constrainedBy": "http://localhost:8080/v1/resources/myorg/myproj/_/myNewSchema",
   "_project": "myorg/myproj",

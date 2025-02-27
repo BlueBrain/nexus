@@ -13,8 +13,6 @@
   "_createdBy": "http://localhost/v1/realms/myrealm/users/writer",
   "_uuid": "{{uuid}}",
   "_deprecated": {{deprecated}},
-  "_incoming": "{{self}}/incoming",
-  "_outgoing": "{{self}}/outgoing",
   "_project": "myorg/myproj",
   "_rev": {{rev}},
   "_self": "{{self}}",

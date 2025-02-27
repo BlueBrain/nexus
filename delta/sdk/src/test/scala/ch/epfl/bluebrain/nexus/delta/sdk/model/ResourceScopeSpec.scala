@@ -54,42 +54,30 @@ class ResourceScopeSpec extends BaseSpec {
     }
 
     "be constructed for schemas" in {
-      val id          = schemas + "myid"
-      val expected    = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedIn  = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
-      val expectedOut = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
+      val id       = schemas + "myid"
+      val expected = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}")
 
       val resourceUris = ResourceScope.schema(projectRef, id).asInstanceOf[ScopedResourceF]
 
       resourceUris.accessUri shouldEqual expected
-      resourceUris.incoming shouldEqual expectedIn
-      resourceUris.outgoing shouldEqual expectedOut
       resourceUris.project shouldEqual projectRef
     }
 
     "be constructed for resolvers" in {
-      val id          = nxv + "myid"
-      val expected    = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedIn  = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
-      val expectedOut = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
+      val id       = nxv + "myid"
+      val expected = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
 
       val resourceUris = ResourceScope.resolver(projectRef, id).asInstanceOf[ScopedResourceF]
       resourceUris.accessUri shouldEqual expected
-      resourceUris.incoming shouldEqual expectedIn
-      resourceUris.outgoing shouldEqual expectedOut
       resourceUris.project shouldEqual projectRef
     }
 
     "be constructed for resolvers with nxv as a base" in {
-      val id          = nxv + "myid"
-      val expected    = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedIn  = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
-      val expectedOut = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
+      val id       = nxv + "myid"
+      val expected = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
 
       val resourceUris = ResourceScope.resolver(projectRef, id).asInstanceOf[ScopedResourceF]
       resourceUris.accessUri shouldEqual expected
-      resourceUris.incoming shouldEqual expectedIn
-      resourceUris.outgoing shouldEqual expectedOut
       resourceUris.project shouldEqual projectRef
     }
 

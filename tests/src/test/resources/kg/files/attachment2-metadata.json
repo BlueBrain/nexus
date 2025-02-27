@@ -18,8 +18,6 @@
   "_filename": "attachment2",
   "_mediaType": "application/octet-stream",
   "_origin" : "Client",
-  "_incoming": "{{self}}/incoming",
-  "_outgoing": "{{self}}/outgoing",
   "_self": "{{self}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_project": "{{project}}",

@@ -292,10 +292,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       forAll(
         List(
           Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/incoming"),
-          Get("/v1/views/org/proj/resource-incoming-outgoing/incoming"),
-          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/incoming"),
-          Get("/v1/files/org/proj/resource-incoming-outgoing/incoming"),
-          Get("/v1/storages/org/proj/resource-incoming-outgoing/incoming")
+          Get("/v1/files/org/proj/resource-incoming-outgoing/incoming")
         )
       ) { req =>
         req ~> asReader ~> routes ~> check {
@@ -309,10 +306,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       forAll(
         List(
           Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/outgoing"),
-          Get("/v1/views/org/proj/resource-incoming-outgoing/outgoing"),
-          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/outgoing"),
-          Get("/v1/files/org/proj/resource-incoming-outgoing/outgoing"),
-          Get("/v1/storages/org/proj/resource-incoming-outgoing/outgoing")
+          Get("/v1/files/org/proj/resource-incoming-outgoing/outgoing")
         )
       ) { req =>
         req ~> asReader ~> routes ~> check {
@@ -326,15 +320,9 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       forAll(
         List(
           Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/incoming"),
-          Get("/v1/views/org/proj/resource-incoming-outgoing/incoming"),
-          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/incoming"),
           Get("/v1/files/org/proj/resource-incoming-outgoing/incoming"),
-          Get("/v1/storages/org/proj/resource-incoming-outgoing/incoming"),
           Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/outgoing"),
-          Get("/v1/views/org/proj/resource-incoming-outgoing/outgoing"),
-          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/outgoing"),
-          Get("/v1/files/org/proj/resource-incoming-outgoing/outgoing"),
-          Get("/v1/storages/org/proj/resource-incoming-outgoing/outgoing")
+          Get("/v1/files/org/proj/resource-incoming-outgoing/outgoing")
         )
       ) { req =>
         req ~> routes ~> check {
