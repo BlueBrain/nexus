@@ -29,7 +29,7 @@ The latest stable release is **v1.11.0** released on **09.12.2024**.
 
 @@@ note { .warning }
 
-The items listed below are changes that have been made in this release that break compatibility with previous releases.
+The items listed below are changes that have been made in this release that may break compatibility with previous releases.
 
 **Nexus Delta now fully supports JSON-LD 1.1**
 
