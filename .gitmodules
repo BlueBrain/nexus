@@ -2,10 +2,6 @@
 	path = versions/snapshot
 	url = git@github.com:BlueBrain/nexus.git
 	branch = master
-[submodule "versions/v1.7.x"]
-	path = versions/v1.7.x
-	url = git@github.com:BlueBrain/nexus.git
-	branch = v1.7.x
 [submodule "versions/v1.8.x"]
 	path = versions/v1.8.x
 	url = git@github.com:BlueBrain/nexus.git
