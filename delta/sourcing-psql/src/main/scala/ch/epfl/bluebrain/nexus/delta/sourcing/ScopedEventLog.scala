@@ -163,13 +163,13 @@ object ScopedEventLog {
 
         def persist(event: E, original: Option[S], newState: S): IO[Unit] = {
 
-          def queries(newTaggedState: Option[(UserTag, S)], init: PartitionInit) =
+          def queries(newTaggedState: Option[(UserTag, S)]) =
             for {
               _ <- TombstoneStore.save(entityType, original, newState)
-              _ <- eventStore.save(event, init)
-              _ <- stateStore.save(newState, init)
+              _ <- eventStore.save(event)
+              _ <- stateStore.save(newState)
               _ <- newTaggedState.traverse { case (tag, taggedState) =>
-                     stateStore.save(taggedState, tag, Noop)
+                     stateStore.save(taggedState, tag)
                    }
               _ <- deleteTag(event, newState)
               _ <- updateDependencies(newState)
@@ -177,10 +177,8 @@ object ScopedEventLog {
 
           {
             for {
-              init        <- PartitionInit(event.project, xas.cache)
               taggedState <- newTaggedState(event, newState)
-              res         <- queries(taggedState, init).transact(xas.write)
-              _           <- init.updateCache(xas.cache)
+              res         <- queries(taggedState).transact(xas.write)
             } yield res
           }.recoverWith {
             case sql: SQLException if isUniqueViolation(sql) =>

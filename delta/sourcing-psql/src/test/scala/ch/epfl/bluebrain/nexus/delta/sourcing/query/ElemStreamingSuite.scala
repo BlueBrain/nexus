@@ -91,23 +91,23 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
   test("Setting up the state log") {
     {
       for {
-        _ <- prStore.unsafeSave(prState11) //1
-        _ <- prStore.unsafeSave(prState12) //2
-        _ <- releaseStore.unsafeSave(release11) //3
-        _ <- prStore.unsafeSave(prState21) //4
-        _ <- prStore.unsafeSave(prState34) //5
-        _ <- prStore.unsafeSave(prState11, customTag) //6
-        _ <- prStore.unsafeSave(prState13) //7
-        _ <- releaseStore.unsafeSave(release12) //8
-        _ <- releaseStore.unsafeSave(release12, customTag) //9
-        _ <- prStore.unsafeSave(prState13, customTag) //10
+        _ <- prStore.save(prState11) //1
+        _ <- prStore.save(prState12) //2
+        _ <- releaseStore.save(release11) //3
+        _ <- prStore.save(prState21) //4
+        _ <- prStore.save(prState34) //5
+        _ <- prStore.save(prState11, customTag) //6
+        _ <- prStore.save(prState13) //7
+        _ <- releaseStore.save(release12) //8
+        _ <- releaseStore.save(release12, customTag) //9
+        _ <- prStore.save(prState13, customTag) //10
         _ <- TombstoneStore.save(PullRequest.entityType, prState13, customTag) //11
-        _ <- prStore.unsafeSave(prState12, customTag) //12
-        _ <- releaseStore.unsafeSave(release21) //13
+        _ <- prStore.save(prState12, customTag) //12
+        _ <- releaseStore.save(release21) //13
         _ <- TombstoneStore.save(PullRequest.entityType, prState11, customTag) //14
-        _ <- prStore.unsafeSave(prState14) //15
+        _ <- prStore.save(prState14) //15
         _ <- TombstoneStore.save(Release.entityType, release12, customTag) //16
-        _ <- prStore.unsafeSave(prState14, customTag) //17
+        _ <- prStore.save(prState14, customTag) //17
       } yield ()
     }.transact(xas.write)
   }

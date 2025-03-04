@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{Pull
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{PullRequestCommand, PullRequestEvent, PullRequestState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
@@ -19,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.syntax.all._
 import doobie.postgres.implicits._
@@ -37,18 +35,9 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
 
   private val queryConfig = QueryConfig(10, RefreshStrategy.Delay(500.millis))
 
-  private lazy val eventStore = ScopedEventStore(
-    PullRequest.entityType,
-    PullRequestEvent.serializer,
-    queryConfig
-  )
+  private lazy val eventStore = PullRequest.eventStore(queryConfig)
 
-  private lazy val stateStore = ScopedStateStore(
-    PullRequest.entityType,
-    PullRequestState.serializer,
-    queryConfig,
-    xas
-  )
+  private lazy val stateStore = PullRequest.stateStore(xas, queryConfig)
 
   private val maxDuration = 100.millis
 

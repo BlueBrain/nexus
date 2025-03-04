@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitiali
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmProvisioning
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config._
+import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -62,8 +63,10 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
 
-  make[Transactors].fromResource { () =>
-    Transactors.init(appCfg.database)
+  make[Transactors].fromResource { () => Transactors(appCfg.database) }
+
+  make[DatabasePartitioner].fromEffect { (xas: Transactors) =>
+    DatabasePartitioner(appCfg.database.partitionStrategy, xas)
   }
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }

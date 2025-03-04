@@ -61,11 +61,11 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
     MultiDecoder(PullRequest.entityType -> prDecoder, EntityType("github") -> prDecoder)
 
   test("Save events") {
-    (gitlabPrStore.unsafeSave(event1) >>
-      gitlabPrStore.unsafeSave(event2) >>
-      gitlabPrStore.unsafeSave(event3) >>
-      gitlabPrStore.unsafeSave(event4) >>
-      githubPrStore.unsafeSave(event5)).transact(xas.write)
+    (gitlabPrStore.save(event1) >>
+      gitlabPrStore.save(event2) >>
+      gitlabPrStore.save(event3) >>
+      gitlabPrStore.save(event4) >>
+      githubPrStore.save(event5)).transact(xas.write)
   }
 
   test("Get events of all types from the start") {

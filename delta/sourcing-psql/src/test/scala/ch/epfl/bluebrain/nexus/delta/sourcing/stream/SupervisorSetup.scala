@@ -17,7 +17,7 @@ final case class SupervisorSetup(supervisor: Supervisor, projections: Projection
 
 object SupervisorSetup {
 
-  val defaultQueryConfig: QueryConfig = QueryConfig(10, RefreshStrategy.Delay(10.millis))
+  private val defaultQueryConfig: QueryConfig = QueryConfig(10, RefreshStrategy.Delay(10.millis))
 
   def unapply(setup: SupervisorSetup): (Supervisor, Projections, ProjectionErrors) =
     (setup.supervisor, setup.projections, setup.projectionErrors)
@@ -44,7 +44,7 @@ object SupervisorSetup {
       config: ProjectionConfig,
       clock: Clock[IO]
   ): Resource[IO, SupervisorSetup] =
-    Doobie.resource().flatMap { xas =>
+    Doobie.resourceDefault.flatMap { xas =>
       val projections      = Projections(xas, None, config.query, clock)
       val projectionErrors = ProjectionErrors(xas, config.query, clock)
       Supervisor(projections, projectionErrors, config).map(s => SupervisorSetup(s, projections, projectionErrors))

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
@@ -14,7 +15,9 @@ import java.time.Instant
 
 class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
-  lazy val fixture = doobieInject(PullRequest.eventStore(_, event1, event2, event3, event4, event5, event6))
+  private val queryConfig = QueryConfig.stopping(10)
+
+  private lazy val fixture = doobieInject(PullRequest.eventStore(_, queryConfig, allEvents: _*))
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(fixture)
 
@@ -36,6 +39,8 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   private val event6 = PullRequestCreated(id3, project3, Instant.EPOCH, Anonymous)
 
+  private val allEvents = List(event1, event2, event3, event4, event5, event6)
+
   private lazy val (xas, store) = fixture()
 
   private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assertEquals(6)
@@ -43,7 +48,7 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   test("Fail when the PK already exists") {
     for {
       _ <- store
-             .unsafeSave(PullRequestMerged(id1, project1, 2, Instant.EPOCH, Anonymous))
+             .save(PullRequestMerged(id1, project1, 2, Instant.EPOCH, Anonymous))
              .transact(xas.write)
              .expectUniqueViolation
       _ <- assertCount

@@ -108,6 +108,7 @@ object ProjectsImpl {
     */
   final def apply(
       fetchActiveOrg: FetchActiveOrganization,
+      onCreate: ProjectRef => IO[Unit],
       validateDeletion: ValidateProjectDeletion,
       scopeInitializer: ScopeInitializer,
       defaultApiMappings: ApiMappings,
@@ -119,7 +120,7 @@ object ProjectsImpl {
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(
-      ScopedEventLog(Projects.definition(fetchActiveOrg, validateDeletion, clock), config, xas),
+      ScopedEventLog(Projects.definition(fetchActiveOrg, onCreate, validateDeletion, clock), config, xas),
       scopeInitializer,
       defaultApiMappings
     )

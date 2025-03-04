@@ -21,6 +21,7 @@ services:
       - DELTA_PLUGINS
       - DELTA_EXTERNAL_CONF
       - KAMON_ENABLED
+      - PARTITION_STRATEGY
       - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     entrypoint:
@@ -44,9 +45,11 @@ services:
     depends_on:
       - delta
     environment:
-      DELTA_PLUGINS: "/opt/docker/plugins/"
-      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
-      KAMON_ENABLED: "false"
+      - DELTA_PLUGINS
+      - DELTA_EXTERNAL_CONF
+      - KAMON_ENABLED
+      - PARTITION_STRATEGY
+      - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     profiles:
       - "cluster"
@@ -69,9 +72,11 @@ services:
     depends_on:
       - delta2
     environment:
-      DELTA_PLUGINS: "/opt/docker/plugins/"
-      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
-      KAMON_ENABLED: "false"
+      - DELTA_PLUGINS
+      - DELTA_EXTERNAL_CONF
+      - KAMON_ENABLED
+      - PARTITION_STRATEGY
+      - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     profiles:
       - "cluster"

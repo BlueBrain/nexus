@@ -6,6 +6,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -22,10 +23,10 @@ import java.time.Instant
 
 class ExporterSuite extends NexusSuite with Doobie.Fixture with TempDirectory.Fixture with FixedClock {
 
-  private lazy val doobieFixture                 = doobieInject(
-    PullRequest.eventStore(_, event1, event2, event3, event4, event5, event6),
-    Exporter(exporterConfig, _)
-  )
+  private val queryConfig = QueryConfig.stopping(10)
+
+  private lazy val doobieFixture                 =
+    doobieInject(PullRequest.eventStore(_, queryConfig, allEvents: _*), Exporter(exporterConfig, _))
   override def munitFixtures: Seq[AnyFixture[_]] = List(tempDirectory, doobieFixture)
 
   private lazy val exporterConfig   = ExportConfig(5, 4, 3, exportDirectory)
@@ -49,6 +50,8 @@ class ExporterSuite extends NexusSuite with Doobie.Fixture with TempDirectory.Fi
   private val event5 = PullRequestCreated(id1, project2, Instant.EPOCH, Anonymous)
 
   private val event6 = PullRequestCreated(id3, project3, Instant.EPOCH, Anonymous)
+
+  private val allEvents = List(event1, event2, event3, event4, event5, event6)
 
   private def parseAsObject(value: String) =
     parser.parse(value).flatMap(_.asObject.toRight(DecodingFailure("Expected a json object", List.empty)))

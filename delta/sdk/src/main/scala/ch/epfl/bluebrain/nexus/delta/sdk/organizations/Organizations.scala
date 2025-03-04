@@ -134,6 +134,8 @@ trait Organizations {
       params: OrganizationSearchParams,
       ordering: Ordering[OrganizationResource]
   ): IO[UnscoredSearchResults[OrganizationResource]]
+
+  def purge(org: Label): IO[Unit]
 }
 
 object Organizations {

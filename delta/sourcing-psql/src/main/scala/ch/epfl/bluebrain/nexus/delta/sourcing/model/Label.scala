@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.MD5
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -33,6 +34,13 @@ object Label {
   final case class IllegalLabelFormat(reason: String, details: Option[String] = None) extends FormatError(reason) {
     def message = s"'$reason' did not match the expected label format '${Label.regex.regex}'."
   }
+
+  /**
+    * Creates a MD5 value out of the label
+    * @param label
+    *   the value to hash
+    */
+  def hash(label: Label): String = MD5.hash(label.value)
 
   /**
     * Attempts to construct a label from its string representation.

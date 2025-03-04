@@ -26,4 +26,6 @@ object QueryConfig {
         refreshStrategy <- ConfigReader[FiniteDuration].from(refreshK)
       } yield QueryConfig(batchSize, RefreshStrategy.Delay(refreshStrategy))
     }
+
+  def stopping(batchSize: Int): QueryConfig = QueryConfig(batchSize, RefreshStrategy.Stop)
 }

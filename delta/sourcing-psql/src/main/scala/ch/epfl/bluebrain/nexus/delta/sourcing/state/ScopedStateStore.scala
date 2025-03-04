@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQ
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Scope, Serializer, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Serializer, Transactors}
 import doobie._
 import doobie.syntax.all._
 import doobie.postgres.implicits._
@@ -30,30 +30,13 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     *   The state to persist
     * @param tag
     *   The tag of the state
-    * @param init
-    *   The type of partition initialization to run prior to persisting
     * @return
     *   A [[ConnectionIO]] describing how to persist the event.
     */
-  def save(state: S, tag: Tag, init: PartitionInit): ConnectionIO[Unit]
+  def save(state: S, tag: Tag): ConnectionIO[Unit]
 
-  /** Persist the state using the `latest` tag, and using the provided partition initialization */
-  def save(state: S, init: PartitionInit): ConnectionIO[Unit] =
-    save(state, Latest, init)
-
-  /**
-    * Persist the state using the `latest` tag, and with forced partition initialization. Forcing partition
-    * initialization can have a negative impact on performance.
-    */
-  def unsafeSave(state: S): ConnectionIO[Unit] =
-    unsafeSave(state, Latest)
-
-  /**
-    * Persist the state using the provided tag, and with forced partition initialization. Forcing partition
-    * initialization can have a negative impact on performance.
-    */
-  def unsafeSave(state: S, tag: Tag): ConnectionIO[Unit] =
-    save(state, tag, Execute(state.project))
+  /** Persist the state using the `latest` tag */
+  def save(state: S): ConnectionIO[Unit] = save(state, Latest)
 
   /**
     * Delete the state for the given tag
@@ -156,34 +139,34 @@ object ScopedStateStore {
     implicit val putValue: Put[S]    = serializer.putValue
     implicit val decoder: Decoder[S] = serializer.codec
 
-    private def insertState(state: S, tag: Tag) =
+    override def save(state: S, tag: Tag): doobie.ConnectionIO[Unit] =
       sql"SELECT 1 FROM scoped_states WHERE type = $tpe AND org = ${state.organization} AND project = ${state.project.project}  AND id = ${state.id} AND tag = $tag"
         .query[Int]
         .option
         .flatMap {
           _.fold(sql"""
-                 | INSERT INTO scoped_states (
-                 |  type,
-                 |  org,
-                 |  project,
-                 |  id,
-                 |  tag,
-                 |  rev,
-                 |  value,
-                 |  deprecated,
-                 |  instant
-                 | )
-                 | VALUES (
-                 |  $tpe,
-                 |  ${state.organization},
-                 |  ${state.project.project},
-                 |  ${state.id},
-                 |  $tag,
-                 |  ${state.rev},
-                 |  $state,
-                 |  ${state.deprecated},
-                 |  ${state.updatedAt}
-                 | )
+                      | INSERT INTO scoped_states (
+                      |  type,
+                      |  org,
+                      |  project,
+                      |  id,
+                      |  tag,
+                      |  rev,
+                      |  value,
+                      |  deprecated,
+                      |  instant
+                      | )
+                      | VALUES (
+                      |  $tpe,
+                      |  ${state.organization},
+                      |  ${state.project.project},
+                      |  ${state.id},
+                      |  $tag,
+                      |  ${state.rev},
+                      |  $state,
+                      |  ${state.deprecated},
+                      |  ${state.updatedAt}
+                      | )
             """.stripMargin) { _ =>
             sql"""
                  | UPDATE scoped_states SET
@@ -201,9 +184,6 @@ object ScopedStateStore {
             """.stripMargin
           }.update.run.void
         }
-
-    override def save(state: S, tag: Tag, init: PartitionInit): doobie.ConnectionIO[Unit] =
-      init.initializePartition("scoped_states") >> insertState(state, tag)
 
     override def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
       sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void

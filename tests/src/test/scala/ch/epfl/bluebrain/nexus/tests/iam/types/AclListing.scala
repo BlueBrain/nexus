@@ -76,8 +76,9 @@ object Permission {
     val Create: Permission = Permission(name, "create")
     val Read: Permission   = Permission(name, "read")
     val Write: Permission  = Permission(name, "write")
+    val Delete: Permission = Permission(name, "delete")
 
-    val list: List[Permission] = Create :: Read :: Write :: Nil
+    val list: List[Permission] = Create :: Read :: Write :: Delete :: Nil
   }
 
   object Permissions {

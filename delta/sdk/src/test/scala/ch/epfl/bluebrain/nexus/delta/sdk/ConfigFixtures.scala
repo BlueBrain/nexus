@@ -38,6 +38,4 @@ trait ConfigFixtures {
     1.second,
     RetryStrategyConfig.AlwaysGiveUp
   )
-
-  def logConfig: EventLogConfig = EventLogConfig(queryConfig, 10.seconds)
 }
