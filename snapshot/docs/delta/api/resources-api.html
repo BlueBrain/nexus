@@ -158,6 +158,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.12-release-notes.html" class="page">v1.12 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.11-to-v1.12-migration.html" class="page">v1.11 To v1.12 Migration</a></li>
     <li><a href="../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
@@ -166,8 +168,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -222,7 +222,7 @@ BlueBrain/nexus
         <li><a href="../../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
       </ul></li>
       <li><a href="../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
-      <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../../docs/delta/api/files-api.html" class="page">Nexus metadata</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
@@ -360,10 +360,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When using the endpoints described on this page, the responses will contain global metadata described on the <a href="../metadata.html">Nexus Metadata</a> page. In addition, the following resource specific metadata can be present</p>
 <ul>
   <li><code>_project</code>: address of the resource&rsquo;s project</li>
-  <li><code>_incoming</code>: address to query to obtain the <a href="resources-api.html#list-incoming-links">list of incoming links</a></li>
-  <li><code>_outgoing</code>: address to query to obtain the <a href="resources-api.html#list-outgoing-links">list of outgoing links</a></li>
-  <li><code>_constrainedBy</code>: <code>@id</code> of the schema used to validate the resource; the schema can only be identified uniquely  together with <code>_schemaProject</code>. If no schema has been used to validate the resource, it will indicate the  unconstrained identifier.</li>
-  <li><code>_schemaProject</code>: address of the project where the <code>_constrainedBy</code> schema is found</li>
+  <li><code>_constrainedBy</code>: <code>@id</code> of the schema used to validate the resource. If no schema has been used to validate the resource, it will indicate the  unconstrained identifier.</li>
 </ul>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
 <p>All the API calls modifying a resource (creation, update, tagging, deprecation) can specify whether the resource should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
@@ -422,12 +419,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -480,12 +474,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -548,12 +539,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -583,12 +571,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -636,12 +621,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -672,12 +654,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -705,12 +684,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -738,12 +714,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 5,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -768,12 +741,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
   &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myId&quot;,
   &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myNewSchema/myId&quot;,
   &quot;_constrainedBy&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/_/myNewSchema&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -816,12 +786,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;bool&quot;: false,
   &quot;name&quot;: &quot;Alex&quot;,
   &quot;number&quot;: 24,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_project&quot;: &quot;myorg/myproj&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -1030,12 +997,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     {
       &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
       &quot;@type&quot;: &quot;http://localhost:8080/ustom&quot;,
-      &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-      &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
       &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
       &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-      &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+      &quot;_project&quot;: &quot;myorg/myproj&quot;,
       &quot;_rev&quot;: 4,
       &quot;_deprecated&quot;: true,
       &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -1058,11 +1022,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;buckets&quot;: [
         {
           &quot;doc_count&quot;: 5,
-          &quot;key&quot;: &quot;http://delta:8080/v1/projects/myorg/myproject&quot;
+          &quot;key&quot;: &quot;myorg/myproject&quot;
         },
         {
           &quot;doc_count&quot;: 5,
-          &quot;key&quot;: &quot;http://delta:8080/v1/projects/myorg/myproject2&quot;
+          &quot;key&quot;: &quot;myorg/myproject2&quot;
         }
       ],
       &quot;doc_count_error_upper_bound&quot;: 0,
@@ -1162,12 +1126,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     {
       &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
       &quot;@type&quot;: &quot;http://localhost:8080/ustom&quot;,
-      &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-      &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
       &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
       &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
-      &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+      &quot;_project&quot;: &quot;myorg/myproj&quot;,
       &quot;_rev&quot;: 4,
       &quot;_deprecated&quot;: true,
       &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
@@ -1214,7 +1175,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;paths&quot;: &quot;http://localhost:8080/v1/vocabs/myorg/myproject/subject&quot;,
       &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/nxv:reconstruction1&quot;,
       &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+      &quot;_project&quot;: &quot;myorg/myproject&quot;,
       &quot;_rev&quot;: 4,
       &quot;_deprecated&quot;: false,
       &quot;_createdAt&quot;: &quot;2021-04-28T13:28:00.186Z&quot;,
@@ -1261,7 +1222,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;paths&quot;: &quot;http://localhost:8080/v1/vocabs/myorg/myproject/subject&quot;,
       &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/nxv:mouse1&quot;,
       &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+      &quot;_project&quot;: &quot;myorg/myproject&quot;,
       &quot;_rev&quot;: 1,
       &quot;_deprecated&quot;: false,
       &quot;_createdAt&quot;: &quot;2021-04-28T13:27:42.707Z&quot;,
@@ -1281,7 +1242,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       ],
       &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/nxv:jane&quot;,
       &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+      &quot;_project&quot;: &quot;myorg/myproject&quot;,
       &quot;_rev&quot;: 1,
       &quot;_deprecated&quot;: false,
       &quot;_createdAt&quot;: &quot;2021-04-28T13:26:27.627Z&quot;,
@@ -1336,20 +1297,20 @@ id:{id}
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/sse.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resources/events&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/sse.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceCreated&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:23,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:35:47.447631Z&quot;,&quot;_rev&quot;: 1,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/github/users/myuser&quot;}
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/sse.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceCreated&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:23,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:35:47.447631Z&quot;,&quot;_rev&quot;: 1,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/github/users/myuser&quot;}
 event:ResourceCreated
 id:aebbf8f4-9652-11e9-89a7-6d3c5701d287
 
-data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceUpdated&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:25,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;, &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:36:27.130185Z&quot;,&quot;_rev&quot;:2,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/github/users/myuser&quot;}
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceUpdated&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:25,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:36:27.130185Z&quot;,&quot;_rev&quot;:2,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/github/users/myuser&quot;}
 event:ResourceUpdated
 id:c6642f90-9652-11e9-89a7-6d3c5701d287
 
 
-data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceTagAdded&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;tag&quot;:&quot;mytag&quot;,&quot;targetRev&quot;:1,&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:40:59.2813Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_rev&quot;:3,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceTagAdded&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;tag&quot;:&quot;mytag&quot;,&quot;targetRev&quot;:1,&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:40:59.2813Z&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_rev&quot;:3,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;}
 event:ResourceTagAdded
 id:e024e5f0-9652-11e9-89a7-6d3c5701d287
 
-data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceDeprecated&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:45:12.558514Z&quot;,&quot;_rev&quot;:4,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/github/users/myuser&quot;}
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;@type&quot;:&quot;ResourceDeprecated&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_types&quot;:[&quot;http://localhost:8080/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_instant&quot;:&quot;2021-04-24T07:45:12.558514Z&quot;,&quot;_rev&quot;:4,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/github/users/myuser&quot;}
 event:ResourceDeprecated
 id:ce6549e0-9652-11e9-89a7-6d3c5701d287</code></pre></dd>
 </dl>
@@ -1404,7 +1365,7 @@ Trial
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2025 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>

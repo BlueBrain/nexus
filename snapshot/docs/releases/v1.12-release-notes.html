@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>v1.6 To v1.7 Migration · Blue Brain Nexus</title>
+<title>v1.12 Release Notes · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-v1.6 To v1.7 Migration
+v1.12 Release Notes
 </span>
 </div>
 </div>
@@ -158,6 +158,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.12-release-notes.html" class="active page">v1.12 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html" class="page">v1.11 To v1.12 Migration</a></li>
     <li><a href="../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
@@ -166,8 +168,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
-    <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="active page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -222,7 +222,7 @@ BlueBrain/nexus
         <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
       </ul></li>
       <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
-      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Nexus metadata</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
@@ -238,10 +238,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#v1-6-to-v1-7-migration" class="header">v1.6 To v1.7 Migration</a>
+  <li><a href="../../docs/releases/v1.12-release-notes.html#v1-12-release-notes" class="header">v1.12 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#delta" class="header">Delta</a></li>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#fusion" class="header">Fusion</a></li>
+    <li><a href="../../docs/releases/v1.12-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.12-release-notes.html#support-of-json-ld-1-1" class="header">Support of JSON-LD 1.1</a></li>
+      <li><a href="../../docs/releases/v1.12-release-notes.html#default-indexing" class="header">Default indexing</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -263,10 +266,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#v1-6-to-v1-7-migration" class="header">v1.6 To v1.7 Migration</a>
+  <li><a href="../../docs/releases/v1.12-release-notes.html#v1-12-release-notes" class="header">v1.12 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#delta" class="header">Delta</a></li>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#fusion" class="header">Fusion</a></li>
+    <li><a href="../../docs/releases/v1.12-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.12-release-notes.html#support-of-json-ld-1-1" class="header">Support of JSON-LD 1.1</a></li>
+      <li><a href="../../docs/releases/v1.12-release-notes.html#default-indexing" class="header">Default indexing</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -284,16 +290,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#v1-6-to-v1-7-migration" name="v1-6-to-v1-7-migration" class="anchor"><span class="anchor-link"></span></a>v1.6 To v1.7 Migration</h1>
-<h2><a href="#delta" name="delta" class="anchor"><span class="anchor-link"></span></a>Delta</h2>
-<p>Migration is executed automatically by Delta by setting the environment variable MIGRATION_1_7=true. </p>
-<p>Additionally, if graph-analytics plugin was enabled, its indices need to be rebuilt. The removal of previous indices and reset of their progress is triggered by setting the environment variable GRAPH_ANALYTICS_CLEANUP=true.</p>
-<p>Check the logs to make sure the migration is doing ok and restart Delta after the migration and the tag repair operation are completed without forgetting to remove the environment variables.</p>
-<h2><a href="#fusion" name="fusion" class="anchor"><span class="anchor-link"></span></a>Fusion</h2>
-<p>The data model for Studios has changed in 1.7.</p>
+<h1><a href="#v1-12-release-notes" name="v1-12-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.12 Release Notes</h1>
+<blockquote>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible with v1.11</p>
+</blockquote>
+<p>// TODO: update date For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2024-12-10..2025-02-28+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.11.</p>
+<p>If you are currently using Nexus Delta from 1.11.x, please visit the <a href="v1.11-to-v1.12-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
+<h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
+<h3><a href="#support-of-json-ld-1-1" name="support-of-json-ld-1-1" class="anchor"><span class="anchor-link"></span></a>Support of JSON-LD 1.1</h3>
+<p>This change allow Nexus to provide a full support of JSON-LD 1.1 including features such as scoped contexts and JSON literals.</p>
+<h3><a href="#default-indexing" name="default-indexing" class="anchor"><span class="anchor-link"></span></a>Default indexing</h3>
+<p>The default Elasticsearch view now points to a single index to avoid the oversharding problems when a Nexus instance contains a lot of projects.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.6-to-v1.7-migration.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.12-release-notes.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -309,7 +319,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/v1.7-release-notes.html" title="v1.7 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -318,17 +328,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-v1.7 Release Notes
+Releases
 </span>
 </div>
 </a>
-<a href="../../docs/releases/older-releases.html" title="Older releases" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.11-to-v1.12-migration.html" title="v1.11 To v1.12 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Older releases
+v1.11 To v1.12 Migration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -342,7 +352,7 @@ Older releases
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2025 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>

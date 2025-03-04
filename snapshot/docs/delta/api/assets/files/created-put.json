@@ -16,12 +16,10 @@
     "_value": "d14a7cb4602a2c6e1e7035809aa319d07a6d3c58303ecce7804d2e481cd4965f"
   },
   "_filename": "myfile.pdf",
-  "_incoming": "http://localhost:8080/v1/files/myorg/myproject/myfile/incoming",
   "_location": "file:///tmp/test/nexus/myorg/myproject/c/b/5/c/4/d/8/e/myfile.pdf",
   "_mediaType": "application/pdf",
   "_origin": "Client",
-  "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/myfile/outgoing",
-  "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_project": "myorg/myproject",
   "_rev": 1,
   "_self": "http://localhost:8080/v1/files/myorg/myproject/myfile",
   "_storage": {

@@ -26,7 +26,7 @@
   ],
   "_self": "http://localhost:8080/v1/archives/myorg/myproj/myarchive",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/archives.json",
-  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_project": "myorg/myproj",
   "_rev": 1,
   "_deprecated": false,
   "_createdAt": "2021-05-17T14:54:42.939Z",

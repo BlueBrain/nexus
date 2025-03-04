@@ -158,6 +158,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.12-release-notes.html" class="page">v1.12 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.11-to-v1.12-migration.html" class="page">v1.11 To v1.12 Migration</a></li>
     <li><a href="../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
@@ -166,8 +168,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -222,7 +222,7 @@ BlueBrain/nexus
         <li><a href="../../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
       </ul></li>
       <li><a href="../../../docs/delta/api/storages-api.html" class="active page">Storages</a></li>
-      <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../../docs/delta/api/files-api.html" class="page">Nexus metadata</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
@@ -245,7 +245,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html#local-disk-storage" class="header">Local disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
-    <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
@@ -253,13 +252,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a>
-    <ul>
-      <li><a href="../../../docs/delta/api/storages-api.html#within-a-project" class="header">Within a project</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#within-an-organization" class="header">Within an organization</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#within-all-projects" class="header">Within all projects</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#parameter-description" class="header">Parameter description</a></li>
-    </ul></li>
     <li><a href="../../../docs/delta/api/storages-api.html#server-sent-events" class="header">Server Sent Events</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
@@ -290,7 +282,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html#local-disk-storage" class="header">Local disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
-    <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
@@ -298,13 +289,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#undeprecate" class="header">Undeprecate</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
-    <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a>
-    <ul>
-      <li><a href="../../../docs/delta/api/storages-api.html#within-a-project" class="header">Within a project</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#within-an-organization" class="header">Within an organization</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#within-all-projects" class="header">Within all projects</a></li>
-      <li><a href="../../../docs/delta/api/storages-api.html#parameter-description" class="header">Parameter description</a></li>
-    </ul></li>
     <li><a href="../../../docs/delta/api/storages-api.html#server-sent-events" class="header">Server Sent Events</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
@@ -380,12 +364,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-write-permission</code> (<code>files/write</code>).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-max-file-size</code> (10G).</li>
 </ul>
-<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
-<p>All the API calls modifying a storage (creation, update, deprecation) can specify whether the storage should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
-<ul>
-  <li><code>async</code> - (default value) the storage will be indexed asynchronously</li>
-  <li><code>sync</code> - the storage will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
-</ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/storages/{org_label}/{project_label}
   {...}
@@ -431,9 +409,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-11T12:21:19.732Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/nxv:local/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/nxv:local/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
   &quot;_rev&quot;: 1,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/nxv:local&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:21:19.732Z&quot;,
@@ -481,9 +457,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
   &quot;_rev&quot;: 1,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
@@ -532,9 +506,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
   &quot;_rev&quot;: 2,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:24:24.242Z&quot;,
@@ -569,9 +541,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: true,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
   &quot;_rev&quot;: 4,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
@@ -607,9 +577,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
   &quot;_rev&quot;: 5,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
@@ -648,9 +616,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: true,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
   &quot;_rev&quot;: 4,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
@@ -678,133 +644,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;bucket&quot;: &quot;test-updated&quot;
 }</code></pre></dd>
 </dl>
-<h2><a href="#list" name="list" class="anchor"><span class="anchor-link"></span></a>List</h2>
-<p>There are three available endpoints to list storages in different scopes.</p>
-<h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
-<pre><code>GET /v1/storages/{org_label}/{project_label}?from={from}
-                                             &amp;size={size}
-                                             &amp;deprecated={deprecated}
-                                             &amp;rev={rev}
-                                             &amp;type={type}
-                                             &amp;createdBy={createdBy}
-                                             &amp;updatedBy={updatedBy}
-                                             &amp;q={search}
-                                             &amp;sort={sort}
-                                             &amp;aggregations={aggregations}
-</code></pre>
-<h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
-<p>This operation returns only storages from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
-<pre><code>GET /v1/storages/{org_label}?from={from}
-                            &amp;size={size}
-                            &amp;deprecated={deprecated}
-                            &amp;rev={rev}
-                            &amp;type={type}
-                            &amp;createdBy={createdBy}
-                            &amp;updatedBy={updatedBy}
-                            &amp;q={search}
-                            &amp;sort={sort}
-                            &amp;aggregations={aggregations}
-</code></pre>
-<h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
-<p>This operation returns only storages from projects where the caller has the <code>resources/read</code> permission.</p>
-<pre><code>GET /v1/storages?from={from}
-                &amp;size={size}
-                &amp;deprecated={deprecated}
-                &amp;rev={rev}
-                &amp;type={type}
-                &amp;createdBy={createdBy}
-                &amp;updatedBy={updatedBy}
-                &amp;q={search}
-                &amp;sort={sort}
-                &amp;aggregations={aggregations}
-</code></pre>
-<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
-<ul>
-  <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
-  <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
-  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting storages based on their deprecation status</li>
-  <li><code>{rev}</code>: Number - can be used to filter the resulting storages based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting storages based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
-  <li><code>{createdBy}</code>: Iri - can be used to filter the resulting storages based on their creator</li>
-  <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting storages based on the person which performed the last update</li>
-  <li><code>{search}</code>: String - can be provided to select only the storages in the collection that have attribute values matching  (containing) the provided string</li>
-  <li><code>{sort}</code>: String - can be used to sort storages based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
-  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/list.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/listed.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: [
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/search-metadata.json&quot;
-  ],
-  &quot;_total&quot;: 3,
-  &quot;_results&quot;: [
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,
-      &quot;@type&quot;: [
-        &quot;Storage&quot;,
-        &quot;DiskStorage&quot;
-      ],
-      &quot;_algorithm&quot;: &quot;SHA-256&quot;,
-      &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
-      &quot;_createdAt&quot;: &quot;2021-05-11T12:21:05.781Z&quot;,
-      &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/internal/users/delta&quot;,
-      &quot;_deprecated&quot;: false,
-      &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/defaultStorage/incoming&quot;,
-      &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/defaultStorage/outgoing&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
-      &quot;_rev&quot;: 1,
-      &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/defaultStorage&quot;,
-      &quot;_updatedAt&quot;: &quot;2021-05-11T12:21:05.781Z&quot;,
-      &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/internal/users/delta&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/local&quot;,
-      &quot;@type&quot;: [
-        &quot;Storage&quot;,
-        &quot;DiskStorage&quot;
-      ],
-      &quot;_algorithm&quot;: &quot;SHA-256&quot;,
-      &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
-      &quot;_createdAt&quot;: &quot;2021-05-11T12:21:19.732Z&quot;,
-      &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-      &quot;_deprecated&quot;: false,
-      &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/nxv:local/incoming&quot;,
-      &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/nxv:local/outgoing&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
-      &quot;_rev&quot;: 1,
-      &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/nxv:local&quot;,
-      &quot;_updatedAt&quot;: &quot;2021-05-11T12:21:19.732Z&quot;,
-      &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,
-      &quot;@type&quot;: [
-        &quot;Storage&quot;,
-        &quot;S3Storage&quot;
-      ],
-      &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,
-      &quot;_createdAt&quot;: &quot;2021-05-11T12:22:19.195Z&quot;,
-      &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-      &quot;_deprecated&quot;: true,
-      &quot;_incoming&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/incoming&quot;,
-      &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3/outgoing&quot;,
-      &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,
-      &quot;_rev&quot;: 4,
-      &quot;_self&quot;: &quot;http://localhost:8080/v1/storages/myorg/myproject/s3&quot;,
-      &quot;_updatedAt&quot;: &quot;2021-05-11T12:29:27.821Z&quot;,
-      &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
-    }
-  ]
-}</code></pre></dd>
-</dl>
 <h2><a href="#server-sent-events" name="server-sent-events" class="anchor"><span class="anchor-link"></span></a>Server Sent Events</h2>
 <p>From Delta 1.5, it is possible to fetch SSEs for all storages or just storages in the scope of an organization or a project.</p>
 <pre><code>GET /v1/storages/events                               # for all storage events in the application
@@ -826,27 +665,27 @@ GET /v1/storages/{org_label}/{project_label}/events   # for storage events in th
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/sse.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">dmontero:~$ curl &quot;http://localhost:8080/v1/storages/events&quot;
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:21:05.781Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@id&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,&quot;@type&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;,&quot;default&quot;:true},&quot;_storageId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/internal/users/delta&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:21:05.781Z&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@id&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,&quot;@type&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;,&quot;default&quot;:true},&quot;_storageId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/realms/internal/users/delta&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;]}
 event:StorageCreated
 id:5c156db0-b253-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:21:19.732Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/local&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@id&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/local&quot;,&quot;@type&quot;:&quot;DiskStorage&quot;,&quot;default&quot;:false},&quot;_storageId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/local&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:21:19.732Z&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/local&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@id&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/local&quot;,&quot;@type&quot;:&quot;DiskStorage&quot;,&quot;default&quot;:false},&quot;_storageId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/local&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;]}
 event:StorageCreated
 id:642ccf20-b253-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:22:19.195Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@type&quot;:&quot;S3Storage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageCreated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:22:19.195Z&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:1,&quot;_source&quot;:{&quot;@type&quot;:&quot;S3Storage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageCreated
 id:879fab30-b253-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageUpdated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:24:24.242Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:2,&quot;_source&quot;:{&quot;@type&quot;:&quot;S3Storage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test-updated&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageUpdated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:24:24.242Z&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:2,&quot;_source&quot;:{&quot;@type&quot;:&quot;S3Storage&quot;,&quot;default&quot;:false,&quot;folder&quot;:&quot;test-updated&quot;},&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageUpdated
 id:d2226030-b253-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageTagAdded&quot;,&quot;tag&quot;:&quot;mytag&quot;,&quot;targetRev&quot;:1,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:28:08.479Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:3,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageTagAdded&quot;,&quot;tag&quot;:&quot;mytag&quot;,&quot;targetRev&quot;:1,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:28:08.479Z&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:3,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageTagAdded
 id:57ca3a00-b254-11eb-b48a-9d94c78eda08
 
-data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageDeprecated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:29:27.821Z&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:4,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageDeprecated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:29:27.821Z&quot;,&quot;_project&quot;:&quot;myorg/myproject&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_rev&quot;:4,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/s3&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;]}
 event:StorageDeprecated
 id:8714dae0-b254-11eb-b48a-9d94c78eda08</code></pre></dd>
 </dl>
@@ -903,13 +742,13 @@ Composite Sinks
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/files-api.html" title="Files" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/files-api.html" title="Nexus metadata" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Files
+Nexus metadata
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -923,7 +762,7 @@ Files
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2025 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>

@@ -1,10 +1,10 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
-  "delta": "1.10.0",
+  "delta": "1.11.0",
   "dependencies": {
     "blazegraph": "2.1.6-RC-21-jre",
-    "postgresql": "17.2",
-    "elasticsearch": "8.16.1"
+    "postgresql": "17.4",
+    "elasticsearch": "8.17.1"
   },
   "plugins": {
     "archive": "1.10.0",

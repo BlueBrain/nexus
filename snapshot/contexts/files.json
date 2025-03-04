@@ -4,7 +4,6 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/fileId",
       "@type": "@id"
     },
-    "@vocab": "https://bluebrain.github.io/nexus/keywords/",
     "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
     "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
     "File": "https://bluebrain.github.io/nexus/vocabulary/File",
@@ -13,16 +12,24 @@
     "_value": "https://bluebrain.github.io/nexus/vocabulary/value",
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
     "_origin": {
+      "@context": {
+        "@base": "https://bluebrain.github.io/nexus/vocabulary/"
+      },
       "@id": "https://bluebrain.github.io/nexus/vocabulary/origin",
       "@type": "@id"
     },
     "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
     "_attributes": "https://bluebrain.github.io/nexus/vocabulary/attributes",
-    "_keywords": "https://bluebrain.github.io/nexus/vocabulary/keywords",
+    "_keywords": {
+      "@context": {
+        "@vocab": "https://bluebrain.github.io/nexus/vocabulary/keywords/"
+      },
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/keywords"
+    },
     "_location": "https://bluebrain.github.io/nexus/vocabulary/location",
     "_filename": "https://bluebrain.github.io/nexus/vocabulary/filename",
-    "description": "http://schema.org/description",
     "name": "http://schema.org/name",
+    "description": "http://schema.org/description",
     "_mediaType": "https://bluebrain.github.io/nexus/vocabulary/mediaType",
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
     "_storage": {

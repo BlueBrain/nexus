@@ -158,6 +158,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.12-release-notes.html" class="page">v1.12 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html" class="page">v1.11 To v1.12 Migration</a></li>
     <li><a href="../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
@@ -166,8 +168,6 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
-    <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -222,7 +222,7 @@ BlueBrain/nexus
         <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
       </ul></li>
       <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
-      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Nexus metadata</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
@@ -308,7 +308,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#technology-overview" name="technology-overview" class="anchor"><span class="anchor-link"></span></a>Technology Overview</h2>
 <p>Nexus Fusion is a partially server-side rendered single-page web app powered by <a href="https://react.dev" title="React.js" target="_blank" rel="noopener noreferrer">React.js</a>. It is written in <a href="https://www.typescriptlang.org/" title="TypeScript" target="_blank" rel="noopener noreferrer">TypeScript</a>, and therefore must be transpiled into native browser JavaScript, during a build step, before being served.</p>
 <p>The build step produces a server artifact to run on a Node.js server, with client-side assets and JavaScript.</p>
-<p>We produce a Docker image that is able to serve the compiled assets directly, which is available on <a href="https://hub.docker.com/repository/docker/bluebrain/nexus-web" title="Dockerhub" target="_blank" rel="noopener noreferrer">Dockerhub</a>.</p>
+<p>We produce a Docker image that is able to serve the compiled assets directly, which is available on <a href="https://hub.docker.com/r/bluebrain/nexus-web" title="Dockerhub" target="_blank" rel="noopener noreferrer">Dockerhub</a>.</p>
 <p>Although the application is served by a Node.js server, the client communicates directly to <a href="../delta/index.html">Nexus Delta</a> using <a href="../utilities/index.html#nexus-js">Nexus.js</a>.</p>
 <h2><a href="#pages" name="pages" class="anchor"><span class="anchor-link"></span></a>Pages</h2>
 <p>Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing system and help separate the application&rsquo;s main features.</p>
@@ -393,7 +393,7 @@ Organizations
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2025 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>

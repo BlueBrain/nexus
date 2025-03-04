@@ -8,11 +8,9 @@
     "Resolver",
     "CrossProject"
   ],
-  "_incoming": "http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver/incoming",
-  "_outgoing": "http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver/outgoing",
   "_self": "http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver",
   "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/resolvers.json",
-  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_project": "myorg/myproj",
   "_rev": 4,
   "_deprecated": true,
   "_createdAt": "2021-04-18T09:58:00.801Z",

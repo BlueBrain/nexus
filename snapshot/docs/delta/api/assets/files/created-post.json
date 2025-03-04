@@ -16,11 +16,9 @@
     "_value": "057a3811ecfbeb99506c538d42474d1916f1d9b66965b9e9378a00eab1bb913a"
   },
   "_filename": "myfile.jpg",
-  "_incoming": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38/incoming",
   "_mediaType": "image/jpeg",
   "_origin": "Client",
-  "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38/outgoing",
-  "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_project": "myorg/myproject",
   "_rev": 1,
   "_self": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38",
   "_storage": {

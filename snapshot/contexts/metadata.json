@@ -33,21 +33,6 @@
       "@type": "@id"
     },
     "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
-    "_incoming": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
-      "@type": "@id"
-    },
-    "_outgoing": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
-      "@type": "@id"
-    },
-    "_project": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
-      "@type": "@id"
-    },
-    "_schemaProject": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
-      "@type": "@id"
-    }
+    "_project": "https://bluebrain.github.io/nexus/vocabulary/project"
   }
 }

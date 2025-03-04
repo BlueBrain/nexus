@@ -158,6 +158,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.12-release-notes.html" class="page">v1.12 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.11-to-v1.12-migration.html" class="page">v1.11 To v1.12 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.11-release-notes.html" class="page">v1.11 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.10-to-v1.11-migration.html" class="page">v1.10 To v1.11 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.10-release-notes.html" class="page">v1.10 Release Notes</a></li>
@@ -166,8 +168,6 @@ BlueBrain/nexus
     <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
-    <li><a href="../../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
-    <li><a href="../../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -222,7 +222,7 @@ BlueBrain/nexus
         <li><a href="../../../../docs/delta/api/views/composite-view-api.html" class="active page">CompositeView</a></li>
       </ul></li>
       <li><a href="../../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
-      <li><a href="../../../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../../../docs/delta/api/files-api.html" class="page">Nexus metadata</a></li>
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
@@ -835,9 +835,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/fb935e64-58c0-4f84-85ef-c6a97d06b699/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/fb935e64-58c0-4f84-85ef-c6a97d06b699/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/bands&quot;,
+  &quot;_project&quot;: &quot;myorg/bands&quot;,
   &quot;_rev&quot;: 1,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/fb935e64-58c0-4f84-85ef-c6a97d06b699&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
@@ -1039,9 +1037,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/bands&quot;,
+  &quot;_project&quot;: &quot;myorg/bands&quot;,
   &quot;_rev&quot;: 1,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
@@ -1245,9 +1241,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/bands&quot;,
+  &quot;_project&quot;: &quot;myorg/bands&quot;,
   &quot;_rev&quot;: 2,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-17T14:55:45.472Z&quot;,
@@ -1284,9 +1278,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: true,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/bands&quot;,
+  &quot;_project&quot;: &quot;myorg/bands&quot;,
   &quot;_rev&quot;: 4,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-17T15:50:39.555Z&quot;,
@@ -1322,9 +1314,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/bands&quot;,
+  &quot;_project&quot;: &quot;myorg/bands&quot;,
   &quot;_rev&quot;: 5,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-17T15:50:39.555Z&quot;,
@@ -1466,9 +1456,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-17T14:43:41.763Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
-  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing&quot;,
-  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/bands&quot;,
+  &quot;_project&quot;: &quot;myorg/bands&quot;,
   &quot;_rev&quot;: 3,
   &quot;_self&quot;: &quot;http://localhost:8080/v1/views/myorg/bands/composite_view&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-17T14:58:28.483Z&quot;,
@@ -1727,7 +1715,6 @@ CONSTRUCT {
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/composite/sparql-query-intermediate-response.txt" target="_blank" title="Go to snippet source">source</a><code class="language-txt">&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/self&gt; &lt;http://localhost:8080/v1/resources/myorg/albums/_/absolution&gt; .
 &lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/updatedAt&gt; &quot;2021-05-17T14:36:44.992Z&quot;^^&lt;http://www.w3.org/2001/XMLSchema#dateTime&gt; .
 &lt;http://music.com/absolution&gt; &lt;http://music.com/label&gt; &quot;Warner Bros.&quot; .
-&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/schemaProject&gt; &lt;http://localhost:8080/v1/projects/myorg/albums&gt; .
 &lt;http://music.com/absolution&gt; &lt;http://music.com/released&gt; &quot;2003-09-15&quot; .
 &lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/deprecated&gt; &quot;false&quot;^^&lt;http://www.w3.org/2001/XMLSchema#boolean&gt; .
 &lt;http://music.com/absolution&gt; &lt;http://music.com/label&gt; &quot;Taste&quot; .
@@ -1736,13 +1723,11 @@ CONSTRUCT {
 &lt;http://music.com/absolution&gt; &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; &lt;http://music.com/Album&gt; .
 &lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/updatedBy&gt; &lt;http://localhost:8080/v1/anonymous&gt; .
 &lt;http://music.com/absolution&gt; &lt;http://music.com/by&gt; &lt;http://music.com/muse&gt; .
-&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/project&gt; &lt;http://localhost:8080/v1/projects/myorg/albums&gt; .
+&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/project&gt; &quot;myorg/albums&quot; .
 &lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/createdAt&gt; &quot;2021-05-17T14:36:44.992Z&quot;^^&lt;http://www.w3.org/2001/XMLSchema#dateTime&gt; .
 &lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/constrainedBy&gt; &lt;https://bluebrain.github.io/nexus/schemas/unconstrained.json&gt; .
 &lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/createdBy&gt; &lt;http://localhost:8080/v1/anonymous&gt; .
-&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/outgoing&gt; &lt;http://localhost:8080/v1/resources/myorg/albums/_/absolution/outgoing&gt; .
-&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/rev&gt; &quot;1&quot;^^&lt;http://www.w3.org/2001/XMLSchema#integer&gt; .
-&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/incoming&gt; &lt;http://localhost:8080/v1/resources/myorg/albums/_/absolution/incoming&gt; .</code></pre></dd>
+&lt;http://music.com/absolution&gt; &lt;https://bluebrain.github.io/nexus/vocabulary/rev&gt; &quot;1&quot;^^&lt;http://www.w3.org/2001/XMLSchema#integer&gt; .</code></pre></dd>
 </dl>
 <h2><a href="#fetch-statistics" name="fetch-statistics" class="anchor"><span class="anchor-link"></span></a>Fetch statistics</h2>
 <p>This endpoint displays statistical information about each of the composite view projections.</p>
@@ -2446,7 +2431,7 @@ Composite Sinks
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2024 <a href="https://epfl.ch/">EPFL</a>
+© 2017-2025 <a href="https://epfl.ch/">EPFL</a>
  <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>
