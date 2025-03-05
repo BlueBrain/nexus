@@ -7,14 +7,6 @@ First, run:
 docker compose -f docker/docker-compose.yml up -d
 ```
 
-Add the following local domains to your `/etc/hosts` file for `S3StorageAccessSpec`:
-```
-127.0.0.1 bucket.my-domain.com
-127.0.0.1 other.my-domain.com
-127.0.0.1 bucket2.my-domain.com
-127.0.0.1 bucket3.my-domain.com
-```
-
 To run all the tests:
 ```sbtshell
 test
