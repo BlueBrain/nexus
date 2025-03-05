@@ -50,6 +50,7 @@ Please test this new version carefully and address any issues on the client side
 
 ### New features / enhancements
 
+- Support for hash partitioning in PostgreSQL
 - Full support of JSON-LD 1.1 via [Apache Jena 5.x](https://jena.apache.org/) and [Titanium JSON-LD](https://github.com/filip26/titanium-json-ld)
 - The default indexing in Elasticsearch has been rewritten to push data in a single Elasticsearch index in order to reduce shard consumption.
 - Projects, resolvers, schemas, storages and views are not indexed anymore to prepare further changes on how they are handled
