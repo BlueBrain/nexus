@@ -32,12 +32,6 @@ jobs:
           check-latest: true
       - name: Setup SBT
         uses: sbt/setup-sbt@v1
-      - name: Add hosts to /etc/hosts
-        run: |
-          sudo echo "127.0.0.1 other.my-domain.com" | sudo tee -a /etc/hosts
-          sudo echo "127.0.0.1 bucket.my-domain.com" | sudo tee -a /etc/hosts
-          sudo echo "127.0.0.1 bucket2.my-domain.com" | sudo tee -a /etc/hosts
-          sudo echo "127.0.0.1 bucket3.my-domain.com" | sudo tee -a /etc/hosts
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
