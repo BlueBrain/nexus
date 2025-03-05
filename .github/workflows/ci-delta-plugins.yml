@@ -40,6 +40,7 @@ jobs:
           sudo echo "127.0.0.1 bucket3.my-domain.com" | sudo tee -a /etc/hosts
       - name: Unit tests
         run: |
+          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
             plugins-unit-tests-with-coverage
