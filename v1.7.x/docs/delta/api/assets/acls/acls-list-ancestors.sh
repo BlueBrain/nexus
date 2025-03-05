@@ -1,1 +1,0 @@
-curl "http://localhost:8080/v1/acls/myorg/*?ancestors=false&self=false"
