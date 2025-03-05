@@ -1,5 +1,7 @@
 @@@ index
 
+- @ref:[v1.12 Release Notes](v1.12-release-notes.md)
+- @ref:[v1.11 To v1.12 Migration](v1.11-to-v1.12-migration.md)
 - @ref:[v1.11 Release Notes](v1.11-release-notes.md)
 - @ref:[v1.10 To v1.11 Migration](v1.10-to-v1.11-migration.md)
 - @ref:[v1.10 Release Notes](v1.10-release-notes.md)
@@ -18,7 +20,41 @@ This section of the documentation lists the significant BlueBrain Nexus releases
 applications.
 
 TODO: update release date
-The latest stable release is **v1.10.0** released on **17.09.2024**.
+
+The latest stable release is **v1.11.0** released on **09.12.2024**.
+
+## 1.12.0
+
+### Breaking changes
+
+@@@ note { .warning }
+
+The items listed below are changes that have been made in this release that may break compatibility with previous releases.
+
+**Nexus Delta now fully supports JSON-LD 1.1**
+
+- This implied updating some underlying libraries which could result in discrepancies in processing compared to previous versions of Nexus.
+- With the support of JSON-LD 1.1, the ability to a have a lenient processor for incoming JSON-LD payloads has been removed.
+
+Please test this new version carefully and address any issues on the client side before pushing in a production environment.
+
+**Resource metadata**
+
+- The `_project` field in resource metadata is now populated with as its reference (`org/project`) instead of its address
+- The `_incoming` and `_outgoing` links are not part of the metadata anymore (the endpoints remain available for resources and files)
+
+**Indexing**
+
+- Projects, resolvers, schemas, storages and views are not indexed anymore in Blazegraph and Elasticsearch.
+@@@
+
+### New features / enhancements
+
+- Full support of JSON-LD 1.1 via [Apache Jena 5.x](https://jena.apache.org/) and [Titanium JSON-LD](https://github.com/filip26/titanium-json-ld)
+- The default indexing in Elasticsearch has been rewritten to push data in a single Elasticsearch index in order to reduce shard consumption.
+- Projects, resolvers, schemas, storages and views are not indexed anymore to prepare further changes on how they are handled
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.12-release-notes.md).
 
 ## 1.11.0
 
@@ -37,6 +73,8 @@ The items listed below are changes that have been made in this release that brea
 
 - @ref:[Conditional requests](../delta/api/conditional-requests.md)
 - @ref:[Passivation](../delta/api/views/index.md#passivation)
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.11-release-notes.md).
 
 ## 1.10.0
 
