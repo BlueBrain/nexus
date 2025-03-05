@@ -114,8 +114,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(uuidF)
   }
 
-  make[MigrateDefaultIndexing].from { (xas: Transactors) => MigrateDefaultIndexing(xas) }
-
   make[ElasticSearchCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
@@ -124,18 +122,16 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate"),
-        migration: MigrateDefaultIndexing
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      migration.run >>
-        ElasticSearchCoordinator(
-          views,
-          graphStream,
-          registry,
-          supervisor,
-          client,
-          config
-        )(cr)
+      ElasticSearchCoordinator(
+        views,
+        graphStream,
+        registry,
+        supervisor,
+        client,
+        config
+      )(cr)
   }
 
   make[MainIndexingCoordinator].fromEffect {
