@@ -22,6 +22,7 @@ The configuration flag `akka.http.server.parsing.max-content-length` can be used
 
 ## Postgres configuration
 
+### Database pool
 @link:[The `database` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L23){ open=new } of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools ('read', 'write', 'streaming'), it is recommended to set the host, port, database name, username, and password via the `app.defaults.database` field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective `app.database.{read|write|streaming}` fields. 
 
 The pool size can be set using the `app.defaults.database.access.pool-size` setting for all pools, or individually for each pool (`app.database.{read|write|streaming}.access.pool-size`).
@@ -32,7 +33,21 @@ A default Postgres deployment will limit the number of connections to 100, unles
 
 @@@
 
+### Partitioning
+
+Nexus supports currently two types of partitioning list and hash.
+
+This can be set via the  `app.database.partition-strategy`.
+
+Note that it is an essential setting which can not be changed automatically once it is set, so configure it carefully according to your needs.
+
+More information about partitioning is available @ref:[here](../postgresql.md).
+
+### Init scripts
+
 Before running Nexus Delta, the @link:[init scripts](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/postgres/init){ open=new } should be run in the lexicographical order.
+
+The scripts in the subdirectory matching your partitioning strategy should be run first, followed by those in the common folder.
 
 It is possible to let Nexus Delta automatically create them using the following configuration parameters: `app.database.tables-autocreate=true`.
 
