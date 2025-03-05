@@ -64,7 +64,7 @@ class TypeHierarchyRoutesSpec extends BaseRouteSpec with BeforeAndAfterEach {
   private val jsonMapping = TypeHierarchyModel(mapping).asJson
 
   override def beforeEach(): Unit = {
-    super.beforeAll()
+    super.beforeEach()
     typeHierarchyRef.set(None).accepted
   }
 

@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
+import ch.epfl.bluebrain.nexus.delta.sourcing.partition.PartitionStrategy
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
@@ -16,6 +16,8 @@ import scala.concurrent.duration.FiniteDuration
   *   Access to database for write access
   * @param streaming
   *   Access to database for streaming access (indexing / SSEs)
+  * @param partitionStrategy
+  *   Partition strategy for the partitioned tables (scoped_events and scoped_states)
   * @param name
   *   The name of the database to connect to
   * @param username
@@ -28,20 +30,18 @@ import scala.concurrent.duration.FiniteDuration
   *   When true it creates the tables on service boot
   * @param slowQueryThreshold
   *   Threshold allowing to trigger a warning log when a query execution time reaches this limit
-  * @param cache
-  *   The cache configuration for the partitions cache
   */
 final case class DatabaseConfig(
     read: DatabaseAccess,
     write: DatabaseAccess,
     streaming: DatabaseAccess,
+    partitionStrategy: PartitionStrategy,
     name: String,
     username: String,
     password: Secret[String],
     tablesAutocreate: Boolean,
     rewriteBatchInserts: Boolean,
-    slowQueryThreshold: FiniteDuration,
-    cache: CacheConfig
+    slowQueryThreshold: FiniteDuration
 )
 
 object DatabaseConfig {

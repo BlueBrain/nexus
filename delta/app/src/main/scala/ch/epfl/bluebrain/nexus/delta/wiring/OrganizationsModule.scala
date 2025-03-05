@@ -9,11 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Organizations, OrganizationsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import izumi.distage.model.definition.{Id, ModuleDef}
 
 /**
@@ -40,8 +42,9 @@ object OrganizationsModule extends ModuleDef {
       )(uuidF)
   }
 
-  make[OrganizationDeleter].from { (xas: Transactors) =>
-    OrganizationDeleter(xas)
+  make[OrganizationDeleter].from {
+    (acls: Acls, orgs: Organizations, projects: Projects, databasePartitioner: DatabasePartitioner) =>
+      OrganizationDeleter(acls, orgs, projects, databasePartitioner)
   }
 
   make[OrganizationsRoutes].from {

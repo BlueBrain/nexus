@@ -54,7 +54,7 @@ class GraphAnalyticsStreamSuite extends NexusSuite with Doobie.Fixture with Conf
 
     for {
       // Saving samples
-      _ <- (project1Samples ++ project2Samples).traverse(sampleStore.unsafeSave).transact(xas.write)
+      _ <- (project1Samples ++ project2Samples).traverse(sampleStore.save).transact(xas.write)
       // Asserting relationships
       _ <- findRelationships(project1, expectedProject1.keySet).assertEquals(expectedProject1)
       _ <- findRelationships(project2, expectedProject2.keySet).assertEquals(expectedProject2)

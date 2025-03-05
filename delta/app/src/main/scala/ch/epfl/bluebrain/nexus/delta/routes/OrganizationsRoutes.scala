@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 /**
   * The organization routes.
@@ -52,8 +51,6 @@ final class OrganizationsRoutes(
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
-
-  import baseUri.prefixSegment
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
@@ -83,83 +80,75 @@ final class OrganizationsRoutes(
             // List organizations
             (get & extractUri & fromPaginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
               (uri, pagination, params, order) =>
-                operationName(s"$prefixSegment/orgs") {
-                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[OrganizationResource]] =
-                    searchResultsJsonLdEncoder(Organization.context, pagination, uri)
+                implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[OrganizationResource]] =
+                  searchResultsJsonLdEncoder(Organization.context, pagination, uri)
 
-                  emit(
-                    organizations
-                      .list(pagination, params, order)
-                      .widen[SearchResults[OrganizationResource]]
-                      .attemptNarrow[OrganizationRejection]
-                  )
-                }
+                emit(
+                  organizations
+                    .list(pagination, params, order)
+                    .widen[SearchResults[OrganizationResource]]
+                    .attemptNarrow[OrganizationRejection]
+                )
             },
             label.apply { org =>
               concat(
                 pathEndOrSingleSlash {
-                  operationName(s"$prefixSegment/orgs/{label}") {
-                    concat(
-                      put {
-                        parameter("rev".as[Int]) { rev =>
-                          authorizeFor(org, orgs.write).apply {
-                            // Update organization
-                            entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                              emitMetadata(
-                                organizations
-                                  .update(org, description, rev)
-                              )
-                            }
+                  concat(
+                    put {
+                      parameter("rev".as[Int]) { rev =>
+                        authorizeFor(org, orgs.write).apply {
+                          // Update organization
+                          entity(as[OrganizationInput]) { case OrganizationInput(description) =>
+                            emitMetadata(
+                              organizations
+                                .update(org, description, rev)
+                            )
                           }
-                        }
-                      },
-                      get {
-                        authorizeFor(org, orgs.read).apply {
-                          parameter("rev".as[Int].?) {
-                            case Some(rev) => // Fetch organization at specific revision
-                              emit(organizations.fetchAt(org, rev).attemptNarrow[OrganizationRejection])
-                            case None      => // Fetch organization
-                              emit(organizations.fetch(org).attemptNarrow[OrganizationRejection])
-
-                          }
-                        }
-                      },
-                      // Deprecate or delete organization
-                      delete {
-                        parameters("rev".as[Int].?, "prune".as[Boolean].?) {
-                          case (Some(rev), None)        => deprecate(org, rev)
-                          case (Some(rev), Some(false)) => deprecate(org, rev)
-                          case (None, Some(true))       =>
-                            authorizeFor(org, orgs.delete).apply {
-                              emit(orgDeleter.delete(org).attemptNarrow[OrganizationRejection])
-                            }
-                          case (_, _)                   => emit((InvalidDeleteRequest(org): OrganizationRejection).asLeft[Unit].pure[IO])
                         }
                       }
-                    )
-                  }
+                    },
+                    get {
+                      authorizeFor(org, orgs.read).apply {
+                        parameter("rev".as[Int].?) {
+                          case Some(rev) => // Fetch organization at specific revision
+                            emit(organizations.fetchAt(org, rev).attemptNarrow[OrganizationRejection])
+                          case None      => // Fetch organization
+                            emit(organizations.fetch(org).attemptNarrow[OrganizationRejection])
+
+                        }
+                      }
+                    },
+                    // Deprecate or delete organization
+                    delete {
+                      parameters("rev".as[Int].?, "prune".as[Boolean].?) {
+                        case (Some(rev), None)        => deprecate(org, rev)
+                        case (Some(rev), Some(false)) => deprecate(org, rev)
+                        case (None, Some(true))       =>
+                          authorizeFor(org, orgs.delete).apply {
+                            emit(orgDeleter.apply(org).attemptNarrow[OrganizationRejection])
+                          }
+                        case (_, _)                   => emit((InvalidDeleteRequest(org): OrganizationRejection).asLeft[Unit].pure[IO])
+                      }
+                    }
+                  )
                 },
                 (put & pathPrefix("undeprecate") & pathEndOrSingleSlash & parameter("rev".as[Int])) { rev =>
-                  operationName(s"$prefixSegment/orgs/{label}/undeprecate") {
-                    authorizeFor(org, orgs.write).apply {
-                      emitMetadata(organizations.undeprecate(org, rev))
-                    }
+                  authorizeFor(org, orgs.write).apply {
+                    emitMetadata(organizations.undeprecate(org, rev))
                   }
                 }
               )
             },
             (label & pathEndOrSingleSlash) { label =>
-              operationName(s"$prefixSegment/orgs/{label}") {
-                (put & authorizeFor(label, orgs.create)) {
-                  // Create organization
-                  entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                    val response: IO[Either[OrganizationRejection, ResourceF[Organization.Metadata]]] =
-                      organizations.create(label, description).mapValue(_.metadata).attemptNarrow[OrganizationRejection]
-                    emit(
-                      StatusCodes.Created,
-                      response
-                    )
-                  }
+              (put & authorizeFor(label, orgs.create)) {
+                // Create organization
+                entity(as[OrganizationInput]) { case OrganizationInput(description) =>
+                  val response: IO[Either[OrganizationRejection, ResourceF[Organization.Metadata]]] =
+                    organizations.create(label, description).mapValue(_.metadata).attemptNarrow[OrganizationRejection]
+                  emit(
+                    StatusCodes.Created,
+                    response
+                  )
                 }
               }
             }

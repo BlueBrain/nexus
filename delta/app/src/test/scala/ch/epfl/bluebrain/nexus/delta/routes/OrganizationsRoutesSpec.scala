@@ -244,7 +244,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
 
     "fail when trying to delete a non-empty organization" in {
       Delete("/v1/orgs/org1?prune=true") ~> as(userWithDeletePermission) ~> routes ~> check {
-        status shouldEqual StatusCodes.Conflict
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 
@@ -258,8 +258,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
       forAll(
         Seq(
           "/v1/orgs/org2",
-          s"/v1/orgs/$fixedUuid",
-          s"/v1/orgs/$fixedUuid?rev=1",
+          "/v1/orgs/org2?rev=1",
           s"/v1/orgs/${UUID.randomUUID()}",
           s"/v1/orgs/${UUID.randomUUID()}?rev=1"
         )

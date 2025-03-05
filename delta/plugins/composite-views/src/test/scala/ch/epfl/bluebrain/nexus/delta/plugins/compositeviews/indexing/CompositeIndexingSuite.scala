@@ -84,7 +84,7 @@ trait CompositeIndexingFixture { self: CatsEffectSuite with FixedClock =>
 
   private def resource(sinkConfig: SinkConfig): Resource[IO, Setup] = {
     (
-      Doobie.resource(),
+      Doobie.resourceDefault,
       ElasticSearchClientSetup.resource(),
       BlazegraphClientSetup.resource()
     )

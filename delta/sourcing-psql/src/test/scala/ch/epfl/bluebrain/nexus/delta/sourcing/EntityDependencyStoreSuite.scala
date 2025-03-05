@@ -65,9 +65,9 @@ class EntityDependencyStoreSuite extends NexusSuite with Doobie.Fixture {
   private val noTaggedStatesClue = "Tagged states should not be returned when fetching dependencies values."
 
   test("Save the different states") {
-    val saveLatestStates = List(state1, state2, state3, state5).traverse(stateStore.unsafeSave(_))
+    val saveLatestStates = List(state1, state2, state3, state5).traverse(stateStore.save(_))
     // Tagged states should not be returned when fetching the dependency values
-    val saveTaggedStates = List(state2Tagged, state3Tagged).traverse(stateStore.unsafeSave(_, UserTag.unsafe("my-tag")))
+    val saveTaggedStates = List(state2Tagged, state3Tagged).traverse(stateStore.save(_, UserTag.unsafe("my-tag")))
     (saveLatestStates >> saveTaggedStates).transact(xas.write)
   }
 

@@ -70,17 +70,17 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     case _            => IO.raiseError(new IllegalArgumentException(s"Only '$ref' and '$anotherRef' are expected here"))
   }
 
-  private def projectInitializer(wasExecuted: Ref[IO, Boolean]) = new ScopeInitializer {
-    override def initializeOrganization(organizationResource: OrganizationResource)(implicit
-        caller: Subject
-    ): IO[Unit] = IO.unit
-
-    override def initializeProject(project: ProjectRef)(implicit caller: Subject): IO[Unit] =
-      wasExecuted.set(true)
-  }
-
   private lazy val projects =
-    ProjectsImpl(fetchOrg, validateDeletion, ScopeInitializer.noop, defaultApiMappings, eventLogConfig, xas, clock)
+    ProjectsImpl(
+      fetchOrg,
+      _ => IO.unit,
+      validateDeletion,
+      ScopeInitializer.noop,
+      defaultApiMappings,
+      eventLogConfig,
+      xas,
+      clock
+    )
 
   "The Projects operations bundle" should {
     "create a project" in {
@@ -268,14 +268,27 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     }
 
     "run the initializer upon project creation" in {
-      val projectRef             = ProjectRef.unsafe("org", genString())
+      val projectRef                    = ProjectRef.unsafe("org", genString())
+      val createProjects                = Ref.unsafe[IO, Set[ProjectRef]](Set.empty)
+      def onCreate(project: ProjectRef) = createProjects.update(_ + project)
+
       val initializerWasExecuted = Ref.unsafe[IO, Boolean](false)
+      val projectInitializer     = new ScopeInitializer {
+        override def initializeOrganization(organizationResource: OrganizationResource)(implicit
+            caller: Subject
+        ): IO[Unit] =
+          IO.unit
+
+        override def initializeProject(project: ProjectRef)(implicit caller: Subject): IO[Unit] =
+          initializerWasExecuted.set(true)
+      }
       // format: off
-      val projects = ProjectsImpl(fetchOrg, validateDeletion, projectInitializer(initializerWasExecuted), defaultApiMappings, eventLogConfig, xas, clock)
+      val projects = ProjectsImpl(fetchOrg,onCreate, validateDeletion, projectInitializer, defaultApiMappings, eventLogConfig, xas, clock)
       // format: on
 
       projects.create(projectRef, payload)(Identity.Anonymous).accepted
       initializerWasExecuted.get.accepted shouldEqual true
+      createProjects.get.accepted should contain(projectRef)
     }
 
   }

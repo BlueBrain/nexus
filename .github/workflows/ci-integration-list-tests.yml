@@ -1,4 +1,4 @@
-name: Delta Integration Tests
+name: Delta Integration Tests - List partitioning
 on:
   pull_request:
     paths:
@@ -6,7 +6,7 @@ on:
       - 'tests/**'
       - 'build.sbt'
       - 'project/**'
-      - '.github/workflows/ci-integration-tests.yml'
+      - '.github/workflows/ci-integration-list-tests.yml'
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -33,7 +33,7 @@ jobs:
             clean \
             app/Docker/publishLocal
       - name: Start services
-        run: docker compose --env-file tests/docker/.env.github -f tests/docker/docker-compose.yml up -d
+        run: docker compose --env-file tests/docker/.env.list.github -f tests/docker/docker-compose.yml up -d
       - name: Waiting for Delta to start
         run: |
           URL="http://localhost:8080/v1/version"

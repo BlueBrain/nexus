@@ -75,7 +75,8 @@ object Main extends IOApp {
     } yield (appConfig, mergedConfig, classLoader, enabledDefs)
 
   private def logDatabaseConfig(config: DatabaseConfig) =
-    logger.info(s"Database config for reads is ${config.read.host} (${config.read.poolSize})") >>
+    logger.info(s"Database partition strategy is ${config.partitionStrategy}") >>
+      logger.info(s"Database config for reads is ${config.read.host} (${config.read.poolSize})") >>
       logger.info(s"Database config for writes is ${config.write.host} (${config.write.poolSize})") >>
       logger.info(s"Database config for streaming is ${config.streaming.host} (${config.streaming.poolSize})")
 

@@ -77,6 +77,8 @@ final class OrganizationsImpl private (
       pagination,
       ordering
     ).span("listOrganizations")
+
+  override def purge(org: Label): IO[Unit] = log.delete(org)
 }
 
 object OrganizationsImpl {

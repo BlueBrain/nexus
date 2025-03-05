@@ -5,7 +5,6 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
@@ -31,13 +30,10 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   private lazy val xas = doobie()
 
+  private val queryConfig = QueryConfig(1, RefreshStrategy.Delay(500.millis))
+
   private val entityType: EntityType = PullRequest.entityType
-  private lazy val store             = ScopedStateStore[Iri, PullRequestState](
-    entityType,
-    PullRequestState.serializer,
-    QueryConfig(1, RefreshStrategy.Delay(500.millis)),
-    xas
-  )
+  private lazy val store             = PullRequest.stateStore(xas, queryConfig)
 
   private val alice = User("Alice", Label.unsafe("Wonderland"))
 
@@ -72,7 +68,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   test("Save state 1, state 2 and state 3 successfully") {
     for {
-      _ <- List(state1, state2, state3, state4).traverse(store.unsafeSave).transact(xas.write)
+      _ <- List(state1, state2, state3, state4).traverse(store.save).transact(xas.write)
       _ <- assertCount(4)
     } yield ()
   }
@@ -83,7 +79,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   test("Save state 1 and state 3 with user tag successfully") {
     for {
-      _ <- List(state1, state3).traverse(store.unsafeSave(_, customTag)).transact(xas.write)
+      _ <- List(state1, state3).traverse(store.save(_, customTag)).transact(xas.write)
       _ <- assertCount(6)
     } yield ()
   }
@@ -122,7 +118,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   test("Update state 1 successfully") {
     for {
-      _ <- store.unsafeSave(updatedState1).transact(xas.write)
+      _ <- store.save(updatedState1).transact(xas.write)
       _ <- assertCount(6)
       _ <- store.get(project1, id1).assertEquals(updatedState1)
     } yield ()

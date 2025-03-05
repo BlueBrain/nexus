@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -46,6 +47,7 @@ object ProjectsModule extends ModuleDef {
   make[Projects].fromEffect {
     (
         config: AppConfig,
+        databasePartitioner: DatabasePartitioner,
         scopeInitializer: ScopeInitializer,
         mappings: ApiMappingsCollection,
         xas: Transactors,
@@ -56,6 +58,7 @@ object ProjectsModule extends ModuleDef {
       IO.pure(
         ProjectsImpl(
           FetchActiveOrganization(xas),
+          databasePartitioner.onCreateProject,
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
           scopeInitializer,
           mappings.merge,
@@ -94,6 +97,7 @@ object ProjectsModule extends ModuleDef {
   make[ProjectDeletionCoordinator].fromEffect {
     (
         projects: Projects,
+        databasePartitioner: DatabasePartitioner,
         deletionTasks: Set[ProjectDeletionTask],
         config: AppConfig,
         serviceAccount: ServiceAccount,
@@ -104,6 +108,7 @@ object ProjectsModule extends ModuleDef {
     ) =>
       ProjectDeletionCoordinator(
         projects,
+        databasePartitioner,
         deletionTasks,
         config.projects.deletion,
         serviceAccount,

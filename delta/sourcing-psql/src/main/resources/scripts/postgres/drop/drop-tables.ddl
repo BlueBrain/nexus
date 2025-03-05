@@ -1,6 +1,5 @@
+DROP TABLE    IF EXISTS public.partition_config;
 DROP TABLE    IF EXISTS public.project_last_updates;
-DROP TABLE    IF EXISTS public.ship_original_project_context;
-DROP TABLE    IF EXISTS public.ship_reports;
 DROP TABLE    IF EXISTS public.global_events;
 DROP TABLE    IF EXISTS public.global_states;
 DROP TABLE    IF EXISTS public.scoped_tombstones;

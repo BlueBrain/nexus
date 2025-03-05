@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.Stream
@@ -90,6 +91,7 @@ object ProjectDeletionCoordinator {
     */
   def apply(
       projects: Projects,
+      databasePartitioner: DatabasePartitioner,
       deletionTasks: Set[ProjectDeletionTask],
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
@@ -104,7 +106,7 @@ object ProjectDeletionCoordinator {
         deletionConfig,
         serviceAccount,
         projectLastUpdateStore,
-        new ProjectDeletionStore(xas),
+        new ProjectDeletionStore(xas, databasePartitioner),
         clock
       )
     } else
@@ -116,6 +118,7 @@ object ProjectDeletionCoordinator {
   // $COVERAGE-OFF$
   def apply(
       projects: Projects,
+      databasePartitioner: DatabasePartitioner,
       deletionTasks: Set[ProjectDeletionTask],
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
@@ -124,7 +127,16 @@ object ProjectDeletionCoordinator {
       xas: Transactors,
       clock: Clock[IO]
   ): IO[ProjectDeletionCoordinator] = {
-    val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, projectLastUpdateStore, xas, clock)
+    val stream = apply(
+      projects,
+      databasePartitioner,
+      deletionTasks,
+      deletionConfig,
+      serviceAccount,
+      projectLastUpdateStore,
+      xas,
+      clock
+    )
     stream match {
       case Noop           => logger.info("Projection deletion is disabled.").as(Noop)
       case active: Active =>

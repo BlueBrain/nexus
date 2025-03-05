@@ -187,7 +187,7 @@ trait Acls {
     * Hard deletes events and states for the given acl address. This is meant to be used internally for project and
     * organization deletion.
     */
-  def purge(project: AclAddress): IO[Unit]
+  def purge(acl: AclAddress): IO[Unit]
 
   private def filterSelf(resource: AclResource)(implicit caller: Caller): AclResource =
     resource.map(_.filter(caller.identities))

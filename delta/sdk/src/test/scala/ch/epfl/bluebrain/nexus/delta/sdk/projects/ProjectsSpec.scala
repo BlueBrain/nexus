@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.IO
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
@@ -61,6 +61,9 @@ class ProjectsSpec extends CatsEffectSpec {
     val ref2             = ProjectRef(org2abel, label)
     val ref2IsReferenced = ProjectIsReferenced(ref, Map(ref -> Set(nxv + "ref1")))
 
+    val createdProjects                  = Ref.unsafe[IO, Set[ProjectRef]](Set.empty)
+    def onCreateRef(project: ProjectRef) = createdProjects.update(_ + project)
+
     val validateDeletion: ValidateProjectDeletion = {
       case `ref`  => IO.unit
       case `ref2` => IO.raiseError(ref2IsReferenced)
@@ -71,12 +74,13 @@ class ProjectsSpec extends CatsEffectSpec {
 
     "evaluating an incoming command" should {
 
-      val eval   = evaluate(orgs, validateDeletion, clock)(_, _)
+      val eval   = evaluate(orgs, onCreateRef, validateDeletion, clock)(_, _)
       val fields = ProjectFields(desc, am, Some(base), Some(vocab), enforceSchema = true)
 
       "create a new create event" in {
         eval(None, CreateProject(ref, fields, subject)).accepted shouldEqual
           ProjectCreated(label, uuid, orgLabel, orgUuid, 1, desc, am, base, vocab, enforceSchema = true, epoch, subject)
+        createdProjects.get.accepted should contain(ref)
       }
 
       "create a new create event with a generated base and vocab" in {
@@ -98,6 +102,7 @@ class ProjectsSpec extends CatsEffectSpec {
             epoch,
             subject
           )
+        createdProjects.get.accepted should contain(ref)
       }
 
       "create a new update event" in {

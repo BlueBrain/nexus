@@ -188,6 +188,7 @@ object Projects {
 
   private[sdk] def evaluate(
       fetchActiveOrg: FetchActiveOrganization,
+      onCreate: ProjectRef => IO[Unit],
       validateDeletion: ValidateProjectDeletion,
       clock: Clock[IO]
   )(state: Option[ProjectState], command: ProjectCommand)(implicit base: BaseUri, uuidF: UUIDF): IO[ProjectEvent] = {
@@ -198,6 +199,7 @@ object Projects {
           org  <- fetchActiveOrg(c.ref.organization)
           uuid <- uuidF()
           now  <- clock.realTimeInstant
+          _    <- onCreate(c.ref)
         } yield ProjectCreated(c.ref, uuid, org.uuid, c.fields, now, c.subject)
       case _    => IO.raiseError(ProjectAlreadyExists(c.ref))
     }
@@ -280,14 +282,18 @@ object Projects {
   /**
     * Entity definition for [[Projects]]
     */
-  def definition(fetchActiveOrg: FetchActiveOrganization, validateDeletion: ValidateProjectDeletion, clock: Clock[IO])(
-      implicit
+  def definition(
+      fetchActiveOrg: FetchActiveOrganization,
+      onCreate: ProjectRef => IO[Unit],
+      validateDeletion: ValidateProjectDeletion,
+      clock: Clock[IO]
+  )(implicit
       base: BaseUri,
       uuidF: UUIDF
-  ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
+  ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] = {
     ScopedEntityDefinition.untagged(
       entityType,
-      StateMachine(None, evaluate(fetchActiveOrg, validateDeletion, clock)(_, _), next),
+      StateMachine(None, evaluate(fetchActiveOrg, onCreate, validateDeletion, clock)(_, _), next),
       ProjectEvent.serializer,
       ProjectState.serializer,
       _ => None,
@@ -297,4 +303,5 @@ object Projects {
           case c                => IncorrectRev(c.rev, c.rev + 1)
         }
     )
+  }
 }

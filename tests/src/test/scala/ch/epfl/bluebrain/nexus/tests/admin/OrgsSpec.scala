@@ -1,63 +1,46 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.testkit.scalatest.OrgMatchers.deprecated
-import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
+import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Deleter, Reader, Writer}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, OpticsValidators}
 import io.circe.Json
-import org.scalactic.source.Position
 
 class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val setup = for {
+      _ <- aclDsl.addPermission("/", Writer, Organizations.Create)
+      _ <- aclDsl.addPermission("/", Writer, Organizations.Write)
+      _ <- aclDsl.addPermission("/", Reader, Organizations.Read)
+      _ <- aclDsl.addPermission("/", Deleter, Organizations.Delete)
+    } yield ()
+    setup.accepted
+  }
+
   "creating an organization" should {
     "fail if the permissions are missing" in {
-      adminDsl.createOrganization(
-        genId(),
-        "Description",
-        Fry,
-        Some(StatusCodes.Forbidden)
-      )
+      adminDsl.createOrganization(genId(), "Description", Reader, Some(StatusCodes.Forbidden))
     }
 
-    "add necessary permissions for user" in {
-      aclDsl.addPermission(
-        "/",
-        Fry,
-        Organizations.Create
-      )
-    }
-
-    val id = genId()
-    "succeed if payload is correct" in {
-      adminDsl.createOrganization(
-        id,
-        "Description",
-        Fry
-      )
-    }
-
-    "check if permissions have been created for user" in {
-      aclDsl.checkAdminAcls(s"/$id", Fry)
+    "succeed if payload is correct and permissions should be set" in {
+      val id = genId()
+      for {
+        _ <- adminDsl.createOrganization(id, "Description", Writer)
+        _ <- aclDsl.checkAdminAcls(s"/$id", Writer)
+      } yield succeed
     }
 
     "fail if organization already exists" in {
       val duplicate = genId()
 
       for {
-        _ <- adminDsl.createOrganization(
-               duplicate,
-               "Description",
-               Fry
-             )
-        _ <- adminDsl.createOrganization(
-               duplicate,
-               "Description",
-               Fry,
-               Some(StatusCodes.Conflict)
-             )
+        _ <- adminDsl.createOrganization(duplicate, "Description", Writer)
+        _ <- adminDsl.createOrganization(duplicate, "Description", Writer, Some(StatusCodes.Conflict))
       } yield succeed
     }
   }
@@ -66,49 +49,29 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
     val id = genId()
     "fail if the permissions are missing" in {
       for {
-        _ <- adminDsl.createOrganization(
-               id,
-               s"Description $id",
-               Fry
-             )
-        _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { expectForbidden }
+        _ <- adminDsl.createOrganization(id, s"Description $id", Writer)
+        _ <- deltaClient.get[Json](s"/orgs/$id", Anonymous) { expectForbidden }
       } yield succeed
     }
 
-    "add orgs/read permissions for user" in {
-      aclDsl.addPermission(
-        "/",
-        Leela,
-        Organizations.Read
-      )
-    }
-
     "succeed if organization exists" in {
-      deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
+      deltaClient.get[Json](s"/orgs/$id", Reader) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         validate(json, "Organization", "orgs", id, s"Description $id", 1, id)
       }
     }
 
     "return not found when fetching a non existing revision of an organizations" in {
-      deltaClient.get[Json](s"/orgs/$id?rev=3", Leela) { (_, response) =>
-        response.status shouldEqual StatusCodes.NotFound
-      }
+      deltaClient.get[Json](s"/orgs/$id?rev=3", Reader) { expectNotFound }
     }
 
     val nonExistent = genId()
     "add orgs/read permissions for non-existing organization" in {
-      aclDsl.addPermission(
-        s"/$nonExistent",
-        Leela,
-        Organizations.Create
-      )
+      aclDsl.addPermission(s"/$nonExistent", Reader, Organizations.Create)
     }
 
     "return not found when fetching a non existing organization" in {
-      deltaClient.get[Json](s"/orgs/$nonExistent", Leela) { (_, response) =>
-        response.status shouldEqual StatusCodes.NotFound
-      }
+      deltaClient.get[Json](s"/orgs/$nonExistent", Reader) { expectNotFound }
     }
   }
 
@@ -117,57 +80,21 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
     val description = s"$id organization"
 
     "fail if the permissions are missing" in {
-      adminDsl.createOrganization(
-        id,
-        description,
-        Leela,
-        Some(StatusCodes.Forbidden)
-      )
-    }
-
-    "add orgs/create permissions for user" in {
-      aclDsl.addPermission(
-        "/",
-        Leela,
-        Organizations.Create
-      )
+      adminDsl.createOrganization(id, description, Reader, Some(StatusCodes.Forbidden))
     }
 
     "create organization" in {
-      adminDsl.createOrganization(
-        id,
-        description,
-        Leela
-      )
+      adminDsl.createOrganization(id, description, Writer)
     }
 
     "fail when wrong revision is provided" in {
-      adminDsl.updateOrganization(
-        id,
-        description,
-        Leela,
-        4,
-        Some(StatusCodes.Conflict)
-      )
+      adminDsl.updateOrganization(id, description, Writer, 4, Some(StatusCodes.Conflict))
     }
 
     val nonExistent = genId()
-    "add orgs/write permissions for non-existing organization" in {
-      aclDsl.addPermission(
-        s"/$nonExistent",
-        Leela,
-        Organizations.Write
-      )
-    }
 
     "fail when organization does not exist" in {
-      adminDsl.updateOrganization(
-        nonExistent,
-        description,
-        Leela,
-        1,
-        Some(StatusCodes.NotFound)
-      )
+      adminDsl.updateOrganization(nonExistent, description, Writer, 1, Some(StatusCodes.NotFound))
     }
 
     "succeed and fetch revisions" in {
@@ -175,36 +102,22 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
       val updatedName2 = s"$id organization update 2"
 
       for {
-        _ <- adminDsl.updateOrganization(
-               id,
-               updatedName,
-               Leela,
-               1
-             )
-        _ <- adminDsl.updateOrganization(
-               id,
-               updatedName2,
-               Leela,
-               2
-             )
-        _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (lastVersion, response) =>
-               runIO {
-                 response.status shouldEqual StatusCodes.OK
-                 validate(lastVersion, "Organization", "orgs", id, updatedName2, 3, id)
-                 deltaClient.get[Json](s"/orgs/$id?rev=3", Leela) { (thirdVersion, response) =>
-                   response.status shouldEqual StatusCodes.OK
-                   thirdVersion shouldEqual lastVersion
-                 }
-               }
-             }
-        _ <- deltaClient.get[Json](s"/orgs/$id?rev=2", Leela) { (json, response) =>
-               response.status shouldEqual StatusCodes.OK
-               validate(json, "Organization", "orgs", id, updatedName, 2, id)
-             }
-        _ <- deltaClient.get[Json](s"/orgs/$id?rev=1", Leela) { (json, response) =>
-               response.status shouldEqual StatusCodes.OK
-               validate(json, "Organization", "orgs", id, s"$id organization", 1, id)
-             }
+        _           <- adminDsl.updateOrganization(id, updatedName, Writer, 1)
+        _           <- adminDsl.updateOrganization(id, updatedName2, Writer, 2)
+        lastVersion <- deltaClient.getJson[Json](s"/orgs/$id", Reader)
+        _            = validate(lastVersion, "Organization", "orgs", id, updatedName2, 3, id)
+        _           <- deltaClient.get[Json](s"/orgs/$id?rev=3", Reader) { (thirdVersion, response) =>
+                         response.status shouldEqual StatusCodes.OK
+                         thirdVersion shouldEqual lastVersion
+                       }
+        _           <- deltaClient.get[Json](s"/orgs/$id?rev=2", Reader) { (json, response) =>
+                         response.status shouldEqual StatusCodes.OK
+                         validate(json, "Organization", "orgs", id, updatedName, 2, id)
+                       }
+        _           <- deltaClient.get[Json](s"/orgs/$id?rev=1", Reader) { (json, response) =>
+                         response.status shouldEqual StatusCodes.OK
+                         validate(json, "Organization", "orgs", id, s"$id organization", 1, id)
+                       }
       } yield succeed
     }
   }
@@ -213,44 +126,43 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
     val id   = genId()
     val name = genString()
 
-    "add orgs/create permissions for user" in {
-      aclDsl.addPermission(
-        "/",
-        Leela,
-        Organizations.Create
-      )
+    "create the organization" in {
+      adminDsl.createOrganization(id, name, Writer)
     }
 
-    "create the organization" in {
-      adminDsl.createOrganization(
-        id,
-        name,
-        Leela
-      )
+    "fail if the permissions are missing" in {
+      deltaClient.delete[Json](s"/orgs/$id?rev=2", Reader) { expectForbidden }
     }
 
     "fail when wrong revision is provided" in {
-      deltaClient.delete[Json](s"/orgs/$id?rev=4", Leela) { (json, response) =>
+      deltaClient.delete[Json](s"/orgs/$id?rev=4", Writer) { (json, response) =>
         response.status shouldEqual StatusCodes.Conflict
-        json shouldEqual jsonContentOf("admin/errors/org-incorrect-revision.json")
+        val expected = json"""{
+                                "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+                                "@type": "IncorrectRev",
+                                "expected": 1,
+                                "provided": 4,
+                                "reason": "Incorrect revision '4' provided, expected '1', the organization may have been updated since last seen."
+                              }"""
+        json shouldEqual expected
       }
     }
 
     "fail when revision is not provided" in {
-      deltaClient.delete[Json](s"/orgs/$id", Leela) { (json, response) =>
+      deltaClient.delete[Json](s"/orgs/$id", Writer) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("admin/errors/invalid-delete-request.json", "orgId" -> id)
+        json should have(`@type`("InvalidDeleteRequest"))
       }
     }
 
     "succeed if organization exists" in {
       for {
-        _ <- adminDsl.deprecateOrganization(id, Leela)
-        _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
+        _ <- adminDsl.deprecateOrganization(id, Writer)
+        _ <- deltaClient.get[Json](s"/orgs/$id", Reader) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                validate(json, "Organization", "orgs", id, name, 2, id, deprecated = true)
              }
-        _ <- deltaClient.get[Json](s"/orgs/$id?rev=1", Leela) { (json, response) =>
+        _ <- deltaClient.get[Json](s"/orgs/$id?rev=1", Reader) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                validate(json, "Organization", "orgs", id, name, 1, id)
              }
@@ -258,38 +170,48 @@ class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
     }
   }
 
-  "undeprecate project" in {
+  "undeprecate an org" in {
+    val org = genId()
     for {
-      orgId <- thereIsADeprecatedOrganization
-      _     <- undeprecateOrganization(orgId, 2)
-      org   <- getOrganizationLatest(orgId)
+      _   <- adminDsl.createOrganization(org, genString(), Writer)
+      _   <- adminDsl.deprecateOrganization(org, Writer)
+      // Reader's attempt should be rejected
+      _   <- deltaClient.put[Json](s"/orgs/$org/undeprecate?rev=2", Json.obj(), Reader) { expectForbidden }
+      // Writer's attempt should be successful
+      _   <- deltaClient.put[Json](s"/orgs/$org/undeprecate?rev=2", Json.obj(), Writer) { expectOk }
+      org <- deltaClient.getJson[Json](s"/orgs/$org", Reader)
     } yield {
       org shouldNot be(deprecated)
     }
   }
 
-  def thereIsAnOrganization: IO[String] = {
-    val org = genId()
-    adminDsl.createOrganization(org, genString(), Leela).as(org)
-  }
-  def thereIsADeprecatedOrganization: IO[String] = {
-    for {
-      org <- thereIsAnOrganization
-      _   <- deprecateOrganization(org)
-    } yield org
-  }
+  "deleting an org" should {
 
-  def deprecateOrganization(orgId: String): IO[Unit] = {
-    adminDsl.deprecateOrganization(orgId, Leela).as(())
-  }
-
-  def undeprecateOrganization(org: String, revision: Int)(implicit pos: Position) = {
-    deltaClient.put[Json](s"/orgs/$org/undeprecate?rev=$revision", Json.obj(), Leela) { (_, response) =>
-      response.status shouldBe StatusCodes.OK
+    "be successful" in {
+      val id   = genId()
+      val name = genString()
+      for {
+        _ <- adminDsl.createOrganization(id, name, Writer)
+        // Reader's attempt should be rejected
+        _ <- deltaClient.delete[Json](s"/orgs/$id?prune=true", Reader) { expectForbidden }
+        // Deleter's attempt should be successful
+        _ <- deltaClient.delete[Json](s"/orgs/$id?prune=true", Deleter) { expectOk }
+        _ <- deltaClient.get[Json](s"/orgs/$id", Reader) { expectNotFound }
+      } yield succeed
     }
-  }
 
-  def getOrganizationLatest(org: String): IO[Json] = {
-    deltaClient.getJson[Json](s"/orgs/$org", Leela)
+    "fail when the org contains a project" in {
+      val id   = genId()
+      val name = genString()
+      for {
+        _ <- adminDsl.createOrganization(id, name, Writer)
+        _ <- adminDsl.createProjectWithName(id, genId(), genString(), Writer)
+        _ <- deltaClient.delete[Json](s"/orgs/$id?prune=true", Deleter) { (json, response) =>
+               response.status shouldEqual StatusCodes.BadRequest
+               json should have(`@type`("OrganizationNonEmpty"))
+             }
+        _ <- deltaClient.get[Json](s"/orgs/$id", Reader) { expectOk }
+      } yield succeed
+    }
   }
 }

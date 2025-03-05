@@ -1,37 +1,41 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
 import cats.effect.{IO, Ref}
-import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionCoordinator.{Active, Noop}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixture}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectLastUpdateStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.partition.{DatabasePartitioner, PartitionStrategy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.resource
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.{ScopedEventQueries, ScopedStateQueries}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectLastUpdateStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Transactors}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
 import munit.AnyFixture
+import munit.catseffect.IOFixture
 
 import java.time.Instant
 import java.util.UUID
 
-class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures with ProjectsFixture {
+class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
 
@@ -39,6 +43,9 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
 
   private val org     = Label.unsafe("org")
   private val orgUuid = UUID.randomUUID()
+
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())
 
   private def fetchOrg: FetchActiveOrganization = {
     case `org` => IO.pure(Organization(org, orgUuid, None))
@@ -49,11 +56,16 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
   private val deletionDisabled = deletionConfig.copy(enabled = false)
   private val config           = ProjectsConfig(eventLogConfig, pagination, deletionEnabled)
 
-  private val projectFixture = createProjectsFixture(fetchOrg, defaultApiMappings, config, clock)
+  private val hashDoobie: IOFixture[(DatabasePartitioner, Transactors)] =
+    ResourceSuiteLocalFixture("doobie", resource(PartitionStrategy.Hash(3)))
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(projectFixture)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(hashDoobie)
 
-  private lazy val (xas, projects)         = projectFixture()
+  implicit private lazy val (partitioner: DatabasePartitioner, xas: Transactors) = hashDoobie()
+  val inits                                                                      = ScopeInitializer.withoutErrorStore(Set.empty)
+
+  private lazy val projects                =
+    ProjectsImpl(fetchOrg, _ => IO.unit, _ => IO.unit, inits, defaultApiMappings, config.eventLog, xas, clock)
   private lazy val projectLastUpdateStore  = ProjectLastUpdateStore(xas)
   private lazy val projectLastUpdateStream = ProjectLastUpdateStream(xas, queryConfig)
 
@@ -86,6 +98,7 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
         deleted,
         ProjectDeletionCoordinator(
           projects,
+          partitioner,
           Set(deletionTask),
           config,
           serviceAccount,
@@ -94,19 +107,6 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
           clock
         )
       )
-    }
-
-  // Asserting partition number for both events and states
-  private def assertPartitions(expected: Int): IO[List[Unit]] =
-    List("scoped_events%", "scoped_states%").traverse { pattern =>
-      for {
-        result <- sql"""SELECT table_name from information_schema.tables where table_name like $pattern"""
-                    .query[String]
-                    .to[List]
-                    .transact(xas.read)
-        // We add +2 as there is the main table and the partition related to the organisation
-        _       = result.assertSize(expected + 2)
-      } yield ()
     }
 
   test("Create and update projects") {
@@ -120,6 +120,8 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
       _ <- projectLastUpdateStore.save(
              List(ProjectLastUpdate(markedAsDeleted, Instant.EPOCH, Offset.start))
            )
+      _ <- ScopedEventQueries.distinctProjects.assertEquals(Set(active, deprecated, markedAsDeleted))
+      _ <- ScopedStateQueries.distinctProjects.assertEquals(Set(active, deprecated, markedAsDeleted))
     } yield ()
   }
 
@@ -141,7 +143,6 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
   test("Run the deletion coordinator") {
     for {
       (deleted, c)      <- initCoordinator(deletionEnabled)
-      _                 <- assertPartitions(3)
       // Running the coordinator
       activeCoordinator <- c match {
                              case Noop           => fail("We should have an active coordinator as deletion is enabled.")
@@ -159,8 +160,9 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures wit
       _                 <- projects.fetch(active)
       _                 <- projects.fetch(deprecated)
       _                 <- projects.fetch(markedAsDeleted).interceptEquals(ProjectNotFound(markedAsDeleted))
-      // Checking that the partitions have been correctly deleted
-      _                 <- assertPartitions(2)
+      // Checking that there is no project or event related to the deleted project
+      _                 <- ScopedEventQueries.distinctProjects.assertEquals(Set(active, deprecated))
+      _                 <- ScopedStateQueries.distinctProjects.assertEquals(Set(active, deprecated))
       // Checking that the dependencies have been cleared
       _                 <- EntityDependencyStore
                              .directDependencies(markedAsDeleted, entityToDelete, xas)

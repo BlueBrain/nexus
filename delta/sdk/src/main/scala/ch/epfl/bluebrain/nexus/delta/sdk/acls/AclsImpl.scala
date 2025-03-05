@@ -90,7 +90,8 @@ final class AclsImpl private (
     eval(DeleteAcl(address, rev, caller)).span("deleteAcls")
 
   private def eval(cmd: AclCommand): IO[AclResource] = log.evaluate(cmd.address, cmd).map(_._2.toResource)
-  override def purge(project: AclAddress): IO[Unit]  = log.delete(project)
+
+  override def purge(acl: AclAddress): IO[Unit] = log.delete(acl)
 }
 
 object AclsImpl {

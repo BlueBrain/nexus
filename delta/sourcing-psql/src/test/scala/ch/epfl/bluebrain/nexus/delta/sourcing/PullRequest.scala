@@ -18,8 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GraphResource, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -34,13 +33,24 @@ object PullRequest {
 
   val entityType: EntityType = EntityType("merge-request")
 
-  def eventStore(xas: Transactors, populateWith: PullRequestEvent*): IO[EventStore] = {
-    val store = ScopedEventStore[Iri, PullRequestEvent](
+  def eventStore(queryConfig: QueryConfig): ScopedEventStore[Iri, PullRequestEvent] =
+    ScopedEventStore[Iri, PullRequestEvent](
       PullRequest.entityType,
       PullRequestEvent.serializer,
-      QueryConfig(10, RefreshStrategy.Stop)
+      queryConfig
     )
-    populateWith.traverse(store.unsafeSave).transact(xas.write).as(store)
+
+  def stateStore(xas: Transactors, queryConfig: QueryConfig): ScopedStateStore[Iri, PullRequestState] =
+    ScopedStateStore(
+      PullRequest.entityType,
+      PullRequestState.serializer,
+      queryConfig,
+      xas
+    )
+
+  def eventStore(xas: Transactors, queryConfig: QueryConfig, populateWith: PullRequestEvent*): IO[EventStore] = {
+    val store = eventStore(queryConfig)
+    populateWith.traverse(store.save).transact(xas.write).as(store)
   }
 
   val stateMachine: StateMachine[PullRequestState, PullRequestCommand, PullRequestEvent] =

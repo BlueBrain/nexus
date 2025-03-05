@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import cats.Order
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.MD5
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -27,6 +28,13 @@ final case class ProjectRef(organization: Label, project: Label) {
 object ProjectRef {
 
   val regex = s"^\\/?(${Label.regex.toString()})\\/(${Label.regex.toString()})$$".r
+
+  /**
+    * Creates a MD5 value out of the project ref
+    * @param project
+    *   the value to hash
+    */
+  def hash(project: ProjectRef): String = MD5.hash(project.toString)
 
   /**
     * Parse [[ProjectRef]] from a string value e.g. "(/)org/project"

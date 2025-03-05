@@ -132,7 +132,6 @@ object OrganizationRejection {
       case OrganizationRejection.OrganizationNotFound(_)      => StatusCodes.NotFound
       case OrganizationRejection.OrganizationAlreadyExists(_) => StatusCodes.Conflict
       case OrganizationRejection.IncorrectRev(_, _)           => StatusCodes.Conflict
-      case OrganizationRejection.OrganizationNonEmpty(_)      => StatusCodes.Conflict
       case OrganizationRejection.RevisionNotFound(_, _)       => StatusCodes.NotFound
       case _                                                  => StatusCodes.BadRequest
     }

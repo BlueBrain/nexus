@@ -1,6 +1,3 @@
-----------------------------------
--- Initial tables for Delta 1.8 --
-----------------------------------
 CREATE SEQUENCE IF NOT EXISTS public.event_offset;
 CREATE SEQUENCE IF NOT EXISTS public.state_offset;
 
@@ -46,14 +43,11 @@ CREATE TABLE IF NOT EXISTS public.scoped_events(
     value    JSONB        NOT NULL,
     instant  timestamptz  NOT NULL,
     PRIMARY KEY(org, project, id, rev)
-) PARTITION BY LIST (org);
+) PARTITION BY HASH (org, project);
 
 CREATE INDEX IF NOT EXISTS scoped_events_type_idx ON public.scoped_events(type);
 CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events (ordering);
 
---
--- Table for scoped states that belongs to a project
---
 CREATE TABLE IF NOT EXISTS public.scoped_states(
     ordering   bigint       NOT NULL DEFAULT nextval('state_offset'),
     type       text         NOT NULL,
@@ -66,10 +60,12 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     deprecated boolean      NOT NULL,
     instant    timestamptz  NOT NULL,
     PRIMARY KEY(org, project, tag, id)
-) PARTITION BY LIST (org);
+) PARTITION BY HASH (org, project);
+
 CREATE INDEX IF NOT EXISTS scoped_states_type_idx ON public.scoped_states(type);
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states (ordering);
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
+CREATE INDEX IF NOT EXISTS state_value_types_idx ON public.scoped_states USING GIN ((value->'types'));
 
 --
 -- Table for tombstones for scoped states
@@ -97,6 +93,7 @@ CREATE TABLE IF NOT EXISTS public.scoped_tombstones(
 );
 CREATE INDEX IF NOT EXISTS scoped_tombstones_idx ON public.scoped_tombstones(org, project, tag, id);
 CREATE INDEX IF NOT EXISTS scoped_tombstones_deleted_idx ON public.scoped_tombstones((cause->>'deleted'));
+CREATE INDEX IF NOT EXISTS tombstones_scope_types_idx ON public.scoped_tombstones USING GIN ((cause->'types'));
 
 --
 -- Table for ephemeral scoped states that belongs to a project
@@ -206,13 +203,15 @@ CREATE TABLE IF NOT EXISTS public.failed_elem_logs(
     elem_project        text,
     rev                 integer     NOT NULL,
     error_type          text        NOT NULL,
-    message             text        NOT NULL,
-    stack_trace         text        NOT NULL,
+    message             text,
+    stack_trace         text,
     instant             timestamptz DEFAULT NOW(),
+    reason              JSONB,
     PRIMARY KEY(ordering)
 );
 CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_name_idx ON public.failed_elem_logs(projection_name);
 CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_idx ON public.failed_elem_logs(projection_project, projection_id);
+CREATE INDEX IF NOT EXISTS failed_elem_logs_instant_idx ON public.failed_elem_logs(instant);
 
 --
 -- Table for project deletion result
@@ -234,3 +233,27 @@ CREATE TABLE IF NOT EXISTS public.blazegraph_queries (
     failed   boolean     NOT NULL,
     PRIMARY KEY (ordering)
 );
+
+--
+-- Table for the errors that occurred during scope initialization
+--
+CREATE TABLE IF NOT EXISTS public.scope_initialization_errors(
+    ordering bigserial,
+    type     text         NOT NULL,
+    org      text         NOT NULL,
+    project  text         NOT NULL,
+    message  text         NOT NULL,
+    instant  timestamptz  DEFAULT NOW(),
+    PRIMARY KEY(ordering)
+);
+
+CREATE TABLE IF NOT EXISTS public.project_last_updates(
+    org        text            NOT NULL,
+    project    text            NOT NULL,
+    last_instant timestamptz   NOT NULL,
+    last_ordering bigint NOT NULL,
+    PRIMARY KEY(org, project)
+);
+
+CREATE INDEX IF NOT EXISTS project_last_updates_last_ordering_idx ON public.project_last_updates(last_ordering);
+
