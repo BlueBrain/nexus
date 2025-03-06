@@ -1,61 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import io.circe.Decoder.Result
-import io.circe.{Decoder, DecodingFailure, HCursor, Json}
-import pureconfig.ConfigReader
-import pureconfig.error.CannotConvert
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Json}
 
 final case class NexusSource(value: Json) extends AnyVal
 
 object NexusSource {
 
-  sealed trait DecodingOption
-
-  object DecodingOption {
-    final case object Strict extends DecodingOption
-
-    final case object Lenient extends DecodingOption
-
-    implicit val decodingOptionConfigReader: ConfigReader[DecodingOption] =
-      ConfigReader.fromString {
-        case "strict"  => Right(Strict)
-        case "lenient" => Right(Lenient)
-        case other     =>
-          Left(
-            CannotConvert(
-              other,
-              "DecodingOption",
-              s"values can only be 'strict' or 'lenient'"
-            )
-          )
-
-      }
-  }
-
-  private val strictDecoder = new Decoder[NexusSource] {
-    private val decoder = implicitly[Decoder[Json]]
-
-    override def apply(c: HCursor): Result[NexusSource] = {
-      decoder(c).flatMap { json =>
-        val underscoreFields = json.asObject.toList.flatMap(_.keys).filter(_.startsWith("_"))
-        Either.cond(
-          underscoreFields.isEmpty,
-          NexusSource(json),
-          DecodingFailure(
-            s"Field(s) starting with _ found in payload: ${underscoreFields.mkString(", ")}",
-            c.history
-          )
-        )
-      }
-    }
-  }
-
-  private val lenientDecoder = implicitly[Decoder[Json]].map(NexusSource(_))
-
-  implicit def nexusSourceDecoder(implicit decodingOption: DecodingOption): Decoder[NexusSource] = {
-    decodingOption match {
-      case DecodingOption.Lenient => lenientDecoder
-      case DecodingOption.Strict  => strictDecoder
-    }
+  implicit val nexusSourceDecoder: Decoder[NexusSource] = Decoder.decodeJsonObject.emap { obj =>
+    val underscoreFields = obj.keys.filter(_.startsWith("_"))
+    Either.cond(
+      underscoreFields.isEmpty,
+      NexusSource(obj.asJson),
+      s"Field(s) starting with _ found in payload: ${underscoreFields.mkString(", ")}"
+    )
   }
 }

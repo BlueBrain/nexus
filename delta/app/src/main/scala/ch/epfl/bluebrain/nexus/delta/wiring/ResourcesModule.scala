@@ -92,8 +92,7 @@ object ResourcesModule extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        fusionConfig: FusionConfig,
-        config: ResourcesConfig
+        fusionConfig: FusionConfig
     ) =>
       new ResourcesRoutes(
         identities,
@@ -104,8 +103,7 @@ object ResourcesModule extends ModuleDef {
         baseUri,
         cr,
         ordering,
-        fusionConfig,
-        config.decodingOption
+        fusionConfig
       )
   }
 

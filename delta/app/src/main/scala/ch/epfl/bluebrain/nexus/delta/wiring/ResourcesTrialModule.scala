@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesTrial, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesTrial, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
@@ -48,20 +48,14 @@ object ResourcesTrialModule extends ModuleDef {
         resourcesTrial: ResourcesTrial,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering,
-        config: ResourcesConfig
+        ordering: JsonKeyOrdering
     ) =>
       ResourcesTrialRoutes(
         identities,
         aclCheck,
         schemas,
         resourcesTrial
-      )(
-        baseUri,
-        cr,
-        ordering,
-        config.decodingOption
-      )
+      )(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: ResourcesTrialRoutes) =>
