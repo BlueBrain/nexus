@@ -155,7 +155,7 @@ services:
       POSTGRES_PASSWORD: "postgres"
 
   localstack:
-    image: localstack/localstack:4.1
+    image: localstack/localstack:4.2
     environment:
       AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
       AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
