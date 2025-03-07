@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ReservedResourceId, ResourceNotFound}
@@ -108,8 +107,6 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
     case (_, `schemaSource`, _) => IO.pure(SchemaGen.resourceFor(schema1))
     case _                      => IO.raiseError(SchemaShaclEngineRejection(nxv + "invalid", "Invalid schema"))
   }
-
-  implicit val decodingOption: DecodingOption = DecodingOption.Strict
 
   private lazy val routes =
     Route.seal(

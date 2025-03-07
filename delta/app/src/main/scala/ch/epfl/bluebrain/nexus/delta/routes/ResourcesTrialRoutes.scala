@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, ResourcesTrial}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
@@ -40,8 +39,7 @@ final class ResourcesTrialRoutes(
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    decodingOption: DecodingOption
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
@@ -74,7 +72,7 @@ final class ResourcesTrialRoutes(
       extractCaller { implicit caller =>
         (projectRef & pathEndOrSingleSlash) { project =>
           authorizeFor(project, Write).apply {
-            (entity(as[GenerationInput])) { input =>
+            entity(as[GenerationInput]) { input =>
               generate(project, input)
             }
           }
@@ -133,9 +131,8 @@ object ResourcesTrialRoutes {
 
   private[routes] object GenerationInput {
 
-    implicit def generationInputDecoder(implicit decodingOption: DecodingOption): Decoder[GenerationInput] = {
-      implicit val configuration: Configuration             = Configuration.default.withDefaults
-      implicit val nexusSourceDecoder: Decoder[NexusSource] = NexusSource.nexusSourceDecoder
+    implicit val generationInputDecoder: Decoder[GenerationInput] = {
+      implicit val configuration: Configuration = Configuration.default.withDefaults
       deriveConfiguredDecoder[GenerationInput]
     }
   }
@@ -148,8 +145,7 @@ object ResourcesTrialRoutes {
   )(implicit
       baseUri: BaseUri,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      decodingOption: DecodingOption
+      ordering: JsonKeyOrdering
   ): ResourcesTrialRoutes =
     new ResourcesTrialRoutes(
       identities,

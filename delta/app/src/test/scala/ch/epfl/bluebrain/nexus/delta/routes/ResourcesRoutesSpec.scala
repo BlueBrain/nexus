@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import cats.implicits._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaOrg, schemas}
@@ -17,11 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceScope}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
@@ -73,8 +72,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
   private def simplePayload(id: String)       = jsonContentOf("resources/resource.json", "id" -> (nxv + id))
   private val payloadWithoutId                = payload.removeKeys(keywords.id)
   private val payloadWithBlankId              = jsonContentOf("resources/resource.json", "id" -> "")
-  private val payloadWithUnderscoreFields     =
-    jsonContentOf("resources/resource-with-underscore-fields.json", "id" -> myId)
   private def payloadWithMetadata(id: String) = jsonContentOf(
     "resources/resource-with-metadata.json",
     "id"   -> (nxv + id),
@@ -87,29 +84,25 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
   private val fetchContext                                         = FetchContextDummy(List(project.value))
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
-  private def routesWithDecodingOption(implicit decodingOption: DecodingOption): (Route, Resources) = {
+  private lazy val resources = {
     val resourceDef = Resources.definition(validateResource, DetectChange(enabled = true), clock)
     val scopedLog   = ScopedEventLog(resourceDef, eventLogConfig, xas)
 
-    val resources = ResourcesImpl(
+    ResourcesImpl(
       scopedLog,
       fetchContext,
       resolverContextResolution
     )
-    (
-      Route.seal(
-        ResourcesRoutes(
-          IdentitiesDummy(callerReader, callerWriter),
-          aclCheck,
-          resources,
-          IndexingAction.noop
-        )
-      ),
-      resources
-    )
   }
 
-  private lazy val routes = routesWithDecodingOption(DecodingOption.Strict)._1
+  private lazy val routes = Route.seal(
+    ResourcesRoutes(
+      IdentitiesDummy(callerReader, callerWriter),
+      aclCheck,
+      resources,
+      IndexingAction.noop
+    )
+  )
 
   private val payloadUpdated             = payload deepMerge json"""{"name": "Alice", "address": null}"""
   private def payloadUpdated(id: String) =
@@ -122,9 +115,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    aclCheck.append(AclAddress.Root, reader -> Set(resources.read)).accepted
-    aclCheck.append(AclAddress.Root, writer -> Set(resources.read)).accepted
-    aclCheck.append(AclAddress.Root, writer -> Set(resources.write)).accepted
+    aclCheck.append(AclAddress.Root, reader -> Set(read)).accepted
+    aclCheck.append(AclAddress.Root, writer -> Set(read, write)).accepted
   }
 
   "A resource route" should {
@@ -150,11 +142,10 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
     }
 
     "create a tagged resource" in {
-      val endpoints           = List(
+      val endpoints = List(
         ("/v1/resources/myorg/myproject?tag=mytag", schemas.resources),
         ("/v1/resources/myorg/myproject/myschema?tag=mytag", schema1)
       )
-      val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
         Post(endpoint, simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
@@ -180,11 +171,10 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
     }
 
     "create a tagged resource with an authenticated user and provided id" in {
-      val endpoints           = List(
+      val endpoints = List(
         ((id: String) => s"/v1/resources/myorg/myproject/_/$id?tag=mytag", schemas.resources),
         ((id: String) => s"/v1/resources/myorg/myproject/myschema/$id?tag=mytag", schema1)
       )
-      val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
         Put(endpoint(id), simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
@@ -226,22 +216,13 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
     }
 
     "fail if underscore fields are present" in {
-      Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscoreFields.toEntity) ~> asWriter ~> routes ~> check {
+      val payloadWithUnderscores = json"""{ "_createdAt": "1970-01-01T00:00:00Z" }"""
+
+      Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscores.toEntity) ~> asWriter ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
           "resources/errors/underscore-fields.json"
         )
-      }
-    }
-
-    "succeed if underscore fields are present but the decoding is set to lenient" in {
-      val lenientDecodingRoutes = routesWithDecodingOption(DecodingOption.Lenient)._1
-
-      Post(
-        "/v1/resources/myorg/myproject/_/",
-        payloadWithUnderscoreFields.toEntity
-      ) ~> asWriter ~> lenientDecodingRoutes ~> check {
-        response.status shouldEqual StatusCodes.Created
       }
     }
 

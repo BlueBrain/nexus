@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshal
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
@@ -46,8 +45,7 @@ final class ResourcesRoutes(
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    fusionConfig: FusionConfig,
-    decodingOption: DecodingOption
+    fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
@@ -301,8 +299,7 @@ object ResourcesRoutes {
       baseUri: BaseUri,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      fusionConfig: FusionConfig,
-      decodingOption: DecodingOption
+      fusionConfig: FusionConfig
   ): Route = new ResourcesRoutes(identities, aclCheck, resources, index).routes
 
 }

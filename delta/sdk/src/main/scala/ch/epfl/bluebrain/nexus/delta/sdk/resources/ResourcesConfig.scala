@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig.SchemaEnforcementConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader
@@ -12,8 +11,6 @@ import pureconfig.generic.semiauto.deriveReader
   *
   * @param eventLog
   *   configuration of the event log
-  * @param decodingOption
-  *   strict/lenient decoding of resources
   * @param schemaEnforcement
   *   configuration related to schema enforcement
   * @param skipUpdateNoChange
@@ -21,7 +18,6 @@ import pureconfig.generic.semiauto.deriveReader
   */
 final case class ResourcesConfig(
     eventLog: EventLogConfig,
-    decodingOption: DecodingOption,
     schemaEnforcement: SchemaEnforcementConfig,
     skipUpdateNoChange: Boolean
 )
