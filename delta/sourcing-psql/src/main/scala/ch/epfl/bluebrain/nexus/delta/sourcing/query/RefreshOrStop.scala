@@ -76,18 +76,17 @@ object RefreshOrStop {
   private def passivate(project: ProjectRef, signal: SignallingRef[IO, Boolean]) =
     for {
       _           <- logger.info(s"Project '$project' is inactive, pausing until some activity is seen again.")
-      durationOpt <- Stream
-                       .awakeEvery[IO](1.second)
-                       .fold(Option(Duration.Zero)) { case (accOpt, duration) =>
-                         accOpt.flatMap(safeAdd(_, duration))
-                       }
-                       .interruptWhen(signal)
-                       .compile
-                       .last
-                       .map(_.flatten)
+      durationOpt <- waitAndGetDuration.interruptWhen(signal).compile.last.map(_.flatten)
       hours        = durationOpt.getOrElse(0.hour).toHours
       _           <- logger.info(s"Project '$project' is active again after `$hours hours`, querying will resume.")
     } yield Passivated
+
+  private def waitAndGetDuration =
+    Stream
+      .awakeEvery[IO](1.second)
+      .fold(Option(Duration.Zero)) { case (accOpt, duration) =>
+        accOpt.flatMap(safeAdd(_, duration))
+      }
 
   private[query] def safeAdd(d1: FiniteDuration, d2: FiniteDuration) =
     Try { d1 + d2 }.toOption
