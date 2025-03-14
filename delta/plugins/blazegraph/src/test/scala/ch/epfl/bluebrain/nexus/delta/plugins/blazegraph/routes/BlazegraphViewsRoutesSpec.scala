@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors.resourceAlreadyExistsError
@@ -104,7 +104,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/aggregate-view-metadata.json",
-          "self" -> ResourceScope("views", projectRef, aggregateViewId).accessUri
+          "self" -> ResourceAccess("views", projectRef, aggregateViewId).uri
         )
       }
     }
@@ -378,7 +378,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       "deprecated"  -> deprecated,
       "rev"         -> rev,
       "indexingRev" -> indexingRev,
-      "self"        -> ResourceScope("views", projectRef, id).accessUri
+      "self"        -> ResourceAccess("views", projectRef, id).uri
     )
 
   private def indexingView(rev: Int, indexingRev: Int, deprecated: Boolean) =
@@ -388,6 +388,6 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       "deprecated"  -> deprecated,
       "rev"         -> rev,
       "indexingRev" -> indexingRev,
-      "self"        -> ResourceScope("views", projectRef, indexingViewId).accessUri
+      "self"        -> ResourceAccess("views", projectRef, indexingViewId).uri
     )
 }

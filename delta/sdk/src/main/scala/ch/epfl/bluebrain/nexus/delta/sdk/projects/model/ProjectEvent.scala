@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceScope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -332,8 +332,8 @@ object ProjectEvent {
         Encoder.encodeJsonObject.contramapObject[ProjectEvent] { event =>
           deriveConfiguredEncoder[ProjectEvent]
             .encodeObject(event)
-            .add("_projectId", ResourceScope.project(event.project).accessUri.asJson)
-            .add(nxv.resourceId.prefix, ResourceScope.project(event.project).accessUri.asJson)
+            .add("_projectId", ResourceAccess.project(event.project).uri.asJson)
+            .add(nxv.resourceId.prefix, ResourceAccess.project(event.project).uri.asJson)
             .add(keywords.context, context.value)
         }
       }

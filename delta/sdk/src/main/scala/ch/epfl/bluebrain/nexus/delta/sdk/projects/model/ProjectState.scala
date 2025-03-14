@@ -97,7 +97,7 @@ final case class ProjectState(
   def toResource(defaultApiMappings: ApiMappings): ProjectResource =
     ResourceF(
       id = id,
-      scope = ResourceScope.project(project),
+      access = ResourceAccess.project(project),
       rev = rev,
       types = types,
       deprecated = deprecated,

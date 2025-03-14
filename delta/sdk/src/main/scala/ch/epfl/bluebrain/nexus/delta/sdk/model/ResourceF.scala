@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope.{EphemeralResourceF, GlobalResourceF, ScopedResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess.{EphemeralAccess, InProjectAccess, RootAccess}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.syntax._
@@ -26,8 +26,8 @@ import java.time.Instant
   *
   * @param id
   *   the resource id
-  * @param scope
-  *   the resource properties depending on its scope
+  * @param access
+  *   the resource properties depending on its access
   * @param rev
   *   the revision of the resource
   * @param types
@@ -51,7 +51,7 @@ import java.time.Instant
   */
 final case class ResourceF[A](
     id: Iri,
-    scope: ResourceScope,
+    access: ResourceAccess,
     rev: Int,
     types: Set[Iri],
     deprecated: Boolean,
@@ -85,7 +85,7 @@ final case class ResourceF[A](
     * @return
     *   the [[Iri]] resulting from resolving the self against the ''base''
     */
-  def self(implicit base: BaseUri): Iri = scope.accessUri.toIri
+  def self(implicit base: BaseUri): Iri = access.uri.toIri
 }
 
 object ResourceF {
@@ -117,7 +117,7 @@ object ResourceF {
     }
 
   final private case class ResourceMetadata(
-      scope: ResourceScope,
+      access: ResourceAccess,
       rev: Int,
       deprecated: Boolean,
       createdAt: Instant,
@@ -130,21 +130,21 @@ object ResourceF {
   private object ResourceMetadata {
 
     def apply(r: ResourceF[_]): ResourceMetadata =
-      ResourceMetadata(r.scope, r.rev, r.deprecated, r.createdAt, r.createdBy, r.updatedAt, r.updatedBy, r.schema)
+      ResourceMetadata(r.access, r.rev, r.deprecated, r.createdAt, r.createdBy, r.updatedAt, r.updatedBy, r.schema)
   }
 
-  implicit private def resourceUrisEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceScope] =
+  implicit private def resourceUrisEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceAccess] =
     Encoder.AsObject.instance {
-      case global: GlobalResourceF    =>
-        JsonObject("_self" := global.accessUri)
-      case scoped: ScopedResourceF    =>
+      case global: RootAccess      =>
+        JsonObject("_self" := global.uri)
+      case access: InProjectAccess =>
         JsonObject(
-          "_self"    := scoped.accessUri,
-          "_project" := scoped.project
+          "_self"    := access.uri,
+          "_project" := access.project
         )
-      case global: EphemeralResourceF =>
+      case global: EphemeralAccess =>
         JsonObject(
-          "_self"    := global.accessUri,
+          "_self"    := global.uri,
           "_project" := global.project
         )
     }
@@ -160,7 +160,7 @@ object ResourceF {
         "_updatedAt"     := r.updatedAt,
         "_updatedBy"     := r.updatedBy,
         "_constrainedBy" := r.schema.iri
-      ).deepMerge(r.scope.asJsonObject)
+      ).deepMerge(r.access.asJsonObject)
     }
   }
 
@@ -245,7 +245,7 @@ object ResourceF {
       }
     }
 
-  def etagValue[A](value: ResourceF[A]) = s"${value.scope.relativeAccessUri}_${value.rev}"
+  def etagValue[A](value: ResourceF[A]) = s"${value.access.relativeUri}_${value.rev}"
 
   implicit def resourceFHttpResponseFields[A]: HttpResponseFields[ResourceF[A]] =
     HttpResponseFields.fromTag { value => etagValue(value) }

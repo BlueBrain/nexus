@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -305,7 +305,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
           response.asJson shouldEqual jsonContentOf(
             "schemas/schema-updated-response.json",
             "id"   -> "nxv:myid",
-            "self" -> ResourceScope.schema(projectRef, myId).accessUri
+            "self" -> ResourceAccess.schema(projectRef, myId).uri
           )
         }
       }
@@ -327,7 +327,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
             response.asJson shouldEqual jsonContentOf(
               "schemas/schema-created-response.json",
               "id"   -> "nxv:myid2",
-              "self" -> ResourceScope.schema(projectRef, myId2).accessUri
+              "self" -> ResourceAccess.schema(projectRef, myId2).uri
             )
             response.expectConditionalCacheHeaders
           }
@@ -379,7 +379,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
         response.asJson shouldEqual jsonContentOf(
           "schemas/schema-payload-with-metadata.json",
           "id"   -> myId2,
-          "self" -> ResourceScope.schema(projectRef, myId2).accessUri,
+          "self" -> ResourceAccess.schema(projectRef, myId2).uri,
           "rev"  -> 2
         )
       }
@@ -397,7 +397,7 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
           response.asJson shouldEqual jsonContentOf(
             "schemas/schema-payload-with-metadata.json",
             "id"   -> myId2,
-            "self" -> ResourceScope.schema(projectRef, myId2).accessUri,
+            "self" -> ResourceAccess.schema(projectRef, myId2).uri,
             "rev"  -> 1
           )
         }
@@ -494,6 +494,6 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
       "deprecated" -> deprecated,
       "createdBy"  -> createdBy.asIri,
       "updatedBy"  -> updatedBy.asIri,
-      "self"       -> ResourceScope.schema(project, id).accessUri
+      "self"       -> ResourceAccess.schema(project, id).uri
     )
 }
