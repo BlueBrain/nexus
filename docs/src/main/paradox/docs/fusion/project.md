@@ -169,7 +169,7 @@ Here you can create new resources. The dropdown menu (Resource Type) at the top 
 
 ## Statistics
 
-If you have the privileges, you can view the count of resources as well as the quotas currently defined in your Nexus instance.
+If you have the privileges, you can view the count of resources currently defined in your Nexus instance.
 
 ## Settings
 

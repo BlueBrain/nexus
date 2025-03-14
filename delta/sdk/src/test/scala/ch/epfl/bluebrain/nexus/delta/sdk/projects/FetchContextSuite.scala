@@ -5,16 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectIsMarkedForDeletion}
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.Quota
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class FetchContextSuite extends NexusSuite {
-
-  implicit private val subject: Subject = Identity.Anonymous
 
   private val activeOrg     = Label.unsafe("org")
   private val deprecatedOrg = Label.unsafe("deprecated")
@@ -46,91 +40,62 @@ class FetchContextSuite extends NexusSuite {
     case _                   => IO.none
   }
 
-  private def quotas(resources: Boolean, events: Boolean) = new Quotas {
-    override def fetch(ref: ProjectRef): IO[Quota] = IO.pure(Quota(Some(0), Some(0)))
-
-    override def reachedForResources(ref: ProjectRef, subject: Subject): IO[Unit] =
-      IO.raiseWhen(resources)(QuotaResourcesReached(ref, 0))
-
-    override def reachedForEvents(ref: ProjectRef, subject: Subject): IO[Unit] =
-      IO.raiseWhen(events)(QuotaEventsReached(ref, 0))
-  }
-
-  private def fetchContext(quotasResources: Boolean, quotasEvents: Boolean) = FetchContext(
+  private def fetchContext = FetchContext(
     fetchActiveOrganization,
     ApiMappings.empty,
-    (project: ProjectRef, _: Boolean) => fetchProject(project),
-    quotas(quotasResources, quotasEvents)
+    (project: ProjectRef, _: Boolean) => fetchProject(project)
   )
 
   test("Successfully get a context for an active project on read") {
-    fetchContext(quotasResources = true, quotasEvents = true)
+    fetchContext
       .onRead(activeProject)
       .assertEquals(activeProjectValue.context)
   }
 
   test("Successfully get a context for a deprecated project on read") {
-    fetchContext(quotasResources = true, quotasEvents = true)
+    fetchContext
       .onRead(deprecatedProject)
       .assertEquals(deprecatedProjectValue.context)
   }
 
   test("Fail getting a context for a project marked as deleted on read") {
-    fetchContext(quotasResources = true, quotasEvents = true)
+    fetchContext
       .onRead(deletedProject)
       .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 
-  test("Successfully get a context for an active project on create if quota is not reached") {
-    fetchContext(quotasResources = false, quotasEvents = false)
+  test("Successfully get a context for an active project on create") {
+    fetchContext
       .onRead(activeProject)
       .assertEquals(activeProjectValue.context)
   }
 
-  test("Fail getting a context for an active project on create if quota for resources is not reached") {
-    fetchContext(quotasResources = true, quotasEvents = false)
-      .onCreate(activeProject)
-      .interceptEquals(QuotaResourcesReached(activeProject, 0))
-  }
-
   test("Fail getting a context for a deprecated project on create") {
-    fetchContext(quotasResources = false, quotasEvents = false)
+    fetchContext
       .onCreate(deprecatedProject)
       .interceptEquals(ProjectIsDeprecated(deprecatedProject))
   }
 
   test("Fail getting a context for a project marked as deleted on create") {
-    fetchContext(quotasResources = false, quotasEvents = false)
+    fetchContext
       .onCreate(deletedProject)
       .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }
 
-  test("Successfully get a context for an active project on modify if quotas are not reached") {
-    fetchContext(quotasResources = false, quotasEvents = false)
+  test("Successfully get a context for an active project on modify") {
+    fetchContext
       .onModify(activeProject)
       .assertEquals(activeProjectValue.context)
-  }
-
-  test("Successfully get a context for an active project on modify if only resource quota is reached") {
-    fetchContext(quotasResources = true, quotasEvents = false)
-      .onModify(activeProject)
-      .assertEquals(activeProjectValue.context)
-  }
-
-  test("Fail getting a context for an active project on create if event quotas is reached") {
-    fetchContext(quotasResources = false, quotasEvents = true)
-      .onModify(activeProject)
-      .interceptEquals(QuotaEventsReached(activeProject, 0))
   }
 
   test("Fail getting a context for a deprecated project on modify") {
-    fetchContext(quotasResources = false, quotasEvents = false)
+    fetchContext
       .onModify(deprecatedProject)
       .interceptEquals(ProjectIsDeprecated(deprecatedProject))
   }
 
   test("Fail getting a context for a project marked as deleted on modify") {
-    fetchContext(quotasResources = false, quotasEvents = false)
+    fetchContext
       .onModify(deletedProject)
       .interceptEquals(ProjectIsMarkedForDeletion(deletedProject))
   }

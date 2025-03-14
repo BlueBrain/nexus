@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.job.ProjectHealthJob
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
@@ -90,8 +89,8 @@ object ProjectsModule extends ModuleDef {
     ProjectsStatistics(xas)
   }
 
-  make[FetchContext].from { (mappings: ApiMappingsCollection, xas: Transactors, quotas: Quotas) =>
-    FetchContext(mappings.merge, xas, quotas)
+  make[FetchContext].from { (mappings: ApiMappingsCollection, xas: Transactors) =>
+    FetchContext(mappings.merge, xas)
   }
 
   make[ProjectDeletionCoordinator].fromEffect {

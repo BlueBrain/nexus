@@ -5,9 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext, ProjectState}
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
 import doobie.syntax.all._
@@ -34,25 +32,21 @@ abstract class FetchContext { self =>
     * Fetch context for a create operation
     * @param ref
     *   the project to fetch the context from
-    * @param subject
-    *   the current user
     */
-  def onCreate(ref: ProjectRef)(implicit subject: Subject): IO[ProjectContext]
+  def onCreate(ref: ProjectRef): IO[ProjectContext] = onModify(ref)
 
   /**
     * Fetch context for a modify operation
     * @param ref
     *   the project to fetch the context from
-    * @param subject
-    *   the current user
     */
-  def onModify(ref: ProjectRef)(implicit subject: Subject): IO[ProjectContext]
+  def onModify(ref: ProjectRef): IO[ProjectContext]
 
 }
 
 object FetchContext {
 
-  def apply(dam: ApiMappings, xas: Transactors, quotas: Quotas): FetchContext = {
+  def apply(dam: ApiMappings, xas: Transactors): FetchContext = {
     def fetchProject(ref: ProjectRef, onWrite: Boolean) = {
       implicit val putId: Put[ProjectRef]      = ProjectState.serializer.putId
       implicit val getValue: Get[ProjectState] = ProjectState.serializer.getValue
@@ -64,7 +58,7 @@ object FetchContext {
     }
 
     val fetchActiveOrg: Label => IO[Unit] = FetchActiveOrganization(xas).apply(_).void
-    apply(fetchActiveOrg, dam, fetchProject, quotas)
+    apply(fetchActiveOrg, dam, fetchProject)
   }
 
   /**
@@ -76,14 +70,11 @@ object FetchContext {
     * @param fetchProject
     *   fetches the project in read / write context. The write context is more consistent as it points to the primary
     *   node while the read one can point to replicas and can suffer from replication delays
-    * @param quotas
-    *   the quotes
     */
   def apply(
       fetchActiveOrg: Label => IO[Unit],
       dam: ApiMappings,
-      fetchProject: (ProjectRef, Boolean) => IO[Option[ProjectResource]],
-      quotas: Quotas
+      fetchProject: (ProjectRef, Boolean) => IO[Option[ProjectResource]]
   ): FetchContext =
     new FetchContext {
 
@@ -104,13 +95,11 @@ object FetchContext {
           case Some(project)                                    => IO.pure(project.value.context)
         }
 
-      override def onCreate(ref: ProjectRef)(implicit subject: Subject): IO[ProjectContext] =
-        quotas.reachedForResources(ref, subject) >> onModify(ref)
+      override def onCreate(ref: ProjectRef): IO[ProjectContext] = onModify(ref)
 
-      override def onModify(ref: ProjectRef)(implicit subject: Subject): IO[ProjectContext] =
+      override def onModify(ref: ProjectRef): IO[ProjectContext] =
         for {
           _       <- fetchActiveOrg(ref.organization)
-          _       <- quotas.reachedForEvents(ref, subject)
           context <- onWrite(ref)
         } yield context
     }
