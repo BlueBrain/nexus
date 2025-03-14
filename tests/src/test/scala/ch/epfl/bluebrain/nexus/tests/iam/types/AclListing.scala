@@ -146,13 +146,6 @@ object Permission {
     val list: List[Permission] = Write :: Nil
   }
 
-  object Quotas {
-    val name             = "quotas"
-    val Read: Permission = Permission(name, "read")
-
-    val list: List[Permission] = Read :: Nil
-  }
-
   object Supervision {
     val name             = "supervision"
     val Read: Permission = Permission(name, "read")
@@ -188,7 +181,6 @@ object Permission {
       Schemas.list ++
       Views.list ++
       Storages.list ++
-      Quotas.list ++
       Export.list ++
       Supervision.list ++
       TypeHierarchy.list).toSet
@@ -203,7 +195,6 @@ object Permission {
       Resources.list ++
       Schemas.admin ++
       Views.list ++
-      Storages.list ++
-      Quotas.list).toSet
+      Storages.list).toSet
 
 }

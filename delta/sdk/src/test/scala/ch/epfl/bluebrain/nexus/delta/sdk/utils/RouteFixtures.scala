@@ -47,8 +47,7 @@ trait RouteFixtures {
       contexts.suites                -> ContextValue.fromFile("contexts/suites.json"),
       contexts.tags                  -> ContextValue.fromFile("contexts/tags.json"),
       contexts.typeHierarchy         -> ContextValue.fromFile("contexts/type-hierarchy.json"),
-      contexts.version               -> ContextValue.fromFile("contexts/version.json"),
-      contexts.quotas                -> ContextValue.fromFile("contexts/quotas.json")
+      contexts.version               -> ContextValue.fromFile("contexts/version.json")
     )
 
   implicit val ordering: JsonKeyOrdering =
