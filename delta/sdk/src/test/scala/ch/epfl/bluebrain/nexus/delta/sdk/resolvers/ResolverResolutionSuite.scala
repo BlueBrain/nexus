@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolutionSuite.ResourceExample
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.CrossProjectResolver
@@ -48,7 +48,7 @@ class ResolverResolutionSuite extends NexusSuite {
 
   private val resource = ResourceF(
     id = nxv + "example1",
-    scope = ResourceScope(Uri("/example1")),
+    access = ResourceAccess(Uri("/example1")),
     rev = 5,
     types = Set(nxv + "ResourceExample", nxv + "ResourceExample2"),
     deprecated = true,

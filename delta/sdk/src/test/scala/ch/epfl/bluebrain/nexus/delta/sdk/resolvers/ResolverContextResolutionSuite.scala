@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceResolutionGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
@@ -42,7 +42,7 @@ class ResolverContextResolutionSuite extends NexusSuite {
 
   private val resource = ResourceF(
     id = resourceId,
-    scope = ResourceScope(Uri("/id")),
+    access = ResourceAccess(Uri("/id")),
     rev = 5,
     types = Set(nxv + "Resource"),
     deprecated = false,

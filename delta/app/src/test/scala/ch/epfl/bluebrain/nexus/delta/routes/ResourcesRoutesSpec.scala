@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceScope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -75,7 +75,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
   private def payloadWithMetadata(id: String) = jsonContentOf(
     "resources/resource-with-metadata.json",
     "id"   -> (nxv + id),
-    "self" -> ResourceScope.resource(projectRef, nxv + id).accessUri
+    "self" -> ResourceAccess.resource(projectRef, nxv + id).uri
   )
 
   private val aclCheck = AclSimpleCheck().accepted
@@ -741,7 +741,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
       "createdBy"  -> createdBy.asIri,
       "updatedBy"  -> updatedBy.asIri,
       "schema"     -> schema,
-      "self"       -> ResourceScope.resource(project, id).accessUri
+      "self"       -> ResourceAccess.resource(project, id).uri
     )
 
   // Metadata for a resource that has been created and updated by the writer user

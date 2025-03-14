@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -591,12 +591,12 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
     val resourceResolved = jsonContentOf(
       "resolvers/resource-resolved.json",
-      "self" -> ResourceScope.resource(project.ref, resourceId).accessUri
+      "self" -> ResourceAccess.resource(project.ref, resourceId).uri
     )
 
     val schemaResolved = jsonContentOf(
       "resolvers/schema-resolved.json",
-      "self" -> ResourceScope.schema(project.ref, schemaId).accessUri
+      "self" -> ResourceAccess.schema(project.ref, schemaId).uri
     )
 
     "resolve the resources/schemas" should {
@@ -743,6 +743,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "createdBy"  -> createdBy.asIri,
       "updatedBy"  -> updatedBy.asIri,
       "type"       -> resolverType,
-      "self"       -> ResourceScope.resolver(projectRef, id).accessUri
+      "self"       -> ResourceAccess.resolver(projectRef, id).uri
     )
 }

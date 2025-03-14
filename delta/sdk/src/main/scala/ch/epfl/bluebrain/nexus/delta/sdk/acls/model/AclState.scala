@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -69,7 +69,7 @@ final case class AclState(
   def toResource: AclResource = {
     ResourceF(
       id = id,
-      scope = ResourceScope.acl(acl.address),
+      access = ResourceAccess.acl(acl.address),
       rev = rev,
       types = types,
       deprecated = deprecated,

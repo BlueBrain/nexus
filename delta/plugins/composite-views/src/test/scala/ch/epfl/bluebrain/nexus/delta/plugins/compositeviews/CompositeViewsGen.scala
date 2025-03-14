@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
@@ -29,7 +29,7 @@ object CompositeViewsGen {
   ): ViewResource = {
     ResourceF(
       id,
-      ResourceScope("views", project, id),
+      ResourceAccess("views", project, id),
       rev,
       Set(nxv.View, compositeViewType),
       deprecated,

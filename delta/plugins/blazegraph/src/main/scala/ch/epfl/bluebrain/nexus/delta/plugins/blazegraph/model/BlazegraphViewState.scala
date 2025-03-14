@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceScope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -99,7 +99,7 @@ final case class BlazegraphViewState(
   def toResource: ViewResource =
     ResourceF(
       id = id,
-      scope = ResourceScope("views", project, id),
+      access = ResourceAccess("views", project, id),
       rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,

@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceScope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprecatedError, viewIsNotDeprecatedError}
@@ -354,7 +354,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       "uuid"       -> uuid,
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "self"       -> ResourceScope("views", projectRef, id).accessUri
+      "self"       -> ResourceAccess("views", projectRef, id).uri
     )
 
   private def view(rev: Int, deprecated: Boolean, rebuildInterval: String) =
@@ -364,6 +364,6 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       "deprecated"      -> deprecated,
       "rev"             -> rev,
       "rebuildInterval" -> rebuildInterval,
-      "self"            -> ResourceScope("views", projectRef, viewId).accessUri
+      "self"            -> ResourceAccess("views", projectRef, viewId).uri
     )
 }

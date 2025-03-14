@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceScope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -425,7 +425,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       "deprecated" -> deprecated,
       "createdBy"  -> createdBy.asIri,
       "updatedBy"  -> updatedBy.asIri,
-      "self"       -> ResourceScope("views", projectRef, id).accessUri
+      "self"       -> ResourceAccess("views", projectRef, id).uri
     )
 
   private def elasticSearchView(
@@ -446,6 +446,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       "createdBy"         -> createdBy.asIri,
       "updatedBy"         -> updatedBy.asIri,
       "includeDeprecated" -> includeDeprecated,
-      "self"              -> ResourceScope("views", projectRef, id).accessUri
+      "self"              -> ResourceAccess("views", projectRef, id).uri
     ).mapObject(_.add("settings", settings))
 }

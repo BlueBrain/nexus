@@ -341,7 +341,7 @@ class UriDirectivesSpec extends BaseSpec with RouteHelpers with UriDirectives wi
   def resourceF(createdBy: Subject, rev: Int, deprecated: Boolean, idx: Int): ResourceF[Int] =
     ResourceF(
       iri"http://localhost/${UUID.randomUUID()}",
-      ResourceScope.permissions,
+      ResourceAccess.permissions,
       rev,
       Set.empty,
       deprecated,

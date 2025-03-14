@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Bin
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceScope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
@@ -52,7 +52,7 @@ object SparqlLink {
 
   object SparqlResourceLink {
 
-    private def resourceUrisFor(project: ProjectRef, id: Iri): ResourceScope = ResourceScope.resource(project, id)
+    private def resourceUrisFor(project: ProjectRef, id: Iri): ResourceAccess = ResourceAccess.resource(project, id)
 
     /**
       * Attempts to create a [[SparqlResourceLink]] from the given bindings
