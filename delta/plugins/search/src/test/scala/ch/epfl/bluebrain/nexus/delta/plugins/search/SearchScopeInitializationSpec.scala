@@ -17,6 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.JsonObject
 
+import scala.concurrent.duration._
+
 class SearchScopeInitializationSpec
     extends CatsEffectSpec
     with DoobieScalaTestFixture
@@ -35,8 +37,8 @@ class SearchScopeInitializationSpec
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
-    config.minIntervalRebuild,
-    config.eventLog,
+    1.minute,
+    eventLogConfig,
     xas,
     clock
   ).accepted

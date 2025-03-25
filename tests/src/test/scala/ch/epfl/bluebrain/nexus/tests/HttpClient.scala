@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
@@ -14,9 +13,10 @@ import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, rdfApplicationSqlQuery, tokensMap}
+import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import io.circe.Json
@@ -258,7 +258,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       url,
       Some(query),
       identity,
-      (query: String) => HttpEntity(rdfApplicationSqlQuery, query),
+      (query: String) => HttpEntity(RdfMediaTypes.`application/sparql-query`, query),
       assertResponse,
       extraHeaders
     )
@@ -391,10 +391,6 @@ object HttpClient {
   val acceptZip: Seq[Accept] = Seq(Accept(MediaTypes.`application/zip`, MediaTypes.`application/json`))
 
   val jsonHeaders: Seq[HttpHeader] = Accept(MediaTypes.`application/json`) :: Nil
-
-  val rdfApplicationSqlQuery: MediaType.WithFixedCharset =
-    MediaType.applicationWithFixedCharset("sparql-query", `UTF-8`)
-  val sparqlQueryHeaders: Seq[HttpHeader]                = Accept(rdfApplicationSqlQuery) :: Nil
 
   val gzipHeaders: Seq[HttpHeader] = Seq(Accept(MediaRanges.`*/*`), `Accept-Encoding`(HttpEncodings.gzip))
 

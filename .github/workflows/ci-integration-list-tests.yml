@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PARTITION_STRATEGY: 'list'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +34,7 @@ jobs:
             clean \
             app/Docker/publishLocal
       - name: Start services
-        run: docker compose --env-file tests/docker/.env.list.github -f tests/docker/docker-compose.yml up -d
+        run: docker compose --env-file tests/docker/.env.github -f tests/docker/delta-blazegraph-compose.yml up -d
       - name: Waiting for Delta to start
         run: |
           URL="http://localhost:8080/v1/version"
@@ -43,5 +44,5 @@ jobs:
       - name: Stop & clean Docker
         if: ${{ always() }}
         run: |
-          docker compose -f tests/docker/docker-compose.yml down --rmi "local" --volumes
+          docker compose -f tests/docker/delta-blazegraph-compose.yml down --rmi "local" --volumes
           docker system prune --force --volumes

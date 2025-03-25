@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.tests.plugins.blazegraph.IncomingOutgoingBlazegra
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.optics.JsonPath.root
 import io.circe.{Decoder, Json}
+import tags.BlazegraphOnly
 
 import java.time.Instant
 
@@ -19,6 +20,7 @@ import java.time.Instant
  * 4. test the incoming references
  * 5. test the outgoing references
  */
+@BlazegraphOnly
 class IncomingOutgoingBlazegraphSpec extends BaseIntegrationSpec {
 
   private val orgLabel  = genId()

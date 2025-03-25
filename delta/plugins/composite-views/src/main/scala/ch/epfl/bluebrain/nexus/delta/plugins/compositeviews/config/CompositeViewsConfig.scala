@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlTarget
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth
@@ -54,6 +56,7 @@ final case class CompositeViewsConfig(
     maxProjections: Int,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
+    indexingClient: HttpClientConfig,
     remoteSourceClient: RemoteSourceClientConfig,
     minIntervalRebuild: FiniteDuration,
     blazegraphBatch: BatchConfig,
@@ -89,7 +92,8 @@ object CompositeViewsConfig {
     */
   final case class BlazegraphAccess(
       base: Uri,
-      credentials: Option[Credentials],
+      sparqlTarget: SparqlTarget,
+      credentials: Option[BasicHttpCredentials],
       queryTimeout: Duration
   )
 

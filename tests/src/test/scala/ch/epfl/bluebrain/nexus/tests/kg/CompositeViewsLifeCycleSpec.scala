@@ -53,14 +53,14 @@ final class CompositeViewsLifeCycleSpec extends BaseIntegrationSpec {
   private def fetchSpaces = deltaClient.getJson[Spaces](s"$viewEndpoint/description", Jerry)
 
   private def includeAllSpaces(spaces: Spaces)(implicit pos: Position) = {
-    eventually { blazegraphDsl.includes(spaces.commonSpace) }
-    eventually { spaces.sparqlProjection.foreach { s => blazegraphDsl.includes(s.value) } }
+    eventually { sparqlDsl.includes(spaces.commonSpace) }
+    eventually { spaces.sparqlProjection.foreach { s => sparqlDsl.includes(s.value) } }
     eventually { spaces.elasticSearchProjection.foreach { e => elasticsearchDsl.includes(e.value) } }
   }
 
   private def excludeAllSpaces(spaces: Spaces)(implicit pos: Position) = {
-    eventually { blazegraphDsl.excludes(spaces.commonSpace) }
-    eventually { spaces.sparqlProjection.foreach { s => blazegraphDsl.excludes(s.value) } }
+    eventually { sparqlDsl.excludes(spaces.commonSpace) }
+    eventually { spaces.sparqlProjection.foreach { s => sparqlDsl.excludes(s.value) } }
     eventually { spaces.elasticSearchProjection.foreach { e => elasticsearchDsl.excludes(e.value) } }
   }
 
@@ -88,7 +88,7 @@ final class CompositeViewsLifeCycleSpec extends BaseIntegrationSpec {
         _         = spaces3.projectionSpaces.length shouldEqual 1
         _         = spaces3.elasticSearchProjection shouldEqual spaces2.elasticSearchProjection
         _         = includeAllSpaces(spaces3)
-        _         = blazegraphDsl.excludes(spaces2.sparqlProjection.value.value)
+        _         = sparqlDsl.excludes(spaces2.sparqlProjection.value.value)
         // Updating the view,updating the query for the remaining projection
         version4 <- createView(query + " ", includeCrossProject = false, includeSparqlProjection = false)
         _        <- deltaClient.put[Json](s"$viewEndpoint?rev=3", version4, Jerry) { expectOk }

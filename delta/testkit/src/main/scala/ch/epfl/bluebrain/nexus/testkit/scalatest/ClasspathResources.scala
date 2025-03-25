@@ -82,17 +82,4 @@ trait ClasspathResources extends ClasspathLoader with ExtractValue {
     loader.jsonObjectContentOf(resourcePath, attributes: _*).extract
   }
 
-  /**
-    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map of key
-    * property and property value.
-    *
-    * @param resourcePath
-    *   the path of a resource available on the classpath
-    * @return
-    *   the content of the referenced resource as a map of properties or a [[ClasspathResourceError]] when the resource
-    *   is not found
-    */
-  final def propertiesOf(resourcePath: String): Map[String, String] =
-    loader.propertiesOf(resourcePath).extract
-
 }

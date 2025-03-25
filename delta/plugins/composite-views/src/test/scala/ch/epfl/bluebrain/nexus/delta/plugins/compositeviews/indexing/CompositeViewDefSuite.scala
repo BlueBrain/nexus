@@ -110,7 +110,7 @@ class CompositeViewDefSuite extends NexusSuite with CompositeViewsFixture {
       _                     <- sleep
       paused                <- value.get
       _                     <- sleep
-      _                     <- value.get.assertEquals(paused)
+      _                     <- value.get.assertEquals(paused).eventually
       // We resume the stream
       _                     <- start.set(true)
       _                     <- value.get.assertEquals(paused + 4).eventually

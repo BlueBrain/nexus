@@ -3,12 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewEvent, DefaultProperties}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphSupervisionRoutes, BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -41,14 +40,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
-  make[DefaultProperties].fromEffect {
-    loader.propertiesOf("blazegraph/index.properties").map(DefaultProperties)
-  }
-
-  make[HttpClient].named("http-indexing-client").from { (cfg: BlazegraphViewsConfig, as: ActorSystem) =>
-    HttpClient()(cfg.indexingClient, as)
-  }
-
   make[BlazegraphSlowQueryStore].from { (xas: Transactors) => BlazegraphSlowQueryStore(xas) }
 
   make[BlazegraphSlowQueryDeleter].fromEffect {
@@ -67,29 +58,12 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold, clock)
   }
 
-  make[BlazegraphClient].named("blazegraph-indexing-client").from {
-    (
-        cfg: BlazegraphViewsConfig,
-        client: HttpClient @Id("http-indexing-client"),
-        as: ActorSystem,
-        properties: DefaultProperties
-    ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as)
+  make[SparqlClient].named("sparql-indexing-client").from { (cfg: BlazegraphViewsConfig, as: ActorSystem) =>
+    SparqlClient.indexing(cfg.sparqlTarget, cfg.base, cfg.indexingClient, cfg.queryTimeout)(cfg.credentials, as)
   }
 
-  make[HttpClient].named("http-query-client").from { (as: ActorSystem) =>
-    val httpConfig = HttpClientConfig.noRetry(false)
-    HttpClient()(httpConfig, as)
-  }
-
-  make[BlazegraphClient].named("blazegraph-query-client").from {
-    (
-        cfg: BlazegraphViewsConfig,
-        client: HttpClient @Id("http-query-client"),
-        as: ActorSystem,
-        properties: DefaultProperties
-    ) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout, properties.value)(as)
+  make[SparqlClient].named("sparql-query-client").from { (cfg: BlazegraphViewsConfig, as: ActorSystem) =>
+    SparqlClient.query(cfg.sparqlTarget, cfg.base, cfg.queryTimeout)(cfg.credentials, as)
   }
 
   make[ValidateBlazegraphView].from {
@@ -111,7 +85,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           fetchContext: FetchContext,
           contextResolution: ResolverContextResolution,
           validate: ValidateBlazegraphView,
-          client: BlazegraphClient @Id("blazegraph-indexing-client"),
+          client: SparqlClient @Id("sparql-indexing-client"),
           config: BlazegraphViewsConfig,
           xas: Transactors,
           clock: Clock[IO],
@@ -135,7 +109,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         graphStream: GraphResourceStream,
         registry: ReferenceRegistry,
         supervisor: Supervisor,
-        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        client: SparqlClient @Id("sparql-indexing-client"),
         config: BlazegraphViewsConfig,
         baseUri: BaseUri
     ) =>
@@ -154,7 +128,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         fetchContext: FetchContext,
         views: BlazegraphViews,
-        client: BlazegraphClient @Id("blazegraph-query-client"),
+        client: SparqlClient @Id("sparql-query-client"),
         slowQueryLogger: BlazegraphSlowQueryLogger,
         cfg: BlazegraphViewsConfig,
         xas: Transactors
@@ -225,7 +199,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphSupervisionRoutes].from {
     (
         views: BlazegraphViews,
-        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        client: SparqlClient @Id("sparql-indexing-client"),
         identities: Identities,
         aclCheck: AclCheck,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -278,18 +252,18 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  many[ServiceDependency].add { (client: BlazegraphClient @Id("blazegraph-indexing-client")) =>
-    new BlazegraphServiceDependency(client)
+  many[ServiceDependency].add { (client: SparqlClient @Id("sparql-indexing-client")) =>
+    new SparqlServiceDependency(client)
   }
 
   many[IndexingAction].add {
     (
         views: BlazegraphViews,
         registry: ReferenceRegistry,
-        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        client: SparqlClient @Id("sparql-indexing-client"),
         config: BlazegraphViewsConfig,
         baseUri: BaseUri
     ) =>
-      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri)
+      SparqlIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri)
   }
 }

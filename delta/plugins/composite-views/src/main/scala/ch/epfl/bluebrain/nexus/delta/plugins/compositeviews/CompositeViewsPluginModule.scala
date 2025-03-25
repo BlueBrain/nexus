@@ -4,8 +4,7 @@ import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.DefaultProperties
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
@@ -60,36 +59,23 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[BlazegraphClient].named("blazegraph-composite-indexing-client").from {
-    (
-        cfg: CompositeViewsConfig,
-        client: HttpClient @Id("http-indexing-client"),
-        as: ActorSystem,
-        properties: DefaultProperties
-    ) =>
-      BlazegraphClient(
-        client,
-        cfg.blazegraphAccess.base,
-        cfg.blazegraphAccess.credentials,
-        cfg.blazegraphAccess.queryTimeout,
-        properties.value
-      )(as)
+  make[SparqlClient].named("sparql-composite-indexing-client").from { (cfg: CompositeViewsConfig, as: ActorSystem) =>
+    val access = cfg.blazegraphAccess
+    SparqlClient.indexing(
+      access.sparqlTarget,
+      access.base,
+      cfg.indexingClient,
+      access.queryTimeout
+    )(cfg.blazegraphAccess.credentials, as)
   }
 
-  make[BlazegraphClient].named("blazegraph-composite-query-client").from {
-    (
-        cfg: CompositeViewsConfig,
-        client: HttpClient @Id("http-query-client"),
-        as: ActorSystem,
-        properties: DefaultProperties
-    ) =>
-      BlazegraphClient(
-        client,
-        cfg.blazegraphAccess.base,
-        cfg.blazegraphAccess.credentials,
-        cfg.blazegraphAccess.queryTimeout,
-        properties.value
-      )(as)
+  make[SparqlClient].named("sparql-composite-query-client").from { (cfg: CompositeViewsConfig, as: ActorSystem) =>
+    val access = cfg.blazegraphAccess
+    SparqlClient.query(
+      access.sparqlTarget,
+      access.base,
+      access.queryTimeout
+    )(cfg.blazegraphAccess.credentials, as)
   }
 
   make[ValidateCompositeView].from {
@@ -164,21 +150,21 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeSpaces].from {
     (
         esClient: ElasticSearchClient,
-        blazeClient: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
+        sparqlClient: SparqlClient @Id("sparql-composite-indexing-client"),
         cfg: CompositeViewsConfig
     ) =>
-      CompositeSpaces(cfg.prefix, esClient, blazeClient)
+      CompositeSpaces(cfg.prefix, esClient, sparqlClient)
   }
 
   make[CompositeSinks].from {
     (
         esClient: ElasticSearchClient,
-        blazeClient: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
+        sparqlClient: SparqlClient @Id("sparql-composite-indexing-client"),
         cfg: CompositeViewsConfig,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      CompositeSinks(cfg.prefix, esClient, blazeClient, cfg)(
+      CompositeSinks(cfg.prefix, esClient, cfg.elasticsearchBatch, sparqlClient, cfg.blazegraphBatch, cfg.sinkConfig)(
         baseUri,
         cr
       )
@@ -261,7 +247,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         aclCheck: AclCheck,
         views: CompositeViews,
-        client: BlazegraphClient @Id("blazegraph-composite-query-client"),
+        client: SparqlClient @Id("sparql-composite-query-client"),
         cfg: CompositeViewsConfig
     ) => BlazegraphQuery(aclCheck, views, client, cfg.prefix)
   }
@@ -319,7 +305,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeSupervisionRoutes].from {
     (
         views: CompositeViews,
-        client: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
+        client: SparqlClient @Id("sparql-composite-indexing-client"),
         identities: Identities,
         aclCheck: AclCheck,
         config: CompositeViewsConfig,

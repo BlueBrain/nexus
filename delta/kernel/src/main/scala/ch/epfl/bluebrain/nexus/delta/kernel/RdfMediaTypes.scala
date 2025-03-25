@@ -8,8 +8,8 @@ import akka.http.scaladsl.model.MediaType
   */
 // $COVERAGE-OFF$
 object RdfMediaTypes {
-  final val `text/turtle`: MediaType.WithOpenCharset =
-    MediaType.applicationWithOpenCharset("turtle", "ttl")
+  final val `text/turtle`: MediaType.WithFixedCharset =
+    MediaType.textWithFixedCharset("turtle", `UTF-8`, "ttl")
 
   final val `application/rdf+xml`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("rdf+xml", `UTF-8`, "xml")
@@ -31,6 +31,9 @@ object RdfMediaTypes {
 
   final val `application/sparql-query`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("sparql-query", `UTF-8`)
+
+  final val `application/sparql-update`: MediaType.WithFixedCharset =
+    MediaType.applicationWithFixedCharset("sparql-update", `UTF-8`)
 
   final val `text/vnd.graphviz`: MediaType.WithFixedCharset =
     MediaType.textWithFixedCharset("vnd.graphviz", `UTF-8`, "dot")

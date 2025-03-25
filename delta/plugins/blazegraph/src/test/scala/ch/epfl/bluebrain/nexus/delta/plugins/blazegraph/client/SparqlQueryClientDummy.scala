@@ -19,18 +19,18 @@ class SparqlQueryClientDummy(
     sparqlRdfXml: Iterable[String] => NodeSeq = _ => NodeSeq.Empty
 ) extends SparqlQueryClient {
   override def query[R <: SparqlQueryResponse](
-      indices: Iterable[String],
+      namespaces: Iterable[String],
       q: SparqlQuery,
       responseType: Aux[R],
       additionalHeaders: Seq[HttpHeader] = Seq.empty
   ): IO[R] =
     responseType match {
       case SparqlResultsJson =>
-        IO.pure(SparqlResultsResponse(sparqlResults(indices)))
-      case SparqlResultsXml  => IO.pure(SparqlXmlResultsResponse(sparqlResultsXml(indices)))
-      case SparqlJsonLd      => IO.pure(SparqlJsonLdResponse(sparqlJsonLd(indices)))
-      case SparqlNTriples    => IO.pure(SparqlNTriplesResponse(sparqlNTriples(indices)))
-      case SparqlRdfXml      => IO.pure(SparqlRdfXmlResponse(sparqlRdfXml(indices)))
+        IO.pure(SparqlResultsResponse(sparqlResults(namespaces)))
+      case SparqlResultsXml  => IO.pure(SparqlXmlResultsResponse(sparqlResultsXml(namespaces)))
+      case SparqlJsonLd      => IO.pure(SparqlJsonLdResponse(sparqlJsonLd(namespaces)))
+      case SparqlNTriples    => IO.pure(SparqlNTriplesResponse(sparqlNTriples(namespaces)))
+      case SparqlRdfXml      => IO.pure(SparqlRdfXmlResponse(sparqlRdfXml(namespaces)))
     }
 
 }

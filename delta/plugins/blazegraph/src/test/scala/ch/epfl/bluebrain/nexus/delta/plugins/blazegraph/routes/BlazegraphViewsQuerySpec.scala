@@ -72,8 +72,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   implicit private val uuidF: UUIDF = UUIDF.random
 
   private lazy val endpoint = docker.hostConfig.endpoint
-  private lazy val client   =
-    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties.accepted)
+  private lazy val client   = new BlazegraphClient(HttpClient(), endpoint, 10.seconds)(None, system)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

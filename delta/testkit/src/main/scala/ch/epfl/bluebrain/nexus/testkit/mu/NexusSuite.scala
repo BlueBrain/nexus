@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, MUnitExtra
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, Generators}
 import munit.CatsEffectSuite
 
-class NexusSuite
+abstract class NexusSuite
     extends CatsEffectSuite
     with MoreCatsEffectAssertions
     with CollectionAssertions

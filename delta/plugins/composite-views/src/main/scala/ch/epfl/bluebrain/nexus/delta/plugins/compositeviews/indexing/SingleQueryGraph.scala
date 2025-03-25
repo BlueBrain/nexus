@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.idTemplating
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -21,7 +21,7 @@ import java.util.regex.Pattern.quote
   * @param query
   *   the query to perform on each resource
   */
-final class SingleQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
+final class SingleQueryGraph(client: SparqlClient, namespace: String, query: SparqlConstructQuery) {
 
   private val logger = Logger[SingleQueryGraph]
 

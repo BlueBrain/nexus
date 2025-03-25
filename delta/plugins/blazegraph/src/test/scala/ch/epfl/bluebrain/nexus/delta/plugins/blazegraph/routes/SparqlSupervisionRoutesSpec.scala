@@ -4,8 +4,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.BlazegraphSupervision
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.BlazegraphSupervision.BlazegraphNamespaceTriples
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.SparqlSupervision
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.SparqlSupervision.SparqlNamespaceTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
-class BlazegraphSupervisionRoutesSpec extends BaseRouteSpec {
+class SparqlSupervisionRoutesSpec extends BaseRouteSpec {
 
   private val supervisor = User("supervisor", realm)
 
@@ -35,9 +35,9 @@ class BlazegraphSupervisionRoutesSpec extends BaseRouteSpec {
   private val first   = ViewRef(project, nxv + "first")
   private val second  = ViewRef(project, nxv + "second")
 
-  private val blazegraphSupervision = new BlazegraphSupervision {
-    override def get: IO[BlazegraphSupervision.BlazegraphNamespaceTriples] = IO.pure(
-      BlazegraphNamespaceTriples(
+  private val blazegraphSupervision = new SparqlSupervision {
+    override def get: IO[SparqlSupervision.SparqlNamespaceTriples] = IO.pure(
+      SparqlNamespaceTriples(
         153L,
         Map(first -> 42L, second   -> 99L),
         Map("kb"  -> 0L, "unknown" -> 12L)

@@ -4,9 +4,8 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, GraphResourceToNTriples}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{GraphResourceToNTriples, SparqlSink}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{BatchQueryGraph, SingleQueryGraph}
@@ -148,77 +147,83 @@ final class Batch[SinkFormat](
 object CompositeSink {
 
   /**
-    * @param blazeClient
-    *   client used to connect to blazegraph
+    * @param sparqlClient
+    *   client used to connect to the SPARQL store
     * @param namespace
-    *   name of the target blazegraph namespace
+    *   name of the target SPARQL namespace
     * @param common
-    *   name of the common blazegraph namespace
-    * @param cfg
-    *   configuration of the composite views
+    *   name of the common SPARQL namespace
+    * @param batchConfig
+    *   batch configuration for the sink
+    * @param sinkConfig
+    *   type of sink
     * @return
     *   a function that given a sparql view returns a composite sink that has the view as target
     */
-  def blazeSink(
-      blazeClient: BlazegraphClient,
+  def sparqlSink(
+      sparqlClient: SparqlClient,
       namespace: String,
       common: String,
-      cfg: CompositeViewsConfig
+      batchConfig: BatchConfig,
+      sinkConfig: SinkConfig
   )(implicit baseUri: BaseUri, rcr: RemoteContextResolution): SparqlProjection => CompositeSink = { target =>
     compositeSink(
-      blazeClient,
+      sparqlClient,
       common,
       target.query,
       GraphResourceToNTriples.graphToNTriples,
-      BlazegraphSink(blazeClient, cfg.blazegraphBatch, namespace).apply,
-      cfg.blazegraphBatch,
-      cfg.sinkConfig
+      SparqlSink(sparqlClient, batchConfig, namespace).apply,
+      batchConfig,
+      sinkConfig
     )
   }
 
   /**
-    * @param blazeClient
-    *   blazegraph client used to query the common space
+    * @param sparqlClient
+    *   SPARQL client used to query the common space
     * @param esClient
     *   client used to push to elasticsearch
     * @param index
     *   name of the target elasticsearch index
     * @param common
     *   name of the common blazegraph namespace
-    * @param cfg
-    *   configuration of the composite views
+    * @param batchConfig
+    *   batch configuration for the sink
+    * @param sinkConfig
+    *   type of sink
     * @return
     *   a function that given a elasticsearch view returns a composite sink that has the view as target
     */
   def elasticSink(
-      blazeClient: BlazegraphClient,
+      sparqlClient: SparqlClient,
       esClient: ElasticSearchClient,
       index: IndexLabel,
       common: String,
-      cfg: CompositeViewsConfig
+      batchConfig: BatchConfig,
+      sinkConfig: SinkConfig
   )(implicit rcr: RemoteContextResolution): ElasticSearchProjection => CompositeSink = { target =>
     implicit val jsonLdOptions: JsonLdOptions = JsonLdOptions.AlwaysEmbed
     val esSink                                =
       ElasticSearchSink.states(
         esClient,
-        cfg.elasticsearchBatch.maxElements,
-        cfg.elasticsearchBatch.maxInterval,
+        batchConfig.maxElements,
+        batchConfig.maxInterval,
         index,
         Refresh.False
       )
     compositeSink(
-      blazeClient,
+      sparqlClient,
       common,
       target.query,
       new GraphResourceToDocument(target.context, target.includeContext).graphToDocument,
       esSink.apply,
-      cfg.elasticsearchBatch,
-      cfg.sinkConfig
+      batchConfig,
+      sinkConfig
     )
   }
 
   private def compositeSink[SinkFormat](
-      blazeClient: BlazegraphClient,
+      sparqlClient: SparqlClient,
       common: String,
       query: SparqlConstructQuery,
       transform: GraphResource => IO[Option[SinkFormat]],
@@ -228,7 +233,7 @@ object CompositeSink {
   )(implicit rcr: RemoteContextResolution): CompositeSink = sinkConfig match {
     case SinkConfig.Single =>
       new Single(
-        new SingleQueryGraph(blazeClient, common, query),
+        new SingleQueryGraph(sparqlClient, common, query),
         transform,
         sink,
         batchConfig.maxElements,
@@ -236,7 +241,7 @@ object CompositeSink {
       )
     case SinkConfig.Batch  =>
       new Batch(
-        new BatchQueryGraph(blazeClient, common, query),
+        new BatchQueryGraph(sparqlClient, common, query),
         transform,
         sink,
         batchConfig.maxElements,

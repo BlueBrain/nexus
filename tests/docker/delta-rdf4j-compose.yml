@@ -1,0 +1,74 @@
+include:
+  - keycloak.yml
+  - postgres.yml
+  - elasticsearch.yml
+  - rdf4j.yml
+  - localstack.yml
+
+networks:
+  default:
+    ipam:
+      config:
+        # Specify the subnet range for IP address allocation
+        - subnet: 10.0.2.0/24
+services:
+  delta:
+    depends_on:
+      keycloak:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+      rdf4j:
+        condition: service_healthy
+        required: false
+      postgres:
+        condition: service_started
+      localstack:
+        condition: service_started
+    environment:
+      - DELTA_PLUGINS
+      - DELTA_EXTERNAL_CONF
+      - KAMON_ENABLED
+      - PARTITION_STRATEGY
+      - SPARQL_TARGET=rdf4j
+      - SPARQL_ENDPOINT=http://rdf4j:8080/rdf4j-server
+      - _JAVA_OPTIONS
+    image: bluebrain/nexus-delta:latest
+    entrypoint:
+      - '/bin/bash'
+      - '-c'
+      - |
+        ln -sf /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
+        /opt/docker/bin/delta-app -Xmx4G -Dapp.projections.cluster.size=${CLUSTER_SIZE}
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config:/config
+      - /tmp:/default-volume
+    extra_hosts:
+      - "delta:127.0.0.1"
+    dns:
+      # Set the DNS server to be the LocalStack container, for host resolution
+      - 10.0.2.20
+
+#  fusion:
+#    depends_on:
+#      - delta
+#    image: bluebrain/nexus-web:1.10.0-M2-fix-resource-update
+#    environment:
+#      BASE_PATH: "/"
+#      HOST_NAME: "http://localhost"
+#      API_ENDPOINT: "http://localhost/v1"
+
+#  router:
+#    depends_on:
+#      - fusion
+#    image: nginx:stable
+#    ports:
+#      - target: 80
+#        published: 80
+#        mode: host
+#    deploy:
+#      mode: global
+#    volumes:
+#      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf

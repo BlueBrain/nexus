@@ -5,7 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -120,7 +120,7 @@ object BlazegraphCoordinator {
       graphStream: GraphResourceStream,
       registry: ReferenceRegistry,
       supervisor: Supervisor,
-      client: BlazegraphClient,
+      client: SparqlClient,
       config: BlazegraphViewsConfig
   )(implicit baseUri: BaseUri): IO[BlazegraphCoordinator] =
     if (config.indexingEnabled) {
@@ -129,8 +129,7 @@ object BlazegraphCoordinator {
         graphStream,
         PipeChain.compile(_, registry),
         supervisor,
-        (v: ActiveViewDef) =>
-          new BlazegraphSink(client, config.batch.maxElements, config.batch.maxInterval, v.namespace),
+        (v: ActiveViewDef) => new SparqlSink(client, config.batch.maxElements, config.batch.maxInterval, v.namespace),
         (v: ActiveViewDef) =>
           client
             .createNamespace(v.namespace)
