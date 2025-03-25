@@ -213,13 +213,6 @@ object Permissions {
   }
 
   /**
-    * Quotas permissions.
-    */
-  object quotas {
-    final val read: Permission = Permission.unsafe("quotas/read")
-  }
-
-  /**
     * Supervision permissions.
     */
   object supervision {

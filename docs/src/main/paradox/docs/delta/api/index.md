@@ -12,7 +12,6 @@
 * @ref:[User Permissions](user-permissions-api.md)
 * @ref:[Organizations](orgs-api.md)
 * @ref:[Projects](projects-api.md)
-* @ref:[Quotas](quotas.md)
 * @ref:[Schemas](schemas-api.md)
 * @ref:[Resources](resources-api.md)
 * @ref:[Practice](trial.md)
@@ -91,12 +90,6 @@ The 2nd level grouping resources in the platform, called project. Projects provi
 resolution and indices (ElasticSearch index and Blazegraph namespace).
 
 @ref:[Operations on projects](projects-api.md)
-
-## Quotas
-
-Defines the maximum number of resources and events that can exist in a certain scope.
-
-@ref:[Operations on quotas](quotas.md)
 
 ## Schemas
 

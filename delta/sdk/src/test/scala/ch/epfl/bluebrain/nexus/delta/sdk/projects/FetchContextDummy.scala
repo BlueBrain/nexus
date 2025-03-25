@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectContext, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 class FetchContextDummy private (
     expected: Map[ProjectRef, ProjectContext],
@@ -16,10 +16,10 @@ class FetchContextDummy private (
   override def onRead(ref: ProjectRef): IO[ProjectContext] =
     IO.fromEither(expected.get(ref).toRight(ProjectNotFound(ref).asInstanceOf[ProjectRejection]))
 
-  override def onCreate(ref: ProjectRef)(implicit subject: Identity.Subject): IO[ProjectContext] =
+  override def onCreate(ref: ProjectRef): IO[ProjectContext] =
     IO.raiseWhen(rejectOnCreate.contains(ref))(ProjectIsDeprecated(ref).asInstanceOf[ProjectRejection]) >> onRead(ref)
 
-  override def onModify(ref: ProjectRef)(implicit subject: Identity.Subject): IO[ProjectContext] =
+  override def onModify(ref: ProjectRef): IO[ProjectContext] =
     IO.raiseWhen(rejectOnModify.contains(ref))(ProjectIsDeprecated(ref).asInstanceOf[ProjectRejection]) >> onRead(ref)
 }
 
