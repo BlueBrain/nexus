@@ -115,6 +115,6 @@ object SparqlResults {
   implicit def sparqlResultsMarshaller(implicit ordering: JsonKeyOrdering): ToEntityMarshaller[SparqlResults] =
     RdfMarshalling.customContentTypeJsonMarshaller(`application/sparql-results+json`).compose(_.asJson)
 
-  implicit val sparqlResultsUnarshaller: FromEntityUnmarshaller[SparqlResults] = decoderUnmarshaller[SparqlResults]
+  implicit val sparqlResultsUnmarshaller: FromEntityUnmarshaller[SparqlResults] = decoderUnmarshaller[SparqlResults]
 
 }
