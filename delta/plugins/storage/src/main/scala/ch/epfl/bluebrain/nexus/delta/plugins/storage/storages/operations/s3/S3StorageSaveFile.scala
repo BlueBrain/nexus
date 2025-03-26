@@ -7,7 +7,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.{Graph, SourceShape}
 import akka.util.ByteString
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -42,20 +41,13 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
     val bucket = put.bucket
     val key    = put.key
     (for {
-      _             <- validateObjectDoesNotExist(bucket, key)
-      _             <- log(bucket, key, s"Beginning upload")
-      fileData      <- convertStream(uploading.entity.dataBytes)
-      (duration, _) <- s3StorageClient.uploadFile(put, fileData).timed
-      _             <-
-        log(
-          bucket,
-          key,
-          s"Finished upload for $location and ${put.contentLength} bytes after ${duration.toSeconds} seconds."
-        )
-      headResponse  <- s3StorageClient.headObject(bucket, key)
-      attr           = fileMetadata(location, uuid, headResponse)
+      _            <- validateObjectDoesNotExist(bucket, key)
+      fileData     <- convertStream(uploading.entity.dataBytes)
+      _            <- s3StorageClient.uploadFile(put, fileData)
+      headResponse <- s3StorageClient.headObject(bucket, key)
+      attr          = fileMetadata(location, uuid, headResponse)
     } yield attr)
-      .onError(e => logger.error(e)("Unexpected error when storing file"))
+      .onError { case e => logger.error(e)("Unexpected error when storing file") }
       .adaptError {
         case e: SaveFileRejection                                               => e
         case e: S3Exception if e.statusCode() == StatusCodes.Forbidden.intValue =>
@@ -91,7 +83,4 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
       byteString.asByteBuffer
     }
   }
-
-  private def log(bucket: String, key: String, msg: String): IO[Unit] =
-    logger.debug(s"Bucket: $bucket. Key: $key. $msg")
 }

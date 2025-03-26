@@ -64,7 +64,7 @@ object ResourceShifts {
             shift  <- findShift(entityType)
             result <- shift.toGraphResource(json)
           } yield result
-        }.onError { err =>
+        }.onError { case err =>
           logger.error(err)(s"Entity of type '$entityType' could not be decoded as a graph resource")
         }
     }

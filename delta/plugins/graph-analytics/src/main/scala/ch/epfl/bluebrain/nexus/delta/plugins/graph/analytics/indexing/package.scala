@@ -18,12 +18,14 @@ package object indexing {
   val scriptContent: IO[String] =
     loader
       .contentOf("elasticsearch/update_relationships_script.painless")
-      .onError(e => logger.warn(e)("ElasticSearch script 'update_relationships_script.painless' template not found"))
+      .onError { case e =>
+        logger.warn(e)("ElasticSearch script 'update_relationships_script.painless' template not found")
+      }
 
-  val graphAnalyticsMappings: IO[JsonObject] =
+  val graphAnalyticsMappings: IO[JsonObject]                             =
     loader
       .jsonObjectContentOf("elasticsearch/mappings.json")
-      .onError(e => logger.warn(e)("ElasticSearch mapping 'mappings.json' template not found"))
+      .onError { case e => logger.warn(e)("ElasticSearch mapping 'mappings.json' template not found") }
 
   def propertiesAggQuery(config: TermAggregationsConfig): IO[JsonObject] = loader
     .jsonObjectContentOf(

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
 import cats.effect.{IO, Resource}
-import cats.syntax.monadError._
 import cats.syntax.traverse._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationError

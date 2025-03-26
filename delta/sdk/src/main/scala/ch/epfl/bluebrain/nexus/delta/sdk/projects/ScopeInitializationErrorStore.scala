@@ -54,7 +54,7 @@ object ScopeInitializationErrorStore {
                  |VALUES ($entityType, ${project.organization}, ${project.project}, ${e.getMessage}, $instant)
                  |""".stripMargin.update.run.void.transact(xas.write)
           }
-          .onError { e =>
+          .onError { case e =>
             logger.error(e)(s"Failed to save error for '$entityType' initialization step on project '$project'")
           }
 

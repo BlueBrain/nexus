@@ -47,7 +47,7 @@ object CompositeViewsDeletionTask {
       (v: ActiveViewDef, subject: Subject) =>
         views
           .internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject)
-          .onError { r =>
+          .onError { case r =>
             logger.error(s"Deprecating '$v' resulted in error: '$r'.")
           }
     )

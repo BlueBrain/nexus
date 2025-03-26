@@ -43,7 +43,7 @@ trait FileFixtures extends Generators {
 
   def withUUIDF[T](id: UUID)(test: => T): T = (for {
     old <- ref.getAndSet(id)
-    t   <- IO(test).onError(_ => ref.set(old))
+    t   <- IO(test).onError { case _ => ref.set(old) }
     _   <- ref.set(old)
   } yield t).unsafeRunSync()
 

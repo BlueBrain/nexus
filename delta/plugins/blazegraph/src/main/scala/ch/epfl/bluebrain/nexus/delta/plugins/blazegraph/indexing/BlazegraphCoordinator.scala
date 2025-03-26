@@ -133,7 +133,7 @@ object BlazegraphCoordinator {
         (v: ActiveViewDef) =>
           client
             .createNamespace(v.namespace)
-            .onError { e =>
+            .onError { case e =>
               logger.error(e)(s"Namespace for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }
             .void,

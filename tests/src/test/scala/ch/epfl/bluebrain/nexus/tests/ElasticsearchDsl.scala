@@ -73,7 +73,7 @@ class ElasticsearchDsl(implicit
         method = DELETE,
         uri = s"$elasticUrl/delta_*"
       ).addCredentials(credentials)
-    ).onError { t =>
+    ).onError { case t =>
       logger.error(t)(s"Error while deleting elasticsearch indices")
     }.flatMap { res =>
       logger.info(s"Deleting elasticsearch indices returned ${res.status}").as(res.status)

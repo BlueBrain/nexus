@@ -35,7 +35,7 @@ object KamonMonitoring {
       IOFuture
         .defaultCancelable { IO { Kamon.stopModules() } }
         .timeout(15.seconds)
-        .onError { e =>
+        .onError { case e =>
           logger.error(e)("Something went wrong while terminating Kamon")
         }
         .void
@@ -63,7 +63,7 @@ object KamonMonitoring {
       component: String,
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
-  )(io: IO[A]): IO[A] = {
+  )(io: IO[A]): IO[A]                                                                      = {
     if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
         case (span, Outcome.Succeeded(_))   => finishSpan(span, takeSamplingDecision)
@@ -71,7 +71,7 @@ object KamonMonitoring {
         case (span, Outcome.Canceled())     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
       }
     else io
-  }.onError { e => logger.debug(e)(e.getMessage) }
+  }.onError { case e => logger.debug(e)(e.getMessage) }
 
   private def buildSpan(name: String, component: String, tags: Map[String, Any]): IO[Span] =
     IO.blocking {

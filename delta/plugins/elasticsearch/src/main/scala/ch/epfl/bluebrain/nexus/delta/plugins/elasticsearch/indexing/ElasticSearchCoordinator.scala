@@ -152,7 +152,7 @@ object ElasticSearchCoordinator {
         (v: ActiveViewDef) =>
           client
             .createIndex(v.index, Some(v.mapping), Some(v.settings))
-            .onError { e =>
+            .onError { case e =>
               logger.error(e)(s"Index for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }
             .void,

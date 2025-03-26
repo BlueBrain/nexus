@@ -81,7 +81,7 @@ object S3FileOperations {
       metadata <- mkS3Metadata(path, resp)
     } yield metadata
   }
-    .onError { e =>
+    .onError { case e =>
       log.error(e)(s"Failed fetching required attributes for S3 file registration. Bucket $bucket and path $path")
     }
 

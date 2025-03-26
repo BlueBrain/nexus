@@ -117,7 +117,7 @@ object IndexingViewDef {
                     )
     } yield projection
 
-    IO.fromEither(compiled).onError { e =>
+    IO.fromEither(compiled).onError { case e =>
       logger.error(e)(s"View '${v.ref}' could not be compiled.")
     }
   }

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
