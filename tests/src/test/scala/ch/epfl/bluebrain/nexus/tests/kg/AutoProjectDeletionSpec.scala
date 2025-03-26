@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.StatusCodes
-import cats.effect.unsafe.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
@@ -37,14 +35,14 @@ class AutoProjectDeletionSpec extends BaseIntegrationSpec {
       // First org and projects
       _ <- adminDsl.createOrganization(org, org, Bojack, ignoreConflict = true)
       _ <- adminDsl.createProjectWithName(org, proj1, proj1, Bojack)
-      _ <- deltaClient.get[Json](s"/projects/$ref1", Bojack)(expect(StatusCodes.OK))
+      _ <- deltaClient.get[Json](s"/projects/$ref1", Bojack)(expectOk)
     } yield succeed
 
-    setup.void.unsafeRunSync()
+    setup.void.accepted
   }
 
   "eventually return a not found when attempting to fetch the project" in eventually {
-    deltaClient.get[Json](s"/projects/$ref1", Bojack)(expect(StatusCodes.NotFound))
+    deltaClient.get[Json](s"/projects/$ref1", Bojack)(expectNotFound)
   }
 
 }
