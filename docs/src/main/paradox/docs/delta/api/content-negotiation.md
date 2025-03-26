@@ -2,7 +2,7 @@
 
 When performing a request against Nexus Delta, clients can specify the desired format of the response they would like to receive.
 This is done through a mechanism called **Content Negotiation**. 
-Nexus Delta uses the HTTP @link:[Accept](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept){ open=new } Header in order to provide Content Negotiation capabilities.
+Nexus Delta uses the HTTP @link:[Accept](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept){ open=new } Header in order to provide Content Negotiation capabilities.
 
 **Example**
 
