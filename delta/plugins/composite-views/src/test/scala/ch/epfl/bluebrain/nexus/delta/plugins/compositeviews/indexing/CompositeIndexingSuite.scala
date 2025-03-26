@@ -7,8 +7,8 @@ import cats.data.NonEmptyList
 import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.SparqlClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.Composit
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.{Main, Rebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViewFactory, CompositeViews, CompositeViewsFixture, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViewFactory, CompositeViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -76,25 +76,20 @@ trait CompositeIndexingFixture { self: CatsEffectSuite with FixedClock =>
 
   private val queryConfig      = QueryConfig(10, RefreshStrategy.Delay(10.millis))
   val batchConfig: BatchConfig = BatchConfig(2, 50.millis)
-  private val compositeConfig  =
-    CompositeViewsFixture.config.copy(
-      blazegraphBatch = batchConfig,
-      elasticsearchBatch = batchConfig
-    )
 
   private def resource(sinkConfig: SinkConfig): Resource[IO, Setup] = {
     (
       Doobie.resourceDefault,
       ElasticSearchClientSetup.resource(),
-      BlazegraphClientSetup.resource()
+      SparqlClientSetup.blazegraph()
     )
-      .parMapN { case (xas, esClient, bgClient) =>
+      .parMapN { case (xas, esClient, sparqlClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
           CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 1.second, clock)
-        val spaces                = CompositeSpaces(prefix, esClient, bgClient)
-        val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
-        Setup(esClient, bgClient, projections, spaces, sinks)
+        val spaces                = CompositeSpaces(prefix, esClient, sparqlClient)
+        val sinks                 = CompositeSinks(prefix, esClient, batchConfig, sparqlClient, batchConfig, sinkConfig)
+        Setup(esClient, sparqlClient, projections, spaces, sinks)
       }
   }
 
@@ -337,13 +332,13 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       // Initialise the namespaces and indices
       _ <- spaces.init(view)
-      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(true)
+      _ <- sparqlClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- sparqlClient.existsNamespace(sparqlNamespace).assertEquals(true)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete them on destroy
       _ <- spaces.destroyAll(view)
-      _ <- bgClient.existsNamespace(commonNs).assertEquals(false)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(false)
+      _ <- sparqlClient.existsNamespace(commonNs).assertEquals(false)
+      _ <- sparqlClient.existsNamespace(sparqlNamespace).assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(false)
     } yield ()
   }
@@ -362,18 +357,18 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       // Initialise the namespaces and indices
       _ <- spaces.init(view)
-      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(true)
+      _ <- sparqlClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- sparqlClient.existsNamespace(sparqlNamespace).assertEquals(true)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete the blazegraph projection
       _ <- spaces.destroyProjection(view, blazegraphProjection)
-      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(false)
+      _ <- sparqlClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- sparqlClient.existsNamespace(sparqlNamespace).assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(true)
       // Delete the elasticsearch projection
       _ <- spaces.destroyProjection(view, elasticSearchProjection)
-      _ <- bgClient.existsNamespace(commonNs).assertEquals(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assertEquals(false)
+      _ <- sparqlClient.existsNamespace(commonNs).assertEquals(true)
+      _ <- sparqlClient.existsNamespace(sparqlNamespace).assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).assertEquals(false)
     } yield ()
   }
@@ -594,7 +589,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private val checkQuery = SparqlConstructQuery.unsafe("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s")
 
   private def checkBlazegraphTriples(namespace: String, expected: String) =
-    bgClient
+    sparqlClient
       .query(Set(namespace), checkQuery, SparqlNTriples)
       .map(_.value.toString)
       .map(_.equalLinesUnordered(expected))
@@ -614,7 +609,7 @@ object CompositeIndexingSuite {
 
   final case class Setup(
       esClient: ElasticSearchClient,
-      bgClient: BlazegraphClient,
+      sparqlClient: SparqlClient,
       projections: CompositeProjections,
       spaces: CompositeSpaces,
       sinks: CompositeSinks

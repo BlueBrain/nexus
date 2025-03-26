@@ -25,8 +25,9 @@ class VersionSpec extends BaseIntegrationSpec {
 object VersionSpec {
 
   final case class DependenciesBundle(
-      blazegraph: String,
-      postgres: Option[String],
+      blazegraph: Option[String],
+      rdf4j: Option[String],
+      postgres: String,
       elasticsearch: String
   )
   object DependenciesBundle {

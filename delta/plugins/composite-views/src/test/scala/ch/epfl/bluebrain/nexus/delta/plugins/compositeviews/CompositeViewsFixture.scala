@@ -4,8 +4,6 @@ import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SinkConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
@@ -15,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -160,23 +157,6 @@ trait CompositeViewsFixture extends ConfigFixtures {
   val updatedValue   = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
 
   val batchConfig = BatchConfig(10, 10.seconds)
-
-  val config: CompositeViewsConfig = CompositeViewsConfig(
-    SourcesConfig(1),
-    BlazegraphAccess("http://localhost:9999/blazegraph", None, 1.minute),
-    "prefix",
-    3,
-    eventLogConfig,
-    pagination,
-    RemoteSourceClientConfig(1.second, 1, 500.milliseconds),
-    1.minute,
-    batchConfig,
-    batchConfig,
-    3.seconds,
-    false,
-    SinkConfig.Batch,
-    Credentials.Anonymous
-  )
 }
 
 object CompositeViewsFixture extends CompositeViewsFixture

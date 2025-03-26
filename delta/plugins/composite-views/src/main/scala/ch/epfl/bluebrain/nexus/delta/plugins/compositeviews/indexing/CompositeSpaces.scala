@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
@@ -38,25 +37,25 @@ object CompositeSpaces {
   def apply(
       prefix: String,
       esClient: ElasticSearchClient,
-      blazeClient: BlazegraphClient
+      sparqlClient: SparqlClient
   ): CompositeSpaces = new CompositeSpaces {
     override def init(view: ActiveViewDef): IO[Unit] = {
       val common       = commonNamespace(view.uuid, view.indexingRev, prefix)
-      val createCommon = blazeClient.createNamespace(common).void
+      val createCommon = sparqlClient.createNamespace(common).void
       val result       = view.value.projections.foldLeft[IO[Unit]](createCommon) {
         case (acc, e: ElasticSearchProjection) =>
           val index = projectionIndex(e, view.uuid, prefix)
           acc >> esClient.createIndex(index, Some(e.mapping), e.settings).void
         case (acc, s: SparqlProjection)        =>
           val namespace = projectionNamespace(s, view.uuid, prefix)
-          acc >> blazeClient.createNamespace(namespace).void
+          acc >> sparqlClient.createNamespace(namespace).void
       }
       logger.debug(s"Creating namespaces and indices for composite view ${view.ref}") >> result
     }
 
     override def destroyAll(view: ActiveViewDef): IO[Unit] = {
       val common       = commonNamespace(view.uuid, view.indexingRev, prefix)
-      val deleteCommon = blazeClient.deleteNamespace(common).void
+      val deleteCommon = sparqlClient.deleteNamespace(common).void
       val result       = view.value.projections.foldLeft[IO[Unit]](deleteCommon) { case (acc, p) =>
         acc >> destroyProjection(view, p)
       }
@@ -71,7 +70,7 @@ object CompositeSpaces {
             esClient.deleteIndex(index).void
           case s: SparqlProjection        =>
             val namespace = projectionNamespace(s, view.uuid, prefix)
-            blazeClient.deleteNamespace(namespace).void
+            sparqlClient.deleteNamespace(namespace).void
         }
       }
   }

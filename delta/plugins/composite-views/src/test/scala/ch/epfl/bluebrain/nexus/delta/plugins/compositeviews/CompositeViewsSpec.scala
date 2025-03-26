@@ -22,6 +22,7 @@ import org.scalatest.Assertion
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import java.time.Instant
+import concurrent.duration._
 
 class CompositeViewsSpec
     extends CatsEffectSpec
@@ -52,8 +53,8 @@ class CompositeViewsSpec
       fetchContext,
       ResolverContextResolution(rcr),
       alwaysValidate,
-      config.minIntervalRebuild,
-      config.eventLog,
+      1.minute,
+      eventLogConfig,
       xas,
       clock
     ).accepted

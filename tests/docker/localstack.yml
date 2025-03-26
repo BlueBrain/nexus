@@ -1,0 +1,13 @@
+services:
+  localstack:
+    image: localstack/localstack:4.2
+    environment:
+      AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
+      AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
+      SERVICES: "s3:4566"
+    ports:
+      - 4566:4566
+    networks:
+      default:
+        # Set the container IP address in the 10.0.2.0/24 subnet
+        ipv4_address: 10.0.2.20

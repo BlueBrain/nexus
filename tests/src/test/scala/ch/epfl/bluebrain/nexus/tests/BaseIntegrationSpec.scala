@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
 import ch.epfl.bluebrain.nexus.tests.kg.ElasticSearchViewsDsl
+import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
 import ch.epfl.bluebrain.nexus.tests.kg.files.StoragesDsl
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
@@ -67,9 +68,16 @@ trait BaseIntegrationSpec
 
   val deltaClient: HttpClient = HttpClient(deltaUrl)
 
-  val elasticsearchDsl = new ElasticsearchDsl()
-  val blazegraphDsl    = new BlazegraphDsl()
+  lazy val isBlazegraph: Boolean = deltaClient
+    .getJson[VersionBundle]("/version", Identity.ServiceAccount)
+    .map { version =>
+      version.dependencies.blazegraph.isDefined
+    }
+    .accepted
+
   val keycloakDsl      = new KeycloakDsl()
+  val elasticsearchDsl = new ElasticsearchDsl()
+  lazy val sparqlDsl   = new SparqlDsl(isBlazegraph)
 
   val aclDsl                = new AclDsl(deltaClient)
   val permissionDsl         = new PermissionDsl(deltaClient)

@@ -1,0 +1,12 @@
+services:
+  rdf4j:
+    image: eclipse/rdf4j-workbench:5.1.0
+    environment:
+      JAVA_OPTS: "-Xms1g -Xmx16g"
+    ports:
+      - 7070:8080
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/rdf4j-server/" ]
+      interval: 1s
+      timeout: 2s
+      retries: 60

@@ -27,6 +27,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprec
 import io.circe.syntax._
 import org.scalatest.Assertion
 
+import concurrent.duration._
+
 class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
   implicit private val f: FusionConfig = fusionConfig
@@ -50,8 +52,8 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
-    config.minIntervalRebuild,
-    config.eventLog,
+    1.minute,
+    eventLogConfig,
     xas,
     clock
   ).accepted

@@ -26,9 +26,6 @@ trait Fixtures {
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json")
   )
 
-  val defaultProperties: IO[Map[String, String]] =
-    loader.propertiesOf("blazegraph/index.properties")
-
   def alwaysValidate: ValidateBlazegraphView = (_: BlazegraphViewValue) => IO.unit
 }
 

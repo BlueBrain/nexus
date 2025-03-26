@@ -4,7 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures.defaultProperties
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.SparqlResultsResponse
@@ -18,8 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpServerStatusError}
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -43,8 +42,7 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private lazy val endpoint = docker.hostConfig.endpoint
-  private lazy val client   =
-    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds, defaultProperties.accepted)
+  private lazy val client   = new BlazegraphClient(HttpClient(), endpoint, 10.seconds)(None, system)
   private lazy val graphId  = endpoint / "graphs" / "myid"
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {
@@ -129,13 +127,7 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
     }
 
     "attempt to create namespace a second time" in {
-      client.createNamespace("some", Map.empty).accepted shouldEqual false
-    }
-
-    "attempt to create a namespace with wrong payload" in {
-      val props = propertiesOf("sparql/wrong.properties")
-      val err   = client.createNamespace("other", props).rejectedWith[WrappedHttpClientError]
-      err.http shouldBe a[HttpServerStatusError]
+      client.createNamespace("some").accepted shouldEqual false
     }
 
     "create a new named graph" in {

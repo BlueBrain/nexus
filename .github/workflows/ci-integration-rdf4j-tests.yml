@@ -1,0 +1,48 @@
+name: Delta Integration Tests - RDF4J
+on:
+  pull_request:
+    paths:
+      - 'delta/**'
+      - 'tests/**'
+      - 'build.sbt'
+      - 'project/**'
+      - '.github/workflows/ci-integration-rdf4j-tests.yml'
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PARTITION_STRATEGY: 'hash'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'sbt'
+          check-latest: true
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
+      - name: Clean, build Delta image
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            app/Docker/publishLocal
+      - name: Start services
+        run: docker compose --env-file tests/docker/.env.github -f tests/docker/delta-rdf4j-compose.yml up -d
+      - name: Waiting for Delta to start
+        run: |
+          URL="http://localhost:8080/v1/version"
+          curl --connect-timeout 3 --max-time 5 --retry 30 --retry-all-errors --retry-delay 3 --retry-max-time 90 $URL
+      - name: Test
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" "testOnly * -- -l tags.BlazegraphOnly"
+      - name: Stop & clean Docker
+        if: ${{ always() }}
+        run: |
+          docker compose -f tests/docker/delta-rdf4j-compose.yml down --rmi "local" --volumes
+          docker system prune --force --volumes

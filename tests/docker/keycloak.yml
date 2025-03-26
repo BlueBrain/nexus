@@ -1,0 +1,14 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.4
+    environment:
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
+      DB_VENDOR: H2
+    command:
+      - start-dev
+      - --hostname=keycloak
+      - --hostname-port=8080
+      - --hostname-strict-backchannel=true
+    ports:
+      - 9090:8080

@@ -10,10 +10,12 @@ import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import io.circe.Json
 import org.scalactic.source.Position
 import org.scalatest.Assertion
+import tags.BlazegraphOnly
 
 import java.time.Instant
 import scala.concurrent.duration._
 
+@BlazegraphOnly
 class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience * 2, 300.millis)

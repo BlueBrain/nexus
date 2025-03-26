@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`If-None-Match`, ETag}
+import akka.http.scaladsl.model.headers.{`If-None-Match`, Accept, ETag}
 import akka.util.ByteString
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -290,7 +291,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         |
       """.stripMargin
 
-    deltaClient.sparqlQuery[Json](s"/views/$projectRef/graph/sparql", query, Coyote) { (json, response) =>
+    val acceptJsonLd = Seq(Accept(RdfMediaTypes.`application/ld+json`))
+    deltaClient.sparqlQuery[Json](s"/views/$projectRef/graph/sparql", query, Coyote, acceptJsonLd) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
       val mapping  = replacements(
         Coyote,

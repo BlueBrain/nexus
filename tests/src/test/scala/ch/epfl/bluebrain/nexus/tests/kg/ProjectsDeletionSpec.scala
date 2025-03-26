@@ -65,7 +65,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
     "wait for blazegraph views to be created" in eventually {
       for {
         uuids      <- deltaClient.getJson[Json](s"/views/$ref1/graph", Bojack).map(_uuid.getOption)
-        namespaces <- blazegraphDsl.allNamespaces
+        namespaces <- sparqlDsl.allNamespaces
       } yield {
         uuids should not be empty
         uuids.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual true
@@ -78,7 +78,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
       for {
         uuids      <- deltaClient.getJson[Json](s"/views/$ref1/search", Bojack).map(_uuid.getOption)
         indices    <- elasticsearchDsl.allIndices
-        namespaces <- blazegraphDsl.allNamespaces
+        namespaces <- sparqlDsl.allNamespaces
       } yield {
         uuids should not be empty
         uuids.forall { uuid =>
@@ -220,7 +220,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
     }
 
     "have deleted blazegraph namespaces for blazegraph views for the project" in {
-      blazegraphDsl.allNamespaces.map { namespaces =>
+      sparqlDsl.allNamespaces.map { namespaces =>
         blazegraphViewToDeleteUuid.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
       }
     }
@@ -232,7 +232,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
                  indices.exists(_.contains(uuid))
                } shouldEqual false
              }
-        _ <- blazegraphDsl.allNamespaces.map { namespaces =>
+        _ <- sparqlDsl.allNamespaces.map { namespaces =>
                compositeViewToDeleteUuid.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
              }
       } yield succeed

@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphSink
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.SparqlSink
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeSink
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 
 /**
@@ -33,8 +34,10 @@ object CompositeSinks {
   def apply(
       prefix: String,
       esClient: ElasticSearchClient,
-      blazeClient: BlazegraphClient,
-      cfg: CompositeViewsConfig
+      esBatch: BatchConfig,
+      sparqlClient: SparqlClient,
+      sparqlBatch: BatchConfig,
+      sinkConfig: SinkConfig
   )(implicit base: BaseUri, rcr: RemoteContextResolution): CompositeSinks = new CompositeSinks {
 
     /**
@@ -42,7 +45,7 @@ object CompositeSinks {
       */
     override def commonSink(view: ActiveViewDef): Sink = {
       val common = commonNamespace(view.uuid, view.indexingRev, prefix)
-      BlazegraphSink(blazeClient, cfg.blazegraphBatch, common)
+      SparqlSink(sparqlClient, sparqlBatch, common)
     }
 
     /**
@@ -53,10 +56,10 @@ object CompositeSinks {
       target match {
         case e: ElasticSearchProjection =>
           val index = projectionIndex(e, view.uuid, prefix)
-          CompositeSink.elasticSink(blazeClient, esClient, index, common, cfg).apply(e)
+          CompositeSink.elasticSink(sparqlClient, esClient, index, common, esBatch, sinkConfig).apply(e)
         case s: SparqlProjection        =>
           val namespace = projectionNamespace(s, view.uuid, prefix)
-          CompositeSink.blazeSink(blazeClient, namespace, common, cfg).apply(s)
+          CompositeSink.sparqlSink(sparqlClient, namespace, common, sparqlBatch, sinkConfig).apply(s)
       }
     }
   }

@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, IndexingViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{IndexingViewDef, SparqlSink}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -16,17 +16,17 @@ import fs2.Stream
 import scala.concurrent.duration.FiniteDuration
 
 /**
-  * To synchronously index a resource in the different Blazegraph views of a project
+  * To synchronously index a resource in the different SPARQL views of a project
   * @param fetchCurrentViews
   *   get the views of the projects in a finite stream
   * @param compilePipeChain
   *   to compile the views
   * @param sink
-  *   the Blazegraph sink
+  *   the SPARQL sink
   * @param timeout
   *   a maximum duration for the indexing
   */
-final class BlazegraphIndexingAction(
+final class SparqlIndexingAction(
     fetchCurrentViews: ProjectRef => SuccessElemStream[IndexingViewDef],
     compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
     sink: ActiveViewDef => Sink,
@@ -52,19 +52,19 @@ final class BlazegraphIndexingAction(
     fetchCurrentViews(project).evalMap { _.evalMapFilter(compile(_, elem)) }
 }
 
-object BlazegraphIndexingAction {
+object SparqlIndexingAction {
 
   def apply(
       views: BlazegraphViews,
       registry: ReferenceRegistry,
-      client: BlazegraphClient,
+      client: SparqlClient,
       timeout: FiniteDuration
-  )(implicit baseUri: BaseUri): BlazegraphIndexingAction = {
+  )(implicit baseUri: BaseUri): SparqlIndexingAction = {
     val batchConfig = BatchConfig.individual
-    new BlazegraphIndexingAction(
+    new SparqlIndexingAction(
       views.currentIndexingViews,
       PipeChain.compile(_, registry),
-      (v: ActiveViewDef) => new BlazegraphSink(client, batchConfig.maxElements, batchConfig.maxInterval, v.namespace),
+      (v: ActiveViewDef) => new SparqlSink(client, batchConfig.maxElements, batchConfig.maxInterval, v.namespace),
       timeout
     )
   }

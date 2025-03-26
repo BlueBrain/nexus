@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphIndexingActionSuite.{emptyAcc, IdAcc}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.SparqlIndexingActionSuite.{emptyAcc, IdAcc}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -27,7 +27,7 @@ import fs2.Stream
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
+class SparqlIndexingActionSuite extends NexusSuite with Fixtures {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
@@ -115,7 +115,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
       )
     )
 
-  private val indexingAction = new BlazegraphIndexingAction(
+  private val indexingAction = new SparqlIndexingAction(
     _ => viewStream,
     (_: PipeChain) => Left(CouldNotFindPipeErr(unknownPipe)),
     (a: ActiveViewDef) =>
@@ -183,7 +183,7 @@ class BlazegraphIndexingActionSuite extends NexusSuite with Fixtures {
 
 }
 
-object BlazegraphIndexingActionSuite {
+object SparqlIndexingActionSuite {
 
   final private case class IdAcc(successes: Set[Iri], dropped: Set[Iri], failures: Set[Iri]) {
     def success(id: Iri): IdAcc = this.copy(successes = successes + id)

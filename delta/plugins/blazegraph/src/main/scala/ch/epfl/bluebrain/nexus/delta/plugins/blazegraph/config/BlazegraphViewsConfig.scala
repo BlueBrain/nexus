@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlTarget
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
@@ -45,7 +45,8 @@ import scala.concurrent.duration._
   */
 final case class BlazegraphViewsConfig(
     base: Uri,
-    credentials: Option[Credentials],
+    sparqlTarget: SparqlTarget,
+    credentials: Option[BasicHttpCredentials],
     indexingClient: HttpClientConfig,
     queryTimeout: Duration,
     slowQueries: SlowQueriesConfig,
@@ -60,16 +61,6 @@ final case class BlazegraphViewsConfig(
 )
 
 object BlazegraphViewsConfig {
-
-  /**
-    * The Blazegraph HTTP endpoint credentials
-    *
-    * @param username
-    *   the credentials username
-    * @param password
-    *   the credentials password
-    */
-  final case class Credentials(username: String, password: Secret[String])
 
   /**
     * Converts a [[Config]] into an [[BlazegraphViewsConfig]]

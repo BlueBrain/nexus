@@ -1,24 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.client.RequestBuilding.Post
-import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidUpdateRequest, WrappedHttpClientError}
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.{SparqlJsonLdResponse, SparqlNTriplesResponse, SparqlRdfXmlResponse, SparqlResultsResponse, SparqlXmlResultsResponse}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import io.circe.syntax._
-import org.apache.jena.query.ParameterizedSparqlString
 
+import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 import scala.xml.{Elem, NodeSeq}
 
 trait SparqlQueryClient {
@@ -27,7 +28,7 @@ trait SparqlQueryClient {
     * Queries the passed indices with the passed ''q''. The response type is controlled by the parameter
     * ''responseType''
     *
-    * @param indices
+    * @param namespaces
     *   the namespaces to query
     * @param q
     *   the query
@@ -37,7 +38,7 @@ trait SparqlQueryClient {
     *   additional HTTP headers
     */
   def query[R <: SparqlQueryResponse](
-      indices: Iterable[String],
+      namespaces: Iterable[String],
       q: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R],
       additionalHeaders: Seq[HttpHeader] = Seq.empty
@@ -47,72 +48,81 @@ trait SparqlQueryClient {
 /**
   * Sparql client implementing basic SPARQL query execution logic
   */
-class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
-    credentials: Option[HttpCredentials],
-    as: ActorSystem
-) extends SparqlQueryClient
-    with XmlSupport {
+trait SparqlClient extends SparqlQueryClient with XmlSupport {
 
-  import as.dispatcher
+  def serviceDescription: IO[ServiceDescription]
+
+  /**
+    * List all namespaces in the SPARQL instance
+    */
+  def listNamespaces: IO[Vector[String]]
+
+  /**
+    * Count all the triples on a namespace
+    */
+  def count(namespace: String): IO[Long]
+
+  /**
+    * Check whether the passed namespace ''namespace'' exists.
+    */
+  def existsNamespace(namespace: String): IO[Boolean]
+
+  /**
+    * Attempts to create a namespace (if it doesn't exist) recovering gracefully when the namespace already exists.
+    *
+    * @param namespace
+    *   the namespace
+    */
+  def createNamespace(namespace: String): IO[Boolean]
+
+  /**
+    * Attempts to delete a namespace recovering gracefully when the namespace does not exists.
+    */
+  def deleteNamespace(namespace: String): IO[Boolean]
 
   def query[R <: SparqlQueryResponse](
-      indices: Iterable[String],
+      namespaces: Iterable[String],
       q: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R],
       additionalHeaders: Seq[HttpHeader] = Seq.empty
   ): IO[R] =
     responseType match {
-      case SparqlResultsJson => sparqlResultsResponse(indices, q, additionalHeaders)
-      case SparqlResultsXml  => sparqlXmlResultsResponse(indices, q, additionalHeaders)
-      case SparqlJsonLd      => sparqlJsonLdResponse(indices, q, additionalHeaders)
-      case SparqlNTriples    => sparqlNTriplesResponse(indices, q, additionalHeaders)
-      case SparqlRdfXml      => sparqlRdfXmlResponse(indices, q, additionalHeaders)
+      case SparqlResultsJson => sparqlResultsResponse(namespaces, q, additionalHeaders)
+      case SparqlResultsXml  => sparqlXmlResultsResponse(namespaces, q, additionalHeaders)
+      case SparqlJsonLd      => sparqlJsonLdResponse(namespaces, q, additionalHeaders)
+      case SparqlNTriples    => sparqlNTriplesResponse(namespaces, q, additionalHeaders)
+      case SparqlRdfXml      => sparqlRdfXmlResponse(namespaces, q, additionalHeaders)
     }
 
   /**
     * Executes the argument update queries against the underlying sparql endpoint.
     *
-    * @param index
+    * @param namespace
     *   the sparql namespace
     * @param queries
     *   the write queries
-    * @return
-    *   successful Future[Unit] if update succeeded, failure otherwise
     */
-  def bulk(index: String, queries: Seq[SparqlWriteQuery]): IO[Unit] = {
-    val queryString = queries.map(_.value).mkString("\n")
-    val pss         = new ParameterizedSparqlString
-    pss.setCommandText(queryString)
-    for {
-      _          <- IO(pss.asUpdate()).adaptError(e => InvalidUpdateRequest(index, queryString, e.getMessage.some))
-      queryOpt    = uniqueGraph(queries).map(graph => Query("using-named-graph-uri" -> graph.toString))
-      formData    = FormData("update" -> queryString)
-      reqEndpoint = endpoint(index).withQuery(queryOpt.getOrElse(Query.Empty))
-      req         = Post(reqEndpoint, formData).withHttpCredentials
-      result     <-
-        client.discardBytes(req, ()).adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
-    } yield result
-  }
+  def bulk(namespace: String, queries: Seq[SparqlWriteQuery]): IO[Unit]
 
   /**
     * Executes the query that removes all triples from the graph identified by the argument URI and stores the triples
     * in the data argument in the same graph.
     *
-    * @param index
+    * @param namespace
     *   the sparql namespace
     * @param graph
     *   the target graph
     * @param data
     *   the new graph as NTriples representation
     */
-  def replace(index: String, graph: Uri, data: NTriples): IO[Unit] =
-    bulk(index, Seq(SparqlWriteQuery.replace(graph, data)))
+  def replace(namespace: String, graph: Uri, data: NTriples): IO[Unit] =
+    bulk(namespace, Seq(SparqlWriteQuery.replace(graph, data)))
 
   /**
     * Executes the query that patches the graph by selecting a collection of triples to remove or retain and inserting
     * the triples in the data argument.
     *
-    * @param index
+    * @param namespace
     *   the sparql namespace
     * @param graph
     *   the target graph as NTriples representation
@@ -121,60 +131,47 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     * @param strategy
     *   the patch strategy
     */
-  def patch(index: String, graph: Uri, data: NTriples, strategy: PatchStrategy): IO[Unit] =
-    bulk(index, Seq(SparqlWriteQuery.patch(graph, data, strategy)))
+  def patch(namespace: String, graph: Uri, data: NTriples, strategy: PatchStrategy): IO[Unit] =
+    bulk(namespace, Seq(SparqlWriteQuery.patch(graph, data, strategy)))
 
   /**
     * Executes the replace query that drops the graph identified by the argument ''uri'' from the store.
     *
-    * @param index
+    * @param namespace
     *   the sparql namespace
     * @param graph
     *   the graph to drop
     */
-  def drop(index: String, graph: Uri): IO[Unit] =
-    bulk(index, Seq(SparqlWriteQuery.drop(graph)))
+  def drop(namespace: String, graph: Uri): IO[Unit] =
+    bulk(namespace, Seq(SparqlWriteQuery.drop(graph)))
 
-  private def uniqueGraph(query: Seq[SparqlWriteQuery]): Option[Uri] =
-    query.map(_.graph).distinct match {
-      case head :: Nil => Some(head)
-      case _           => None
-    }
+  protected def queryRequest[A: FromEntityUnmarshaller: ClassTag](
+      namespace: String,
+      q: SparqlQuery,
+      mediaTypes: NonEmptyList[MediaType],
+      additionalHeaders: Seq[HttpHeader]
+  ): IO[A]
 
   private def sparqlResultsResponse(
-      indices: Iterable[String],
+      namespace: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlResultsResponse] =
-    indices.toList
-      .foldLeftM(SparqlResults.empty) { (results, index) =>
-        val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlResultsJson.mediaTypes.toList), additionalHeaders: _*)
-          .withHttpCredentials
-        client
-          .fromJsonTo[SparqlResults](req)
-          .adaptError { case e: HttpClientError =>
-            WrappedHttpClientError(e)
-          }
+    namespace.toList
+      .foldLeftM(SparqlResults.empty) { (results, namespace) =>
+        queryRequest[SparqlResults](namespace, q, SparqlResultsJson.mediaTypes, additionalHeaders)
           .map(results ++ _)
       }
       .map(SparqlResultsResponse)
 
   private def sparqlXmlResultsResponse(
-      indices: Iterable[String],
+      namespaces: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlXmlResultsResponse] =
-    indices.toList
-      .foldLeftM(None: Option[Elem]) { case (elem, index) =>
-        val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlResultsXml.mediaTypes.toList), additionalHeaders: _*)
-          .withHttpCredentials
-        client
-          .fromEntityTo[NodeSeq](req)
-          .adaptError { case e: HttpClientError =>
-            WrappedHttpClientError(e)
-          }
+    namespaces.toList
+      .foldLeftM(None: Option[Elem]) { case (elem, namespace) =>
+        queryRequest[NodeSeq](namespace, q, SparqlResultsXml.mediaTypes, additionalHeaders)
           .map { nodeSeq =>
             elem match {
               case Some(root) =>
@@ -192,58 +189,39 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
       }
 
   private def sparqlJsonLdResponse(
-      indices: Iterable[String],
+      namespaces: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlJsonLdResponse] =
-    indices.toList
-      .foldLeftM(Vector.empty[Json]) { (results, index) =>
-        val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlJsonLd.mediaTypes.toList), additionalHeaders: _*)
-          .withHttpCredentials
-        client
-          .toJson(req)
-          .adaptError { case e: HttpClientError =>
-            WrappedHttpClientError(e)
-          }
+  ): IO[SparqlJsonLdResponse] = {
+    import CirceUnmarshalling._
+    namespaces.toList
+      .foldLeftM(Vector.empty[Json]) { (results, namespace) =>
+        queryRequest[Json](namespace, q, SparqlJsonLd.mediaTypes, additionalHeaders)
           .map(results ++ _.arrayOrObject(Vector.empty[Json], identity, obj => Vector(obj.asJson)))
       }
       .map(vector => SparqlJsonLdResponse(Json.arr(vector: _*)))
+  }
 
   private def sparqlNTriplesResponse(
-      indices: Iterable[String],
+      namespaces: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlNTriplesResponse] =
-    indices.toList
-      .foldLeftM(NTriples.empty) { (results, index) =>
-        val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlNTriples.mediaTypes.toList), additionalHeaders: _*)
-          .withHttpCredentials
-        client
-          .fromEntityTo[String](req)
-          .adaptError { case e: HttpClientError =>
-            WrappedHttpClientError(e)
-          }
+    namespaces.toList
+      .foldLeftM(NTriples.empty) { (results, namspace) =>
+        queryRequest[String](namspace, q, SparqlNTriples.mediaTypes, additionalHeaders)
           .map(s => results ++ NTriples(s, BNode.random))
       }
       .map(SparqlNTriplesResponse)
 
   private def sparqlRdfXmlResponse(
-      indices: Iterable[String],
+      namespaces: Iterable[String],
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlRdfXmlResponse] =
-    indices.toList
-      .foldLeftM(None: Option[Elem]) { case (elem, index) =>
-        val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlRdfXml.mediaTypes.toList), additionalHeaders: _*)
-          .withHttpCredentials
-        client
-          .fromEntityTo[NodeSeq](req)
-          .adaptError { case e: HttpClientError =>
-            WrappedHttpClientError(e)
-          }
+    namespaces.toList
+      .foldLeftM(None: Option[Elem]) { case (elem, namespace) =>
+        queryRequest[NodeSeq](namespace, q, SparqlRdfXml.mediaTypes, additionalHeaders)
           .map { nodeSeq =>
             elem match {
               case Some(root) => Some(root.copy(child = root.child ++ nodeSeq \ "_"))
@@ -258,4 +236,29 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   protected def accept(mediaType: Seq[MediaType]): Accept =
     Accept(mediaType.map(MediaRange.One(_, 1f)))
+}
+
+object SparqlClient {
+
+  def query(target: SparqlTarget, endpoint: Uri, queryTimeout: Duration)(implicit
+      credentials: Option[HttpCredentials],
+      as: ActorSystem
+  ): SparqlClient = {
+    val httpConfig = HttpClientConfig.noRetry(compression = false)
+    indexing(target, endpoint, httpConfig, queryTimeout)
+  }
+
+  def indexing(target: SparqlTarget, endpoint: Uri, httpConfig: HttpClientConfig, queryTimeout: Duration)(implicit
+      credentials: Option[HttpCredentials],
+      as: ActorSystem
+  ): SparqlClient = {
+    val client = HttpClient()(httpConfig, as)
+    target match {
+      case SparqlTarget.Blazegraph =>
+        // Blazegraph can't handle compressed requests
+        new BlazegraphClient(client, endpoint, queryTimeout)
+      case SparqlTarget.Rdf4j      =>
+        RDF4JClient.lmdb(client, endpoint)
+    }
+  }
 }

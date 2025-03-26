@@ -2,15 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader.handlebarsExpander
-import fs2.io.file.Path
 import fs2.text
 import io.circe.parser.parse
 import io.circe.{Json, JsonObject}
 
 import java.io.{IOException, InputStream}
-import java.util.Properties
-import scala.jdk.CollectionConverters._
 
 class ClasspathResourceLoader private (classLoader: ClassLoader) {
 
@@ -21,8 +17,6 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
     ).rethrow
       .map(_.getPath)
   }
-
-  final def absoluteFs2Path(resourcePath: String) = absolutePath(resourcePath).map(Path(_))
 
   /**
     * Loads the content of the argument classpath resource as an [[InputStream]].
@@ -55,29 +49,8 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
   final def contentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  ): IO[String] = {
-    resourceAsTextFrom(resourcePath)
-      .map(handlebarsExpander.expand(_, attributes.toMap))
-  }
-
-  /**
-    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map of key
-    * property and property value.
-    *
-    * @param resourcePath
-    *   the path of a resource available on the classpath
-    * @return
-    *   the content of the referenced resource as a map of properties or a [[ClasspathResourceError]] when the resource
-    *   is not found
-    */
-  final def propertiesOf(resourcePath: String): IO[Map[String, String]] =
-    streamOf(resourcePath).use { is =>
-      IO.blocking {
-        val props = new Properties()
-        props.load(is)
-        props.asScala.toMap
-      }
-    }
+  ): IO[String] =
+    resourceAsTextFrom(resourcePath).map(Handlebars(_, attributes.toMap))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -124,7 +97,6 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
 }
 
 object ClasspathResourceLoader {
-  private val handlebarsExpander = new HandlebarsExpander
 
   /**
     * Creates a resource loader using the standard ClassLoader

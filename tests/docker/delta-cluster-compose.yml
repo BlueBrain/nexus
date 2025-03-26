@@ -1,3 +1,10 @@
+include:
+  - keycloak.yml
+  - postgres.yml
+  - elasticsearch.yml
+  - blazegraph.yml
+  - localstack.yml
+
 networks:
   default:
     ipam:
@@ -13,6 +20,7 @@ services:
         condition: service_healthy
       blazegraph:
         condition: service_healthy
+        required: false
       postgres:
         condition: service_started
       localstack:
@@ -94,78 +102,6 @@ services:
     dns:
       # Set the DNS server to be the LocalStack container, for host resolution
       - 10.0.2.20
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:23.0.4
-    environment:
-      KEYCLOAK_ADMIN: "admin"
-      KEYCLOAK_ADMIN_PASSWORD: "admin"
-      DB_VENDOR: H2
-    command:
-      - start-dev
-      - --hostname=keycloak
-      - --hostname-port=8080
-      - --hostname-strict-backchannel=true
-    ports:
-      - 9090:8080
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
-    environment:
-      ES_JAVA_OPTS: "-Xmx2G"
-      discovery.type: "single-node"
-      bootstrap.memory_lock: "true"
-      xpack.security.enabled: "true"
-      ingest.geoip.downloader.enabled: "false"
-      ELASTIC_PASSWORD: "password"
-      _JAVA_OPTIONS: ${_JAVA_OPTIONS}
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://elastic:password@localhost:9200/" ]
-      interval: 1s
-      timeout: 2s
-      retries: 60
-    ports:
-      - 9200:9200
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-
-  blazegraph:
-    image: bluebrain/blazegraph-nexus:2.1.6-RC-21-jre
-    environment:
-      JAVA_OPTS: "-Dlog4j.configuration=/config/blazegraph/log4j.properties -DjettyXml=/config/blazegraph/jetty.xml -Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
-      _JAVA_OPTIONS: ${_JAVA_OPTIONS}
-    ports:
-      - 9999:9999
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9999/blazegraph/" ]
-      interval: 1s
-      timeout: 2s
-      retries: 60
-    volumes:
-      - ./config:/config
-
-  postgres:
-    image: library/postgres:17.4
-    ports:
-      - 5432:5432
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-
-  localstack:
-    image: localstack/localstack:4.2
-    environment:
-      AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
-      AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
-      SERVICES: "s3:4566"
-    ports:
-      - 4566:4566
-    networks:
-      default:
-        # Set the container IP address in the 10.0.2.0/24 subnet
-        ipv4_address: 10.0.2.20
 
 #  fusion:
 #    depends_on:

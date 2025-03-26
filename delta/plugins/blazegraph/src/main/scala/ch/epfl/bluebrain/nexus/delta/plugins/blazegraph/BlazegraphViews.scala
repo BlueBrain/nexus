@@ -5,7 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClient, SparqlClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
@@ -516,7 +516,7 @@ object BlazegraphViews {
       fetchContext: FetchContext,
       contextResolution: ResolverContextResolution,
       validate: ValidateBlazegraphView,
-      client: BlazegraphClient,
+      client: SparqlClient,
       eventLogConfig: EventLogConfig,
       prefix: String,
       xas: Transactors,

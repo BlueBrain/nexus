@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.BlazegraphSupervision.BlazegraphNamespaceTriples
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.SparqlClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.SparqlSupervision.SparqlNamespaceTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
-class BlazegraphSupervisionSuite extends NexusSuite with BlazegraphClientSetup.Fixture {
+class SparqlSupervisionSuite extends NexusSuite with SparqlClientSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
 
@@ -22,10 +22,10 @@ class BlazegraphSupervisionSuite extends NexusSuite with BlazegraphClientSetup.F
     override def get: IO[Map[String, ViewRef]] = IO.pure(Map("first" -> first, "second" -> second))
   }
 
-  private lazy val supervision = BlazegraphSupervision(client, viewsByNamespace)
+  private lazy val supervision = SparqlSupervision(client, viewsByNamespace)
 
   test("Return the supervision for the different namespaces") {
-    val expected = BlazegraphNamespaceTriples(
+    val expected = SparqlNamespaceTriples(
       0L,
       Map(first -> 0L, second    -> 0L),
       Map("kb"  -> 0L, "unknown" -> 0L)

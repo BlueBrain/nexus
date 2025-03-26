@@ -1,0 +1,22 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+    environment:
+      ES_JAVA_OPTS: "-Xmx2G"
+      discovery.type: "single-node"
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      ingest.geoip.downloader.enabled: "false"
+      ELASTIC_PASSWORD: "password"
+      _JAVA_OPTIONS: ${_JAVA_OPTIONS}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://elastic:password@localhost:9200/" ]
+      interval: 1s
+      timeout: 2s
+      retries: 60
+    ports:
+      - 9200:9200
+    deploy:
+      resources:
+        limits:
+          memory: 4G
