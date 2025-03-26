@@ -30,7 +30,6 @@ services:
       - DELTA_EXTERNAL_CONF
       - KAMON_ENABLED
       - PARTITION_STRATEGY
-      - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     entrypoint:
       - '/bin/bash'
@@ -57,7 +56,6 @@ services:
       - DELTA_EXTERNAL_CONF
       - KAMON_ENABLED
       - PARTITION_STRATEGY
-      - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     profiles:
       - "cluster"
@@ -84,7 +82,6 @@ services:
       - DELTA_EXTERNAL_CONF
       - KAMON_ENABLED
       - PARTITION_STRATEGY
-      - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     profiles:
       - "cluster"

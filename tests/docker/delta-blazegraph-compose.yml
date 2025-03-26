@@ -31,7 +31,6 @@ services:
       - PARTITION_STRATEGY
       - SPARQL_TARGET=blazegraph
       - SPARQL_ENDPOINT=http://blazegraph:9999/blazegraph
-      - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     entrypoint:
       - '/bin/bash'

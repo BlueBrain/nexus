@@ -8,7 +8,6 @@ services:
       xpack.security.enabled: "true"
       ingest.geoip.downloader.enabled: "false"
       ELASTIC_PASSWORD: "password"
-      _JAVA_OPTIONS: ${_JAVA_OPTIONS}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://elastic:password@localhost:9200/" ]
       interval: 1s
