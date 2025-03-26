@@ -33,7 +33,7 @@ object DDLLoader {
     loader
       .contentOf(ddl)
       .flatMap(Fragment.const0(_).update.run.transact(xas.write))
-      .onError { e =>
+      .onError { case e =>
         logger.error(e)(s"Executing ddl $ddl failed.")
       }
       .void

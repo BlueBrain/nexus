@@ -10,7 +10,6 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.StreamTcpException
 import akka.util.ByteString
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable

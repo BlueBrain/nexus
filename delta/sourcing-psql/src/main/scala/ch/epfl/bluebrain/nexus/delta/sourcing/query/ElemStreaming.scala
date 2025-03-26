@@ -149,7 +149,7 @@ final class ElemStreaming(
     execute[Json](start, query, refresh)
       .evalMapChunk { e =>
         e.evalMap { value =>
-          decodeValue(e.tpe, value).onError { err =>
+          decodeValue(e.tpe, value).onError { case err =>
             logger.error(err)(
               s"An error occurred while decoding value with id '${e.id}' of type '${e.tpe}' in '$scope'."
             )

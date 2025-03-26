@@ -74,7 +74,7 @@ class IdentitiesImpl private[identities] (
       Caller(user, groups ++ Set(Anonymous, user, Authenticated(activeRealm.label)))
     }
     result.span("exchangeToken")
-  }.onError { rejection =>
+  }.onError { case rejection =>
     logger.debug(s"Extracting and validating the caller failed for the reason: $rejection")
   }
 }

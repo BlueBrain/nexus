@@ -63,7 +63,7 @@ object Doobie {
                          .transact(xas.read)
           _         <- allTables
                          .traverse { table => Fragment.const(s"""TRUNCATE $table""").update.run.transact(xas.write) }
-                         .onError(IO.println)
+                         .onError { case e => IO.println(e) }
         } yield ()
     }
 

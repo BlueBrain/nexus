@@ -230,7 +230,7 @@ object ArchiveDownload {
         for {
           valueOpt <- fetchResource(ref.ref, p)
           value    <- IO.fromOption(valueOpt)(ResourceNotFound(ref.ref, project))
-          bytes    <- valueToByteString(value, ref.representationOrDefault).onError { error =>
+          bytes    <- valueToByteString(value, ref.representationOrDefault).onError { case error =>
                         logger.error(error)(s"Serializing resource '$ref' to ByteString failed.")
                       }
         } yield bytes

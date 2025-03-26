@@ -6,7 +6,6 @@ import akka.stream.IOOperationIncompleteException
 import akka.stream.scaladsl.{FileIO, Sink}
 import akka.util.ByteString
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest

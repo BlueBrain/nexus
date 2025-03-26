@@ -42,7 +42,5 @@ final class IOFunctorOps[A, F[_]: Functor](private val io: IO[F[A]]) {
 
 final class IOOps[A](private val io: IO[A]) extends AnyVal {
   def logErrors(action: String)(implicit logger: Log4CatsLogger[IO]): IO[A] =
-    io.onError { e =>
-      logger.warn(e)(s"Error during: '$action'")
-    }
+    io.onError { case e => logger.warn(e)(s"Error during: '$action'") }
 }

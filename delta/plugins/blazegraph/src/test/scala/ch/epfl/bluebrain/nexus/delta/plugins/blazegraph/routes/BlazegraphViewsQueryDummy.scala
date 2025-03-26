@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import cats.implicits._
 
 private[routes] class BlazegraphViewsQueryDummy(
     projectRef: ProjectRef,

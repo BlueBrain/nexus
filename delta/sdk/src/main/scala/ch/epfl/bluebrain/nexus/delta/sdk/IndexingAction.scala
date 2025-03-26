@@ -45,7 +45,7 @@ trait IndexingAction {
       _         <- projections(project, elem)
                      .evalMap {
                        case s: SuccessElem[CompiledProjection] =>
-                         runProjection(s.value, saveErrors).onError { err => saveErrors(List(s.failed(err))) }
+                         runProjection(s.value, saveErrors).onError { case err => saveErrors(List(s.failed(err))) }
                        case _: DroppedElem                     => IO.unit
                        case f: FailedElem                      => logger.error(f.throwable)(s"Fetching '$f' returned an error.").as(None)
                      }

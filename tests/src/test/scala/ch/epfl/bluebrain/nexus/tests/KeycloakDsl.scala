@@ -63,7 +63,7 @@ class KeycloakDsl(implicit
                         headers = Authorization(HttpCredentials.createOAuth2BearerToken(adminToken)) :: Nil,
                         entity = HttpEntity(ContentTypes.`application/json`, json.noSpaces)
                       )
-                    ).onError { t =>
+                    ).onError { case t =>
                       logger.error(t)(s"Error while importing realm: ${realm.name}")
                     }
       _          <- logger.info(s"${realm.name} has been imported with code: ${response.status}")
@@ -108,7 +108,7 @@ class KeycloakDsl(implicit
                     )
                   )
     } yield token
-  }.onError { t =>
+  }.onError { case t =>
     logger.error(t)(s"Error while getting user token for realm: ${user.realm.name} and user:$user")
   }
 
@@ -130,7 +130,7 @@ class KeycloakDsl(implicit
         )
       ).flatMap { res =>
         IO.fromFuture { IO(um(res.entity)) }
-      }.onError { t =>
+      }.onError { case t =>
         logger.error(t)(s"Error while getting user token for realm: ${client.realm} and client: $client")
       }.map { response =>
         keycloak.access_token

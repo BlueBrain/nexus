@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
