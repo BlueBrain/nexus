@@ -71,7 +71,7 @@ The Nexus Fusion resolve page allows the user to authenticate (if they are not a
 call to the Nexus Delta `/v1/resolve/{resourceId}` with the user's authentication token.
 
 All calls to the `/v1/resolve-proxy-pass` endpoint lead to
-@link:[303 See Other responses](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303).
+@link:[303 See Other responses](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/303).
 
 ### Example
 
