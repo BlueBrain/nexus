@@ -19,8 +19,6 @@ class ElasticSearchContainer(password: String)
   addEnv("xpack.security.enabled", "true")
   addEnv("ingest.geoip.downloader.enabled", "false")
   addEnv("ELASTIC_PASSWORD", password)
-  // Workaround to run tests on a M4 chip
-  addEnv("_JAVA_OPTIONS", sys.env.getOrElse("_JAVA_OPTIONS", ""))
   addExposedPort(9200)
   setWaitStrategy(Wait.forLogMessage(".*(\"message\":\\s?\"started[\\s?|\"].*|] started\n$)", 1))
 

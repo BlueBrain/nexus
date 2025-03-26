@@ -32,7 +32,6 @@ services:
       - PARTITION_STRATEGY
       - SPARQL_TARGET=rdf4j
       - SPARQL_ENDPOINT=http://rdf4j:8080/rdf4j-server
-      - _JAVA_OPTIONS
     image: bluebrain/nexus-delta:latest
     entrypoint:
       - '/bin/bash'

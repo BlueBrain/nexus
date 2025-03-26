@@ -3,7 +3,6 @@ services:
     image: bluebrain/blazegraph-nexus:2.1.6-RC-21-jre
     environment:
       JAVA_OPTS: "-Dlog4j.configuration=/config/blazegraph/log4j.properties -DjettyXml=/config/blazegraph/jetty.xml -Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
-      _JAVA_OPTIONS: ${_JAVA_OPTIONS}
     ports:
       - 9999:9999
     healthcheck:
