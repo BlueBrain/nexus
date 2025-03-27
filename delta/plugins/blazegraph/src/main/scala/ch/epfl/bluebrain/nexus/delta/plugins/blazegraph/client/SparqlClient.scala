@@ -252,12 +252,15 @@ object SparqlClient {
       credentials: Option[HttpCredentials],
       as: ActorSystem
   ): SparqlClient = {
-    val client = HttpClient()(httpConfig, as)
+
     target match {
       case SparqlTarget.Blazegraph =>
-        // Blazegraph can't handle compressed requests
+        // Blazegraph can't handle compressed requests/responses
+        val client = HttpClient()(httpConfig, as)
         new BlazegraphClient(client, endpoint, queryTimeout)
       case SparqlTarget.Rdf4j      =>
+        // RDF4J does so we enable it
+        val client = HttpClient()(httpConfig.copy(compression = true), as)
         RDF4JClient.lmdb(client, endpoint)
     }
   }
