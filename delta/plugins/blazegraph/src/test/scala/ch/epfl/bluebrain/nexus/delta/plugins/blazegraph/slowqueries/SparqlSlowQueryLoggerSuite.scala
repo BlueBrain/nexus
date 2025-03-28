@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLoggerSuite._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.SparqlSlowQueryLoggerSuite._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.SparqlSlowQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -15,15 +14,15 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-object BlazegraphSlowQueryLoggerSuite {
-  private val LongQueryThreshold                        = 100.milliseconds
-  private val StoreWhichFails: BlazegraphSlowQueryStore = new BlazegraphSlowQueryStore {
-    override def save(query: BlazegraphSlowQuery): IO[Unit] =
+object SparqlSlowQueryLoggerSuite {
+  private val LongQueryThreshold                    = 100.milliseconds
+  private val StoreWhichFails: SparqlSlowQueryStore = new SparqlSlowQueryStore {
+    override def save(query: SparqlSlowQuery): IO[Unit] =
       IO.raiseError(new RuntimeException("error saving slow log"))
 
     override def removeQueriesOlderThan(instant: Instant): IO[Unit] = IO.unit
 
-    override def listForTestingOnly(view: ViewRef): IO[List[BlazegraphSlowQuery]] = IO.pure(Nil)
+    override def listForTestingOnly(view: ViewRef): IO[List[SparqlSlowQuery]] = IO.pure(Nil)
   }
 
   private val view        = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("hippocampus"))
@@ -31,13 +30,13 @@ object BlazegraphSlowQueryLoggerSuite {
   private val user        = Identity.User("Ted Lasso", Label.unsafe("epfl"))
 }
 
-class BlazegraphSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
+class SparqlSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, blazegraphSlowQueryStore)
 
   private def fixture = {
     val store  = blazegraphSlowQueryStore()
-    val logger = BlazegraphSlowQueryLogger(
+    val logger = SparqlSlowQueryLogger(
       store,
       LongQueryThreshold,
       clock
@@ -45,7 +44,7 @@ class BlazegraphSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with
     (logger, store.listForTestingOnly(view))
   }
 
-  private def assertSavedQuery(actual: BlazegraphSlowQuery, failed: Boolean, minDuration: FiniteDuration): Unit = {
+  private def assertSavedQuery(actual: SparqlSlowQuery, failed: Boolean, minDuration: FiniteDuration): Unit = {
     assertEquals(actual.view, view)
     assertEquals(actual.query, sparqlQuery)
     assertEquals(actual.subject, user)
@@ -54,24 +53,18 @@ class BlazegraphSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with
     assert(actual.duration >= minDuration)
   }
 
-  test("slow query logged") {
+  test("Slow query is logged") {
 
     val (logSlowQuery, getLoggedQueries) = fixture
+    val slowQuery                        = IO.sleep(101.milliseconds)
 
     for {
-      _     <- logSlowQuery(
-                 BlazegraphQueryContext(
-                   view,
-                   sparqlQuery,
-                   user
-                 ),
-                 IO.sleep(101.milliseconds)
-               )
+      _     <- logSlowQuery(view, sparqlQuery, user, slowQuery)
       saved <- getLoggedQueries
     } yield {
       assertEquals(saved.size, 1)
       assertSavedQuery(saved.head, failed = false, 101.millis)
-      val onlyRecord: BlazegraphSlowQuery = saved.head
+      val onlyRecord: SparqlSlowQuery = saved.head
       assertEquals(onlyRecord.view, view)
       assertEquals(onlyRecord.query, sparqlQuery)
       assertEquals(onlyRecord.subject, user)
@@ -81,19 +74,13 @@ class BlazegraphSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with
     }
   }
 
-  test("slow failure logged") {
+  test("Slow failure logged") {
 
     val (logSlowQuery, getLoggedQueries) = fixture
+    val slowFailingQuery                 = IO.sleep(101.milliseconds) >> IO.raiseError(new RuntimeException())
 
     for {
-      attempt <- logSlowQuery(
-                   BlazegraphQueryContext(
-                     view,
-                     sparqlQuery,
-                     user
-                   ),
-                   IO.sleep(101.milliseconds) >> IO.raiseError(new RuntimeException())
-                 ).attempt
+      attempt <- logSlowQuery(view, sparqlQuery, user, slowFailingQuery).attempt
       saved   <- getLoggedQueries
     } yield {
       assert(attempt.isLeft)
@@ -102,19 +89,13 @@ class BlazegraphSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with
     }
   }
 
-  test("fast query not logged") {
+  test("Fast query is not logged") {
 
     val (logSlowQuery, getLoggedQueries) = fixture
+    val fastQuery                        = IO.sleep(50.milliseconds)
 
     for {
-      _     <- logSlowQuery(
-                 BlazegraphQueryContext(
-                   view,
-                   sparqlQuery,
-                   user
-                 ),
-                 IO.sleep(50.milliseconds)
-               )
+      _     <- logSlowQuery(view, sparqlQuery, user, fastQuery)
       saved <- getLoggedQueries
     } yield {
       assert(saved.isEmpty, s"expected no queries logged, actually logged $saved")
@@ -122,19 +103,13 @@ class BlazegraphSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with
   }
 
   test("continue when saving slow query log fails") {
-    val logSlowQueries = BlazegraphSlowQueryLogger(
+    val logSlowQueries = SparqlSlowQueryLogger(
       StoreWhichFails,
       LongQueryThreshold,
       clock
     )
+    val query          = IO.sleep(101.milliseconds).as("result")
 
-    logSlowQueries(
-      BlazegraphQueryContext(
-        view,
-        sparqlQuery,
-        user
-      ),
-      IO.sleep(101.milliseconds).as("result")
-    ).assertEquals("result")
+    logSlowQueries(view, sparqlQuery, user, query).assertEquals("result")
   }
 }

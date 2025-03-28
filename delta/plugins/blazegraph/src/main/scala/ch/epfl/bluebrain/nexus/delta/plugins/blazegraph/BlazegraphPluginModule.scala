@@ -8,8 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.query.IncomingOutgoingLinks
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.query.IncomingOutgoingLinks.Queries
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphSupervisionRoutes, BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{SparqlSlowQueryDeleter, SparqlSlowQueryLogger, SparqlSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -40,11 +42,11 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
-  make[BlazegraphSlowQueryStore].from { (xas: Transactors) => BlazegraphSlowQueryStore(xas) }
+  make[SparqlSlowQueryStore].from { (xas: Transactors) => SparqlSlowQueryStore(xas) }
 
-  make[BlazegraphSlowQueryDeleter].fromEffect {
-    (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig, clock: Clock[IO]) =>
-      BlazegraphSlowQueryDeleter.start(
+  make[SparqlSlowQueryDeleter].fromEffect {
+    (supervisor: Supervisor, store: SparqlSlowQueryStore, cfg: BlazegraphViewsConfig, clock: Clock[IO]) =>
+      SparqlSlowQueryDeleter.start(
         supervisor,
         store,
         cfg.slowQueries.logTtl,
@@ -53,9 +55,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[BlazegraphSlowQueryLogger].from {
-    (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore, clock: Clock[IO]) =>
-      BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold, clock)
+  make[SparqlSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, store: SparqlSlowQueryStore, clock: Clock[IO]) =>
+    SparqlSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold, clock)
   }
 
   make[SparqlClient].named("sparql-indexing-client").from { (cfg: BlazegraphViewsConfig, as: ActorSystem) =>
@@ -123,13 +124,13 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )(baseUri)
   }
 
-  make[BlazegraphViewsQuery].fromEffect {
+  make[BlazegraphViewsQuery].from {
     (
         aclCheck: AclCheck,
         fetchContext: FetchContext,
         views: BlazegraphViews,
         client: SparqlClient @Id("sparql-query-client"),
-        slowQueryLogger: BlazegraphSlowQueryLogger,
+        slowQueryLogger: SparqlSlowQueryLogger,
         cfg: BlazegraphViewsConfig,
         xas: Transactors
     ) =>
@@ -144,12 +145,25 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[IncomingOutgoingLinks].fromEffect {
+    (
+        fetchContext: FetchContext,
+        views: BlazegraphViews,
+        client: SparqlClient @Id("sparql-query-client"),
+        base: BaseUri
+    ) =>
+      Queries.load.map { queries =>
+        IncomingOutgoingLinks(fetchContext, views, client, queries)(base)
+      }
+  }
+
   make[BlazegraphViewsRoutes].from {
     (
         identities: Identities,
         aclCheck: AclCheck,
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
+        incomingOutgoingLinks: IncomingOutgoingLinks,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -159,6 +173,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       new BlazegraphViewsRoutes(
         views,
         viewsQuery,
+        incomingOutgoingLinks,
         identities,
         aclCheck
       )(
