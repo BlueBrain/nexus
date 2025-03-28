@@ -8,7 +8,8 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{query => Query, read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.query.IncomingOutgoingLinks
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -31,17 +32,11 @@ import io.circe.Json
 
 /**
   * The Blazegraph views routes
-  *
-  * @param views
-  *   the blazegraph views operations bundle
-  * @param identities
-  *   the identity module
-  * @param aclCheck
-  *   to check the acls
   */
 class BlazegraphViewsRoutes(
     views: BlazegraphViews,
     viewsQuery: BlazegraphViewsQuery,
+    incomingOutgoingLinks: IncomingOutgoingLinks,
     identities: Identities,
     aclCheck: AclCheck
 )(implicit
@@ -198,14 +193,14 @@ class BlazegraphViewsRoutes(
     else pass
 
   private def incomingOutgoing(id: IdSegment, project: ProjectRef)(implicit caller: Caller) = {
-    val authorizeRead   = authorizeFor(project, Read)
+    val authorizeQuery  = authorizeFor(project, Query)
     val metadataContext = ContextValue(Vocabulary.contexts.metadata)
     concat(
       (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & get & extractUri) { (pagination, uri) =>
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(metadataContext, pagination, uri)
-        authorizeRead {
-          emit(viewsQuery.incoming(id, project, pagination).attemptNarrow[BlazegraphViewRejection])
+        authorizeQuery {
+          emit(incomingOutgoingLinks.incoming(id, project, pagination).attemptNarrow[BlazegraphViewRejection])
         }
       },
       (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & get & extractUri & parameter(
@@ -213,9 +208,11 @@ class BlazegraphViewsRoutes(
       )) { (pagination, uri, includeExternal) =>
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(metadataContext, pagination, uri)
-        authorizeRead {
+        authorizeQuery {
           emit(
-            viewsQuery.outgoing(id, project, pagination, includeExternal).attemptNarrow[BlazegraphViewRejection]
+            incomingOutgoingLinks
+              .outgoing(id, project, pagination, includeExternal)
+              .attemptNarrow[BlazegraphViewRejection]
           )
         }
       }
@@ -225,13 +222,10 @@ class BlazegraphViewsRoutes(
 
 object BlazegraphViewsRoutes {
 
-  /**
-    * @return
-    *   the [[Route]] for BlazegraphViews
-    */
   def apply(
       views: BlazegraphViews,
       viewsQuery: BlazegraphViewsQuery,
+      incomingOutgoingLinks: IncomingOutgoingLinks,
       identities: Identities,
       aclCheck: AclCheck
   )(implicit
@@ -244,6 +238,7 @@ object BlazegraphViewsRoutes {
     new BlazegraphViewsRoutes(
       views,
       viewsQuery,
+      incomingOutgoingLinks,
       identities,
       aclCheck
     ).routes

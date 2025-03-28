@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryStoreSuite._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.SparqlSlowQueryStoreSuite._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.SparqlSlowQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -14,7 +14,7 @@ import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
 import scala.concurrent.duration.DurationInt
 
-class BlazegraphSlowQueryStoreSuite
+class SparqlSlowQueryStoreSuite
     extends NexusSuite
     with Doobie.Fixture
     with Doobie.Assertions
@@ -25,7 +25,7 @@ class BlazegraphSlowQueryStoreSuite
 
   test("Save a slow query") {
 
-    val slowQuery = BlazegraphSlowQuery(
+    val slowQuery = SparqlSlowQuery(
       view,
       SparqlQuery(""),
       failed = true,
@@ -55,10 +55,10 @@ class BlazegraphSlowQueryStoreSuite
   }
 }
 
-object BlazegraphSlowQueryStoreSuite {
+object SparqlSlowQueryStoreSuite {
   private val view = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
-  private def queryAtTime(instant: Instant): BlazegraphSlowQuery = {
-    BlazegraphSlowQuery(
+  private def queryAtTime(instant: Instant): SparqlSlowQuery = {
+    SparqlSlowQuery(
       view,
       SparqlQuery(""),
       failed = false,
