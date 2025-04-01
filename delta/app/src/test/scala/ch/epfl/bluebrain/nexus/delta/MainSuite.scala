@@ -97,7 +97,8 @@ object MainSuite {
           "plugins.search.enabled"                           -> "true",
           "plugins.search.indexing.resource-types"           -> resourceTypesFile.toString,
           "plugins.search.indexing.mapping"                  -> mappingFile.toString,
-          "plugins.search.indexing.query"                    -> queryFile.toString
+          "plugins.search.indexing.query"                    -> queryFile.toString,
+          "otel.sdk.disabled"                                -> "true"
         )
       }
 

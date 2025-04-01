@@ -33,7 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.DurationInt
 
@@ -148,7 +147,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     Resource.make(make)(release)
   }
   make[Materializer].from((as: ActorSystem) => SystemMaterializer(as).materializer)
-  make[Logger].from { LoggerFactory.getLogger("delta") }
   make[RejectionHandler].from { (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
     RdfRejectionHandler(cr, ordering)
   }

@@ -304,6 +304,8 @@ The archive plugin configuration can be found @link:[here](https://github.com/Bl
 
 ## Monitoring
 
+### Kamon
+
 For monitoring, Nexus Delta relies on @link:[Kamon](https://kamon.io/){ open=new }.
 
 Kamon can be disabled by passing the environment variable `KAMON_ENABLED` set to `false`.
@@ -311,7 +313,7 @@ Kamon can be disabled by passing the environment variable `KAMON_ENABLED` set to
 Delta configuration for Kamon is provided @link:[in the `monitoring` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L391){ open=new }.
 For a more complete description on the different options available, please look at the Kamon website.
 
-### Instrumentation
+#### Instrumentation
 
 Delta provides the Kamon instrumentation for:
 
@@ -320,10 +322,36 @@ Delta provides the Kamon instrumentation for:
 * @link:[Logback](https://kamon.io/docs/v1/instrumentation/logback/){ open=new }
 * @link:[System metrics](https://kamon.io/docs/v1/instrumentation/system-metrics/){ open=new }
 
-### Reporters
+#### Reporters
 
 Kamon reporters are also available for:
 
 * @link:[Jaeger](https://kamon.io/docs/v1/reporters/jaeger/){ open=new }
 * @link:[Prometheus](https://kamon.io/docs/v1/reporters/prometheus/){ open=new }
 
+### OpenTelemetry
+
+Since 1.12, Nexus also allows to use OpenTelemetry via otel4s where some configuration tips are provided 
+@link:[here](https://typelevel.org/otel4s/sdk/configuration.html).
+
+OpenTelemetry is disabled by default and can be enabled by setting the system property `otel.sdk.disabled` or
+the environment variable `OTEL_SDK_DISABLED` to false.
+
+When enabled, the otlp endpoint must also be provided via the system property `otel.exporter.otlp.endpoint` 
+or the environment variable `OTEL_EXPORTER_OTLP_ENDPOINT`.
+
+Note the default protocol inherited by the OpenTelemetry SDK is `grpc`.
+
+#### Logs
+
+For logs, Nexus relies on the OpenTelemetry Log SDK and the logback appender.
+
+See @link:[here](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/instrumentation/logback/logback-appender-1.0/library/README.md) for the configuration options.
+
+The appender can be configured via the logback.xml file.
+
+```xml
+<appender name="OpenTelemetry"
+    class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+</appender>
+```

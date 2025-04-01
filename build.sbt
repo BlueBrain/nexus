@@ -47,6 +47,9 @@ val magnoliaVersion            = "1.1.10"
 val munitVersion               = "1.1.0"
 val munitCatsEffectVersion     = "2.0.0"
 val nimbusJoseJwtVersion       = "10.0.2"
+val otelVersion                = "1.48.0"
+val otel4sVersion              = "0.12.0"
+val otelLogbackVersion         = "2.14.0-alpha"
 val postgresJdbcVersion        = "42.7.5"
 val pureconfigVersion          = "0.17.8"
 val scalaTestVersion           = "3.2.19"
@@ -63,61 +66,67 @@ lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCors
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
 lazy val akkaHttpXml     = "com.typesafe.akka" %% "akka-http-xml"     % akkaHttpVersion
 
-lazy val akkaSlf4j                     = "com.typesafe.akka"            %% "akka-slf4j"                         % akkaVersion
-lazy val akkaStream                    = "com.typesafe.akka"            %% "akka-stream"                        % akkaVersion
-lazy val akkaTestKit                   = "com.typesafe.akka"            %% "akka-testkit"                       % akkaVersion
-lazy val alpakkaFile                   = "com.lightbend.akka"           %% "akka-stream-alpakka-file"           % alpakkaVersion
-lazy val alpakkaSse                    = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"            % alpakkaVersion
-lazy val awsSdk                        = "software.amazon.awssdk"        % "s3"                                 % awsSdkVersion
-lazy val betterMonadicFor              = "com.olegpy"                   %% "better-monadic-for"                 % betterMonadicForVersion
-lazy val caffeine                      = "com.github.ben-manes.caffeine" % "caffeine"                           % caffeineVersion
-lazy val catsCore                      = "org.typelevel"                %% "cats-core"                          % catsVersion
-lazy val catsEffect                    = "org.typelevel"                %% "cats-effect"                        % catsEffectVersion
-lazy val catsEffectLaws                = "org.typelevel"                %% "cats-effect-laws"                   % catsEffectVersion
-lazy val catsRetry                     = "com.github.cb372"             %% "cats-retry"                         % catsRetryVersion
-lazy val circeCore                     = "io.circe"                     %% "circe-core"                         % circeVersion
-lazy val circeGeneric                  = "io.circe"                     %% "circe-generic"                      % circeVersion
-lazy val circeGenericExtras            = "io.circe"                     %% "circe-generic-extras"               % circeExtrasVersions
-lazy val circeLiteral                  = "io.circe"                     %% "circe-literal"                      % circeVersion
-lazy val circeOptics                   = "io.circe"                     %% "circe-optics"                       % circeOpticsVersion
-lazy val circeParser                   = "io.circe"                     %% "circe-parser"                       % circeVersion
-lazy val classgraph                    = "io.github.classgraph"          % "classgraph"                         % classgraphVersion
-lazy val distageCore                   = "io.7mind.izumi"               %% "distage-core"                       % distageVersion
-lazy val doobiePostgres                = "org.tpolecat"                 %% "doobie-postgres"                    % doobieVersion
-lazy val doobie                        = Seq(
+lazy val akkaSlf4j          = "com.typesafe.akka"            %% "akka-slf4j"               % akkaVersion
+lazy val akkaStream         = "com.typesafe.akka"            %% "akka-stream"              % akkaVersion
+lazy val akkaTestKit        = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion
+lazy val alpakkaFile        = "com.lightbend.akka"           %% "akka-stream-alpakka-file" % alpakkaVersion
+lazy val alpakkaSse         = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
+lazy val awsSdk             = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
+lazy val betterMonadicFor   = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
+lazy val caffeine           = "com.github.ben-manes.caffeine" % "caffeine"                 % caffeineVersion
+lazy val catsCore           = "org.typelevel"                %% "cats-core"                % catsVersion
+lazy val catsEffect         = "org.typelevel"                %% "cats-effect"              % catsEffectVersion
+lazy val catsEffectLaws     = "org.typelevel"                %% "cats-effect-laws"         % catsEffectVersion
+lazy val catsRetry          = "com.github.cb372"             %% "cats-retry"               % catsRetryVersion
+lazy val circeCore          = "io.circe"                     %% "circe-core"               % circeVersion
+lazy val circeGeneric       = "io.circe"                     %% "circe-generic"            % circeVersion
+lazy val circeGenericExtras = "io.circe"                     %% "circe-generic-extras"     % circeExtrasVersions
+lazy val circeLiteral       = "io.circe"                     %% "circe-literal"            % circeVersion
+lazy val circeOptics        = "io.circe"                     %% "circe-optics"             % circeOpticsVersion
+lazy val circeParser        = "io.circe"                     %% "circe-parser"             % circeVersion
+lazy val classgraph         = "io.github.classgraph"          % "classgraph"               % classgraphVersion
+lazy val distageCore        = "io.7mind.izumi"               %% "distage-core"             % distageVersion
+lazy val doobiePostgres     = "org.tpolecat"                 %% "doobie-postgres"          % doobieVersion
+lazy val doobie             = Seq(
   doobiePostgres,
   "org.tpolecat"  %% "doobie-hikari" % doobieVersion,
   "com.zaxxer"     % "HikariCP"      % hikariVersion exclude ("org.slf4j", "slf4j-api"),
   "org.postgresql" % "postgresql"    % postgresJdbcVersion
 )
-lazy val fs2                           = "co.fs2"                       %% "fs2-core"                           % fs2Version
-lazy val fs2ReactiveStreams            = "co.fs2"                       %% "fs2-reactive-streams"               % fs2Version
-lazy val fs2io                         = "co.fs2"                       %% "fs2-io"                             % fs2Version
-lazy val fs2Aws                        = "io.laserdisc"                 %% "fs2-aws-core"                       % fs2AwsVersion
-lazy val fs2AwsS3                      = "io.laserdisc"                 %% "fs2-aws-s3"                         % fs2AwsVersion
-lazy val glassFishJakarta              = "org.glassfish"                 % "jakarta.json"                       % glassFishJakartaVersion
-lazy val handleBars                    = "com.github.jknack"             % "handlebars"                         % handleBarsVersion
-lazy val jenaArq                       = "org.apache.jena"               % "jena-arq"                           % jenaVersion
-lazy val kamonAkkaHttp                 = "io.kamon"                     %% "kamon-akka-http"                    % kamonVersion
-lazy val kamonCore                     = "io.kamon"                     %% "kamon-core"                         % kamonVersion
-lazy val kanelaAgent                   = "io.kamon"                      % "kanela-agent"                       % kanelaAgentVersion
-lazy val kindProjector                 = "org.typelevel"                %% "kind-projector"                     % kindProjectorVersion cross CrossVersion.full
-lazy val log4cats                      = "org.typelevel"                %% "log4cats-slf4j"                     % log4catsVersion
-lazy val logback                       = "ch.qos.logback"                % "logback-classic"                    % logbackVersion
-lazy val magnolia                      = "com.softwaremill.magnolia1_2" %% "magnolia"                           % magnoliaVersion
-lazy val munit                         = "org.scalameta"                %% "munit"                              % munitVersion
-lazy val munitCatsEffect               = "org.typelevel"                %% "munit-cats-effect"                  % munitCatsEffectVersion
-lazy val nimbusJoseJwt                 = "com.nimbusds"                  % "nimbus-jose-jwt"                    % nimbusJoseJwtVersion
-lazy val pureconfig                    = "com.github.pureconfig"        %% "pureconfig"                         % pureconfigVersion
-lazy val pureconfigCats                = "com.github.pureconfig"        %% "pureconfig-cats"                    % pureconfigVersion
-lazy val scalaReflect                  = "org.scala-lang"                % "scala-reflect"                      % scalaCompilerVersion
-lazy val scalaTest                     = "org.scalatest"                %% "scalatest"                          % scalaTestVersion
-lazy val scalaXml                      = "org.scala-lang.modules"       %% "scala-xml"                          % scalaXmlVersion
-lazy val titaniumJsonLd                = "com.apicatalog"                % "titanium-json-ld"                   % titaniumJsonLdVersion
-lazy val topBraidShacl                 = "org.topbraid"                  % "shacl"                              % topBraidVersion
-lazy val testContainers                = "org.testcontainers"            % "testcontainers"                     % testContainersVersion
-lazy val testContainersScala           = "com.dimafeng"                 %% "testcontainers-scala-munit"         % testContainersScalaVersion
-lazy val testContainersScalaLocalStack = "com.dimafeng"                 %% "testcontainers-scala-localstack-v2" % testContainersScalaVersion
+lazy val fs2                = "co.fs2"                       %% "fs2-core"                 % fs2Version
+lazy val fs2ReactiveStreams = "co.fs2"                       %% "fs2-reactive-streams"     % fs2Version
+lazy val fs2io              = "co.fs2"                       %% "fs2-io"                   % fs2Version
+lazy val fs2Aws             = "io.laserdisc"                 %% "fs2-aws-core"             % fs2AwsVersion
+lazy val fs2AwsS3           = "io.laserdisc"                 %% "fs2-aws-s3"               % fs2AwsVersion
+lazy val glassFishJakarta   = "org.glassfish"                 % "jakarta.json"             % glassFishJakartaVersion
+lazy val handleBars         = "com.github.jknack"             % "handlebars"               % handleBarsVersion
+lazy val jenaArq            = "org.apache.jena"               % "jena-arq"                 % jenaVersion
+lazy val kamonAkkaHttp      = "io.kamon"                     %% "kamon-akka-http"          % kamonVersion
+lazy val kamonCore          = "io.kamon"                     %% "kamon-core"               % kamonVersion
+lazy val kanelaAgent        = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
+lazy val kindProjector      = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
+lazy val log4cats           = "org.typelevel"                %% "log4cats-slf4j"           % log4catsVersion
+lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
+lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
+lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
+lazy val munitCatsEffect    = "org.typelevel"                %% "munit-cats-effect"        % munitCatsEffectVersion
+lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
+
+lazy val otel4s            = "org.typelevel"                   %% "otel4s-oteljava"                           % otel4sVersion
+lazy val otelAutoconfigure = "io.opentelemetry"                 % "opentelemetry-sdk-extension-autoconfigure" % otelVersion
+lazy val otelExporterOtlp  = "io.opentelemetry"                 % "opentelemetry-exporter-otlp"               % otelVersion
+lazy val otelLogback       = "io.opentelemetry.instrumentation" % "opentelemetry-logback-appender-1.0"        % otelLogbackVersion
+
+lazy val pureconfig                    = "com.github.pureconfig"  %% "pureconfig"                         % pureconfigVersion
+lazy val pureconfigCats                = "com.github.pureconfig"  %% "pureconfig-cats"                    % pureconfigVersion
+lazy val scalaReflect                  = "org.scala-lang"          % "scala-reflect"                      % scalaCompilerVersion
+lazy val scalaTest                     = "org.scalatest"          %% "scalatest"                          % scalaTestVersion
+lazy val scalaXml                      = "org.scala-lang.modules" %% "scala-xml"                          % scalaXmlVersion
+lazy val titaniumJsonLd                = "com.apicatalog"          % "titanium-json-ld"                   % titaniumJsonLdVersion
+lazy val topBraidShacl                 = "org.topbraid"            % "shacl"                              % topBraidVersion
+lazy val testContainers                = "org.testcontainers"      % "testcontainers"                     % testContainersVersion
+lazy val testContainersScala           = "com.dimafeng"           %% "testcontainers-scala-munit"         % testContainersScalaVersion
+lazy val testContainersScalaLocalStack = "com.dimafeng"           %% "testcontainers-scala-localstack-v2" % testContainersScalaVersion
 
 val javaSpecificationVersion = SettingKey[String](
   "java-specification-version",
@@ -340,7 +349,11 @@ lazy val app = project
       akkaHttpCors,
       akkaSlf4j,
       classgraph,
-      logback
+      logback,
+      otel4s,
+      otelAutoconfigure % Runtime,
+      otelExporterOtlp  % Runtime,
+      otelLogback
     ),
     addCompilerPlugin(betterMonadicFor),
     run / fork            := true,

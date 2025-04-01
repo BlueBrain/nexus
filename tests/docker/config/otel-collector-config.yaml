@@ -1,0 +1,38 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+
+exporters:
+  elasticsearch:
+    endpoint: http://elasticsearch:9200
+    auth:
+      authenticator: basicauth
+
+extensions:
+  basicauth:
+    client_auth:
+      username: elastic
+      password: password
+
+processors:
+  batch:
+    timeout: 0 # send data immediately
+
+service:
+  extensions: [basicauth]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch]
