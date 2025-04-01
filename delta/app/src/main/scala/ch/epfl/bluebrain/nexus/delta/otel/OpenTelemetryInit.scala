@@ -18,7 +18,7 @@ object OpenTelemetryInit {
 
   // Open telemetry is disabled by default
   private def disabled: Boolean =
-    sys.props("otel.sdk.disabled").toBooleanOption.getOrElse(true) &&
+    sys.props.getOrElse("otel.sdk.disabled", "true").toBooleanOption.getOrElse(true) &&
       sys.env.getOrElse("OTEL_SDK_DISABLED", "true").toBooleanOption.getOrElse(true)
 
   def apply(description: DescriptionConfig): Resource[IO, OtelJava[IO]] =
@@ -27,9 +27,7 @@ object OpenTelemetryInit {
         logger.info("OpenTelemetry is disabled.")
       }
     } else {
-      if (!sys.props.contains("otel.service.name")) {
-        System.setProperty("otel.service.name", description.name.value)
-      }
+      sys.props.getOrElseUpdate("otel.service.name", description.name.value)
       OtelJava.autoConfigured[IO]().evalTap { otel =>
         IO.delay {
           OpenTelemetryAppender.install(otel.underlying)
