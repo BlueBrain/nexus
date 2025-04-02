@@ -116,6 +116,7 @@ lazy val otel4s            = "org.typelevel"                   %% "otel4s-otelja
 lazy val otelAutoconfigure = "io.opentelemetry"                 % "opentelemetry-sdk-extension-autoconfigure" % otelVersion
 lazy val otelExporterOtlp  = "io.opentelemetry"                 % "opentelemetry-exporter-otlp"               % otelVersion
 lazy val otelLogback       = "io.opentelemetry.instrumentation" % "opentelemetry-logback-appender-1.0"        % otelLogbackVersion
+lazy val otelLogbackMdc    = "io.opentelemetry.instrumentation" % "opentelemetry-logback-mdc-1.0"             % otelLogbackVersion
 
 lazy val pureconfig                    = "com.github.pureconfig"  %% "pureconfig"                         % pureconfigVersion
 lazy val pureconfigCats                = "com.github.pureconfig"  %% "pureconfig-cats"                    % pureconfigVersion
@@ -353,7 +354,8 @@ lazy val app = project
       otel4s,
       otelAutoconfigure % Runtime,
       otelExporterOtlp  % Runtime,
-      otelLogback
+      otelLogback,
+      otelLogbackMdc
     ),
     addCompilerPlugin(betterMonadicFor),
     run / fork            := true,

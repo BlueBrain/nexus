@@ -4,7 +4,6 @@ include:
   - elasticsearch.yml
   - blazegraph.yml
   - localstack.yml
-  - otel.yml
 
 networks:
   default:
@@ -25,8 +24,6 @@ services:
         condition: service_started
       localstack:
         condition: service_started
-      otel-collector:
-        condition: service_started
     environment:
       - DELTA_PLUGINS
       - DELTA_EXTERNAL_CONF
@@ -34,15 +31,13 @@ services:
       - PARTITION_STRATEGY
       - SPARQL_TARGET=blazegraph
       - SPARQL_ENDPOINT=http://blazegraph:9999/blazegraph
-      - OTEL_SDK_DISABLED=false
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317/
     image: bluebrain/nexus-delta:latest
     entrypoint:
       - '/bin/bash'
       - '-c'
       - |
         ln -sf /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
-        /opt/docker/bin/delta-app -Xmx4G -Dlogback.configurationFile=/config/logback.xml
+        /opt/docker/bin/delta-app -Xmx4G
     ports:
       - 8080:8080
     volumes:
