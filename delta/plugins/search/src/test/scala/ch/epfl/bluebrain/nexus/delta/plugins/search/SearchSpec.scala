@@ -1,61 +1,38 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
-import akka.testkit.TestKit
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{Fixtures, ScalaTestElasticSearchClientSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ListProjections, TargetProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ExecuteSearch, ListProjections, TargetProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
-import org.scalatest.CancelAfterFailure
-import org.scalatest.concurrent.Eventually
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 
-class SearchSpec
-    extends TestKit(ActorSystem("SearchSpec"))
-    with CatsEffectSpec
-    with CancelAfterFailure
-    with ScalaTestElasticSearchClientSetup
-    with ConfigFixtures
-    with Eventually
-    with Fixtures
-    with ElasticSearchDocker {
-
-  override val docker: ElasticSearchDocker = this
-
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
-
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+class SearchSpec extends CatsEffectSpec with CirceLiteral with ConfigFixtures with Fixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -71,6 +48,8 @@ class SearchSpec
   ).accepted
 
   private val mappings = jsonObjectContentOf("test-mapping.json")
+
+  private val prefix = "prefix"
 
   private val esProjection = ElasticSearchProjection(
     nxv + "searchProjection",
@@ -119,61 +98,30 @@ class SearchSpec
     proj2Suite -> Set(project2)
   )
 
-  private val tpe1 = nxv + "Type1"
+  private def assertContainProjects(result: Json, projects: ProjectRef*) = {
+    val expectedProjections = projections.filter { p => projects.contains(p.view.project) }
+    val expectedIndices     = expectedProjections.map { p =>
+      projectionIndex(p.projection, p.view.uuid, prefix).value
+    }.toSet
 
-  private def createDocuments(proj: TargetProjection): Seq[Json] =
-    (0 until 3).map { idx =>
-      val resource =
-        ResourceGen.resource(iri"https://example.com/${proj.view.uuid}" / idx.toString, proj.view.project, Json.obj())
-      ResourceGen
-        .resourceFor(resource, types = Set(nxv + idx.toString, tpe1), rev = idx)
-        .copy(createdAt = Instant.EPOCH.plusSeconds(idx.toLong))
-        .toCompactedJsonLd
-        .accepted
-        .json
-    }
-
-  private def extractSources(json: Json) = {
-    json.hcursor
-      .downField("hits")
-      .get[Vector[Json]]("hits")
-      .flatMap(seq => seq.traverse(_.hcursor.get[Json]("_source")))
-      .rightValue
+    result.as[Set[String]] shouldEqual Right(expectedIndices)
   }
-
-  val project1Documents = createDocuments(projectionProj1).toSet
-  val project2Documents = createDocuments(projectionProj2).toSet
-  val allDocuments      = project1Documents ++ project2Documents
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchAction]) { (bulk, p) =>
-      val index   = projectionIndex(p.projection, p.view.uuid, prefix)
-      esClient.createIndex(index, Some(mappings), None).accepted
-      val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
-        ElasticSearchAction.Index(index, idx.toString, None, json)
-      }
-      bulk ++ newBulk
-    }
-    esClient.bulk(bulkSeq, Refresh.WaitFor).void.accepted
-  }
-
-  private val prefix = "prefix"
 
   "Search" should {
-    lazy val search = Search(listViews, aclCheck, esClient, prefix, allSuites)
+    val executeSearch: ExecuteSearch = (_, accessibleIndices, _) => IO.pure(accessibleIndices.asJson)
+    lazy val search                  = Search(listViews, aclCheck, executeSearch, prefix, allSuites)
 
     val matchAll     = jobj"""{"size": 100}"""
     val noParameters = Query.Empty
 
     "search all indices accordingly to Bob's full access" in {
       val results = search.query(matchAll, noParameters)(bob).accepted
-      extractSources(results).toSet shouldEqual allDocuments
+      assertContainProjects(results, project1, project2)
     }
 
     "search only the project 1 index accordingly to Alice's restricted access" in {
       val results = search.query(matchAll, noParameters)(alice).accepted
-      extractSources(results).toSet shouldEqual project1Documents
+      assertContainProjects(results, project1)
     }
 
     "search within an unknown suite" in {
@@ -181,38 +129,38 @@ class SearchSpec
     }
 
     List(
-      (allSuite, allDocuments),
-      (proj2Suite, project2Documents)
+      (allSuite, List(project1, project2)),
+      (proj2Suite, List(project2))
     ).foreach { case (suite, expected) =>
       s"search within suite $suite accordingly to Bob's full access" in {
         val results = search.query(suite, Set.empty, matchAll, noParameters)(bob).accepted
-        extractSources(results).toSet shouldEqual expected
+        assertContainProjects(results, expected: _*)
       }
     }
 
     List(
-      (allSuite, project1Documents),
-      (proj2Suite, Set.empty)
+      (allSuite, List(project1)),
+      (proj2Suite, List.empty)
     ).foreach { case (suite, expected) =>
       s"search within suite $suite accordingly to Alice's restricted access" in {
         val results = search.query(suite, Set.empty, matchAll, noParameters)(alice).accepted
-        extractSources(results).toSet shouldEqual expected
+        assertContainProjects(results, expected: _*)
       }
     }
 
     "Search on proj2Suite and add project1 as an extra project accordingly to Bob's full access" in {
       val results = search.query(proj2Suite, Set(project1), matchAll, noParameters)(bob).accepted
-      extractSources(results).toSet shouldEqual allDocuments
+      assertContainProjects(results, project1, project2)
     }
 
     "Search on proj1Suite and add project2 as an extra project accordingly to Alice's restricted access" in {
       val results = search.query(proj1Suite, Set(project2), matchAll, noParameters)(alice).accepted
-      extractSources(results).toSet shouldEqual project1Documents
+      assertContainProjects(results, project1)
     }
 
     "Search on proj2Suite and add project1 as an extra project accordingly to Alice's restricted access" in {
       val results = search.query(proj2Suite, Set(project1), matchAll, noParameters)(alice).accepted
-      extractSources(results).toSet shouldEqual project1Documents
+      assertContainProjects(results, project1)
     }
   }
 }

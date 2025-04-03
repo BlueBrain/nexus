@@ -45,6 +45,7 @@ object Search {
   final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView)
 
   private[search] type ListProjections = () => IO[Seq[TargetProjection]]
+  private[search] type ExecuteSearch   = (JsonObject, Set[String], Uri.Query) => IO[Json]
 
   /**
     * Constructs a new [[Search]] instance.
@@ -74,7 +75,8 @@ object Search {
               } yield TargetProjection(esProjection, res.value)
             }
         )
-    apply(listProjections, aclCheck, client, prefix, suites)
+    val executeSearch: ExecuteSearch     = client.search(_, _, _)()
+    apply(listProjections, aclCheck, executeSearch, prefix, suites)
   }
 
   /**
@@ -83,7 +85,7 @@ object Search {
   final def apply(
       listProjections: ListProjections,
       aclCheck: AclCheck,
-      client: ElasticSearchClient,
+      executeSearch: ExecuteSearch,
       prefix: String,
       suites: SearchConfig.Suites
   ): Search =
@@ -99,7 +101,7 @@ object Search {
                                  p => ProjectAcl(p.view.project) -> p.projection.permission,
                                  p => projectionIndex(p.projection, p.view.uuid, prefix).value
                                )
-          results           <- client.search(payload, accessibleIndices, qp)().adaptError { case e: HttpClientError =>
+          results           <- executeSearch(payload, accessibleIndices, qp).adaptError { case e: HttpClientError =>
                                  WrappedElasticSearchClientError(e)
                                }
         } yield results
