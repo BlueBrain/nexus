@@ -90,11 +90,7 @@ class SearchAccessSpec extends BaseIntegrationSpec {
   /** Post resource across all projects defined in the test suite */
   private def postResource(resourcePath: String) =
     projects.parTraverse { project =>
-      for {
-        _ <- deltaClient.post[Json](s"/resources/$project/_/", jsonContentOf(resourcePath), Rick) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
-             }
-      } yield succeed
+      deltaClient.post[Json](s"/resources/$project/_/", jsonContentOf(resourcePath), Rick) { expectCreated }
     }
 
   /** Lens to get all project labels in a given json */

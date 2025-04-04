@@ -23,27 +23,11 @@ class ElasticsearchDsl(implicit
     with CirceUnmarshalling
     with Matchers {
 
-  private val loader = ClasspathResourceLoader()
-
   private val logger = Logger[this.type]
 
   private val elasticUrl    = s"http://${sys.props.getOrElse("elasticsearch-url", "localhost:9200")}"
   private val elasticClient = HttpClient(elasticUrl)
   private val credentials   = BasicHttpCredentials("elastic", "password")
-
-  def createTemplate(): IO[StatusCode] = {
-    for {
-      json   <- loader.jsonContentOf("elasticsearch/template.json")
-      _      <- logger.info("Creating template for Elasticsearch indices")
-      result <- elasticClient(
-                  HttpRequest(
-                    method = PUT,
-                    uri = s"$elasticUrl/_index_template/test_template",
-                    entity = HttpEntity(ContentTypes.`application/json`, json.noSpaces)
-                  ).addCredentials(credentials)
-                ).map(_.status)
-    } yield result
-  }
 
   def includes(indices: String*): IO[Assertion] =
     allIndices.map { all =>
