@@ -14,29 +14,24 @@ class ElasticSearchContainer(password: String)
     extends GenericContainer[ElasticSearchContainer](
       DockerImageName.parse(s"docker.elastic.co/elasticsearch/elasticsearch:$Version")
     ) {
-  addEnv("ES_JAVA_OPTS", "-Xmx256m")
+  addEnv("ES_JAVA_OPTS", "-Xmx512m")
   addEnv("discovery.type", "single-node")
   addEnv("xpack.security.enabled", "true")
   addEnv("ingest.geoip.downloader.enabled", "false")
   addEnv("ELASTIC_PASSWORD", password)
   addExposedPort(9200)
   setWaitStrategy(Wait.forLogMessage(".*(\"message\":\\s?\"started[\\s?|\"].*|] started\n$)", 1))
-
-  def version: String = Version
 }
 
 object ElasticSearchContainer {
-  private val Version = "8.17.1"
+  val Version = "8.17.1"
 
-  val ElasticSearchUser                         = "elastic"
-  val ElasticSearchPassword                     = "password"
-  val Credentials: Option[BasicHttpCredentials] = Some(BasicHttpCredentials(ElasticSearchUser, ElasticSearchPassword))
+  private val ElasticSearchUser     = "elastic"
+  private val ElasticSearchPassword = "password"
 
-  final case class ElasticSearchHostConfig(host: String, port: Int) {
-    def endpoint: String = s"http://$host:$port"
-  }
-
-  implicit lazy val credentials: Option[BasicHttpCredentials] = Some(BasicHttpCredentials("elastic", "password"))
+  implicit lazy val credentials: Option[BasicHttpCredentials] = Some(
+    BasicHttpCredentials(ElasticSearchUser, ElasticSearchPassword)
+  )
 
   /**
     * A running elasticsearch container wrapped in a Resource. The container will be stopped upon release.
