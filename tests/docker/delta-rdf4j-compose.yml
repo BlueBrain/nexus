@@ -33,12 +33,7 @@ services:
       - SPARQL_TARGET=rdf4j
       - SPARQL_ENDPOINT=http://rdf4j:8080/rdf4j-server
     image: bluebrain/nexus-delta:latest
-    entrypoint:
-      - '/bin/bash'
-      - '-c'
-      - |
-        ln -sf /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
-        /opt/docker/bin/delta-app -Xmx4G -Dapp.projections.cluster.size=${CLUSTER_SIZE}
+    entrypoint: ["/config/delta-startup.sh"]
     ports:
       - 8080:8080
     volumes:

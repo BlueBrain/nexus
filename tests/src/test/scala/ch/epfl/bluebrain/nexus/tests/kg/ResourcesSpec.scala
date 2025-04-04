@@ -647,18 +647,10 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
   "check consistency of responses" in {
     (2 to 100).toList.traverse { resourceId =>
-      val payload =
-        SimpleResource.sourcePayload(s"https://dev.nexus.test.com/simplified-resource/$resourceId", 3).accepted
       for {
-        _ <-
-          deltaClient
-            .put[Json](
-              s"/resources/$project1/test-schema/test-resource:$resourceId?indexing=sync",
-              payload,
-              Rick
-            ) {
-              expectCreated
-            }
+        payload <- SimpleResource.sourcePayload(s"https://dev.nexus.test.com/simplified-resource/$resourceId", 3)
+        createEndpoint = s"/resources/$project1/test-schema/test-resource:$resourceId?indexing=sync"
+        _ <- deltaClient.put[Json](createEndpoint, payload, Rick) { expectCreated }
         _ <- deltaClient.get[Json](s"/resources/$project1/test-schema", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                val received = json.asObject.value("_total").value.asNumber.value.toInt.value

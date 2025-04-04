@@ -85,7 +85,7 @@ trait BaseIntegrationSpec
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
   val storagesDsl           = new StoragesDsl(deltaClient)
 
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 100.millis)
 
   def eventually(io: IO[Assertion])(implicit pos: Position): Assertion =
     eventually { io.unsafeRunSync() }
@@ -95,7 +95,6 @@ trait BaseIntegrationSpec
   override def beforeAll(): Unit = {
     super.beforeAll()
     val setup = for {
-      _ <- elasticsearchDsl.createTemplate()
       _ <- initRealm(
              Realm.internal,
              Identity.Anonymous,
@@ -214,7 +213,7 @@ trait BaseIntegrationSpec
   def createProjects(user: Authenticated, org: String, projects: String*): IO[Unit] =
     for {
       _ <- createOrg(user, org)
-      _ <- projects.toList.traverse { project =>
+      _ <- projects.toList.parTraverse { project =>
              val payload = ProjectPayload.generate(s"$org/$project")
              adminDsl.createProject(org, project, payload, user)
            }

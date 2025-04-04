@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.{Charlie, Rose}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
@@ -37,13 +38,12 @@ final class AggregationsSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission(s"/$ref12", Rose, Views.Query)
     } yield ()
 
-    val resourcePayload = SimpleResource.sourcePayload(5).accepted
-    val postResources   = for {
-      // Creation
-      _ <- deltaClient.put[Json](s"/resources/$ref11/_/r11_1", resourcePayload, Charlie)(expectCreated)
-      _ <- deltaClient.put[Json](s"/resources/$ref11/_/r11_2", resourcePayload, Charlie)(expectCreated)
-      _ <- deltaClient.put[Json](s"/resources/$ref12/_/r12_1", resourcePayload, Charlie)(expectCreated)
-      _ <- deltaClient.put[Json](s"/resources/$ref21/_/r21_1", resourcePayload, Charlie)(expectCreated)
+    val postResources  = for {
+      resourcePayload <- SimpleResource.sourcePayload(5)
+      resources = List(ref11 -> "r11_1", ref11 -> "r11_2", ref12 -> "r12_1", ref21 -> "r21_1")
+      _ <-resources.parTraverse {
+        case(proj, id) => deltaClient.put[Json](s"/resources/$proj/_/$id", resourcePayload, Charlie)(expectCreated)
+      }
     } yield ()
 
     (setup >> postResources).accepted

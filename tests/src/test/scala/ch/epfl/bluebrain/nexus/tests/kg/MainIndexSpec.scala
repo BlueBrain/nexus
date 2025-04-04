@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.Charlie
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterNestedKeys, hitProjects}
@@ -11,7 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
 
-class DefaultIndexSpec extends BaseIntegrationSpec {
+class MainIndexSpec extends BaseIntegrationSpec {
 
   private val org1   = genId()
   private val proj11 = genId()
@@ -29,10 +30,10 @@ class DefaultIndexSpec extends BaseIntegrationSpec {
       _               <- adminDsl.createProject(org1, proj11, ProjectPayload.generate(proj11), Bob)
       _               <- adminDsl.createProject(org1, proj12, ProjectPayload.generate(proj12), Bob)
       resourcePayload <- SimpleResource.sourcePayload(5)
-      _               <- deltaClient.put[Json](s"/resources/$ref11/_/r11_1", resourcePayload, Bob)(expectCreated)
-      _               <- deltaClient.put[Json](s"/resources/$ref11/_/r11_2", resourcePayload, Bob)(expectCreated)
-      _               <- deltaClient.put[Json](s"/resources/$ref12/_/r12_1", resourcePayload, Bob)(expectCreated)
-      _               <- deltaClient.put[Json](s"/resources/$ref12/_/r12_2", resourcePayload, Bob)(expectCreated)
+      resources = List(ref11 -> "r11_1", ref11 -> "r11_2", ref12 -> "r12_1", ref12 -> "r12_2")
+        _ <-resources.parTraverse {
+        case(proj, id) => deltaClient.put[Json](s"/resources/$proj/_/$id", resourcePayload, Bob)(expectCreated)
+      }
     } yield ()
     setup.accepted
   }
