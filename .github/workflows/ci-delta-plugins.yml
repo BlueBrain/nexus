@@ -32,6 +32,14 @@ jobs:
           check-latest: true
       - name: Setup SBT
         uses: sbt/setup-sbt@v1
+      - name: Pull docker images
+        run: |
+          docker compose \
+            -f tests/docker/blazegraph.yml \
+            -f tests/docker/elasticsearch.yml \
+            -f tests/docker/localstack.yml \
+            -f tests/docker/rdf4j.yml \
+            -f tests/docker/postgres.yml pull
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
