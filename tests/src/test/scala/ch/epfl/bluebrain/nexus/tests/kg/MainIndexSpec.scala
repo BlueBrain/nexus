@@ -30,10 +30,10 @@ class MainIndexSpec extends BaseIntegrationSpec {
       _               <- adminDsl.createProject(org1, proj11, ProjectPayload.generate(proj11), Bob)
       _               <- adminDsl.createProject(org1, proj12, ProjectPayload.generate(proj12), Bob)
       resourcePayload <- SimpleResource.sourcePayload(5)
-      resources = List(ref11 -> "r11_1", ref11 -> "r11_2", ref12 -> "r12_1", ref12 -> "r12_2")
-        _ <-resources.parTraverse {
-        case(proj, id) => deltaClient.put[Json](s"/resources/$proj/_/$id", resourcePayload, Bob)(expectCreated)
-      }
+      resources        = List(ref11 -> "r11_1", ref11 -> "r11_2", ref12 -> "r12_1", ref12 -> "r12_2")
+      _               <- resources.parTraverse { case (proj, id) =>
+                           deltaClient.put[Json](s"/resources/$proj/_/$id", resourcePayload, Bob)(expectCreated)
+                         }
     } yield ()
     setup.accepted
   }

@@ -38,12 +38,12 @@ final class AggregationsSpec extends BaseIntegrationSpec {
       _ <- aclDsl.addPermission(s"/$ref12", Rose, Views.Query)
     } yield ()
 
-    val postResources  = for {
+    val postResources = for {
       resourcePayload <- SimpleResource.sourcePayload(5)
-      resources = List(ref11 -> "r11_1", ref11 -> "r11_2", ref12 -> "r12_1", ref21 -> "r21_1")
-      _ <-resources.parTraverse {
-        case(proj, id) => deltaClient.put[Json](s"/resources/$proj/_/$id", resourcePayload, Charlie)(expectCreated)
-      }
+      resources        = List(ref11 -> "r11_1", ref11 -> "r11_2", ref12 -> "r12_1", ref21 -> "r21_1")
+      _               <- resources.parTraverse { case (proj, id) =>
+                           deltaClient.put[Json](s"/resources/$proj/_/$id", resourcePayload, Charlie)(expectCreated)
+                         }
     } yield ()
 
     (setup >> postResources).accepted
