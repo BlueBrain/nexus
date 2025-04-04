@@ -213,7 +213,7 @@ trait BaseIntegrationSpec
   def createProjects(user: Authenticated, org: String, projects: String*): IO[Unit] =
     for {
       _ <- createOrg(user, org)
-      _ <- projects.toList.parTraverse { project =>
+      _ <- projects.toList.traverse { project =>
              val payload = ProjectPayload.generate(s"$org/$project")
              adminDsl.createProject(org, project, payload, user)
            }
