@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo, StrictEntity}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
+import ch.epfl.bluebrain.nexus.delta.otel.OpenTelemetryInit
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
@@ -53,6 +54,7 @@ object Main extends IOApp {
       _                             <- Resource.eval(logger.info(s"Loading plugins and config..."))
       (cfg, config, cl, pluginDefs) <- Resource.eval(loadPluginsAndConfig(loaderConfig))
       _                             <- Resource.eval(KamonMonitoring.initialize(config))
+      _                             <- OpenTelemetryInit(cfg.description)
       modules                        = DeltaModule(cfg, config, cl)
       (plugins, locator)            <- WiringInitializer(modules, pluginDefs)
       _                             <- bootstrap(locator, plugins)
