@@ -23,8 +23,6 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
   private val ref1  = s"$org/$proj1"
   private val ref2  = s"$org/$proj2"
 
-  private val ref1Iri = s"${config.deltaUri}/projects/$ref1"
-
   private val elasticId        = "http://localhost/nexus/custom-view"
   private val encodedElasticId = UrlUtils.encode(elasticId)
 
@@ -192,8 +190,8 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
       deltaClient.sseEvents(s"/resources/$org/events", Bojack, None) { events =>
         events.foreach {
           case (_, Some(json)) =>
-            root._projectId.string.exist(_ == ref1Iri)(json) shouldEqual false withClue events
-            root._project.string.exist(_ == ref1Iri)(json) shouldEqual false withClue events
+            root._projectId.string.exist(_ == ref1)(json) shouldEqual false withClue events
+            root._project.string.exist(_ == ref1)(json) shouldEqual false withClue events
           case (_, None)       =>
             fail("Every event should have a payload")
         }

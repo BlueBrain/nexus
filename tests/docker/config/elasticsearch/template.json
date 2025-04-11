@@ -1,5 +1,5 @@
 {
-  "index_patterns" : ["*"],
+  "index_patterns" : ["delta_*"],
   "priority" : 1,
   "template": {
     "settings" : {

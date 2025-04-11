@@ -1,10 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, Json, JsonObject}
@@ -42,6 +41,4 @@ object Tags {
     }
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.tags))
   }
-
-  implicit val versionHttpResponseFields: HttpResponseFields[Tags] = HttpResponseFields.defaultOk
 }

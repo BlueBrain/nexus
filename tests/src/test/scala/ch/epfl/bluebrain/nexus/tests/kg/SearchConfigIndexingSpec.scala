@@ -1174,7 +1174,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val prefix = "SSCx-HexO1"
       val search = s"${prefix}-Release-TC__ConnRewire"
 
-      (prefix.length - 1 to search.length).toList.traverse { index =>
+      (prefix.length - 1 to search.length).toList.parTraverse { index =>
         val s              = search.subSequence(0, index).toString
         val query          = fullTextQuery(s)
         val queryLowercase = fullTextQuery(s.toLowerCase)
@@ -1188,7 +1188,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       val prefix = "1818-"
       val search = s"${prefix}ReticularNeuron2_shrink"
 
-      (prefix.length - 1 to search.length).toList.traverse { index =>
+      (prefix.length - 1 to search.length).toList.parTraverse { index =>
         val s              = search.subSequence(0, index).toString
         val query          = fullTextQuery(s)
         val queryLowercase = fullTextQuery(s.toLowerCase)

@@ -3,9 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tags}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class SchemaSuite extends NexusSuite with Fixtures {

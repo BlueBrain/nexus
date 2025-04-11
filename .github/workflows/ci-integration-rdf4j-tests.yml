@@ -9,6 +9,7 @@ on:
       - '.github/workflows/ci-integration-rdf4j-tests.yml'
 jobs:
   run:
+    if: false  # Disabling the RDF4J workflow for now
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:

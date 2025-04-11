@@ -191,8 +191,9 @@ object Permissions {
     * Resources permissions.
     */
   object resources {
-    final val read: Permission  = Permission.unsafe("resources/read")
-    final val write: Permission = Permission.unsafe("resources/write")
+    final val read: Permission   = Permission.unsafe("resources/read")
+    final val write: Permission  = Permission.unsafe("resources/write")
+    final val delete: Permission = Permission.unsafe("resources/delete")
   }
 
   /**

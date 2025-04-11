@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GraphResource, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
@@ -24,6 +25,7 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
 import doobie.syntax.all._
+import io.circe.syntax.KeyOps
 
 import java.time.Instant
 
@@ -159,6 +161,7 @@ object PullRequest {
     def id: Iri
     def project: ProjectRef
     def rev: Int
+    def tags: Tags
     def createdAt: Instant
     def createdBy: Subject
     def updatedAt: Instant
@@ -202,17 +205,17 @@ object PullRequest {
     def source: Json = this match {
       case p: PullRequestActive =>
         Json.obj(
-          "@id"    -> Json.fromString(id.toString),
-          "@type"  -> Json.arr(p.types.toList.map(iri => Json.fromString(iri.toString)): _*),
-          "status" -> Json.fromString("active"),
-          "label"  -> Json.fromString("active")
+          "@id"    := id.toString,
+          "@type"  := p.types,
+          "status" := "active",
+          "label"  := "active"
         )
       case _: PullRequestClosed =>
         Json.obj(
-          "@id"    -> Json.fromString(id.toString),
-          "@type"  -> Json.fromString("PullRequest"),
-          "status" -> Json.fromString("closed"),
-          "label"  -> Json.fromString("closed")
+          "@id"    := id,
+          "@type"  := "PullRequest",
+          "status" := "closed",
+          "label"  := "closed"
         )
     }
   }
@@ -230,6 +233,8 @@ object PullRequest {
         override val types: Set[Iri] = Set(nxv + "PullRequest")
     ) extends PullRequestState {
       override def deprecated: Boolean = false
+
+      override def tags: Tags = Tags.empty
     }
 
     final case class PullRequestClosed(
@@ -241,6 +246,9 @@ object PullRequest {
         updatedAt: Instant,
         updatedBy: Subject
     ) extends PullRequestState {
+
+      override def tags: Tags = Tags(UserTag.unsafe("closed") -> rev)
+
       override def deprecated: Boolean = true
     }
 

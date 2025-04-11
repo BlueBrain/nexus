@@ -85,7 +85,7 @@ trait BaseIntegrationSpec
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
   val storagesDsl           = new StoragesDsl(deltaClient)
 
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 100.millis)
 
   def eventually(io: IO[Assertion])(implicit pos: Position): Assertion =
     eventually { io.unsafeRunSync() }
@@ -95,7 +95,6 @@ trait BaseIntegrationSpec
   override def beforeAll(): Unit = {
     super.beforeAll()
     val setup = for {
-      _ <- elasticsearchDsl.createTemplate()
       _ <- initRealm(
              Realm.internal,
              Identity.Anonymous,

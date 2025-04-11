@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceInstanceFixture
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tags}
 import io.circe.JsonObject
 
 import java.time.Instant
@@ -75,7 +74,6 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
           event.rev,
           action,
           ProjectRef(org, proj),
-          org,
           event.id,
           event.types,
           JsonObject.empty

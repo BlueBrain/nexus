@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -641,7 +641,7 @@ class ResourcesImplSpec
 
       "reject if project does not exist" in {
         givenADeprecatedResource { id =>
-          val wrongProject = ProjectRef(Label.unsafe(genString()), Label.unsafe(genString()))
+          val wrongProject = ProjectRef.unsafe(genString(), genString())
           resources
             .undeprecate(id, wrongProject, None, 2)
             .assertRejectedWith[ProjectNotFound]
@@ -740,6 +740,23 @@ class ResourcesImplSpec
 
       "reject if the tag doesn't exist" in {
         resources.deleteTag(myId, projectRef, Some(schemas.resources), tag, 3).rejectedWith[TagNotFound]
+      }
+    }
+
+    "deleting a resource" should {
+      "succeed for an existing resource" in {
+        resources.delete(myId, projectRef).accepted
+        resources.fetch(myId, projectRef, None).rejectedWith[ResourceNotFound]
+      }
+
+      "reject if it doesn't exists" in {
+        resources
+          .delete(nxv + "xxx", projectRef)
+          .rejectedWith[ResourceNotFound]
+      }
+
+      "reject if project is deprecated" in {
+        resources.delete(nxv + "xxx", projectDeprecated.ref).assertRejectedWith[ProjectIsDeprecated]
       }
     }
 

@@ -14,13 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, Tags}
 import io.circe.JsonObject
 import io.circe.syntax.KeyOps
 
@@ -200,7 +199,6 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
           event.rev,
           action,
           projectRef,
-          Label.unsafe("myorg"),
           event.id,
           Set(nxvFile),
           expectedExtraFields

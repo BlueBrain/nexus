@@ -74,7 +74,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   }
 
   test("get state 1") {
-    store.get(project1, id1).assertEquals(state1)
+    store.getRead(project1, id1).assertEquals(state1)
   }
 
   test("Save state 1 and state 3 with user tag successfully") {
@@ -120,7 +120,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
     for {
       _ <- store.save(updatedState1).transact(xas.write)
       _ <- assertCount(6)
-      _ <- store.get(project1, id1).assertEquals(updatedState1)
+      _ <- store.getRead(project1, id1).assertEquals(updatedState1)
     } yield ()
   }
 
@@ -132,7 +132,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
     for {
       _ <- store.delete(project2, id1, customTag).transact(xas.write)
       _ <- assertCount(5)
-      _ <- store.get(project2, id1, customTag).interceptEquals(TagNotFound)
+      _ <- store.getRead(project2, id1, customTag).interceptEquals(TagNotFound)
     } yield ()
   }
 
@@ -201,7 +201,7 @@ class ScopedStateStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
     for {
       _ <- store.delete(project1, id2, Latest).transact(xas.write)
       _ <- assertCount(4)
-      _ <- store.get(project1, id2).interceptEquals(UnknownState)
+      _ <- store.getRead(project1, id2).interceptEquals(UnknownState)
     } yield ()
   }
 

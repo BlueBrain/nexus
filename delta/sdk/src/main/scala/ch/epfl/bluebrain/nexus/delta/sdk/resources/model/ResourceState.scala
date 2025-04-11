@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.InvalidJsonLdFormat
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -78,6 +78,7 @@ final case class ResourceState(
 
   def toAssembly: IO[JsonLdAssembly] = {
     implicit val api: JsonLdApi = TitaniumJsonLdApi.lenient
+    tags.tags
     expanded.toGraph
       .map { graph =>
         JsonLdAssembly(id, source, compacted, expanded, graph, remoteContexts)

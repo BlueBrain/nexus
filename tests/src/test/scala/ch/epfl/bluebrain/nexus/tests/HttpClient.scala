@@ -203,9 +203,13 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     requestJsonAndStatus(DELETE, url, None, identity, jsonHeaders)
   }
 
+  def deleteStatus(url: String, identity: Identity)(assertResponse: HttpResponse => Assertion): IO[Assertion] = {
+    val req = HttpRequest(DELETE, s"$baseUrl$url", headers = identityHeader(identity).toList)
+    fromFuture(httpExt.singleRequest(req)).map(assertResponse)
+  }
   def delete[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
-  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
+  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion]                                                        =
     requestAssert(DELETE, url, None, identity, extraHeaders)(assertResponse)
 
   def requestAssertAndReturn[A](

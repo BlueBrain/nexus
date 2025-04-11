@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.JsonObject
-import io.circe.syntax.EncoderOps
+import io.circe.syntax.KeyOps
 
 import java.time.Instant
 
@@ -20,7 +20,7 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
 
   private val project = ProjectRef.unsafe("org", "proj")
 
-  private def makeSuccessElem(sseData: SseData) = Elem.SuccessElem(
+  private def makeElem(sseData: SseData) = Elem.SuccessElem(
     EntityType("Person"),
     nxv + "1",
     project,
@@ -30,49 +30,13 @@ class SseEventLogSuite extends NexusSuite with ConfigFixtures {
     4
   )
 
-  test("Should not inject project uuids") {
-    val elem = makeSuccessElem(
-      SseData("Person", None, JsonObject("name" -> "John Doe".asJson))
+  test("Should serialize to an Akka SSE") {
+    val elem = makeElem(
+      SseData("Person", None, JsonObject("name" := "John Doe"))
     )
     assertEquals(
       SseEventLog.toServerSentEvent(elem),
       ServerSentEvent("""{"name":"John Doe"}""", "Person", "5")
-    )
-  }
-
-  test("Should not inject project uuids when the ref is unknown") {
-    val elem = Elem.SuccessElem(
-      EntityType("Person"),
-      nxv + "1",
-      project,
-      Instant.now(),
-      Offset.at(5L),
-      SseData("Person", Some(ProjectRef.unsafe("xxx", "xxx")), JsonObject("name" -> "John Doe".asJson)),
-      4
-    )
-    assertEquals(
-      SseEventLog.toServerSentEvent(elem),
-      ServerSentEvent("""{"name":"John Doe"}""", "Person", "5")
-    )
-  }
-
-  test("Should inject project uuids when the ref is unknown") {
-    val elem = Elem.SuccessElem(
-      EntityType("Person"),
-      nxv + "1",
-      project,
-      Instant.now(),
-      Offset.at(5L),
-      SseData("Person", Some(project), JsonObject("name" -> "John Doe".asJson)),
-      4
-    )
-    assertEquals(
-      SseEventLog.toServerSentEvent(elem),
-      ServerSentEvent(
-        s"""{"name":"John Doe"}""",
-        "Person",
-        "5"
-      )
     )
   }
 }

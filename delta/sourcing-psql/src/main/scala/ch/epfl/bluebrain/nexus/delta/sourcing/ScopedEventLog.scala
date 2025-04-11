@@ -9,13 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.{EventTombstoneStore, StateTombstoneStore}
 import doobie._
 import doobie.syntax.all._
 import doobie.postgres.sqlstate
@@ -38,7 +39,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
-    * @param ref
+    * @param project
     *   the project the entity belongs in
     * @param id
     *   the entity identifier
@@ -48,13 +49,13 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
     *   the newly generated state and appended event if the command was evaluated successfully, or the rejection of the
     *   __command__ otherwise
     */
-  def evaluate(ref: ProjectRef, id: Id, command: Command): IO[(E, S)]
+  def evaluate(project: ProjectRef, id: Id, command: Command): IO[(E, S)]
 
   /**
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any
     * changes to the state or event log of the entity regardless of the outcome of the command evaluation.
     *
-    * @param ref
+    * @param project
     *   the project the entity belongs in
     * @param id
     *   the entity identifier
@@ -64,7 +65,17 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection 
     *   the state and event that would be generated in if the command was tested for evaluation successfully, or the
     *   rejection of the __command__ in otherwise
     */
-  def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)]
+  def dryRun(project: ProjectRef, id: Id, command: Command): IO[(E, S)]
+
+  /**
+    * Deletes the entity identified by __id__
+    * @param project
+    *   the project the entity belongs in
+    * @param id
+    *   the entity identifier
+    * @return
+    */
+  def delete[R <: Rejection](project: ProjectRef, id: Id, notFound: => R)(implicit subject: Subject): IO[Unit]
 
 }
 
@@ -97,15 +108,18 @@ object ScopedEventLog {
       stateStore: ScopedStateStore[Id, S],
       stateMachine: StateMachine[S, Command, E],
       onUniqueViolation: (Id, Command) => Rejection,
-      tagger: Tagger[E],
+      tagger: Tagger[S, E],
       extractDependencies: S => Option[Set[DependsOn]],
       maxDuration: FiniteDuration,
       xas: Transactors
   ): ScopedEventLog[Id, S, Command, E, Rejection] =
     new ScopedEventLog[Id, S, Command, E, Rejection] {
 
+      private val eventTombstoneStore = new EventTombstoneStore(xas)
+      private val stateTombstoneStore = new StateTombstoneStore(xas)
+
       override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[S] =
-        stateStore.get(ref, id).adaptError(_ => notFound)
+        stateStore.getRead(ref, id).adaptError(_ => notFound)
 
       override def stateOr[R <: Rejection](
           ref: ProjectRef,
@@ -114,7 +128,7 @@ object ScopedEventLog {
           notFound: => R,
           tagNotFound: => R
       ): IO[S] = {
-        stateStore.get(ref, id, tag).adaptError {
+        stateStore.getRead(ref, id, tag).adaptError {
           case UnknownState => notFound
           case TagNotFound  => tagNotFound
         }
@@ -133,7 +147,7 @@ object ScopedEventLog {
           case None                    => IO.raiseError(notFound)
         }
 
-      override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] = {
+      override def evaluate(project: ProjectRef, id: Id, command: Command): IO[(E, S)] = {
 
         def newTaggedState(event: E, state: S): IO[Option[(UserTag, S)]] =
           tagger.tagWhen(event) match {
@@ -141,7 +155,7 @@ object ScopedEventLog {
               IO.some(tag -> state)
             case Some((tag, rev))                     =>
               stateMachine
-                .computeState(eventStore.history(ref, id, Some(rev)).transact(xas.write))
+                .computeState(eventStore.history(project, id, Some(rev)).transact(xas.write))
                 .flatTap {
                   case stateOpt if !stateOpt.exists(_.rev == rev) =>
                     IO.raiseError(EvaluationTagFailure(command, stateOpt.map(_.rev)))
@@ -152,20 +166,21 @@ object ScopedEventLog {
           }
 
         def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
-          stateStore.delete(ref, id, tag) >>
-            TombstoneStore.save(entityType, state, tag)
+          stateStore.delete(project, id, tag) >>
+            stateTombstoneStore.save(entityType, state, tag)
         }
 
         def updateDependencies(state: S) =
           extractDependencies(state).fold(noop) { dependencies =>
-            EntityDependencyStore.delete(ref, state.id) >> EntityDependencyStore.save(ref, state.id, dependencies)
+            EntityDependencyStore
+              .delete(project, state.id) >> EntityDependencyStore.save(project, state.id, dependencies)
           }
 
         def persist(event: E, original: Option[S], newState: S): IO[Unit] = {
 
           def queries(newTaggedState: Option[(UserTag, S)]) =
             for {
-              _ <- TombstoneStore.save(entityType, original, newState)
+              _ <- stateTombstoneStore.save(entityType, original, newState)
               _ <- eventStore.save(event)
               _ <- stateStore.save(newState)
               _ <- newTaggedState.traverse { case (tag, taggedState) =>
@@ -183,19 +198,19 @@ object ScopedEventLog {
           }.recoverWith {
             case sql: SQLException if isUniqueViolation(sql) =>
               logger.error(sql)(
-                s"A unique constraint violation occurred when persisting an event for  '$id' in project '$ref' and rev ${event.rev}."
+                s"A unique constraint violation occurred when persisting an event for  '$id' in project '$project' and rev ${event.rev}."
               ) >>
                 IO.raiseError(onUniqueViolation(id, command))
             case other                                       =>
               logger.error(other)(
-                s"An error occurred when persisting an event for '$id' in project '$ref' and rev ${event.rev}."
+                s"An error occurred when persisting an event for '$id' in project '$project' and rev ${event.rev}."
               ) >>
                 IO.raiseError(other)
           }
         }
 
         for {
-          originalState <- stateStore.getWrite(ref, id).redeem(_ => None, Some(_))
+          originalState <- stateStore.getWrite(project, id).redeem(_ => None, Some(_))
           result        <- stateMachine.evaluate(originalState, command, maxDuration)
           _             <- persist(result._1, originalState, result._2)
         } yield result
@@ -204,10 +219,27 @@ object ScopedEventLog {
       private def isUniqueViolation(sql: SQLException) =
         sql.getSQLState == sqlstate.class23.UNIQUE_VIOLATION.value
 
-      override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] =
-        stateStore.getWrite(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
+      override def dryRun(project: ProjectRef, id: Id, command: Command): IO[(E, S)] =
+        stateStore.getWrite(project, id).redeem(_ => None, Some(_)).flatMap { state =>
           stateMachine.evaluate(state, command, maxDuration)
         }
+
+      override def delete[R <: Rejection](project: ProjectRef, id: Id, notFound: => R)(implicit
+          subject: Subject
+      ): IO[Unit] = {
+        val queries = for {
+          originalState <- stateStore.get(project, id).adaptError { case UnknownState => notFound }
+          tags           = tagger.existingTags(originalState).fold(List.empty[Tag])(_.tags)
+          _             <- stateTombstoneStore.save(entityType, originalState, tags)
+          _             <- stateTombstoneStore.save(entityType, originalState, Tag.Latest)
+          _             <- eventTombstoneStore.save(entityType, project, originalState.id, subject)
+          _             <- tags.traverse { tag => stateStore.delete(project, id, tag) }
+          _             <- stateStore.delete(project, id, Tag.Latest)
+          _             <- EntityDependencyStore.delete(project, originalState.id)
+        } yield ()
+
+        queries.transact(xas.write)
+      }
 
       override def currentStates(scope: Scope, offset: Offset): SuccessElemStream[S] =
         stateStore.currentStates(scope, offset)

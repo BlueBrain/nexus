@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
+import cats.syntax.all._
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -396,7 +397,8 @@ object Schemas {
       StateMachine(None, evaluate(validate, clock), next),
       SchemaEvent.serializer,
       SchemaState.serializer,
-      Tagger[SchemaEvent](
+      Tagger[SchemaState, SchemaEvent](
+        _.tags.some,
         {
           case s: SchemaTagAdded => Some(s.tag -> s.targetRev)
           case _                 => None
