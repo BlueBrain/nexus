@@ -44,7 +44,7 @@ object ProjectGen {
       markedForDeletion,
       description,
       mappings,
-      ProjectBase.unsafe(base),
+      ProjectBase(base),
       vocab,
       enforceSchema,
       Instant.EPOCH,
@@ -68,7 +68,7 @@ object ProjectGen {
       projectFields.description,
       projectFields.apiMappings,
       defaultApiMappings,
-      ProjectBase.unsafe(projectFields.baseOrGenerated(ref).value),
+      ProjectBase(projectFields.baseOrGenerated(ref).value),
       projectFields.vocabOrGenerated(ref).value,
       projectFields.enforceSchema,
       markedForDeletion
@@ -94,7 +94,7 @@ object ProjectGen {
       description,
       mappings,
       defaultApiMappings,
-      ProjectBase.unsafe(base),
+      ProjectBase(base),
       vocab,
       enforceSchema,
       markedForDeletion

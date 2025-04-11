@@ -15,7 +15,7 @@ class IdSegmentSpec extends BaseSpec {
     "_"        -> schemas.resources,
     "resource" -> schemas.resources
   )
-  private val base = ProjectBase.unsafe(nxv.base)
+  private val base = ProjectBase(nxv.base)
 
   "An string segment" should {
     val list =

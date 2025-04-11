@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.{Charlie, Rose}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import io.circe.Json
 
 final class AggregationsSpec extends BaseIntegrationSpec {

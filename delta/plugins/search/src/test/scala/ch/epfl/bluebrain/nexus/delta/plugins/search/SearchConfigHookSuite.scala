@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class SearchConfigHookSuite extends NexusSuite with CompositeViewsFixture {
 
-  implicit private val projectBase: ProjectBase = ProjectBase.unsafe(nxv.base)
+  implicit private val projectBase: ProjectBase = ProjectBase(nxv.base)
 
   private val defaults      = Defaults("viewName", "viewDescription")
   private val currentConfig =

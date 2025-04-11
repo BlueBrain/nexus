@@ -18,7 +18,7 @@ import io.circe.syntax.KeyOps
 
 trait ValidateResourceFixture {
 
-  val defaultReport: ValidationReport = ValidationReport(conforms = true, 5, Json.obj("conforms" := "true"))
+  val defaultReport: ValidationReport = ValidationReport.unsafe(conforms = true, 5, Json.obj("conforms" := "true"))
   val defaultSchemaRevision           = 1
 
   def alwaysValidate: ValidateResource = new ValidateResource {

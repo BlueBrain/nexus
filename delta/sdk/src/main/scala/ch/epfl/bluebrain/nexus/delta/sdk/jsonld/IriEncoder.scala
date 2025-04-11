@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Encoder
 import io.circe.syntax.EncoderOps
 
@@ -25,7 +26,7 @@ object IriEncoder {
     Encoder.encodeJson.contramap(iriEncoder(_).asJson)
 
   //It does not matter what the base is for ordering
-  private val dummyValue: BaseUri = BaseUri("http://localhost", None)
+  private val dummyValue: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   /**
     * Create an ordering based on the Iri representation of an [[A]]

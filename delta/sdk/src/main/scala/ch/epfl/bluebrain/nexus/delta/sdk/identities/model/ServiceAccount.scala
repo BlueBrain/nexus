@@ -21,5 +21,5 @@ final case class ServiceAccount(subject: Subject) extends AnyVal {
     * @return
     *   a [[Caller]] representation for this service account
     */
-  def caller: Caller = Caller.unsafe(subject, identities)
+  def caller: Caller = Caller(subject, identities)
 }

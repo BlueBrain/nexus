@@ -116,7 +116,7 @@ class ProjectSerializationSuite extends SerializationSuite {
     markedForDeletion = false,
     description = Some(description),
     apiMappings = apiMappings,
-    base = ProjectBase.unsafe(base.value),
+    base = ProjectBase(base.value),
     vocab = vocab.value,
     enforceSchema = true,
     createdAt = instant,

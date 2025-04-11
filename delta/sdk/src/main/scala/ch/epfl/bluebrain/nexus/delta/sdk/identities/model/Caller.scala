@@ -29,15 +29,7 @@ object Caller {
     */
   val Anonymous: Caller = Caller(Identity.Anonymous, Set(Identity.Anonymous))
 
-  /**
-    * Allows the creation of a Caller without any validations.
-    *
-    * @param subject
-    *   the subject identity of the caller (User or Anonymous)
-    * @param identities
-    *   the full collection of identities, including the subject
-    */
-  def unsafe(subject: Subject, identities: Set[Identity] = Set.empty): Caller =
+  def apply(subject: Subject, identities: Set[Identity] = Set.empty): Caller =
     if (identities.contains(subject)) new Caller(subject, identities)
     else new Caller(subject, identities + subject)
 

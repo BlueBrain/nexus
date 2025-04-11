@@ -75,7 +75,7 @@ final class BlazegraphClient(
     client
       .fromEntityTo[ResolvedServiceDescription](Get(endpoint / "status"))
       .timeout(1.second)
-      .redeem(_ => ServiceDescription.unresolved(serviceName), _.copy(name = serviceName))
+      .recover(_ => ServiceDescription.unresolved(serviceName))
 
   override def existsNamespace(namespace: String): IO[Boolean]                         =
     client

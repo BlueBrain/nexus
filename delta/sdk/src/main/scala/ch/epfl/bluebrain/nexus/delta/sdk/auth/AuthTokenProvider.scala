@@ -20,14 +20,7 @@ object AuthTokenProvider {
     LocalCache[ClientCredentials, ParsedToken]()
       .map(cache => new CachingOpenIdAuthTokenProvider(authService, cache, clock))
   }
-  def anonymousForTest: AuthTokenProvider            = new AnonymousAuthTokenProvider
-  def fixedForTest(token: String): AuthTokenProvider = new AuthTokenProvider {
-    override def apply(credentials: Credentials): IO[Option[AuthToken]] = IO.pure(Some(AuthToken(token)))
-  }
-}
-
-private class AnonymousAuthTokenProvider extends AuthTokenProvider {
-  override def apply(credentials: Credentials): IO[Option[AuthToken]] = IO.pure(None)
+  def fixedForTest(token: String): AuthTokenProvider = (_: Credentials) => IO.some(AuthToken(token))
 }
 
 /**
@@ -45,8 +38,8 @@ private class CachingOpenIdAuthTokenProvider(
   override def apply(credentials: Credentials): IO[Option[AuthToken]] = {
 
     credentials match {
-      case Credentials.Anonymous          => IO.pure(None)
-      case Credentials.JWTToken(token)    => IO.pure(Some(AuthToken(token)))
+      case Credentials.Anonymous          => IO.none
+      case Credentials.JWTToken(token)    => IO.some(AuthToken(token))
       case credentials: ClientCredentials => clientCredentialsFlow(credentials)
     }
   }

@@ -26,7 +26,7 @@ object TimeRange {
   /**
     * Defines a time range taking place between the two instants
     */
-  final case class Between private (start: Instant, end: Instant) extends TimeRange
+  final case class Between private[TimeRange] (start: Instant, end: Instant) extends TimeRange
 
   object Between {
     def unsafe(start: Instant, end: Instant) = new Between(start, end)

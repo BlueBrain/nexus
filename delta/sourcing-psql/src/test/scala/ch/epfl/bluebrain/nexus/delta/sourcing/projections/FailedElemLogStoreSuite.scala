@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -133,22 +134,22 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
   }
 
   test(s"List all failures") {
-    assertList(project1, projection12, Pagination.OnePage, TimeRange.Anytime, List(fail2, fail3, fail4))
+    assertList(project1, projection12, Pagination.OnePage, Anytime, List(fail2, fail3, fail4))
   }
 
   test(s"Count all failures") {
-    store.count(project1, projection12, TimeRange.Anytime).assertEquals(3L)
+    store.count(project1, projection12, Anytime).assertEquals(3L)
   }
 
   test(s"Paginate failures to get one result") {
-    assertList(project1, projection12, FromPagination(1, 1), TimeRange.Anytime, List(fail3))
+    assertList(project1, projection12, FromPagination(1, 1), Anytime, List(fail3))
   }
 
   test(s"Paginate failures to get the last results ") {
-    assertList(project1, projection12, FromPagination(1, 2), TimeRange.Anytime, List(fail3, fail4))
+    assertList(project1, projection12, FromPagination(1, 2), Anytime, List(fail3, fail4))
   }
 
-  private val after = TimeRange.After(fail3.instant)
+  private val after = After(fail3.instant)
   test(s"List failures after a given time") {
     assertList(project1, projection12, Pagination.OnePage, after, List(fail3, fail4))
   }
@@ -157,7 +158,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
     store.count(project1, projection12, after).assertEquals(2L)
   }
 
-  private val before = TimeRange.Before(fail3.instant)
+  private val before = Before(fail3.instant)
   test(s"List failures before a given time") {
     assertList(project1, projection12, Pagination.OnePage, before, List(fail2, fail3))
   }
@@ -166,7 +167,7 @@ class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with 
     store.count(project1, projection12, before).assertEquals(2L)
   }
 
-  private val between = TimeRange.Between(fail2.instant.plusMillis(1L), fail3.instant.plusMillis(1L))
+  private val between = Between.unsafe(fail2.instant.plusMillis(1L), fail3.instant.plusMillis(1L))
   test(s"List failures within the time window") {
     assertList(project1, projection12, Pagination.OnePage, between, List(fail3))
   }

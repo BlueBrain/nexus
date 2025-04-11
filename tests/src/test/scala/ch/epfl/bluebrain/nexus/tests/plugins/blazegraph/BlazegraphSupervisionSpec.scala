@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.tests.plugins.blazegraph
 
-import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision

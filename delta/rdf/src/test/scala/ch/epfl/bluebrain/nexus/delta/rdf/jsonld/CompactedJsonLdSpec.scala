@@ -77,12 +77,12 @@ class CompactedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers
     }
 
     "be merged with another compacted document" in {
-      val compacted  = CompactedJsonLd(rootBNode, context, jobj"""{"@type": "Person"}""")
-      val compacted2 = CompactedJsonLd(iri, ContextValue.empty, jobj"""{"name": "Batman"}""")
+      val compacted  = CompactedJsonLd.unsafe(rootBNode, context, jobj"""{"@type": "Person"}""")
+      val compacted2 = CompactedJsonLd.unsafe(iri, ContextValue.empty, jobj"""{"name": "Batman"}""")
       compacted.merge(iri, compacted2) shouldEqual
-        CompactedJsonLd(iri, context, jobj"""{"@id": "$iri", "@type": "Person", "name": "Batman"}""")
+        CompactedJsonLd.unsafe(iri, context, jobj"""{"@id": "$iri", "@type": "Person", "name": "Batman"}""")
       compacted2.merge(rootBNode, compacted) shouldEqual
-        CompactedJsonLd(rootBNode, context, jobj"""{"@type": "Person", "name": "Batman"}""")
+        CompactedJsonLd.unsafe(rootBNode, context, jobj"""{"@type": "Person", "name": "Batman"}""")
     }
   }
 }

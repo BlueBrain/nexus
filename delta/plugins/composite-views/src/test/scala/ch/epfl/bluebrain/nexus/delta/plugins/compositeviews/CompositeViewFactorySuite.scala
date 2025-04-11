@@ -22,7 +22,7 @@ import java.util.UUID
 
 class CompositeViewFactorySuite extends NexusSuite {
 
-  implicit private val projectBase: ProjectBase = ProjectBase.unsafe(iri"http://localhost/project")
+  implicit private val projectBase: ProjectBase = ProjectBase(iri"http://localhost/project")
   private val uuid                              = UUID.randomUUID()
   implicit private val uuidF: UUIDF             = UUIDF.fixed(uuid)
 

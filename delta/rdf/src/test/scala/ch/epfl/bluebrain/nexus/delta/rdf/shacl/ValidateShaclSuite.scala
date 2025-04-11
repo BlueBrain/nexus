@@ -43,7 +43,7 @@ class ValidateShaclSuite extends NexusSuite {
   test("Fail validating data if wrong field type") {
     val dataInvalidNumber = data.replace("number" -> 24, "Other")
     val detailedOutput    = jsonContentOf("shacl/failed_number.json")
-    val expectedReport    = ValidationReport(conforms = false, 10, detailedOutput)
+    val expectedReport    = ValidationReport.unsafe(conforms = false, 10, detailedOutput)
     for {
       wrongGraph <- toGraph(dataInvalidNumber)
       _          <- shaclValidation(wrongGraph, schemaGraph, reportDetails = true).assertEquals(expectedReport)

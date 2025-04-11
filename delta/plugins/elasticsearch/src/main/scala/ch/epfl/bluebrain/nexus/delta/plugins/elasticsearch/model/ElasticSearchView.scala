@@ -245,7 +245,9 @@ object ElasticSearchView {
       override def compact(
           value: ElasticSearchView
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[CompactedJsonLd] =
-        underlying.compact(value).map(c => c.copy(obj = stringToJson(c.obj)))
+        underlying.compact(value).map { c =>
+          CompactedJsonLd.unsafe(c.rootId, c.ctx, stringToJson(c.obj))
+        }
     }
   }
 

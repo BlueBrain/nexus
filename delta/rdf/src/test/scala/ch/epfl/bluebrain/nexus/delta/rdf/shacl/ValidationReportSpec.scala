@@ -32,7 +32,7 @@ class ValidationReportSpec extends CatsEffectSpec {
 
     "be constructed correctly when conforms" in {
       ValidationReport(resource(conforms)).accepted shouldEqual
-        ValidationReport(conforms = true, 1, conforms)
+        ValidationReport.unsafe(conforms = true, 1, conforms)
     }
 
     "be constructed correctly when fails" in {

@@ -61,9 +61,9 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
 
   private val subject: Subject            = Identity.User("user", Label.unsafe("realm"))
-  implicit private val caller: Caller     = Caller.unsafe(subject)
+  implicit private val caller: Caller     = Caller(subject)
   private val subjectNoFilePerms: Subject = Identity.User("nofileperms", Label.unsafe("realm"))
-  private val callerNoFilePerms: Caller   = Caller.unsafe(subjectNoFilePerms)
+  private val callerNoFilePerms: Caller   = Caller(subjectNoFilePerms)
 
   private val project    =
     ProjectGen.project("org", "proj", base = nxv.base, mappings = ApiMappings("file" -> schemas.files))

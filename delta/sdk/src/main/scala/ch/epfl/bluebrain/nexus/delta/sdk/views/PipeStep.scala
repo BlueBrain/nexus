@@ -61,7 +61,9 @@ object PipeStep {
     implicit val expandedDecoder: Decoder[ExpandedJsonLd] =
       Decoder.decodeJson.emap(ExpandedJsonLd.expanded(_).leftMap(_.getMessage))
     deriveDecoder[PipeStep].map {
-      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name.value)))
+      case p if p.config.isDefined =>
+        val config = p.config.map { e => ExpandedJsonLd.unsafe(nxv + p.name.value, e.obj) }
+        p.copy(config = config)
       case p                       => p
     }
   }
@@ -72,7 +74,9 @@ object PipeStep {
   implicit def pipeStepJsonLdDecoder(implicit configuration: Configuration): JsonLdDecoder[PipeStep] = {
     implicit val expandedJsonLdDecoder: JsonLdDecoder[ExpandedJsonLd] = (cursor: ExpandedJsonLdCursor) => cursor.focus
     deriveConfigJsonLdDecoder[PipeStep].map {
-      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name.value)))
+      case p if p.config.isDefined =>
+        val config = p.config.map { e => ExpandedJsonLd.unsafe(nxv + p.name.value, e.obj) }
+        p.copy(config = config)
       case p                       => p
     }
   }

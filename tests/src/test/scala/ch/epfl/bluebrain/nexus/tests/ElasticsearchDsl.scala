@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, PUT}
+import akka.http.scaladsl.model.HttpMethods.{DELETE, GET}
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCode}
+import akka.http.scaladsl.model.{HttpRequest, StatusCode}
 import akka.stream.Materializer
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
