@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy.TypeHierarchyMapping
@@ -11,15 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
 import munit.AnyFixture
 
 import java.time.Instant
 
 class TypeHierarchySuite extends NexusSuite with ConfigFixtures with FixedClock with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
-  private lazy val xas                           = doobie()
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest)
+  private lazy val xas                           = doobieTruncateAfterTest()
 
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
@@ -32,12 +30,6 @@ class TypeHierarchySuite extends NexusSuite with ConfigFixtures with FixedClock 
   private val updatedMapping                = mapping ++ Map(
     iri"https://schema.org/VideoGame" -> Set(iri"https://schema.org/SoftwareApplication", iri"https://schema.org/Thing")
   )
-
-  override def beforeEach(context: BeforeEach): Unit = {
-    super.beforeEach(context)
-    sql"""DELETE FROM global_events""".update.run.void.transact(xas.write).accepted
-    sql"""DELETE FROM global_states""".update.run.void.transact(xas.write).accepted
-  }
 
   test("Fetching a type hierarchy should fail when it doesn't exist") {
     typeHierarchy.fetch.intercept[TypeHierarchyDoesNotExist.type]

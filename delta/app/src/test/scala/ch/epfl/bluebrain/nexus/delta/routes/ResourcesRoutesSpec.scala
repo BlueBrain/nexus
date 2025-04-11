@@ -14,17 +14,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceAccess}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{delete, read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
@@ -38,16 +37,13 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  private val reader = User("reader", realm)
-  private val writer = User("writer", realm)
+  private val reader  = User("reader", realm)
+  private val writer  = User("writer", realm)
+  private val deleter = User("deleter", realm)
 
-  implicit private val callerReader: Caller =
-    Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val callerWriter: Caller =
-    Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val asReader = addCredentials(OAuth2BearerToken("reader"))
-  private val asWriter = addCredentials(OAuth2BearerToken("writer"))
+  private val asReader  = addCredentials(OAuth2BearerToken("reader"))
+  private val asWriter  = addCredentials(OAuth2BearerToken("writer"))
+  private val asDeleter = addCredentials(OAuth2BearerToken("deleter"))
 
   private val am         = ApiMappings("nxv" -> nxv.base, "Person" -> schemaOrg.Person)
   private val projBase   = nxv.base
@@ -78,7 +74,11 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
     "self" -> ResourceAccess.resource(projectRef, nxv + id).uri
   )
 
-  private val aclCheck = AclSimpleCheck().accepted
+  private val aclCheck = AclSimpleCheck.unsafe(
+    (reader, AclAddress.Root, Set(read)),
+    (writer, AclAddress.Root, Set(read, write)),
+    (deleter, AclAddress.Root, Set(read, delete))
+  )
 
   private val validateResource                                     = validateFor(Set((projectRef, schema1), (projectRef, schema2)))
   private val fetchContext                                         = FetchContextDummy(List(project.value))
@@ -97,7 +97,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
 
   private lazy val routes = Route.seal(
     ResourcesRoutes(
-      IdentitiesDummy(callerReader, callerWriter),
+      IdentitiesDummy.generateFromUsers(reader, writer, deleter),
       aclCheck,
       resources,
       IndexingAction.noop
@@ -112,12 +112,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
 
   private val resourceCtx =
     json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}", "schema" : "${schemaOrg.base}"}]}"""
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    aclCheck.append(AclAddress.Root, reader -> Set(read)).accepted
-    aclCheck.append(AclAddress.Root, writer -> Set(read, write)).accepted
-  }
 
   "A resource route" should {
 
@@ -716,6 +710,23 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
             status shouldEqual StatusCodes.NotFound
             response.asJson.hcursor.get[String]("@type").toOption should contain("ResourceNotFound")
           }
+        }
+      }
+    }
+
+    "fail to delete a resource for an unauthorized user" in {
+      Delete("/v1/resources/myorg/myproject/_/xxx?prune=true") ~> asReader ~> routes ~> check {
+        response.shouldBeForbidden
+      }
+    }
+
+    "successfully delete a resource for an authorized user" in {
+      givenAResource { id =>
+        Delete(s"/v1/resources/myorg/myproject/_/$id?prune=true") ~> asDeleter ~> routes ~> check {
+          status shouldEqual StatusCodes.NoContent
+        }
+        Get(s"/v1/resources/myorg/myproject/_/$id") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
         }
       }
     }

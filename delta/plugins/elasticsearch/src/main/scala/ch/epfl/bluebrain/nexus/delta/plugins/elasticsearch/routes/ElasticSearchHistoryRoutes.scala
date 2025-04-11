@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.Route
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.EventMetricsQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.FetchHistory
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -18,7 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
-class ElasticSearchHistoryRoutes(identities: Identities, aclCheck: AclCheck, metricsQuery: EventMetricsQuery)(implicit
+/**
+  * Routes allowing to get the history of events for resources
+  */
+class ElasticSearchHistoryRoutes(identities: Identities, aclCheck: AclCheck, fetchHistory: FetchHistory)(implicit
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -32,7 +35,7 @@ class ElasticSearchHistoryRoutes(identities: Identities, aclCheck: AclCheck, met
           projectRef.apply { project =>
             authorizeFor(project, Read).apply {
               (get & iriSegment & pathEndOrSingleSlash) { id =>
-                emit(metricsQuery.history(project, id).map(_.asJson).attemptNarrow[ElasticSearchQueryError])
+                emit(fetchHistory.history(project, id).map(_.asJson).attemptNarrow[ElasticSearchQueryError])
               }
             }
           }

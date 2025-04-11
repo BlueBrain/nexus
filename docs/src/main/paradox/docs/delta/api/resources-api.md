@@ -281,6 +281,20 @@ Request
 Response
 :   @@snip [undeprecated.json](assets/resources/undeprecated.json)
 
+## Deletion
+
+Permanently deletes a resource, purging any reference to it in the system from the primary store 
+to the target of the different projections.
+
+```
+DELETE /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?prune=true
+```
+
+**Example**
+
+Request
+:   @@snip [deprecate.sh](assets/resources/delete.sh)
+
 ## Change schema
 
 This operation allows to only change the schema of a resource without providing any payload.

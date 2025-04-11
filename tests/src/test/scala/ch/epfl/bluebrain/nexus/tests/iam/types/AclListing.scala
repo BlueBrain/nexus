@@ -115,11 +115,12 @@ object Permission {
   }
 
   object Resources {
-    val name              = "resources"
-    val Read: Permission  = Permission(name, "read")
-    val Write: Permission = Permission(name, "write")
+    val name               = "resources"
+    val Read: Permission   = Permission(name, "read")
+    val Write: Permission  = Permission(name, "write")
+    val Delete: Permission = Permission(name, "delete")
 
-    val list: List[Permission] = Read :: Write :: Nil
+    val list: List[Permission] = Read :: Write :: Delete :: Nil
   }
 
   object Schemas {
@@ -192,7 +193,7 @@ object Permission {
       Organizations.list ++
       Projects.list ++
       Resolvers.list ++
-      Resources.list ++
+      (Resources.Read :: Resources.Write :: Nil) ++
       Schemas.admin ++
       Views.list ++
       Storages.list).toSet

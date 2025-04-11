@@ -48,7 +48,7 @@ object DDLLoader {
     for {
       commonScripts    <- ddls(s"$scriptDirectory/common/")
       partitionScripts <- ddls(partitionScriptDir(partitionStrategy))
-    } yield (commonScripts ++ partitionScripts).sorted
+    } yield partitionScripts.sorted ++ commonScripts.sorted
 
   def setup(tablesAutocreate: Boolean, partitionStrategy: PartitionStrategy, xas: Transactors): IO[Unit] =
     IO.whenA(tablesAutocreate) {

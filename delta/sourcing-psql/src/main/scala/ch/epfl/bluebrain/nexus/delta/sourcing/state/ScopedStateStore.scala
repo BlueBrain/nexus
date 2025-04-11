@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFou
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Serializer, Transactors}
-import doobie._
+import doobie.free.connection
+import doobie.{ConnectionIO, _}
 import doobie.syntax.all._
 import doobie.postgres.implicits._
 import io.circe.Decoder
@@ -41,23 +42,25 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   /**
     * Delete the state for the given tag
     */
-  def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit]
+  def delete(project: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit]
 
   /**
     * Returns the latest state from the write nodes to get a stronger consistency when the Postgres works in a
     * replicated fashion
     */
-  def getWrite(ref: ProjectRef, id: Id): IO[S]
+  def getWrite(project: ProjectRef, id: Id): IO[S]
 
   /**
-    * Returns the latest state
+    * Returns the latest state from any node
     */
-  def get(ref: ProjectRef, id: Id): IO[S]
+  def getRead(project: ProjectRef, id: Id): IO[S]
 
   /**
-    * Returns the state at the given tag
+    * Returns the state at the given tag from any node
     */
-  def get(ref: ProjectRef, id: Id, tag: Tag): IO[S]
+  def getRead(project: ProjectRef, id: Id, tag: Tag): IO[S]
+
+  def get(project: ProjectRef, id: Id): ConnectionIO[S]
 
   /**
     * Fetches latest states from the given type from the provided offset.
@@ -185,8 +188,8 @@ object ScopedStateStore {
           }.update.run.void
         }
 
-    override def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
-      sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void
+    override def delete(project: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
+      sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${project.organization} AND project = ${project.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void
 
     private def exists(ref: ProjectRef, id: Id): ConnectionIO[Boolean] =
       sql"""SELECT id FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project} AND id = $id LIMIT 1"""
@@ -194,19 +197,22 @@ object ScopedStateStore {
         .option
         .map(_.isDefined)
 
-    override def getWrite(ref: ProjectRef, id: Id): IO[S] = get(ref, id, xas.write)
+    override def getWrite(project: ProjectRef, id: Id): IO[S] =
+      get(project, id).transact(xas.write)
 
-    override def get(ref: ProjectRef, id: Id): IO[S] = get(ref, id, xas.read)
+    override def getRead(project: ProjectRef, id: Id): IO[S] =
+      get(project, id).transact(xas.read)
 
-    private def get(ref: ProjectRef, id: Id, xa: Transactor[IO]) =
-      ScopedStateGet.latest[Id, S](tpe, ref, id).transact(xa).flatMap { s =>
-        IO.fromOption(s)(UnknownState)
+    override def get(project: ProjectRef, id: Id): ConnectionIO[S] =
+      ScopedStateGet.latest[Id, S](tpe, project, id).flatMap {
+        case Some(s) => s.pure[ConnectionIO]
+        case None    => connection.raiseError(UnknownState)
       }
 
-    override def get(ref: ProjectRef, id: Id, tag: Tag): IO[S] = {
+    override def getRead(project: ProjectRef, id: Id, tag: Tag): IO[S] = {
       for {
-        value  <- ScopedStateGet[Id, S](tpe, ref, id, tag)
-        exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
+        value  <- ScopedStateGet[Id, S](tpe, project, id, tag)
+        exists <- value.fold(exists(project, id))(_ => true.pure[ConnectionIO])
       } yield value -> exists
     }.transact(xas.read).flatMap { case (s, exists) =>
       IO.fromOption(s)(if (exists) TagNotFound else UnknownState)

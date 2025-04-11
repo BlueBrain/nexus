@@ -2,19 +2,27 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, SuccessElemStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
+import doobie.Fragments
+import doobie.postgres.implicits._
 import doobie.syntax.all._
 import doobie.util.query.Query0
-import doobie.{Fragment, Fragments}
 import io.circe.Json
 
+import java.time.Instant
+
 object EventStreaming {
+
+  private val logger = Logger[EventStreaming.type]
 
   def fetchScoped[A](
       scope: Scope,
@@ -22,16 +30,13 @@ object EventStreaming {
       offset: Offset,
       config: QueryConfig,
       xas: Transactors
-  )(implicit md: MultiDecoder[A]): SuccessElemStream[A] = {
-    val typeIn = NonEmptyList.fromList(types).map { types => Fragments.in(fr"type", types) }
-
+  )(implicit md: MultiDecoder[A]): ElemStream[A] =
     streamA(
       offset,
-      offset => scopedEvents(typeIn, scope, offset, config),
+      offset => scopedEvents(types, scope, offset, config),
       xas,
       config
     )
-  }
 
   /**
     * Stream results for the provided query from the start offset. The refresh strategy in the query configuration
@@ -53,10 +58,10 @@ object EventStreaming {
     */
   private def streamA[A](
       start: Offset,
-      query: Offset => Query0[Elem.SuccessElem[Json]],
+      query: Offset => Query0[Elem[Json]],
       xas: Transactors,
       cfg: QueryConfig
-  )(implicit md: MultiDecoder[A]): SuccessElemStream[A] =
+  )(implicit md: MultiDecoder[A]): ElemStream[A] =
     streamFA(start, query, xas, cfg, (tpe, json) => IO.pure(md.decodeJson(tpe, json).toOption))
 
   /**
@@ -78,25 +83,63 @@ object EventStreaming {
     */
   private def streamFA[A](
       start: Offset,
-      query: Offset => Query0[Elem.SuccessElem[Json]],
+      query: Offset => Query0[Elem[Json]],
       xas: Transactors,
       cfg: QueryConfig,
       decode: (EntityType, Json) => IO[Option[A]]
-  ): SuccessElemStream[A]           =
-    StreamingQuery[Elem.SuccessElem[Json]](start, query, _.offset, cfg.refreshStrategy, xas)
+  ): ElemStream[A] =
+    StreamingQuery[Elem[Json]](start, query, _.offset, cfg.refreshStrategy, xas)
       // evalMapFilter re-chunks to 1, the following 2 statements do the same but preserve the chunks
-      .evalMapChunk(e => decode(e.tpe, e.value).map(_.map(a => e.copy(value = a))))
-      .collect { case Some(e) => e }
+      .evalMapChunk { e =>
+        e.evalMapFilter { value =>
+          decode(e.tpe, value).onError { case err =>
+            logger.error(err)(
+              s"An error occurred while decoding value with id '${e.id}' of type '${e.tpe}' in '${e.project}'."
+            )
+          }
+        }
+      }
 
   private def scopedEvents(
-      typeIn: Option[Fragment],
+      types: List[EntityType],
       scope: Scope,
-      o: Offset,
+      offset: Offset,
       cfg: QueryConfig
-  ): Query0[Elem.SuccessElem[Json]] =
-    fr"""SELECT type, id, value, rev, instant, ordering, org, project FROM public.scoped_events
-        |${Fragments.whereAndOpt(typeIn, scope.asFragment, o.asFragment)}
+  ): Query0[Elem[Json]] =
+    fr"""((SELECT 'newEvent', type, org, project, id, value, rev, instant, ordering
+        |FROM public.scoped_events
+        |${eventFilter(types, scope, offset)}
         |ORDER BY ordering
-        |LIMIT ${cfg.batchSize}""".stripMargin.query[Elem.SuccessElem[Json]]
+        |LIMIT ${cfg.batchSize})
+        |UNION
+        |(SELECT 'tombstone', type, org, project, id, null, -1, instant, ordering
+        |FROM public.scoped_event_tombstones
+        |${tombstoneFilter(types, scope, offset)}
+        |ORDER BY ordering
+        |LIMIT ${cfg.batchSize})
+        |ORDER BY ordering)
+        |LIMIT ${cfg.batchSize}
+        |""".stripMargin.query[(String, EntityType, Label, Label, Iri, Option[Json], Int, Instant, Offset)].map {
+      case ("newEvent", entityType, org, project, id, Some(json), rev, instant, offset) =>
+        SuccessElem(entityType, id, ProjectRef(org, project), instant, offset, json, rev)
+      case (_, entityType, org, project, id, _, rev, instant, offset)                   =>
+        DroppedElem(entityType, id, ProjectRef(org, project), instant, offset, rev)
+    }
 
+  private def typesIn(types: List[EntityType]) =
+    NonEmptyList.fromList(types).map { types => Fragments.in(fr"type", types) }
+
+  private def eventFilter(types: List[EntityType], scope: Scope, offset: Offset) =
+    Fragments.whereAndOpt(
+      typesIn(types),
+      scope.asFragment,
+      offset.asFragment
+    )
+
+  private def tombstoneFilter(types: List[EntityType], scope: Scope, offset: Offset) =
+    Fragments.whereAndOpt(
+      typesIn(types),
+      scope.asFragment,
+      offset.asFragment
+    )
 }

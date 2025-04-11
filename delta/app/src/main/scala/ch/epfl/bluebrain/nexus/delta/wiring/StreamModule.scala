@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.StateTombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures, Transactors}
 import izumi.distage.model.definition.ModuleDef
 
@@ -88,6 +88,6 @@ object StreamModule extends ModuleDef {
   }
 
   many[PurgeProjection].add { (config: ProjectionConfig, xas: Transactors) =>
-    TombstoneStore.deleteExpired(config.tombstonePurge, xas)
+    StateTombstoneStore.deleteExpired(config.tombstonePurge, xas)
   }
 }

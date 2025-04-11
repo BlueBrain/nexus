@@ -24,6 +24,8 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
     */
   def save(event: E): ConnectionIO[Unit]
 
+  def deleteAll(project: ProjectRef, id: Id): ConnectionIO[Unit]
+
   /**
     * Fetches the history for the event up to the provided revision
     */
@@ -74,6 +76,12 @@ object ScopedEventStore {
              |  ${event.instant}
              | )
        """.stripMargin.update.run.void
+
+      override def deleteAll(project: ProjectRef, id: Id): ConnectionIO[Unit] =
+        sql"""| DELETE FROM scoped_events
+              | WHERE org = ${project.organization}
+              | AND project = ${project.project}
+              | AND id = $id""".stripMargin.update.run.void
 
       override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[ConnectionIO, E] = {
         val select =

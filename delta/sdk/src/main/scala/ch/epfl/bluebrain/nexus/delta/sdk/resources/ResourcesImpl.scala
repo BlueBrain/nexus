@@ -134,24 +134,34 @@ final class ResourcesImpl private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Int
-  )(implicit caller: Subject): IO[DataResource] =
-    (for {
+  )(implicit caller: Subject): IO[DataResource] = {
+    for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemeRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       res                   <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller))
-    } yield res).span("deprecateResource")
+    } yield res
+  }.span("deprecateResource")
 
   override def undeprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Int
-  )(implicit caller: Subject): IO[DataResource] =
-    (for {
+  )(implicit caller: Subject): IO[DataResource] = {
+    for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
       schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       res                   <- eval(UndeprecateResource(iri, projectRef, schemaRefOpt, rev, caller))
-    } yield res).span("undeprecateResource")
+    } yield res
+  }.span("undeprecateResource")
+
+  override def delete(id: IdSegment, project: ProjectRef)(implicit caller: Subject): IO[Unit] = {
+    for {
+      (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      _        <- logger.info(s"Deleting resource $iri in project $project")
+      _        <- log.delete(project, iri, ResourceNotFound(iri, project))
+    } yield ()
+  }.span("deleteResource")
 
   def fetchState(
       id: IdSegmentRef,

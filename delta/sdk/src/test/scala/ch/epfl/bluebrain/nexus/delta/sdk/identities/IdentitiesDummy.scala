@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 
 /**
   * Dummy implementation of [[Identities]] passing the expected results in a map
@@ -28,5 +28,14 @@ object IdentitiesDummy {
         case User(subject, _) => Some(AuthToken(subject) -> c)
         case _                => None
       }
+    }.toMap)
+
+  /**
+    * Create a new dummy Identities implementation from a list of users
+    */
+  def generateFromUsers(users: User*): Identities =
+    new IdentitiesDummy(users.map { u =>
+      val caller = Caller(u, Set(u, Anonymous, Authenticated(u.realm), Group("group", u.realm)))
+      AuthToken(u.subject) -> caller
     }.toMap)
 }

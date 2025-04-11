@@ -1,13 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.metrics
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-import io.circe.syntax.{EncoderOps, KeyOps}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
+import io.circe.syntax.KeyOps
 import io.circe.{Encoder, JsonObject}
 
 import java.time.Instant
@@ -78,37 +75,6 @@ object EventMetric {
   val Deleted: Label      = Label.unsafe("Deleted")
 
   /**
-    * Metric extracted from an event independent from an org/project
-    */
-  final case class UnscopedMetric(
-      instant: Instant,
-      subject: Subject,
-      rev: Int,
-      action: Set[Label],
-      id: Iri,
-      types: Set[Iri],
-      additionalFields: JsonObject
-  ) extends EventMetric {
-    def eventId: String = s"$id-$rev"
-  }
-
-  /**
-    * Metric extracted from an event related to organizations
-    */
-  final case class OrganizationMetric(
-      instant: Instant,
-      subject: Subject,
-      rev: Int,
-      action: Set[Label],
-      organization: Label,
-      id: Iri,
-      types: Set[Iri],
-      additionalFields: JsonObject
-  ) extends EventMetric {
-    def eventId: String = s"$organization-$id-$rev"
-  }
-
-  /**
     * Metric extracted from an event related to a project
     */
   final case class ProjectScopedMetric(
@@ -117,7 +83,6 @@ object EventMetric {
       rev: Int,
       action: Set[Label],
       project: ProjectRef,
-      organization: Label,
       id: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
@@ -139,7 +104,6 @@ object EventMetric {
         event.rev,
         action,
         event.project,
-        event.project.organization,
         id,
         types,
         additionalFields
@@ -158,7 +122,6 @@ object EventMetric {
         event.rev,
         Set(action),
         event.project,
-        event.project.organization,
         id,
         types,
         additionalFields
@@ -167,8 +130,7 @@ object EventMetric {
 
   implicit val eventMetricEncoder: Encoder.AsObject[EventMetric] = {
 
-    implicit val configuration: Configuration   = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val subjectCodec: Encoder[Subject] = deriveConfiguredEncoder[Subject]
+    implicit val subjectCodec: Encoder[Subject] = Identity.Database.subjectCodec
     Encoder.AsObject.instance { e =>
       val common = JsonObject(
         "instant" := e.instant,
@@ -180,15 +142,10 @@ object EventMetric {
       )
 
       val scoped = e match {
-        case _: UnscopedMetric      => JsonObject.empty
-        case o: OrganizationMetric  =>
-          JsonObject(
-            "organization" -> o.organization.asJson
-          )
         case p: ProjectScopedMetric =>
           JsonObject(
-            "project"      -> p.project.asJson,
-            "organization" -> p.organization.asJson
+            "project"      := p.project,
+            "organization" := p.project.organization
           )
       }
 
@@ -197,8 +154,6 @@ object EventMetric {
   }
 
   implicit val projectScopedMetricEncoder: Encoder.AsObject[ProjectScopedMetric] =
-    eventMetricEncoder.contramapObject {
-      identity
-    }
+    eventMetricEncoder.contramapObject { identity }
 
 }
