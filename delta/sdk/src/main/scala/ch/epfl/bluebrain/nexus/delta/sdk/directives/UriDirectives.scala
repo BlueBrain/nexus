@@ -29,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 
 trait UriDirectives extends QueryParamsUnmarshalling {
 
-  val simultaneousTagAndRevRejection: MalformedQueryParamRejection =
+  private val simultaneousTagAndRevRejection: MalformedQueryParamRejection =
     MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
 
   private val reservedIdSegments = Set("events", "source", "tags")
@@ -130,6 +130,14 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   def noRev: Directive0 = noParameter("rev")
+
+  /**
+    * Check for the prune query parameter to be set to true
+    */
+  def prune: Directive0 = parameter("prune".as[Boolean]).flatMap {
+    case true  => pass
+    case false => reject()
+  }
 
   /**
     * Consumes a path Segment and parse it into an [[IdSegment]]

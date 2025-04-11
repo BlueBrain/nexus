@@ -214,6 +214,15 @@ trait Resources {
   )(implicit caller: Subject): IO[DataResource]
 
   /**
+    * Delete an existing resource
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param project
+    *   the project reference where the resource belongs
+    */
+  def delete(id: IdSegment, project: ProjectRef)(implicit caller: Subject): IO[Unit]
+
+  /**
     * Fetches a resource state.
     *
     * @param id
@@ -561,7 +570,8 @@ object Resources {
       StateMachine(None, evaluate(validateResource, detectChange, clock)(_, _), next),
       ResourceEvent.serializer,
       ResourceState.serializer,
-      Tagger[ResourceEvent](
+      Tagger[ResourceState, ResourceEvent](
+        _.tags.some,
         {
           case r: ResourceCreated       => r.tag.map(t => t -> r.rev)
           case r: ResourceUpdated       => r.tag.map(t => t -> r.rev)

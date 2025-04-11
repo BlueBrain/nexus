@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
-import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.StateTombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.syntax.all._
@@ -36,9 +36,10 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
 
   private val qc = QueryConfig(2, RefreshStrategy.Stop)
 
-  private lazy val xas           = doobie()
-  private val entityTypes        = Some(NonEmptyList.of(PullRequest.entityType, Release.entityType))
-  private lazy val elemStreaming = ElemStreaming.stopping(xas, entityTypes, 2)
+  private lazy val xas            = doobie()
+  private val entityTypes         = Some(NonEmptyList.of(PullRequest.entityType, Release.entityType))
+  private lazy val elemStreaming  = ElemStreaming.stopping(xas, entityTypes, 2)
+  private lazy val tombstoneStore = new StateTombstoneStore(xas)
 
   private lazy val prStore = ScopedStateStore[Iri, PullRequestState](
     PullRequest.entityType,
@@ -101,12 +102,12 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
         _ <- releaseStore.save(release12) //8
         _ <- releaseStore.save(release12, customTag) //9
         _ <- prStore.save(prState13, customTag) //10
-        _ <- TombstoneStore.save(PullRequest.entityType, prState13, customTag) //11
+        _ <- tombstoneStore.save(PullRequest.entityType, prState13, customTag) //11
         _ <- prStore.save(prState12, customTag) //12
         _ <- releaseStore.save(release21) //13
-        _ <- TombstoneStore.save(PullRequest.entityType, prState11, customTag) //14
+        _ <- tombstoneStore.save(PullRequest.entityType, prState11, customTag) //14
         _ <- prStore.save(prState14) //15
-        _ <- TombstoneStore.save(Release.entityType, release12, customTag) //16
+        _ <- tombstoneStore.save(Release.entityType, release12, customTag) //16
         _ <- prStore.save(prState14, customTag) //17
       } yield ()
     }.transact(xas.write)

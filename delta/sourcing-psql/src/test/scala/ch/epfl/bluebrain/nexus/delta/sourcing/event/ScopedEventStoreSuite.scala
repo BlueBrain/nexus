@@ -66,4 +66,10 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
   test("Get an empty stream for an unknown (project, id)") {
     store.history(project2, id2, 2).transact(xas.read).assertEmpty
   }
+
+  test(s"Delete all events for id $id1 in project $project1") {
+    store.deleteAll(project1, id1).transact(xas.write) >>
+      store.history(project1, id2).transact(xas.read).assert(event4)
+    store.history(project2, id1).transact(xas.read).assert(event5)
+  }
 }

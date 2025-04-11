@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef, SuccessElemStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef, SuccessElemStream, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 
 import java.util.UUID
@@ -585,7 +585,8 @@ object Files {
       StateMachine(None, evaluate(clock)(_, _), next),
       FileEvent.serializer,
       FileState.serializer,
-      Tagger[FileEvent](
+      Tagger[FileState, FileEvent](
+        _.tags.some,
         {
           case f: FileCreated               => f.tag.map(t => t -> f.rev)
           case f: FileUpdated               => f.tag.map(t => t -> f.rev)

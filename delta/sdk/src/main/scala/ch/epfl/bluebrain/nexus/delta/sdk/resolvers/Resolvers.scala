@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DifferentResolverType, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -303,20 +302,11 @@ object Resolvers {
     * Entity definition for [[Resolvers]]
     */
   def definition(validatePriority: ValidatePriority, clock: Clock[IO]): ResolverDefinition =
-    ScopedEntityDefinition(
+    ScopedEntityDefinition.untagged(
       entityType,
       StateMachine(None, evaluate(validatePriority, clock)(_, _), next),
       ResolverEvent.serializer,
       ResolverState.serializer,
-      Tagger[ResolverEvent](
-        {
-          case r: ResolverTagAdded => Some(r.tag -> r.targetRev)
-          case _                   => None
-        },
-        { _ =>
-          None
-        }
-      ),
       _.value match {
         case _: InProjectValue    => None
         case c: CrossProjectValue =>

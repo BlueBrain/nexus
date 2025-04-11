@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.EventTombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.syntax.all._
@@ -40,6 +41,8 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
     queryConfig
   )
 
+  private lazy val eventTombstoneStore = new EventTombstoneStore(xas)
+
   private val id1 = nxv + "id1"
   private val id2 = nxv + "id2"
   private val id3 = nxv + "id3"
@@ -61,11 +64,14 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
     MultiDecoder(PullRequest.entityType -> prDecoder, EntityType("github") -> prDecoder)
 
   test("Save events") {
-    (gitlabPrStore.save(event1) >>
-      gitlabPrStore.save(event2) >>
-      gitlabPrStore.save(event3) >>
-      gitlabPrStore.save(event4) >>
-      githubPrStore.save(event5)).transact(xas.write)
+    (
+      gitlabPrStore.save(event1) >>
+        gitlabPrStore.save(event2) >>
+        gitlabPrStore.save(event3) >>
+        gitlabPrStore.save(event4) >>
+        githubPrStore.save(event5) >>
+        eventTombstoneStore.save(PullRequest.entityType, project1, id1, Anonymous)
+    ).transact(xas.write)
   }
 
   test("Get events of all types from the start") {
@@ -77,13 +83,14 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
         queryConfig,
         xas
       )
-      .map { e => e.offset -> e.value }
+      .map { e => e.offset -> e.toOption }
       .assert(
-        Offset.at(1L) -> IdRev(id1, 1),
-        Offset.at(2L) -> IdRev(id2, 1),
-        Offset.at(3L) -> IdRev(id1, 2),
-        Offset.at(4L) -> IdRev(id3, 1),
-        Offset.at(5L) -> IdRev(id4, 1)
+        Offset.at(1L) -> Some(IdRev(id1, 1)),
+        Offset.at(2L) -> Some(IdRev(id2, 1)),
+        Offset.at(3L) -> Some(IdRev(id1, 2)),
+        Offset.at(4L) -> Some(IdRev(id3, 1)),
+        Offset.at(5L) -> Some(IdRev(id4, 1)),
+        Offset.at(6L) -> None
       )
   }
 
@@ -96,11 +103,12 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
         queryConfig,
         xas
       )
-      .map { e => e.offset -> e.value }
+      .map { e => e.offset -> e.toOption }
       .assert(
-        Offset.at(3L) -> IdRev(id1, 2),
-        Offset.at(4L) -> IdRev(id3, 1),
-        Offset.at(5L) -> IdRev(id4, 1)
+        Offset.at(3L) -> Some(IdRev(id1, 2)),
+        Offset.at(4L) -> Some(IdRev(id3, 1)),
+        Offset.at(5L) -> Some(IdRev(id4, 1)),
+        Offset.at(6L) -> None
       )
   }
 
@@ -113,7 +121,6 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
         queryConfig,
         xas
       )
-      .map { e => e.offset -> e.value }
       .assertEmpty
   }
 
@@ -126,9 +133,9 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
         queryConfig,
         xas
       )
-      .map { e => e.offset -> e.value }
+      .map { e => e.offset -> e.toOption }
       .assert(
-        Offset.at(5L) -> IdRev(id4, 1)
+        Offset.at(5L) -> Some(IdRev(id4, 1))
       )
   }
 
@@ -141,9 +148,9 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
         queryConfig,
         xas
       )
-      .map { e => e.offset -> e.value }
+      .map { e => e.offset -> e.toOption }
       .assert(
-        Offset.at(3L) -> IdRev(id1, 2)
+        Offset.at(3L) -> Some(IdRev(id1, 2))
       )
   }
 
@@ -156,10 +163,10 @@ class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Ass
         queryConfig,
         xas
       )
-      .map { e => e.offset -> e.value }
+      .map { e => e.offset -> e.toOption }
       .assert(
-        Offset.at(2L) -> IdRev(id2, 1),
-        Offset.at(3L) -> IdRev(id1, 2)
+        Offset.at(2L) -> Some(IdRev(id2, 1)),
+        Offset.at(3L) -> Some(IdRev(id1, 2))
       )
   }
 

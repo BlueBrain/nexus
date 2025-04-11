@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask, MainIndexDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, MainIndexingAction, MainIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetricsProjection, EventMetricsQuery, MetricsIndexDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetrics, EventMetricsProjection, MetricsIndexDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
@@ -161,19 +161,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         supervisor: Supervisor,
         projections: Projections,
-        client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig,
-        metricIndex: MetricsIndexDef
+        eventMetrics: EventMetrics,
+        config: ElasticSearchViewsConfig
     ) =>
       EventMetricsProjection(
         metricEncoders,
         supervisor,
         projections,
-        client,
+        eventMetrics,
         xas,
         config.batch,
         config.metricsQuery,
-        metricIndex,
         config.indexingEnabled
       )
   }
@@ -317,26 +315,24 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[EventMetricsQuery].from { (client: ElasticSearchClient, metricsIndex: MetricsIndexDef) =>
-    EventMetricsQuery(client, metricsIndex.name)
+  make[EventMetrics].from { (client: ElasticSearchClient, metricsIndex: MetricsIndexDef) =>
+    EventMetrics(client, metricsIndex)
   }
 
   make[ElasticSearchHistoryRoutes].from {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        metricsQuery: EventMetricsQuery,
+        eventMetrics: EventMetrics,
         rcr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ElasticSearchHistoryRoutes(identities, aclCheck, metricsQuery)(rcr, ordering)
+      new ElasticSearchHistoryRoutes(identities, aclCheck, eventMetrics)(rcr, ordering)
   }
 
   many[ProjectDeletionTask].add { (views: ElasticSearchViews) => ElasticSearchDeletionTask(views) }
 
-  many[ProjectDeletionTask].add { (client: ElasticSearchClient, metricsIndex: MetricsIndexDef) =>
-    new EventMetricsDeletionTask(client, metricsIndex.name)
-  }
+  many[ProjectDeletionTask].add { (eventMetrics: EventMetrics) => new EventMetricsDeletionTask(eventMetrics) }
 
   many[ProjectDeletionTask].add { (client: ElasticSearchClient, config: ElasticSearchViewsConfig) =>
     new MainIndexDeletionTask(client, config.mainIndex.index)

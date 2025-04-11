@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 import fs2.Stream
 import io.circe.syntax.EncoderOps
@@ -95,13 +95,16 @@ object SseEventLog {
 
   private val logger = Logger[SseEventLog]
 
-  private[sse] def toServerSentEvent(
-      elem: Elem.SuccessElem[SseData]
-  )(implicit jo: JsonKeyOrdering): ServerSentEvent = {
-    val data = elem.value.data
-    elem.offset match {
-      case Start     => ServerSentEvent(defaultPrinter.print(data.asJson.sort), elem.value.tpe)
-      case At(value) => ServerSentEvent(defaultPrinter.print(data.asJson.sort), elem.value.tpe, value.toString)
+  private[sse] def toServerSentEvent(elem: Elem[SseData])(implicit jo: JsonKeyOrdering): ServerSentEvent = {
+    val id = Option.when(elem.offset != Offset.start)(elem.offset.value.toString)
+    elem match {
+      case e: SuccessElem[SseData] =>
+        val data = defaultPrinter.print(e.value.data.asJson.sort)
+        new ServerSentEvent(data, Some(e.value.tpe), id)
+      case f: FailedElem           =>
+        new ServerSentEvent(f.throwable.getMessage, Some("Error"), id)
+      case _: Elem.DroppedElem     =>
+        new ServerSentEvent("", Some("Deleted"), id)
     }
   }
 

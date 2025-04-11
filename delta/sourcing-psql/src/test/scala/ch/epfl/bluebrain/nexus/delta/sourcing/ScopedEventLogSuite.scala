@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTagFailure, EvaluationTimeout}
@@ -12,17 +13,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.{EventTombstoneStore, StateTombstoneStore}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import doobie.syntax.all._
-import doobie.postgres.implicits._
 import io.circe.Decoder
-import munit.AnyFixture
+import munit.{AnyFixture, Location}
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -34,6 +35,9 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   private lazy val xas = doobie()
 
   private val queryConfig = QueryConfig(10, RefreshStrategy.Delay(500.millis))
+
+  private lazy val eventTombstoneStore = new EventTombstoneStore(xas)
+  private lazy val stateTombstoneStore = new StateTombstoneStore(xas)
 
   private lazy val eventStore = PullRequest.eventStore(queryConfig)
 
@@ -53,7 +57,13 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   private val state2 = PullRequestActive(id, proj, 2, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
   private val state3 = PullRequestClosed(id, proj, 3, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
 
-  private val tag = UserTag.unsafe("active")
+  private val tagActive = UserTag.unsafe("active")
+  private val tagClosed = UserTag.unsafe("closed")
+
+  implicit val user: User = User("writer", Label.unsafe("realm"))
+
+  private def assertStateNotFound(project: ProjectRef, id: Iri)(implicit loc: Location) =
+    eventLog.stateOr(project, id, NotFound).interceptEquals(NotFound)
 
   private lazy val eventLog: ScopedEventLog[
     Iri,
@@ -67,13 +77,15 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
     stateStore,
     PullRequest.stateMachine,
     (id: Iri, c: PullRequestCommand) => AlreadyExists(id, c.project),
-    Tagger[PullRequestEvent](
+    Tagger[PullRequestState, PullRequestEvent](
+      _.tags.some,
       {
-        case t: PullRequestTagged => Some(tag -> t.targetRev)
+        case t: PullRequestTagged => Some(tagActive -> t.targetRev)
+        case m: PullRequestMerged => Some(tagClosed -> m.rev)
         case _                    => None
       },
       {
-        case _: PullRequestMerged => Some(tag)
+        case _: PullRequestMerged => Some(tagActive)
         case _                    => None
       }
     ),
@@ -105,11 +117,11 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   }
 
   test("Raise an error with a non-existent project") {
-    eventLog.stateOr(ProjectRef.unsafe("xxx", "xxx"), id, NotFound).interceptEquals(NotFound)
+    assertStateNotFound(ProjectRef.unsafe("xxx", "xxx"), id)
   }
 
   test("Raise an error with a non-existent id") {
-    eventLog.stateOr(proj, nxv + "xxx", NotFound).interceptEquals(NotFound)
+    assertStateNotFound(proj, nxv + "xxx")
   }
 
   test("Tag and check that the state has also been successfully tagged as well") {
@@ -117,7 +129,7 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
       _ <- eventLog.evaluate(proj, id, TagPR(id, proj, 2, 1)).assertEquals((tagged, state2))
       _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state2)
-      _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).assertEquals(state1)
+      _ <- eventLog.stateOr(proj, id, tagActive, NotFound, TagNotFound).assertEquals(state1)
     } yield ()
   }
 
@@ -142,16 +154,14 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
     } yield ()
   }
 
-  test("Check that the tagged state has been successfully removed after") {
-    val query = sql"""SELECT type, org, project, id, tag, instant FROM scoped_tombstones"""
-      .query[(EntityType, Label, Label, Iri, Tag, Instant)]
-      .unique
-      .transact(xas.read)
+  test(
+    "Check that the state with the active has been successfully removed, the closed one has been set and that a tombstone has been set"
+  ) {
     for {
-      _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).interceptEquals(TagNotFound)
-      _ <- query.assertEquals((PullRequest.entityType, proj.organization, proj.project, id, tag, Instant.EPOCH))
+      _ <- eventLog.stateOr(proj, id, tagActive, NotFound, TagNotFound).interceptEquals(TagNotFound)
+      _ <- eventLog.stateOr(proj, id, tagClosed, NotFound, TagNotFound).assertEquals(state3)
+      _ <- stateTombstoneStore.unsafeGet(proj, id, tagActive).assert(_.isDefined)
     } yield ()
-
   }
 
   test("Reject a command and persist nothing") {
@@ -172,9 +182,10 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
   }
 
   test("Get a timeout and persist nothing") {
-    val never = Never(id, proj)
+    val never   = Never(id, proj)
+    val timeout = EvaluationTimeout(never, maxDuration)
     for {
-      _ <- eventLog.evaluate(proj, id, never).interceptEquals(EvaluationTimeout(never, maxDuration))
+      _ <- eventLog.evaluate(proj, id, never).interceptEquals(timeout)
       _ <- eventStore.history(proj, id).transact(xas.read).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
@@ -196,6 +207,27 @@ class ScopedEventLogSuite extends NexusSuite with Doobie.Fixture {
     eventLog
       .states(Scope.root, Offset.Start)
       .assertSize(2)
+  }
+
+  test("Delete the entity removes every reference to it and create the tombstones") {
+    for {
+      _ <- eventLog.delete(proj, id, NotFound)
+      // Tagged and latest should be deleted
+      _ <- assertStateNotFound(proj, id)
+      _ <- eventLog.stateOr(proj, id, tagClosed, NotFound, TagNotFound).interceptEquals(NotFound)
+      // Events should be deleted
+      _ <- eventStore.history(proj, id).transact(xas.read).assertEmpty
+      // Tombstones should be created
+      _ <- stateTombstoneStore.unsafeGet(proj, id, tagClosed).assert(_.isDefined)
+      _ <- stateTombstoneStore.unsafeGet(proj, id, latest).assert(_.isDefined)
+      _ <- eventTombstoneStore.unsafeGet(proj, id).assert(_.isDefined)
+      // Dependencies should be deleted
+      _ <- EntityDependencyStore.directDependencies(proj, id, xas).assertEquals(Set.empty[DependsOn])
+    } yield ()
+  }
+
+  test("Delete the entity raises an error for a unknown id") {
+    eventLog.delete(proj, nxv + "xxx", NotFound).interceptEquals(NotFound)
   }
 
 }

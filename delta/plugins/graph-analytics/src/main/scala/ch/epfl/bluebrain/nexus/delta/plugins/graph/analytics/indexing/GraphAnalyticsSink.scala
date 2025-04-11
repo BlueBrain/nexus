@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MarkElems
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.{Index, Noop, UpdateByQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
@@ -85,7 +85,7 @@ final class GraphAnalyticsSink(
       case (acc, _: FailedElem)                              => acc
     }
 
-    client.bulk(result.bulk, Refresh.True).map(ElasticSearchSink.markElems(_, elements, documentId)) <*
+    client.bulk(result.bulk, Refresh.True).map(MarkElems(_, elements, documentId)) <*
       client.updateByQuery(relationshipsQuery(result.updates), Set(index.value))
   }.span("graphAnalyticsSink")
 }

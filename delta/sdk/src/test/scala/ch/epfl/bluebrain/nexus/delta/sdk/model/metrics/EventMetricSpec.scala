@@ -43,7 +43,6 @@ class EventMetricSpec extends BaseSpec with CirceLiteral {
         2,
         Set(EventMetric.Created),
         event.project,
-        event.project.organization,
         id,
         types,
         extraFields
