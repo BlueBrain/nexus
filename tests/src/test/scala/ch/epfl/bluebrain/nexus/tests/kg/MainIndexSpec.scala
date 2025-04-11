@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.Charlie
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterNestedKeys, hitProjects}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload

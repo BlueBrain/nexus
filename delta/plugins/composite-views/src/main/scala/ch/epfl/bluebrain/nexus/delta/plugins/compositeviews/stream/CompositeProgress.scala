@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
   * @param branches
   *   the progress for each projection branch
   */
-final case class CompositeProgress private (
+final case class CompositeProgress(
     sources: Map[(Iri, Run), Offset],
     branches: Map[CompositeBranch, ProjectionProgress]
 ) {

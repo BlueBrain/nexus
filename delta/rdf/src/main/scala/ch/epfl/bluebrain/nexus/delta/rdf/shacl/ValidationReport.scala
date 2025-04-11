@@ -41,7 +41,7 @@ object ValidationReport {
         IO.fromEither(
           tmpGraph
             .find { case (_, p, _) => p == predicate(sh.conforms) }
-            .map { case (s, _, _) => if (s.isURI) iri"${s.getURI}" else BNode(s.getBlankNodeLabel) }
+            .map { case (s, _, _) => if (s.isURI) iri"${s.getURI}" else BNode.unsafe(s.getBlankNodeLabel) }
             .toRight(new IllegalStateException("Unable to find predicate sh:conforms in the validation report graph"))
         )
       graph          = tmpGraph.replaceRootNode(rootNode)

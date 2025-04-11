@@ -26,17 +26,17 @@ object SparqlWriteQuery {
   /**
     * A Drop query
     */
-  final case class SparqlDropQuery private (value: String, graph: Uri) extends SparqlWriteQuery
+  final case class SparqlDropQuery private[SparqlWriteQuery] (value: String, graph: Uri) extends SparqlWriteQuery
 
   /**
     * A Patch query
     */
-  final case class SparqlPatchQuery private (value: String, graph: Uri) extends SparqlWriteQuery
+  final case class SparqlPatchQuery private[SparqlWriteQuery] (value: String, graph: Uri) extends SparqlWriteQuery
 
   /**
     * A Replace query (drop + insert)
     */
-  final case class SparqlReplaceQuery private (value: String, graph: Uri) extends SparqlWriteQuery
+  final case class SparqlReplaceQuery private[SparqlWriteQuery] (value: String, graph: Uri) extends SparqlWriteQuery
 
   /**
     * A custom write query

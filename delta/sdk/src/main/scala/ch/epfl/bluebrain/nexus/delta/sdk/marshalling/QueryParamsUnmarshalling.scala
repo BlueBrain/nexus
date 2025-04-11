@@ -41,7 +41,7 @@ trait QueryParamsUnmarshalling {
     * Unmarsaller to transform a String to an IriVocab
     */
   implicit def iriVocabFromStringUnmarshaller(implicit pc: ProjectContext): FromStringUnmarshaller[IriVocab] =
-    expandIriFromStringUnmarshaller(useVocab = true).map(IriVocab)
+    expandIriFromStringUnmarshaller(useVocab = true).map(IriVocab.apply)
 
   /**
     * Unmarshaller to transform a String to an IriBase

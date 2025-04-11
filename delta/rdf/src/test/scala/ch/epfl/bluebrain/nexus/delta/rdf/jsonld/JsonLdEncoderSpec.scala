@@ -40,8 +40,8 @@ class JsonLdEncoderSpec extends CatsEffectSpec with Fixtures {
            |${bnode.rdfFormat} <${nxv + "permissions"}> "read" .
            |""".stripMargin
 
-      def graph(bnode: BNode) = Graph.empty
-        .copy(rootNode = bnode)
+      def graph(bnode: BNode) = Graph
+        .empty(bnode)
         .add(nxv + "permissions", "execute")
         .add(nxv + "permissions", "write")
         .add(nxv + "permissions", "read")

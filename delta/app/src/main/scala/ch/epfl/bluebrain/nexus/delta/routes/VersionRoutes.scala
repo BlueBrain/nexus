@@ -4,7 +4,6 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.UnresolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.{ComponentDescription, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -61,7 +60,7 @@ class VersionRoutes(
 object VersionRoutes {
 
   private val emtyVersionBundle = VersionBundle(
-    UnresolvedServiceDescription("delta"),
+    ServiceDescription.unresolved("delta"),
     List.empty,
     List.empty,
     Name.unsafe("unknown")

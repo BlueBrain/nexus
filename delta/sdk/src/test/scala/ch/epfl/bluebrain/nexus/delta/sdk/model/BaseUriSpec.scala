@@ -10,12 +10,12 @@ class BaseUriSpec extends BaseSpec {
   "A BaseUri config reader" should {
     "correctly slice the last path segment" in {
       val mapping = Map(
-        "http://localhost"                        -> BaseUri("http://localhost", None),
-        "http://localhost:8080"                   -> BaseUri("http://localhost:8080", None),
-        "http://localhost:8080/"                  -> BaseUri("http://localhost:8080", None),
-        "http://localhost:8080//"                 -> BaseUri("http://localhost:8080", None),
-        "http://localhost:8080/a//b/v1//"         -> BaseUri("http://localhost:8080/a/b", Some(Label.unsafe("v1"))),
-        "http://localhost:8080/a//b/v1//?c=d#e=f" -> BaseUri("http://localhost:8080/a/b", Some(Label.unsafe("v1")))
+        "http://localhost"                        -> BaseUri.withoutPrefix("http://localhost"),
+        "http://localhost:8080"                   -> BaseUri.withoutPrefix("http://localhost:8080"),
+        "http://localhost:8080/"                  -> BaseUri.withoutPrefix("http://localhost:8080"),
+        "http://localhost:8080//"                 -> BaseUri.withoutPrefix("http://localhost:8080"),
+        "http://localhost:8080/a//b/v1//"         -> BaseUri("http://localhost:8080/a/b", Label.unsafe("v1")),
+        "http://localhost:8080/a//b/v1//?c=d#e=f" -> BaseUri("http://localhost:8080/a/b", Label.unsafe("v1"))
       )
       forAll(mapping) { case (input, expected) =>
         source(input).load[BaseUri].rightValue shouldEqual expected

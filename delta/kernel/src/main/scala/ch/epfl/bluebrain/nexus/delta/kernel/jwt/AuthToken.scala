@@ -9,7 +9,7 @@ import io.circe.{Decoder, Encoder}
   * @param value
   *   the string representation of the token
   */
-final case class AuthToken private (value: String) extends AnyVal
+final case class AuthToken(value: String) extends AnyVal
 
 object AuthToken {
 
@@ -22,16 +22,6 @@ object AuthToken {
   def apply(bearer: OAuth2BearerToken): AuthToken =
     new AuthToken(bearer.token)
 
-  /**
-    * Creates an AuthToken from a string representation. No validations are performed in terms of format and
-    * consistency.
-    *
-    * @param value
-    *   the string representation of the token
-    */
-  def unsafe(value: String): AuthToken =
-    new AuthToken(value)
-
   implicit val authTokenEncoder: Encoder[AuthToken] = Encoder.encodeString.contramap(_.value)
-  implicit val authTokenDecoder: Decoder[AuthToken] = Decoder.decodeString.map(unsafe)
+  implicit val authTokenDecoder: Decoder[AuthToken] = Decoder.decodeString.map(AuthToken(_))
 }

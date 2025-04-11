@@ -705,7 +705,6 @@ lazy val tests = project
       fs2Aws          % Test,
       fs2AwsS3        % Test
     ),
-    scalacOptions                      ~= { options: Seq[String] => options.filterNot(Set("-Wunused:imports")) },
     Test / parallelExecution           := false,
     Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
     // Scalate gets errors with layering with this project so we disable it
@@ -782,7 +781,10 @@ lazy val compilation = {
 
   Seq(
     scalaVersion                           := scalaCompilerVersion,
-    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) },
+    scalacOptions                          ~= { options: Seq[String] =>
+      options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) ++
+        Seq("-Xsource:3", "-Xsource-features:case-apply-copy-access", "-Wconf:cat=scala3-migration:s")
+    },
     javaSpecificationVersion               := "21",
     javacOptions                          ++= Seq(
       "-source",

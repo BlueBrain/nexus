@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.syntax.either._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.idTemplating
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -20,7 +20,8 @@ object TemplateSparqlConstructQuery {
     if (!value.contains(idTemplating))
       Left(s"Required templating '$idTemplating' in the provided SPARQL query is not found")
     else
-      SparqlConstructQuery(value.replaceAll(quote(idTemplating), fakeIri.rdfFormat)).map(_.copy(value = value))
+      SparqlConstructQuery(value.replaceAll(quote(idTemplating), fakeIri.rdfFormat))
+        .as(SparqlConstructQuery.unsafe(value))
 
   implicit val sparqlConstructQueryJsonLdDecoder: JsonLdDecoder[SparqlConstructQuery] =
     JsonLdDecoder.stringJsonLdDecoder.andThen { case (cursor, str) =>

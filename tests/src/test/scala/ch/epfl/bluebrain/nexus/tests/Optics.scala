@@ -11,7 +11,6 @@ import Optics._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, ScalaTestExtractValue}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin.{apiMappings, effectiveApiMappings, enforceSchema}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
-import monocle.Optional
 
 trait OpticsValidators
     extends Matchers

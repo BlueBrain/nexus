@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.scalatest.OrgMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Deleter, Reader, Writer}
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, OpticsValidators}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
 import io.circe.Json
 
 class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {

@@ -83,10 +83,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     client
       .fromJsonTo[ResolvedServiceDescription](Get(endpoint).withHttpCredentials)
       .timeout(1.second)
-      .redeem(
-        _ => ServiceDescription.unresolved(serviceName),
-        _.copy(name = serviceName)
-      )
+      .recover(_ => ServiceDescription.unresolved(serviceName))
 
   /**
     * Verifies if an index exists, recovering gracefully when the index does not exists.

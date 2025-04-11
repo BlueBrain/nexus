@@ -20,7 +20,8 @@ class DetectChangeSuite extends NexusSuite {
   private val id = nxv + "id"
 
   private val source                                = Json.obj("source" := "value")
-  private val compacted                             = CompactedJsonLd.unsafe(id, ContextValue(nxv + "context"), JsonObject("field" := "value"))
+  private val compactedValue                        = JsonObject("field" := "value")
+  private val compacted                             = CompactedJsonLd.unsafe(id, ContextValue(nxv + "context"), compactedValue)
   private val remoteContexts: Set[RemoteContextRef] = Set(StaticContextRef(nxv + "static"))
 
   private val jsonld = JsonLdAssembly(
@@ -51,7 +52,7 @@ class DetectChangeSuite extends NexusSuite {
   }
 
   test("A change is detected if the local contexts are different") {
-    val otherLocalContext = compacted.copy(ctx = ContextValue(nxv + "another-context"))
+    val otherLocalContext = CompactedJsonLd.unsafe(id, ContextValue(nxv + "another-context"), compactedValue)
     detectChange(jsonld, current.copy(compacted = otherLocalContext)).assertEquals(true)
   }
 

@@ -2,18 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Sort.OrderType
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -21,18 +18,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.Codec
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredCodec
-import io.circe.syntax.EncoderOps
+import org.scalactic.source.Position
 
 import java.time.Instant
 
-class ElasticSearchViewsDirectivesSpec
-    extends CatsEffectSpec
-    with RouteHelpers
-    with CirceMarshalling
-    with ElasticSearchViewsDirectives {
+class ElasticSearchViewsDirectivesSpec extends CatsEffectSpec with RouteHelpers with ElasticSearchViewsDirectives {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
@@ -41,27 +31,21 @@ class ElasticSearchViewsDirectivesSpec
   private val vocab                       = iri"http://localhost/vocab/"
   implicit private val pc: ProjectContext = ProjectContext.unsafe(mappings, base, vocab, enforceSchema = false)
 
-  implicit val configuration: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
-
-  implicit val timeRangeCodec: Codec[TimeRange] = deriveConfiguredCodec[TimeRange]
-
-  implicit val orderTypeCodec: Codec[OrderType] = deriveConfiguredCodec[OrderType]
-  implicit val sortCodec: Codec[Sort]           = deriveConfiguredCodec[Sort]
-  implicit val sortListCodec: Codec[SortList]   = deriveConfiguredCodec[SortList]
-
-  implicit val paramTypesCodec: Codec[ResourcesSearchParams.Type]                = deriveConfiguredCodec[ResourcesSearchParams.Type]
-  implicit val paramTypeOperatorCodec: Codec[ResourcesSearchParams.TypeOperator] =
-    deriveConfiguredCodec[ResourcesSearchParams.TypeOperator]
-  implicit val paramsCodec: Codec[ResourcesSearchParams]                         = deriveConfiguredCodec[ResourcesSearchParams]
-
-  private val route: Route =
+  private def makeRoute(
+      expectedSortList: Option[SortList] = None,
+      expectedSearch: Option[ResourcesSearchParams] = None
+  )(implicit position: Position): Route =
     get {
       concat(
         (pathPrefix("sort") & sortList & pathEndOrSingleSlash) { list =>
-          complete(list)
+          list shouldEqual expectedSortList.value
+          complete("successSortList")
         },
         (pathPrefix("search") & projectRef & pathEndOrSingleSlash) { _ =>
-          searchParameters(baseUri, pc).apply { params => complete(params.asJson) }
+          searchParameters(baseUri, pc).apply { params =>
+            params shouldEqual expectedSearch.value
+            complete("successSearchParams")
+          }
         }
       )
     }
@@ -69,9 +53,10 @@ class ElasticSearchViewsDirectivesSpec
   "A route" should {
 
     "return the sort parameters" in {
+      val expected = SortList(List(Sort("deprecated"), Sort("-@id"), Sort("_createdBy")))
+      val route    = makeRoute(expectedSortList = Some(expected))
       Get("/sort?sort=+deprecated&sort=-@id&sort=_createdBy") ~> Accept(`*/*`) ~> route ~> check {
-        val expected = SortList(List(Sort("deprecated"), Sort("-@id"), Sort("_createdBy")))
-        response.as[SortList] shouldEqual expected
+        responseAs[String] shouldEqual "successSortList"
       }
     }
 
@@ -83,7 +68,7 @@ class ElasticSearchViewsDirectivesSpec
 
       val createdAt        = TimeRange.Before(Instant.EPOCH)
       val createdAtEncoded = UrlUtils.encode(s"*..${createdAt.value}")
-      val updatedAt        = TimeRange.Between(Instant.EPOCH, Instant.EPOCH.plusSeconds(5L))
+      val updatedAt        = TimeRange.Between.unsafe(Instant.EPOCH, Instant.EPOCH.plusSeconds(5L))
       val updatedAtEncoded = UrlUtils.encode(s"${updatedAt.start}..${updatedAt.end}")
       val tag              = UserTag.unsafe("mytag")
 
@@ -124,14 +109,18 @@ class ElasticSearchViewsDirectivesSpec
         tag = Some(tag)
       )
 
+      val route = makeRoute(expectedSearch = Some(expected))
+
       Get(s"/search/org/project?$query") ~> Accept(`*/*`) ~> route ~> check {
-        response.as[ResourcesSearchParams] shouldEqual expected
+        responseAs[String] shouldEqual "successSearchParams"
       }
     }
 
     "return empty search parameters" in {
+      val expected = ResourcesSearchParams()
+      val route    = makeRoute(expectedSearch = Some(expected))
       Get("/search/org/project") ~> Accept(`*/*`) ~> route ~> check {
-        response.as[ResourcesSearchParams] shouldEqual ResourcesSearchParams()
+        responseAs[String] shouldEqual "successSearchParams"
       }
     }
   }

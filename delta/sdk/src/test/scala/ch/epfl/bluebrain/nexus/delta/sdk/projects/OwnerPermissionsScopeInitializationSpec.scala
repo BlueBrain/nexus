@@ -28,7 +28,7 @@ class OwnerPermissionsScopeInitializationSpec extends CatsEffectSpec with Doobie
     )
 
   private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
-  private val bob: Caller        = Caller.unsafe(User("bob", usersRealm))
+  private val bob: Caller        = Caller(User("bob", usersRealm))
 
   "An OwnerPermissionsScopeInitialization" should {
     lazy val init = OwnerPermissionsScopeInitialization(acls, PermissionsGen.ownerPermissions, sa)

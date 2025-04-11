@@ -51,13 +51,14 @@ object GraphAnalytics {
 
       override def relationships(projectRef: ProjectRef): IO[AnalyticsGraph] =
         for {
-          _     <- fetchContext.onRead(projectRef)
-          query <- relationshipsAggQuery(config)
-          stats <- client
-                     .searchAs[AnalyticsGraph](QueryBuilder(query), index(prefix, projectRef).value, Query.Empty)
-                     .adaptError { case e: HttpClientError =>
-                       WrappedElasticSearchRejection(WrappedElasticSearchClientError(e))
-                     }
+          _         <- fetchContext.onRead(projectRef)
+          query     <- relationshipsAggQuery(config)
+          indexValue = index(prefix, projectRef).value
+          stats     <- client
+                         .searchAs[AnalyticsGraph](QueryBuilder.unsafe(query), indexValue, Query.Empty)
+                         .adaptError { case e: HttpClientError =>
+                           WrappedElasticSearchRejection(WrappedElasticSearchClientError(e))
+                         }
         } yield stats
 
       override def properties(
@@ -67,8 +68,9 @@ object GraphAnalytics {
 
         def search(tpe: Iri, idx: IndexLabel, query: JsonObject) = {
           implicit val d: Decoder[PropertiesStatistics] = propertiesDecoderFromEsAggregations(tpe)
+          val queryBuilder                              = QueryBuilder.unsafe(query).withTotalHits(true)
           client
-            .searchAs[PropertiesStatistics](QueryBuilder(query).withTotalHits(true), idx.value, Query.Empty)
+            .searchAs[PropertiesStatistics](queryBuilder, idx.value, Query.Empty)
             .adaptError { case e: HttpClientError => WrappedElasticSearchRejection(WrappedElasticSearchClientError(e)) }
         }
 

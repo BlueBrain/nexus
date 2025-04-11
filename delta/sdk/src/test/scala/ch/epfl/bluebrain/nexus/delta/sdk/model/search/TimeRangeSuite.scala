@@ -52,7 +52,8 @@ class TimeRangeSuite extends FunSuite with EitherAssertions {
   }
 
   test(s"Parse as between '$december_2020_string' and '$april_2022_string'") {
-    parse(s"$december_2020_string..$april_2022_string").assertRight(Between(december_2020, april_2022))
+    val expected = Between.unsafe(december_2020, april_2022)
+    parse(s"$december_2020_string..$april_2022_string").assertRight(expected)
   }
 
   test(s"Fail to parse as between as limits are equal") {

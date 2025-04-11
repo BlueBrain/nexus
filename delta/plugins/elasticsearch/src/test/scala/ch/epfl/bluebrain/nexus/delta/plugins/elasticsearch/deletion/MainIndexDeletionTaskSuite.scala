@@ -47,7 +47,7 @@ class MainIndexDeletionTaskSuite
     def countInIndex(project: ProjectRef) =
       for {
         query  <- task.searchByProject(project)
-        result <- client.search(QueryBuilder(query), Set(index.value), Query.Empty)
+        result <- client.search(QueryBuilder.unsafe(query), Set(index.value), Query.Empty)
       } yield result.total
 
     for {

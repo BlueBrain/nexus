@@ -36,7 +36,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
 
   private val usersRealm: Label       = Label.unsafe("users")
   private val bob: Subject            = User("bob", usersRealm)
-  implicit private val caller: Caller = Caller.unsafe(bob)
+  implicit private val caller: Caller = Caller(bob)
 
   private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase = iri"http://localhost/base/"

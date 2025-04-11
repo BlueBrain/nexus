@@ -28,8 +28,10 @@ object ComponentDescription {
   sealed trait ServiceDescription extends ComponentDescription
 
   object ServiceDescription {
-    final case class ResolvedServiceDescription private (name: String, version: String) extends ServiceDescription
-    final case class UnresolvedServiceDescription private (name: String)                extends ServiceDescription {
+    final case class ResolvedServiceDescription private[ServiceDescription] (name: String, version: String)
+        extends ServiceDescription
+    final case class UnresolvedServiceDescription private[ServiceDescription] (name: String)
+        extends ServiceDescription {
       override val version: String = unknownVersion
     }
 

@@ -168,10 +168,10 @@ object Projects {
     (state, event) match {
       // format: off
       case (None, ProjectCreated(label, uuid, orgLabel, orgUuid, _, desc, am, base, vocab, enforceSchema, instant, subject))  =>
-        Some(ProjectState(label, uuid, orgLabel, orgUuid, 1, deprecated = false, markedForDeletion = false, desc, am, ProjectBase.unsafe(base.value), vocab.value, enforceSchema, instant, subject, instant, subject))
+        Some(ProjectState(label, uuid, orgLabel, orgUuid, 1, deprecated = false, markedForDeletion = false, desc, am, ProjectBase(base.value), vocab.value, enforceSchema, instant, subject, instant, subject))
 
       case (Some(s), ProjectUpdated(_, _, _, _, rev, desc, am, base, vocab, enforceSchema, instant, subject))                 =>
-        Some(s.copy(description = desc, apiMappings = am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, enforceSchema = enforceSchema, rev = rev, updatedAt = instant, updatedBy = subject))
+        Some(s.copy(description = desc, apiMappings = am, base = ProjectBase(base.value), vocab = vocab.value, enforceSchema = enforceSchema, rev = rev, updatedAt = instant, updatedBy = subject))
 
       case (Some(s), ProjectDeprecated(_, _, _, _, rev, instant, subject))                                     =>
         Some(s.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject))
