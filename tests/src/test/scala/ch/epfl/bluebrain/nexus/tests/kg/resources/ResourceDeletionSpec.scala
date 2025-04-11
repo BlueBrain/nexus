@@ -118,9 +118,11 @@ class ResourceDeletionSpec extends BaseIntegrationSpec {
         _          <- assertGraph(resourceId, exists = false)
         _          <- assertSearchGraph(resourceId, exists = false)
         // History is not available
-        _          <- deltaClient.get[Json](s"/history/resources/$project/$encodedId", Bob) { (json, response) =>
-                        response.status shouldEqual StatusCodes.OK
-                        Optics._total.getOption(json).value shouldEqual 0L
+        _          <- eventually {
+                        deltaClient.get[Json](s"/history/resources/$project/$encodedId", Bob) { (json, response) =>
+                          response.status shouldEqual StatusCodes.OK
+                          Optics._total.getOption(json).value shouldEqual 0L
+                        } >> IO.unit
                       }
       } yield succeed
     }
