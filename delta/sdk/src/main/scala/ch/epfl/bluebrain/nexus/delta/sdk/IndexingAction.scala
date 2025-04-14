@@ -4,6 +4,8 @@ import cats.data.NonEmptyList
 import cats.effect.{IO, Ref}
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode.{Async, Sync}
@@ -20,6 +22,8 @@ import scala.concurrent.duration.*
 trait IndexingAction {
 
   implicit private val bc: BatchConfig = BatchConfig.individual
+
+  protected def kamonMetricComponent: KamonMetricComponent
 
   /**
     * The maximum duration accepted to perform the synchronous indexing
@@ -53,7 +57,7 @@ trait IndexingAction {
                      .toList
       errors    <- errorsRef.get
     } yield errors
-  }
+  }.span("sync-indexing")(kamonMetricComponent)
 
   private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit]) = {
     for {
