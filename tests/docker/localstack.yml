@@ -1,6 +1,6 @@
 services:
   localstack:
-    image: localstack/localstack:4.2
+    image: localstack/localstack:4.3
     environment:
       AWS_ACCESS_KEY_ID: "MY_ACCESS_KEY"
       AWS_SECRET_ACCESS_KEY: "CHUTCHUT"
