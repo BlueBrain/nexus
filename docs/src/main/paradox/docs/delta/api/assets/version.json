@@ -4,7 +4,7 @@
   "dependencies": {
     "blazegraph": "2.1.6-RC-21-jre",
     "postgresql": "17.4",
-    "elasticsearch": "8.17.1"
+    "elasticsearch": "8.17.4"
   },
   "plugins": {
     "archive": "1.10.0",

@@ -105,7 +105,7 @@ $ curl http://localhost/v1/version | jq
   "delta": "1.10.0",
   "dependencies": {
     "blazegraph": "2.1.6-SNAPSHOT",
-    "elasticsearch": "8.17.1",
+    "elasticsearch": "8.17.4",
     "postgres": "17.4"
   },
   "environment": "dev",

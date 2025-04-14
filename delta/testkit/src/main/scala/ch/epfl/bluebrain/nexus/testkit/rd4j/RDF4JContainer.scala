@@ -16,7 +16,7 @@ class RDF4JContainer extends GenericContainer[RDF4JContainer](DockerImageName.pa
 
 object RDF4JContainer {
 
-  private val ImageName = "eclipse/rdf4j-workbench:5.1.0"
+  private val ImageName = "eclipse/rdf4j-workbench:5.1.2"
 
   /**
     * A running RDF4J container wrapped in a Resource. The container will be stopped upon release.
