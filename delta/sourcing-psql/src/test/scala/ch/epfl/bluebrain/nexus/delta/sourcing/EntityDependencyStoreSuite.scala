@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import io.circe.Decoder
 import munit.AnyFixture
 
@@ -22,7 +22,7 @@ import java.time.Instant
 
 class EntityDependencyStoreSuite extends NexusSuite with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas = doobie()
 

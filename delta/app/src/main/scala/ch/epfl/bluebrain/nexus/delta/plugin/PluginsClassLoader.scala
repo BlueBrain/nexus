@@ -26,7 +26,7 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
     * @return
     *   The resulting [[Class]] object
     */
-  override def loadClass(className: String): Class[_] =
+  override def loadClass(className: String): Class[?] =
     loadClassFromParent(className)
       .orElse(loadClassFromPlugins(className, cls.toList))
       .getOrElse(throw new ClassNotFoundException(className))
@@ -45,7 +45,7 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
   override def getResource(name: String): URL =
     getResourceFromParent(name).orElse(getResourceFromPlugins(name, cls.toList)).orNull
 
-  private def loadClassFromParent(className: String): Option[Class[_]] =
+  private def loadClassFromParent(className: String): Option[Class[?]] =
     Try(super.loadClass(className)) match {
       case Success(result)                    => Some(result)
       case Failure(_: ClassNotFoundException) => None
@@ -56,7 +56,7 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
   private def loadClassFromPlugins(
       className: String,
       rest: List[PluginClassLoader]
-  ): Option[Class[_]] =
+  ): Option[Class[?]] =
     rest match {
       case head :: tail =>
         head.loadClassFromPlugin(className) match {

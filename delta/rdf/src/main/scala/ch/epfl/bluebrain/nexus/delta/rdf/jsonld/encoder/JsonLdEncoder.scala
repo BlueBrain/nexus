@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
+import io.circe.syntax.*
 import io.circe.{Encoder, Json}
 
 trait JsonLdEncoder[A] {

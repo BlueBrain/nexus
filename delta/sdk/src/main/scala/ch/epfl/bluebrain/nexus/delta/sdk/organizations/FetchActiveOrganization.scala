@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateGet
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.{Get, Put}
 
 trait FetchActiveOrganization {

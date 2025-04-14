@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{Compacted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.instances._
+import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
@@ -188,7 +188,7 @@ object ArchiveReference {
 
   implicit private[model] val archiveReferenceEncoder: Encoder[ArchiveReference] = {
     import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
+    import io.circe.generic.extras.semiauto.*
     implicit val cfg: Configuration = Configuration.default
       .withDiscriminator(keywords.tpe)
       .copy(transformConstructorNames = {

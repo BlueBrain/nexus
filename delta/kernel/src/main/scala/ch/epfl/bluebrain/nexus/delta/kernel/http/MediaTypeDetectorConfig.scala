@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.http
 
 import akka.http.scaladsl.model.MediaType
-import cats.syntax.all._
+import cats.syntax.all.*
 import pureconfig.ConfigReader
 import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert

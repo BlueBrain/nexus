@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import cats.effect.IO
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader.*
 import ch.epfl.bluebrain.nexus.tests.config.StorageConfig
 import com.typesafe.config.ConfigFactory
 import eu.timepit.refined.types.all.NonEmptyString
@@ -14,14 +14,14 @@ import org.apache.commons.codec.binary.Hex
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model._
+import software.amazon.awssdk.services.s3.model.*
 
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.Base64
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 trait S3ClientFixtures {
 

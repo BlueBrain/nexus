@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -15,8 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{Projec
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, DataResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject

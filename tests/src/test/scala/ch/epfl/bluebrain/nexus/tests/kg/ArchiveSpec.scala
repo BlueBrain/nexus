@@ -6,9 +6,9 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
-import ch.epfl.bluebrain.nexus.tests.HttpClient._
+import ch.epfl.bluebrain.nexus.tests.HttpClient.*
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
@@ -197,7 +197,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
             "project2" -> fullId2,
             "self"     -> archiveSelf(fullId, "https://dev.nexus.test.com/simplified-resource/archive"),
             "project1" -> fullId
-          ): _*
+          )*
         )
         filterKeys(
           Set("_createdAt", "_updatedAt", "_expiresInSeconds")

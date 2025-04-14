@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ElemQueryConfig, ProjectLa
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectLastUpdateStream, ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.StateTombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures, Transactors}
 import izumi.distage.model.definition.ModuleDef

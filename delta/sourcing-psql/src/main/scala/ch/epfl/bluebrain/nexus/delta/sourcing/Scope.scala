@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import doobie.syntax.all._
+import doobie.syntax.all.*
 
 /**
   * Allows to filter results when querying the database for scoped entities

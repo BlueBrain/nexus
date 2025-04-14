@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 import cats.Functor
 import cats.effect.IO
-import cats.syntax.functor._
+import cats.syntax.functor.*
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import org.typelevel.log4cats.{Logger => Log4CatsLogger}
+import org.typelevel.log4cats.Logger as Log4CatsLogger
 
 import scala.reflect.ClassTag
 

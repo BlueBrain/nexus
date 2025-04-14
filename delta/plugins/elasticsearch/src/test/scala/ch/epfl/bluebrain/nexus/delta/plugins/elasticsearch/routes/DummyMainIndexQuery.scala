@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyMainIndexQuery._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyMainIndexQuery.*
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef

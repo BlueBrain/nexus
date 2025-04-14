@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.*
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF}
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import io.circe._
+import io.circe.*
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
@@ -130,8 +130,8 @@ final case class ElasticSearchViewState(
 object ElasticSearchViewState {
 
   implicit val serializer: Serializer[Iri, ElasticSearchViewState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
+    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Database.*
     implicit val configuration: Configuration                  = Serializer.circeConfiguration
     implicit val codec: Codec.AsObject[ElasticSearchViewState] = deriveConfiguredCodec[ElasticSearchViewState]
     Serializer.dropNullsInjectType()

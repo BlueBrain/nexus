@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -13,10 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.JsonObjOps
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
@@ -354,7 +354,7 @@ object FileEvent {
   ) extends FileEvent
 
   val serializer: Serializer[Iri, FileEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration                        = Serializer.circeConfiguration
     implicit val digestCodec: Codec.AsObject[Digest]                 =
       deriveConfiguredCodec[Digest]

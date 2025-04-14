@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model
 
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{name, toPaths}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, Node}
@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import io.circe._
+import io.circe.*
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto._
+import io.circe.generic.extras.semiauto.*
 
 /**
   * Analytics graph with nodes and edges with their counts.
@@ -85,7 +85,7 @@ object AnalyticsGraph {
     implicit val edgeEncoder: Encoder.AsObject[Edge]         = deriveConfiguredEncoder
     deriveConfiguredEncoder[AnalyticsGraph]
   }
-  implicit val relationshipsJsonLdEncoder: JsonLdEncoder[AnalyticsGraph] =
+  implicit val relationshipsJsonLdEncoder: JsonLdEncoder[AnalyticsGraph]      =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.relationships))
 
   implicit val relationshipsHttpResponseFields: HttpResponseFields[AnalyticsGraph] = HttpResponseFields.defaultOk

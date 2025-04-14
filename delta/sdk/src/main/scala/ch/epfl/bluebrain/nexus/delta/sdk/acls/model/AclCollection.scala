@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
-import cats.syntax.functor._
+import cats.syntax.functor.*
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -36,7 +36,7 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     * @param acls
     *   the acls to be added
     */
-  def ++(acls: AclCollection): AclCollection         =
+  def ++(acls: AclCollection): AclCollection =
     AclCollection(acls.value.foldLeft(value) {
       case (acc, (address, aclToAdd)) if aclToAdd.value.address != address => acc // should not happen, ignore it
       case (acc, (address, aclToAdd))                                      =>
@@ -140,6 +140,6 @@ object AclCollection {
     * Convenience factory method to build a [[AclCollection]] [[AclResource]] s.
     */
   final def apply(resources: AclResource*): AclCollection =
-    model.AclCollection(SortedMap(resources.map(res => res.value.address -> res): _*))
+    model.AclCollection(SortedMap(resources.map(res => res.value.address -> res)*))
 
 }

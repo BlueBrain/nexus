@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 import sbt.librarymanagement.ModuleFilter
 
 import scala.xml.transform.{RewriteRule, RuleTransformer}

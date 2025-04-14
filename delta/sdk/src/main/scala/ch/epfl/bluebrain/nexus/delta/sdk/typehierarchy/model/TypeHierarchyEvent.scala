@@ -66,7 +66,7 @@ object TypeHierarchyEvent {
   ) extends TypeHierarchyEvent
 
   val serializer: Serializer[Iri, TypeHierarchyEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration              = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[TypeHierarchyEvent] = deriveConfiguredCodec[TypeHierarchyEvent]
     Serializer(identity)

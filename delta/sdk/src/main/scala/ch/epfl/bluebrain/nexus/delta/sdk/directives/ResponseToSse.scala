@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
+import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling.*
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.ServerSentEventStream
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 sealed trait ResponseToSse {
   def apply(): Route

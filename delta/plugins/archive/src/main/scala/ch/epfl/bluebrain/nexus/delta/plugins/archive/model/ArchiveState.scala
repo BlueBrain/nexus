@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.instances._
+import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -62,7 +62,7 @@ final case class ArchiveState(
 object ArchiveState {
 
   implicit val serializer: Serializer[Iri, ArchiveState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration                                          = Serializer.circeConfiguration
     implicit val archiveResourceRepresentation: Codec.AsObject[ResourceRepresentation] =
       deriveConfiguredCodec[ResourceRepresentation]

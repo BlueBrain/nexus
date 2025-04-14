@@ -15,9 +15,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig.SchemaEnforcementConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}

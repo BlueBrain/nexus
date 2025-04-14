@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
@@ -43,7 +43,7 @@ class ElemRoutes(
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
   import baseUri.prefixSegment
-  import schemeDirectives._
+  import schemeDirectives.*
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {

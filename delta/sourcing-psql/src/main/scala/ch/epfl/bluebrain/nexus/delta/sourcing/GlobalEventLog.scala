@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.postgres.sqlstate
 import fs2.Stream
 

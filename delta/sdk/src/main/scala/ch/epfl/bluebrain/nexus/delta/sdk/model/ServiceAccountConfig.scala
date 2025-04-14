@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

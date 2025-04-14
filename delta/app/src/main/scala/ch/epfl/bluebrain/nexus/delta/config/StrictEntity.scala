@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.config
 
 import akka.http.scaladsl.server.Directive0
 import pureconfig.ConfigReader
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 
 import scala.concurrent.duration.FiniteDuration
 

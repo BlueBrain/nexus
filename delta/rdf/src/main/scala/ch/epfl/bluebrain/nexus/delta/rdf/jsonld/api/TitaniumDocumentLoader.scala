@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 
-import io.circe.jakartajson._
+import io.circe.jakartajson.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext
 import com.apicatalog.jsonld.{JsonLdError, JsonLdErrorCode}

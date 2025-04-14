@@ -3,33 +3,33 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDelegationRequest.{FileDelegationCreationRequest, FileDelegationUpdateRequest}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.files as fileSchema
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
-import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -386,7 +386,7 @@ final class Files(
     } yield FileAttributes.from(info.filename, info.contentType, uploadRequest.metadata, storageMetadata)
   }.adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
-  private def generateId(pc: ProjectContext): IO[Iri]                                                             =
+  private def generateId(pc: ProjectContext): IO[Iri] =
     uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   def states(offset: Offset): SuccessElemStream[FileState] = log.states(Scope.root, offset)

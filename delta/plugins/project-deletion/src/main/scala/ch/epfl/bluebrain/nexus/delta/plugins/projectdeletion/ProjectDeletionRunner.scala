@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
+import cats.implicits.*
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination

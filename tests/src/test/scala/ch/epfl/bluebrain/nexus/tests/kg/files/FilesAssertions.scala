@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.coding.Coders
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.headers.*
 import akka.stream.Materializer
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.{expectConditionalCacheHeaders, expectNoConditionalCacheHeaders}
 import org.scalactic.source.Position
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 

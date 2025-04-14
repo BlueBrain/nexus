@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdfs, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
@@ -18,13 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GraphResource, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import io.circe.syntax.KeyOps
 
 import java.time.Instant
@@ -140,7 +140,7 @@ object PullRequest {
         extends PullRequestEvent
 
     val serializer: Serializer[Iri, PullRequestEvent] = {
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[PullRequestEvent] = deriveConfiguredCodec[PullRequestEvent]
       Serializer()
@@ -253,7 +253,7 @@ object PullRequest {
     }
 
     implicit val serializer: Serializer[Iri, PullRequestState] = {
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[PullRequestState] = deriveConfiguredCodec[PullRequestState]
       Serializer.dropNullsInjectType()

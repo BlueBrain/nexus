@@ -72,7 +72,7 @@ class ElasticSearchViewsDirectivesSpec extends CatsEffectSpec with RouteHelpers 
       val updatedAtEncoded = UrlUtils.encode(s"${updatedAt.start}..${updatedAt.end}")
       val tag              = UserTag.unsafe("mytag")
 
-      val query    = List(
+      val query = List(
         "locate"     -> "self",
         "id"         -> "myId",
         "deprecated" -> "false",

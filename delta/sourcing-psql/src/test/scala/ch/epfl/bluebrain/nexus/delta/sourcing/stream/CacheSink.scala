@@ -10,8 +10,8 @@ import shapeless.Typeable
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.collection.mutable.{Set => MutableSet}
-import scala.concurrent.duration._
+import scala.collection.mutable.Set as MutableSet
+import scala.concurrent.duration.*
 
 final class CacheSink[A: Typeable] private (documentId: Elem[A] => Iri) extends Sink {
 
@@ -43,7 +43,7 @@ final class CacheSink[A: Typeable] private (documentId: Elem[A] => Iri) extends 
 }
 
 object CacheSink {
-  private val eventDocumentId: Elem[_] => Iri =
+  private val eventDocumentId: Elem[?] => Iri =
     elem => iri"${elem.project}/${elem.id}:${elem.rev}"
 
   /** CacheSink for events */

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.{Index, Noop, UpdateByQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -10,13 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceState
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{ElemStreaming, SelectFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
-import doobie._
-import doobie.syntax.all._
+import doobie.*
+import doobie.syntax.all.*
 import io.circe.Json
 
 trait GraphAnalyticsStream {

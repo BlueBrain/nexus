@@ -23,7 +23,7 @@ object Identity extends Generators {
       new ClientCredentials(id, s"service-account-$id", secret, realm)
   }
 
-  import Realm._
+  import Realm.*
 
   // Client
   val ServiceAccount: ClientCredentials = ClientCredentials("delta", "shhh", internal)

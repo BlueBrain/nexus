@@ -12,7 +12,7 @@ trait SinkUtils {
   def combineMat[A, B, C, D](
       one: Sink[A, Future[B]],
       two: Sink[A, Future[C]]
-  )(combine: (B, C) => Future[D])(implicit ec: ExecutionContext): Sink[A, Future[D]]    =
+  )(combine: (B, C) => Future[D])(implicit ec: ExecutionContext): Sink[A, Future[D]] =
     combineMatTuple(one, two).mapMaterializedValue(_.flatMap { case (b, c) => combine(b, c) })
 
   /**

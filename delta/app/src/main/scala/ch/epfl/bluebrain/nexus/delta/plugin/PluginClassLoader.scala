@@ -27,7 +27,7 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
     * @return
     *   The resulting [[Class]] object
     */
-  override def loadClass(className: String): Class[_] =
+  override def loadClass(className: String): Class[?] =
     loadClassFromPlugin(className).getOrElse(parent.loadClass(className))
 
   /**
@@ -38,7 +38,7 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
     * @return
     *   Some(class) when the class is found on the Jar file, None otherwise
     */
-  def loadClassFromPlugin(className: String): Option[Class[_]] =
+  def loadClassFromPlugin(className: String): Option[Class[?]] =
     getClassLoadingLock(className).synchronized {
       className match {
         case systemClass if systemClass.startsWith("java.") => Some(findSystemClass(systemClass))

@@ -27,7 +27,7 @@ class AclSerializationSuite extends SerializationSuite {
   def acl(address: AclAddress): Acl =
     Acl(address, Anonymous -> permSet, authenticated -> permSet, group -> permSet, subject -> permSet)
 
-  private val aclsMapping           = Map(
+  private val aclsMapping = Map(
     AclAppended(acl(root), rev, instant, subject)         -> loadDatabaseEvents("acls", "acl-appended.json"),
     AclSubtracted(acl(orgAddress), rev, instant, subject) -> loadDatabaseEvents("acls", "acl-subtracted.json"),
     AclReplaced(acl(projAddress), rev, instant, subject)  -> loadDatabaseEvents("acls", "acl-replaced.json"),

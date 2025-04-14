@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverScopeInitialization.{
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}

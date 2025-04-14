@@ -20,7 +20,7 @@ object AuthTokenProvider {
     LocalCache[ClientCredentials, ParsedToken]()
       .map(cache => new CachingOpenIdAuthTokenProvider(authService, cache, clock))
   }
-  def fixedForTest(token: String): AuthTokenProvider = (_: Credentials) => IO.some(AuthToken(token))
+  def fixedForTest(token: String): AuthTokenProvider                                 = (_: Credentials) => IO.some(AuthToken(token))
 }
 
 /**

@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.*
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec

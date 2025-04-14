@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration

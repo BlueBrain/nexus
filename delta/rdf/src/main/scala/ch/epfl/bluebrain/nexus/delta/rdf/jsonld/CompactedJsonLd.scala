@@ -4,12 +4,12 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import io.circe.syntax._
-import io.circe._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.*
+import io.circe.syntax.*
+import io.circe.*
 
 /**
   * Json-LD Compacted Document. CompactedJsonLd specific implementation is entity centric, having always only one root

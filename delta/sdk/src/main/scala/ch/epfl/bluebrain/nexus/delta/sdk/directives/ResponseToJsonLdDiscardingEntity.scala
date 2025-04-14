@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.{MediaTypes, StatusCode}
 import akka.http.scaladsl.model.StatusCodes.OK
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{conditionalCache, requestEncoding}
@@ -13,9 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.UseRight
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.*
 import io.circe.Encoder
-import io.circe.syntax._
+import io.circe.syntax.*
 
 sealed trait ResponseToJsonLdDiscardingEntity {
   def apply(statusOverride: Option[StatusCode]): Route

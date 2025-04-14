@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
-import doobie.syntax.all._
-import doobie.generic.auto._
-import doobie.postgres.implicits._
+import doobie.syntax.all.*
+import doobie.generic.auto.*
+import doobie.postgres.implicits.*
 
 import java.time.Instant
 

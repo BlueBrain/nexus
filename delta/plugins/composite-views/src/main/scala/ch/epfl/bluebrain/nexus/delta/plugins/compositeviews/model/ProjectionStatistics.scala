@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, JsonObject}
 
 /**

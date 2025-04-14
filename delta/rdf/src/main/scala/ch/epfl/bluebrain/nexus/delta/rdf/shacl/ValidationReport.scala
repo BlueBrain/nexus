@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import io.circe.{Encoder, Json}
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.rdf.model.Resource

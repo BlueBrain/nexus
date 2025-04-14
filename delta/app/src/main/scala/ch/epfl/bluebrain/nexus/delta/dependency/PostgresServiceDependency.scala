@@ -4,9 +4,9 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import doobie.syntax.all._
+import doobie.syntax.all.*
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * Describes the postgres [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a ''select

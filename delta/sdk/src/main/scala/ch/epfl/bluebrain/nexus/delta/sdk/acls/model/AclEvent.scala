@@ -115,8 +115,8 @@ object AclEvent {
   ) extends AclEvent
 
   val serializer: Serializer[AclAddress, AclEvent] = {
-    import Acl.Database._
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import Acl.Database.*
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration    = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[AclEvent] = Codec.AsObject.from(
       deriveConfiguredDecoder[AclEvent],

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.ProvisioningAction

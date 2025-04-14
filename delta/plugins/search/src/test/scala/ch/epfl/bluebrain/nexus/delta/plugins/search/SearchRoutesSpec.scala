@@ -5,13 +5,13 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
-import ch.epfl.bluebrain.nexus.delta.plugins.search.SuiteMatchers._
+import ch.epfl.bluebrain.nexus.delta.plugins.search.SuiteMatchers.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 

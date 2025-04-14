@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset

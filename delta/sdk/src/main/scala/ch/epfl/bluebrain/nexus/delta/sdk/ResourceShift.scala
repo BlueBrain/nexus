@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -47,7 +47,7 @@ abstract class ResourceShift[State <: ScopedState, A, M](
     fetchResource: (ResourceRef, ProjectRef) => IO[Option[ResourceF[A]]],
     valueEncoder: JsonLdEncoder[A],
     metadataEncoder: Option[JsonLdEncoder[M]]
-)(implicit serializer: Serializer[_, State], baseUri: BaseUri) {
+)(implicit serializer: Serializer[?, State], baseUri: BaseUri) {
 
   implicit private val api: JsonLdApi                                         = TitaniumJsonLdApi.lenient
   implicit private val valueJsonLdEncoder: JsonLdEncoder[A]                   = valueEncoder
@@ -155,7 +155,7 @@ object ResourceShift {
       stateToResource: State => ResourceF[A],
       asContent: ResourceF[A] => JsonLdContent[A, M]
   )(implicit
-      serializer: Serializer[_, State],
+      serializer: Serializer[?, State],
       valueEncoder: JsonLdEncoder[A],
       metadataEncoder: JsonLdEncoder[M],
       baseUri: BaseUri
@@ -193,7 +193,7 @@ object ResourceShift {
       stateToResource: State => ResourceF[B],
       asContent: ResourceF[B] => JsonLdContent[B, Nothing]
   )(implicit
-      serializer: Serializer[_, State],
+      serializer: Serializer[?, State],
       valueEncoder: JsonLdEncoder[B],
       baseUri: BaseUri
   ): ResourceShift[State, B, Nothing] =

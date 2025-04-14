@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Result._
+import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Result.*
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.{MultiFetchRequest, MultiFetchResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 
@@ -23,7 +23,7 @@ trait MultiFetch {
 object MultiFetch {
   def apply(
       aclCheck: AclCheck,
-      fetchResource: MultiFetchRequest.Input => IO[Option[JsonLdContent[_, _]]]
+      fetchResource: MultiFetchRequest.Input => IO[Option[JsonLdContent[?, ?]]]
   ): MultiFetch =
     new MultiFetch {
       override def apply(request: MultiFetchRequest)(implicit

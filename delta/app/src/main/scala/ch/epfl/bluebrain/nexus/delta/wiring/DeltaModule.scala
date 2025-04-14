@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.{ActorSystem, BootstrapSetup}
-import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.HttpMethods.*
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
@@ -17,18 +17,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ErrorRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclProvisioning, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig, ScopeInitializationErrorStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmProvisioning
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
@@ -119,7 +119,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
         contexts.validation     -> validationCtx,
         contexts.bulkOperation  -> bulkOpCtx
       )
-      .merge(otherCtxResolutions.toSeq: _*)
+      .merge(otherCtxResolutions.toSeq*)
   }
 
   make[Clock[IO]].from(implicitly[Clock[IO]])
@@ -174,7 +174,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
 
   make[ResourceShifts].from {
-    (shifts: Set[ResourceShift[_, _, _]], xas: Transactors, rcr: RemoteContextResolution @Id("aggregate")) =>
+    (shifts: Set[ResourceShift[?, ?, ?]], xas: Transactors, rcr: RemoteContextResolution @Id("aggregate")) =>
       ResourceShifts(shifts, xas)(rcr)
   }
 

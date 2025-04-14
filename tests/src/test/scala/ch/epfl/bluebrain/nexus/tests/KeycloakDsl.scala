@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.HttpMethods.*
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.Materializer
@@ -11,11 +11,11 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.tests.Identity.{ClientCredentials, UserCredentials}
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import io.circe.Json
 
 import scala.concurrent.ExecutionContext
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class KeycloakDsl(implicit
     as: ActorSystem,

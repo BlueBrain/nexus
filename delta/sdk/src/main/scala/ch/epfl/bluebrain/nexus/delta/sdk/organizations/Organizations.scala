@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.*
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
@@ -187,7 +187,7 @@ object Organizations {
         case None                      => IO.raiseError(OrganizationNotFound(c.label))
         case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if s.deprecated   =>
-          IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
+          IO.raiseError(OrganizationIsDeprecated(s.label)) // remove this check if we want to allow un-deprecate
         case Some(s) =>
           clock.realTimeInstant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
       }

@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.HttpMethods.*
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -20,15 +20,15 @@ import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import io.circe.Json
-import io.circe.parser._
-import io.circe.syntax._
-import fs2._
+import io.circe.parser.*
+import io.circe.syntax.*
+import fs2.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AppendedClues, Assertion}
 
 import java.nio.file.{Files, Path}
 import java.util.concurrent.ConcurrentHashMap
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{ExecutionContext, Future}
 
 class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
@@ -209,7 +209,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   }
   def delete[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
-  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion]                                                        =
+  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(DELETE, url, None, identity, extraHeaders)(assertResponse)
 
   def requestAssertAndReturn[A](
@@ -370,7 +370,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       apply(request.addHeader(tokensMap.get(identity))).unsafeToFuture()
     fromFuture {
       EventSource(s"$baseUrl$url", send, initialLastEventId = initialLastEventId)
-        //drop resolver, views and storage events
+        // drop resolver, views and storage events
         .take(take)
         .takeWithin(takeWithin)
         .runWith(Sink.seq)

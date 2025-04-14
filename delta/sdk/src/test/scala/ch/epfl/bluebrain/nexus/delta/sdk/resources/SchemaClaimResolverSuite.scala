@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig.SchemaEnforcementConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{SchemaIsDeprecated, SchemaIsMandatory}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite

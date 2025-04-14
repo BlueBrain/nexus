@@ -21,5 +21,5 @@ object FileMatchers {
   def digest(algo: String, value: String): HavePropertyMatcher[Json, Json] =
     field("_digest", Json.obj("_algorithm" := algo, "_value" := value))
 
-  def filename(expected: String): HavePropertyMatcher[Json, String]        = field("_filename", expected)
+  def filename(expected: String): HavePropertyMatcher[Json, String] = field("_filename", expected)
 }

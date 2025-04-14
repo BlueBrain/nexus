@@ -59,13 +59,13 @@ object ProjectPayload extends Generators {
     )
 
   implicit val encoder: Encoder[ProjectPayload] = Encoder.AsObject.instance { payload =>
-    val mappings = Json.arr(
+    val mappings   = Json.arr(
       payload.apiMappings.map { case (prefix, namespace) =>
         Json.obj("prefix" := prefix, "namespace" := namespace)
-      }.toSeq: _*
+      }.toSeq*
     )
     JsonObject(
-      "description" := payload.description,
+      "description"   := payload.description,
       "base"          := payload.base,
       "vocab"         := payload.vocab,
       "apiMappings"   -> mappings,

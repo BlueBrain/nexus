@@ -1,20 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UTF-8)`}
-import akka.http.scaladsl.model.MediaRanges._
+import akka.http.scaladsl.model.MediaRanges.*
 import akka.http.scaladsl.model.MediaTypes.{`multipart/form-data`, `text/html`}
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FormDataExtractor, MediaTypeDetector}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts as fileContexts, permissions, FileFixtures, Files, FormDataExtractor, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, FetchStorage, StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts as storageContexts, permissions as storagesPermissions, FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -38,11 +38,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
-import org.scalatest._
+import org.scalatest.*
 
 import java.util.UUID
 
@@ -144,8 +144,8 @@ class FilesRoutesSpec
     aclCheck.append(AclAddress.Root, reader -> readPermissions).accepted
     aclCheck.append(AclAddress.Root, s3writer -> Set(s3Write), callerS3Writer.subject -> Set(s3Write)).accepted
 
-    val defaults         = json"""{"maxFileSize": 1000, "volume": "$path"}"""
-    val s3Perms          = json"""{"readPermission": "$s3Read", "writePermission": "$s3Write"}"""
+    val defaults = json"""{"maxFileSize": 1000, "volume": "$path"}"""
+    val s3Perms  = json"""{"readPermission": "$s3Read", "writePermission": "$s3Write"}"""
     storages.create(s3Id, projectRef, diskFieldsJson deepMerge defaults deepMerge s3Perms)(callerWriter).accepted
     storages
       .create(dId, projectRef, diskFieldsJson deepMerge defaults)(callerWriter)

@@ -63,7 +63,7 @@ object MultiFetchResponse {
       override def reason: String = s"The resource '${id.toString}' was not found in project '$project'."
     }
 
-    final case class Success[A](id: ResourceRef, project: ProjectRef, content: JsonLdContent[A, _]) extends Result
+    final case class Success[A](id: ResourceRef, project: ProjectRef, content: JsonLdContent[A, ?]) extends Result
 
     implicit private val itemErrorEncoder: Encoder.AsObject[Error] = {
       Encoder.AsObject.instance[Error] { r =>
@@ -87,7 +87,7 @@ object MultiFetchResponse {
           "project" -> item.project.asJson
         )
 
-        def valueToJson[A](content: JsonLdContent[A, _]): IO[Json] = {
+        def valueToJson[A](content: JsonLdContent[A, ?]): IO[Json] = {
           implicit val encoder: JsonLdEncoder[A] = content.encoder
           val value                              = content.resource
           val source                             = content.source

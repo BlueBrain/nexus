@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
 import cats.effect.std.AtomicCell
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectSignals.emptySignals
 import fs2.concurrent.SignallingRef

@@ -6,17 +6,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.DiskStorage as DiskStorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.*
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, Tags}
@@ -85,7 +85,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       mediaType: Option[ContentType],
       extension: Option[String],
       origin: Option[FileAttributesOrigin]
-  ) =
+  )        =
     JsonObject(
       "storage"        := event.storage.iri,
       "storageType"    := event.storageType,

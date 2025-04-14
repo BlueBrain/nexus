@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -12,12 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 
 /**
@@ -45,10 +45,9 @@ sealed abstract class JsonLdSourceProcessor {
     if (sourceContext.isEmpty) {
       val defaultContext = defaultCtx(projectContext)
       ExpandedJsonLd.explain(source.addContext(defaultContext.contextObj)).map(defaultContext -> _)
-    } else {
+    } else
       ExpandedJsonLd.explain(source).map(sourceContext -> _)
-    }.adaptError { case err: RdfError => InvalidJsonLdFormat(None, err) }
-  }
+  }.adaptError { case err: RdfError => InvalidJsonLdFormat(None, err) }
 
   protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[ExpandedJsonLd] =
     expanded.rootId match {
@@ -93,7 +92,7 @@ object JsonLdSourceProcessor {
     )(implicit rcr: RemoteContextResolution): IO[JsonLdAssembly] = {
       for {
         _               <- validateIdNotBlank(source)
-        (ctx, result)   <- expandSource(context, source.addContext(contextIri: _*))
+        (ctx, result)   <- expandSource(context, source.addContext(contextIri*))
         originalExpanded = result.value
         iri             <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded         = originalExpanded.replaceId(iri)
@@ -121,7 +120,7 @@ object JsonLdSourceProcessor {
     ): IO[JsonLdAssembly] = {
       for {
         _               <- validateIdNotBlank(source)
-        (ctx, result)   <- expandSource(context, source.addContext(contextIri: _*))
+        (ctx, result)   <- expandSource(context, source.addContext(contextIri*))
         originalExpanded = result.value
         expanded        <- checkAndSetSameId(iri, originalExpanded)
         assembly        <- JsonLdAssembly(iri, source, expanded, ctx, result.remoteContexts)

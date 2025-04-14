@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import akka.NotUsed
-import akka.stream._
-import akka.stream.scaladsl.{Sink => AkkaSink, Source => AkkaSource, _}
-import cats.effect._
+import akka.stream.*
+import akka.stream.scaladsl.{Sink as AkkaSink, Source as AkkaSource, *}
+import cats.effect.*
 import cats.effect.kernel.Resource.ExitCase
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
-import fs2._
+import fs2.*
 
 /**
   * Converts a fs2 stream to an Akka source Original code from the streamz library from Martin Krasser (published under
@@ -62,7 +62,7 @@ object StreamConverter {
 
     AkkaSource
       .fromGraph(GraphDSL.createGraph(source) { implicit builder => source =>
-        import GraphDSL.Implicits._
+        import GraphDSL.Implicits.*
         builder.materializedValue ~> sink
         SourceShape(source.out)
       })

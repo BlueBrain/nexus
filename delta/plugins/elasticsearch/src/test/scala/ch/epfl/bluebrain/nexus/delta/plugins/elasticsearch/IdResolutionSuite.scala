@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionSuite.searchResults
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
@@ -58,7 +58,7 @@ class IdResolutionSuite extends NexusSuite with Fixtures {
   private val successContent =
     ResourceGen.jsonLdContent(successId, project1, jsonContentOf("resources/resource.json", "id" -> successId))
 
-  private def fetchResource  =
+  private def fetchResource =
     (_: ResourceRef, _: ProjectRef) => IO.pure(successContent.some)
 
   private val res = JsonObject("@id" := iri, "_project" := project1)

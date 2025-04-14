@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.StaticContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent.*
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef, Tags}

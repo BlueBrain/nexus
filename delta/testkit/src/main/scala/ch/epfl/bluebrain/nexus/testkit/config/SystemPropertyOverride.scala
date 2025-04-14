@@ -5,7 +5,7 @@ import com.typesafe.config.impl.ConfigImpl
 
 object SystemPropertyOverride {
 
-  private def reload: IO[Unit] = IO.delay(ConfigImpl.reloadSystemPropertiesConfig())
+  private def reload: IO[Unit]                                              = IO.delay(ConfigImpl.reloadSystemPropertiesConfig())
   def apply(io: IO[Map[String, String]]): Resource[IO, Map[String, String]] = {
     def acquire                                        = io.flatTap { values =>
       IO.delay(values.foreach { case (k, v) => System.setProperty(k, v) }) >> reload

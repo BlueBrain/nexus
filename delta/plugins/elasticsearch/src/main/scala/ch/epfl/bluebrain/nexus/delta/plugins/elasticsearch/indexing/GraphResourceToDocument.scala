@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
@@ -59,7 +59,7 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
   private def injectId(json: Json, sourceId: String) =
     json.deepMerge(JsonObject("@id" -> Json.fromString(sourceId)).asJson)
 
-  private def injectContext(json: Json)              =
+  private def injectContext(json: Json) =
     if (includeContext)
       json.removeAllKeys(keywords.context).deepMerge(contextAsJson)
     else

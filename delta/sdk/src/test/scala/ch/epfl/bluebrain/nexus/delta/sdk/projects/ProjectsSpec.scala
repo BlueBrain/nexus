@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.evaluate
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.*
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec

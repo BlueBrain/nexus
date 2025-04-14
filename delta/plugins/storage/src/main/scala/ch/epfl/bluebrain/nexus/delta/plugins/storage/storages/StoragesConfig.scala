@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
-import pureconfig.generic.auto._
+import pureconfig.generic.auto.*
 import pureconfig.{ConfigConvert, ConfigReader}
 
 /**

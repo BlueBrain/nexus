@@ -54,7 +54,7 @@ final case class TypeHierarchyState(
 object TypeHierarchyState {
 
   val serializer: Serializer[Iri, TypeHierarchyState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration              = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[TypeHierarchyState] = deriveConfiguredCodec[TypeHierarchyState]
     Serializer(identity)

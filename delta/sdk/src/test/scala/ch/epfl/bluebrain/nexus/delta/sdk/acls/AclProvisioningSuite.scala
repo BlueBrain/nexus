@@ -18,7 +18,7 @@ import java.nio.file.Files
 
 class AclProvisioningSuite extends NexusSuite with Doobie.Fixture with TempDirectory.Fixture with ConfigFixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(tempDirectory, doobieTruncateAfterTest)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(tempDirectory, doobieTruncateAfterTest)
 
   private lazy val tempDir = tempDirectory().toNioPath
   private lazy val xas     = doobieTruncateAfterTest()

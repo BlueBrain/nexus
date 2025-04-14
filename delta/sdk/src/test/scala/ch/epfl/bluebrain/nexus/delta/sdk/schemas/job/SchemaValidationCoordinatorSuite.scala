@@ -17,13 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef, Ta
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import munit.AnyFixture
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 import java.time.Instant
 
@@ -35,7 +35,7 @@ class SchemaValidationCoordinatorSuite
     with ResourceInstanceFixture
     with ValidateResourceFixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(supervisor)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 10.millis)
 

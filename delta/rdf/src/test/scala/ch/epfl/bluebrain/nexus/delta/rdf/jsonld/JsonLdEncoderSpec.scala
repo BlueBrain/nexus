@@ -4,12 +4,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.Permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, JsonObject}
 
 class JsonLdEncoderSpec extends CatsEffectSpec with Fixtures {
@@ -23,8 +23,8 @@ class JsonLdEncoderSpec extends CatsEffectSpec with Fixtures {
       implicit val remoteResolution: RemoteContextResolution =
         RemoteContextResolution.fixed(contexts.permissions -> permissionsContext.topContextValueOrEmpty)
 
-      val compacted                                          = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
-      val expanded                                           =
+      val compacted = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
+      val expanded  =
         json"""[{"${nxv + "permissions"}": [{"@value": "read"}, {"@value": "write"}, {"@value": "execute"} ] } ]"""
 
       def dot(bnode: BNode) =

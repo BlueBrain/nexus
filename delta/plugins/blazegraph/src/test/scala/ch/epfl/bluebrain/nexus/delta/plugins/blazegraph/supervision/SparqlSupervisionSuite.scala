@@ -11,7 +11,7 @@ import munit.AnyFixture
 
 class SparqlSupervisionSuite extends NexusSuite with SparqlClientSetup.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(blazegraphClient)
 
   private val project = ProjectRef.unsafe("org", "project")
   private val first   = ViewRef(project, nxv + "first")

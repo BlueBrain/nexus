@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post}
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes.*
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{HttpCredentials, RawHeader}
 import akka.http.scaladsl.model.{FormData, HttpEntity, HttpHeader, MediaType, Uri}
@@ -19,9 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryRespon
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.NamespaceProperties
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.reflect.ClassTag
 
 /**
@@ -50,7 +50,7 @@ final class BlazegraphClient(
       additionalHeaders: Seq[HttpHeader]
   ): IO[A] = {
     val req = Post(queryEndpoint(namespace), FormData("query" -> q.value))
-      .withHeaders(accept(mediaTypes.toList), additionalHeaders: _*)
+      .withHeaders(accept(mediaTypes.toList), additionalHeaders*)
       .withHttpCredentials
     client.fromEntityTo[A](req).adaptError { case e: HttpClientError =>
       WrappedHttpClientError(e)
@@ -77,7 +77,7 @@ final class BlazegraphClient(
       .timeout(1.second)
       .recover(_ => ServiceDescription.unresolved(serviceName))
 
-  override def existsNamespace(namespace: String): IO[Boolean]                         =
+  override def existsNamespace(namespace: String): IO[Boolean] =
     client
       .run(Get(endpoint / "namespace" / namespace)) {
         case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).as(true)

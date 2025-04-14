@@ -5,9 +5,9 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms.evaluate
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.*
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap

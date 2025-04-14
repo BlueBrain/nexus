@@ -16,7 +16,7 @@ import java.time.Instant
 
 class TypeHierarchySuite extends NexusSuite with ConfigFixtures with FixedClock with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobieTruncateAfterTest)
   private lazy val xas                           = doobieTruncateAfterTest()
 
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))

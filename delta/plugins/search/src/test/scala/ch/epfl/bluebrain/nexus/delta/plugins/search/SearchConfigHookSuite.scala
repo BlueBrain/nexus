@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
 import io.circe.{Json, JsonObject}
 
 import java.util.UUID
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import cats.effect.Ref
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 

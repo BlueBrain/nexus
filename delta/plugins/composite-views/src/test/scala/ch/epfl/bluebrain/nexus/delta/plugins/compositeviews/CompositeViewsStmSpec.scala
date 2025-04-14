@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand.*
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.*
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewState, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}

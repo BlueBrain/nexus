@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetrics, EventMetricsIndex}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics.StoragesStatisticsSuite._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics.StoragesStatisticsSuite.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesStatistics
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -26,7 +26,7 @@ class StoragesStatisticsSuite
     with EventMetricsIndex.Fixture
     with Fixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, metricsIndex)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(esClient, metricsIndex)
 
   private lazy val client        = esClient()
   private lazy val mIndex        = metricsIndex()

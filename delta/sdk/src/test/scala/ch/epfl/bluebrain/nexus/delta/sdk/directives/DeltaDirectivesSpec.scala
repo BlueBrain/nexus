@@ -1,33 +1,33 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.HttpMethods.GET
-import akka.http.scaladsl.model.MediaRange._
+import akka.http.scaladsl.model.MediaRange.*
 import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, `text/*`}
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`, `text/plain`}
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes.*
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.HttpEncodings.gzip
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.model.headers.*
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.rawHeader
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleResource2
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, JsonObject}
 import org.scalatest.Inspectors
 

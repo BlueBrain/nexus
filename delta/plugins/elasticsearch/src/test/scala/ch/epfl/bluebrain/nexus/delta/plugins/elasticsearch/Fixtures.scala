@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdAp
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.*
 
 object Fixtures {
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader()
@@ -17,7 +17,7 @@ object Fixtures {
 
 trait Fixtures {
 
-  import Fixtures._
+  import Fixtures.*
 
   private val listingsMetadataCtx =
     List(

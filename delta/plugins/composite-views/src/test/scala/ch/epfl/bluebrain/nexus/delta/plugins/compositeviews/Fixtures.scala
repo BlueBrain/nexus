@@ -5,11 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 
 trait Fixtures {
 
-  import Fixtures._
+  import Fixtures.*
 
   implicit val api: JsonLdApi = TitaniumJsonLdApi.strict
 

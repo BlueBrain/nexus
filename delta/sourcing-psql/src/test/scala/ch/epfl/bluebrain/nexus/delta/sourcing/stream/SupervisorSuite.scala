@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
@@ -18,7 +18,7 @@ import fs2.Stream
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import cats.effect.Ref
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
@@ -27,7 +27,7 @@ class SupervisorSuite extends NexusSuite with SupervisorSetup.Fixture with Doobi
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(1.second, 50.millis)
   implicit private val subject: Subject               = Anonymous
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor3_1)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(supervisor3_1)
 
   private lazy val (sv, projections, _) = unapply(supervisor3_1())
   // name1 should run on the node with index 1 in a 3-node cluster

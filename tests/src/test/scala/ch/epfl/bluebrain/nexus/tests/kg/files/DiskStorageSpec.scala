@@ -28,7 +28,7 @@ class DiskStorageSpec extends StorageSpec {
         "read"        -> readPermission,
         "maxFileSize" -> storageConfig.maxFileSize.toString,
         "write"       -> writePermission
-      ): _*
+      )*
     )
 
   override def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion] = {

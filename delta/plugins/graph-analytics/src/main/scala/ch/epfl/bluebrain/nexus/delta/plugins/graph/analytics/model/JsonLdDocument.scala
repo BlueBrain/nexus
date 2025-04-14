@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model
 
 import cats.Monoid
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument.Reference
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdEntry.ObjectEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -68,7 +68,7 @@ object JsonLdDocument {
         // Literal node
         JsonLdEntry.literal(obj, path, isInArray).map(JsonLdDocument.singleEntry).getOrElse {
           // If this is not a literal node (i.e. there is no '@value' field), we have a node object
-          //We drop the root level
+          // We drop the root level
           val objectEntry = Option.when(path.nonEmpty) {
             val id    = obj(keywords.id).flatMap(_.as[Iri].toOption)
             val types = obj(keywords.tpe).flatMap(_.as[Set[Iri]].toOption)

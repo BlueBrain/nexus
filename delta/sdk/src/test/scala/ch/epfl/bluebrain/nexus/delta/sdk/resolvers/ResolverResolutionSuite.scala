@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolutionSuite.Resou
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.CrossProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{IdentityResolution, Priority, Resolver, ResourceResolutionReport}

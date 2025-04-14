@@ -143,7 +143,7 @@ object OrganizationEvent {
   ) extends OrganizationEvent
 
   val serializer: Serializer[Label, OrganizationEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration             = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[OrganizationEvent] = deriveConfiguredCodec[OrganizationEvent]
     Serializer(Organizations.encodeId)

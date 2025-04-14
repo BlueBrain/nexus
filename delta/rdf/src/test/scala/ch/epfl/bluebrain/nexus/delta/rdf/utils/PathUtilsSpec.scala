@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
 import java.nio.file.Paths

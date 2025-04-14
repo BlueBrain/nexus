@@ -17,8 +17,7 @@ object IriFilter {
   final case object None                             extends IriFilter
   sealed abstract case class Include(iris: Set[Iri]) extends IriFilter
 
-  def fromSet(iris: Set[Iri]): IriFilter = if (iris.nonEmpty) new Include(iris) {}
-  else None
+  def fromSet(iris: Set[Iri]): IriFilter = if (iris.nonEmpty) new Include(iris) {} else None
   def restrictedTo(iri: Iri): IriFilter  = fromSet(Set(iri))
 
   implicit val enc: Encoder[IriFilter]             = {

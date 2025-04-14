@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
-import cats.implicits._
+import cats.effect.unsafe.implicits.*
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.{ACursor, Json}
 import org.scalatest.Assertion
@@ -117,7 +117,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
               "id"      -> id,
               "self"    -> viewSelf(project, id),
               "project" -> project
-            ): _*
+            )*
           )
 
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -148,7 +148,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
             "self"     -> viewSelf(project2, id),
             "project1" -> project1,
             "project2" -> project2
-          ): _*
+          )*
         )
 
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -274,7 +274,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
         val indexes   = hits.each._index.string.getAll(json)
         val toReplace = indexes.zipWithIndex.map { case (value, i) => s"index${i + 1}" -> value }
         filterKey("took")(json) shouldEqual
-          jsonContentOf("kg/views/elasticsearch/search-response-aggregated.json", toReplace: _*)
+          jsonContentOf("kg/views/elasticsearch/search-response-aggregated.json", toReplace*)
       }
     }
 
@@ -438,7 +438,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
             ScoobyDoo,
             "viewId"     -> "https://dev.nexus.test.com/simplified-resource/wrong-view",
             "projectRef" -> project1
-          ): _*
+          )*
         )
       }
     }
@@ -454,7 +454,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
             "view"         -> view,
             "providedType" -> "AggregateElasticSearchView",
             "expectedType" -> "ElasticSearchView"
-          ): _*
+          )*
         )
       }
     }

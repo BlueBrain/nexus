@@ -24,7 +24,7 @@ final case class ProjectionRestart(name: String, instant: Instant, subject: Subj
 object ProjectionRestart {
 
   implicit val projectionRestartCodec: Codec[ProjectionRestart] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration = Serializer.circeConfiguration
     deriveConfiguredCodec[ProjectionRestart]
   }

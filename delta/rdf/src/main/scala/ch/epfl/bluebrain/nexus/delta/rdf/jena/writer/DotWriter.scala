@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jena.writer
 
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext
 import org.apache.jena.graph.{Graph, Node}
-import org.apache.jena.riot._
+import org.apache.jena.riot.*
 import org.apache.jena.riot.system.PrefixMap
 import org.apache.jena.riot.writer.WriterGraphRIOTBase
 import org.apache.jena.sparql.util.{Context, Symbol}
@@ -20,7 +20,7 @@ private object DotWriterImpl extends WriterGraphRIOTBase {
   private def quote(str: String): String =
     s""""$str""""
 
-  private val primitiveTypes: Set[Class[_]] =
+  private val primitiveTypes: Set[Class[?]] =
     Set(classOf[java.lang.Integer], classOf[java.lang.Boolean], classOf[java.lang.Double], classOf[java.lang.Float])
 
   override def write(out: OutputStream, graph: Graph, prefixMap: PrefixMap, baseURI: String, context: Context): Unit =

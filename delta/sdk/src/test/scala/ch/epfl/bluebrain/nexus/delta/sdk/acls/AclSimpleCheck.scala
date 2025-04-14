@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import cats.effect.{IO, Ref}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -96,6 +96,6 @@ object AclSimpleCheck {
     }
 
   def unsafe(input: (Identity, AclAddress, Set[Permission])*): AclSimpleCheck =
-    apply(input: _*).unsafeRunSync()
+    apply(input*).unsafeRunSync()
 
 }

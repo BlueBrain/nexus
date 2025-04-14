@@ -3,26 +3,26 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes.OK
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.{Accept, HttpEncoding, RawHeader}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
+import cats.effect.unsafe.implicits.*
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{RouteOutcome, UseLeft, UseRight}
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, JsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.JsonLdFormat.{Compacted, Expanded}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.*
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -155,7 +155,7 @@ object ResponseToJsonLd extends FileBytesInstances {
                   RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")
                 requestEncoding { encoding =>
                   conditionalCache(metadata.entityTag, metadata.contentType.mediaType, encoding) {
-                    respondWithHeaders(contentDisposition, metadata.headers: _*) {
+                    respondWithHeaders(contentDisposition, metadata.headers*) {
                       complete(statusOverride.getOrElse(OK), HttpEntity(metadata.contentType, content))
                     }
                   }

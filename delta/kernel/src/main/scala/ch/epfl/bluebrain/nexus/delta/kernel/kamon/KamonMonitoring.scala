@@ -8,7 +8,7 @@ import kamon.tag.TagSet
 import kamon.trace.Span
 import kamon.{Kamon, Tracing}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 object KamonMonitoring {
 
@@ -63,7 +63,7 @@ object KamonMonitoring {
       component: String,
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
-  )(io: IO[A]): IO[A]                                                                      = {
+  )(io: IO[A]): IO[A] = {
     if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
         case (span, Outcome.Succeeded(_))   => finishSpan(span, takeSamplingDecision)

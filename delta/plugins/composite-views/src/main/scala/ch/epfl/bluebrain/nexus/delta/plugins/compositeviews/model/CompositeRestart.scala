@@ -83,7 +83,7 @@ object CompositeRestart {
   }
 
   implicit val compositeRestartCodec: Codec.AsObject[CompositeRestart] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration = Serializer.circeConfiguration
     deriveConfiguredCodec[CompositeRestart]
   }

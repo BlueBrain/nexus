@@ -12,10 +12,10 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class EphemeralLogSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas = doobie()
 

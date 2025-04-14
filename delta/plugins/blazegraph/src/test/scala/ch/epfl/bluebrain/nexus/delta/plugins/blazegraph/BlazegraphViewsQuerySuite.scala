@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.effect.kernel.Resource
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlJsonLd
@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -77,7 +77,7 @@ class BlazegraphViewsQuerySuite extends NexusSuite with ConfigFixtures with Fixt
 
   private val fixture = ResourceSuiteLocalFixture("this", viewsAndQuery)
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(fixture)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(fixture)
 
   private lazy val (views, viewsQuery) = fixture()
 
@@ -182,7 +182,7 @@ class BlazegraphViewsQuerySuite extends NexusSuite with ConfigFixtures with Fixt
   test("Query an aggregate view with full permissions") {
     // aggView1Proj2 points directly or via other aggregate views to all indexing views but the default one
     val views = List(view1Proj1, view2Proj1, view1Proj2, view2Proj2)
-    getNamespaces(views: _*).flatMap { expectedNamespaces =>
+    getNamespaces(views*).flatMap { expectedNamespaces =>
       assertNamespaceAccess(aggView1Proj2, bob, expectedNamespaces)
     }
   }
@@ -190,7 +190,7 @@ class BlazegraphViewsQuerySuite extends NexusSuite with ConfigFixtures with Fixt
   test("Query an aggregated view without permissions in some projects") {
     // Alice has only access to proj1
     val views = List(view1Proj1, view2Proj1)
-    getNamespaces(views: _*).flatMap { expectedNamespaces =>
+    getNamespaces(views*).flatMap { expectedNamespaces =>
       assertNamespaceAccess(aggView1Proj2, alice, expectedNamespaces)
     }
   }

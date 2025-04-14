@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySeq
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Decoder, JsonObject}
 
@@ -46,7 +46,7 @@ object GraphAnalytics {
 
       private val expandIri: ExpandIri[InvalidPropertyType] = new ExpandIri(InvalidPropertyType.apply)
 
-      private def propertiesAggQueryFor(tpe: Iri)                            =
+      private def propertiesAggQueryFor(tpe: Iri) =
         propertiesAggQuery(config).map(_.replace("@type" -> "{{type}}", tpe))
 
       override def relationships(projectRef: ProjectRef): IO[AnalyticsGraph] =
@@ -86,8 +86,8 @@ object GraphAnalytics {
 
   private[analytics] def toPaths(key: String): Either[String, NonEmptySeq[Iri]] =
     key.split(" / ").toVector.foldM(Vector.empty[Iri])((acc, k) => Iri.reference(k).map(acc :+ _)).flatMap {
-      case Seq(first, tail @ _*) => Right(NonEmptySeq(first, tail))
-      case _                     => Left("Empty Path")
+      case Seq(first, tail*) => Right(NonEmptySeq(first, tail))
+      case _                 => Left("Empty Path")
     }
 
   private[analytics] def index(prefix: String, ref: ProjectRef): IndexLabel =

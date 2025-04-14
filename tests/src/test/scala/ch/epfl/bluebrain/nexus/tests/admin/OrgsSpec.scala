@@ -9,7 +9,7 @@ import io.circe.Json
 
 class OrgsSpec extends BaseIntegrationSpec with OpticsValidators {
 
-  import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
+  import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.*
 
   override def beforeAll(): Unit = {
     super.beforeAll()

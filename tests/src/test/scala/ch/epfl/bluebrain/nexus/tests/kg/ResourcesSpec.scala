@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
@@ -315,7 +315,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
     val resolverPayload =
       jsonContentOf(
         "kg/resources/cross-project-resolver.json",
-        replacements(Rick, "project" -> project1): _*
+        replacements(Rick, "project" -> project1)*
       )
 
     "fail to create a cross-project-resolver for proj2 if identities are missing" in {
@@ -343,7 +343,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
           "project"        -> project1,
           "self"           -> resolverSelf(project2, "http://localhost/resolver"),
           "project-parent" -> project2
-        ): _*
+        )*
       )
 
       deltaClient.get[Json](s"/resolvers/$project2/test-resolver", Rick) { (json, response) =>

@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 import org.scalatest.{Assertion, CancelAfterFailure}
 
 private class StoragesSpec

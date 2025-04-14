@@ -4,9 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceInstanceFixture
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent.*
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision

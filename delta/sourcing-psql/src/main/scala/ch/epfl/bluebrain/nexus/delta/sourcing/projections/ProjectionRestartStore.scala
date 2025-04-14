@@ -5,12 +5,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionRestartStore.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import io.circe.syntax.EncoderOps
 
 import fs2.Stream

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.ResolverPriorityIntervalError
 import io.circe.{Decoder, Encoder}
-import cats.implicits._
+import cats.implicits.*
 
 /**
   * A safe representation of a resolver priority

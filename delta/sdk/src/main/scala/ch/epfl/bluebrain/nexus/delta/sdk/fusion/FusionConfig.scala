@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.fusion
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 

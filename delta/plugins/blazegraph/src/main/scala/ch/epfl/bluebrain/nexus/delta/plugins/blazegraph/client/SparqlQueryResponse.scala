@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.customContentTypeJsonMarshaller
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import scala.xml.NodeSeq
 
@@ -61,5 +61,5 @@ object SparqlQueryResponse {
     }
 
   private def jsonMarshaller(implicit ordering: JsonKeyOrdering) =
-    Marshaller.oneOf(jsonMediaTypes.map(mt => customContentTypeJsonMarshaller(mt.toContentType)): _*)
+    Marshaller.oneOf(jsonMediaTypes.map(mt => customContentTypeJsonMarshaller(mt.toContentType))*)
 }

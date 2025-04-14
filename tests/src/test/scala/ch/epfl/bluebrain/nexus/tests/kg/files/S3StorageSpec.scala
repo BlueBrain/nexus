@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField, mediaType => mediaTypeField}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest as digestField, filename as filenameField, mediaType as mediaTypeField}
 import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics
@@ -17,10 +17,10 @@ import io.circe.syntax.{EncoderOps, KeyOps}
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import org.apache.commons.codec.binary.Hex
 import org.scalatest.Assertion
-import software.amazon.awssdk.services.s3.model._
+import software.amazon.awssdk.services.s3.model.*
 
 import java.util.Base64
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class S3StorageSpec extends StorageSpec with S3ClientFixtures {
 
@@ -65,7 +65,7 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
         "maxFileSize" -> storageConfig.maxFileSize.toString,
         "read"        -> readPermission,
         "write"       -> writePermission
-      ): _*
+      )*
     )
 
   override def createStorages(projectRef: String, storId: String, storName: String): IO[Assertion] = {
@@ -77,8 +77,8 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
 
     val payload2 = jsonContentOf(
       "kg/storages/s3.json",
-      "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storId}2",
-      "bucket"          -> bucket
+      "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/${storId}2",
+      "bucket"    -> bucket
     ) deepMerge Json.obj(
       "readPermission"  -> Json.fromString(s"$storName/read"),
       "writePermission" -> Json.fromString(s"$storName/write")
@@ -288,7 +288,7 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
 
   "Uploading and downloading a large file" should {
     "succeed" in {
-      val content = {
+      val content   = {
         val sb = new StringBuilder
         (1 to 100_000_000).foreach(_ => sb.append('1'))
         sb.toString()
@@ -334,6 +334,6 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
         "location"    -> location,
         "filename"    -> filename,
         "mediaType"   -> mediaType
-      ): _*
+      )*
     )
 }

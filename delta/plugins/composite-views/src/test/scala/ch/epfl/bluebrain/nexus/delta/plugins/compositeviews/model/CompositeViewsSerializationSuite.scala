@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.*
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tags
 

@@ -4,12 +4,12 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.*
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent.*
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, InvalidSchema, ReservedSchemaId, ResourceAlreadyExists, RevisionNotFound, SchemaIsDeprecated, SchemaIsNotDeprecated, SchemaNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, Tags}

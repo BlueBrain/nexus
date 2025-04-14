@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -128,7 +128,7 @@ object Operation {
   }
 
   def merge(first: Operation, others: Operation*): Either[ProjectionErr, Operation] =
-    merge(NonEmptyChain(first, others: _*))
+    merge(NonEmptyChain(first, others*))
 
   def merge(operations: NonEmptyChain[Operation]): Either[ProjectionErr, Operation] =
     operations.tail.foldLeftM[Either[ProjectionErr, *], Operation](operations.head) { case (acc, e) =>
@@ -174,7 +174,7 @@ object Operation {
       */
     protected def partitionSuccess[I, O](element: Elem[I]): Either[Elem[O], SuccessElem[I]] =
       element match {
-        case _: SuccessElem[_]              => Right(element.asInstanceOf[SuccessElem[I]])
+        case _: SuccessElem[?]              => Right(element.asInstanceOf[SuccessElem[I]])
         case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
       }
 

@@ -50,7 +50,7 @@ object CompositeViewFields {
 
   implicit final def compositeViewFieldsEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewFields] = {
     import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
+    import io.circe.generic.extras.semiauto.*
     implicit val config: Configuration = Configuration.default
     deriveConfiguredEncoder[CompositeViewFields]
   }

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class SparqlIndexingActionSuite extends NexusSuite with Fixtures {
 
@@ -154,7 +154,7 @@ class SparqlIndexingActionSuite extends NexusSuite with Fixtures {
     indexingAction
       .projections(project, elem)
       .fold(emptyAcc) {
-        case (acc, s: SuccessElem[_]) => acc.success(s.id)
+        case (acc, s: SuccessElem[?]) => acc.success(s.id)
         case (acc, d: DroppedElem)    => acc.drop(d.id)
         case (acc, f: FailedElem)     => acc.failed(f.id)
       }

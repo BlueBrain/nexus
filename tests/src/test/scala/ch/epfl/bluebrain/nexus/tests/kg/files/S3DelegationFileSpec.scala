@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest => digestField, filename => filenameField}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest as digestField, filename as filenameField}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
@@ -168,7 +168,7 @@ class S3DelegationFileSpec extends BaseIntegrationSpec with S3ClientFixtures {
         "location"    -> delegationResponse.targetLocation.path,
         "filename"    -> filename,
         "mediaType"   -> mediaType
-      ): _*
+      )*
     )
 }
 

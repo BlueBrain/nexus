@@ -5,7 +5,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest, S3OperationResult}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
 import fs2.Stream
-import software.amazon.awssdk.services.s3.model._
+import software.amazon.awssdk.services.s3.model.*
 
 import java.nio.ByteBuffer
 

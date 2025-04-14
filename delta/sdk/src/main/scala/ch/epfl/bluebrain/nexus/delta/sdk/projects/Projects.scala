@@ -9,11 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectIsNotDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset

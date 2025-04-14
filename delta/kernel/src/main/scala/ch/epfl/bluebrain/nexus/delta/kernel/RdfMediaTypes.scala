@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
-import akka.http.scaladsl.model.HttpCharsets._
+import akka.http.scaladsl.model.HttpCharsets.*
 import akka.http.scaladsl.model.MediaType
 
 /**

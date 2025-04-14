@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.config
 
 import cats.effect.IO
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
-import cats.syntax.all._
+import cats.syntax.all.*
 import pureconfig.error.ConfigReaderException
 import pureconfig.{ConfigReader, ConfigSource}
 

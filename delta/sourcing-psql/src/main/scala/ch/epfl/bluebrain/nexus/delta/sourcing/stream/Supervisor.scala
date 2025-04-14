@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.effect._
+import cats.effect.*
 import cats.effect.std.Semaphore
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import cats.implicits.*
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
@@ -13,7 +13,7 @@ import fs2.Stream
 import fs2.concurrent.SignallingRef
 
 import scala.concurrent.TimeoutException
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * Supervises the execution of projections based on a defined [[ExecutionStrategy]] that describes whether projections

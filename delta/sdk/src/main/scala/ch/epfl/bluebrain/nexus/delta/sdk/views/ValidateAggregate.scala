@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import cats.data.NonEmptySet
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, EntityDependencyStore, Transactors}
 

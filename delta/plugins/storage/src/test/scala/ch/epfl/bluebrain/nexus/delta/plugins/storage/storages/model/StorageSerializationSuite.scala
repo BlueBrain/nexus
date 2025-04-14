@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.DiskStorage as DiskStorageType
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}

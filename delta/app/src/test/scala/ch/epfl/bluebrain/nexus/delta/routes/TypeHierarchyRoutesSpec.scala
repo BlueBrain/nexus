@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.typehierarchy
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchy
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy.TypeHierarchyMapping
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchyRejection.TypeHierarchyDoesNotExist
-import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.{TypeHierarchy => TypeHierarchyModel, TypeHierarchyState}
+import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.{TypeHierarchy as TypeHierarchyModel, TypeHierarchyState}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}

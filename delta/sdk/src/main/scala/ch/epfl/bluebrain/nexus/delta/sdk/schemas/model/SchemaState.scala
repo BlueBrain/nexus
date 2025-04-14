@@ -91,9 +91,9 @@ final case class SchemaState(
 object SchemaState {
 
   implicit val serializer: Serializer[Iri, SchemaState] = {
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database.*
+    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database.*
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration       = Serializer.circeConfiguration
     implicit val codec: Codec.AsObject[SchemaState] = deriveConfiguredCodec[SchemaState]
     Serializer.dropNullsInjectType()

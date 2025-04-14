@@ -15,9 +15,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializer}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
@@ -59,7 +59,7 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures {
   private val hashDoobie: IOFixture[(DatabasePartitioner, Transactors)] =
     ResourceSuiteLocalFixture("doobie", resource(PartitionStrategy.Hash(3)))
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(hashDoobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(hashDoobie)
 
   implicit private lazy val (partitioner: DatabasePartitioner, xas: Transactors) = hashDoobie()
   val inits                                                                      = ScopeInitializer.withoutErrorStore(Set.empty)

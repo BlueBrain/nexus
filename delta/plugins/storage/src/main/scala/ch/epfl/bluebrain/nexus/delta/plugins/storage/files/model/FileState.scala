@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{nxvFile, schemas, Fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -92,9 +92,9 @@ final case class FileState(
 object FileState {
 
   implicit val serializer: Serializer[Iri, FileState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration        = Serializer.circeConfiguration.withDefaults
-    implicit val digestCodec: Codec.AsObject[Digest] =
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
+    implicit val configuration: Configuration                        = Serializer.circeConfiguration.withDefaults
+    implicit val digestCodec: Codec.AsObject[Digest]                 =
       deriveConfiguredCodec[Digest]
     implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] = {
       val enc = FileAttributes.createConfiguredEncoder(configuration)

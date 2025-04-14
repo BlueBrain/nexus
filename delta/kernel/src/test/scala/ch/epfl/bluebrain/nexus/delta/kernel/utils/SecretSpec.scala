@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

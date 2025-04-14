@@ -111,7 +111,7 @@ object IncomingOutgoingLinks {
         project: ProjectRef,
         pagination: FromPagination,
         includeExternalLinks: Boolean
-    ): IO[SearchResults[SparqlLink]]                                          = {
+    ): IO[SearchResults[SparqlLink]] = {
       for {
         iri          <- expandResourceIri(resourceId, project)
         namespace    <- fetchDefaultNamespace(project)

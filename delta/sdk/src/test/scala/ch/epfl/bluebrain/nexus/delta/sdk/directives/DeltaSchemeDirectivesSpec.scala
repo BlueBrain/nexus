@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -39,7 +39,7 @@ class DeltaSchemeDirectivesSpec
 
   private val route: Route =
     (get & uriPrefix(baseUri.base)) {
-      import schemeDirectives._
+      import schemeDirectives.*
       concat(
         (pathPrefix("types") & projectRef & pathEndOrSingleSlash) { implicit projectRef =>
           types.apply { types =>

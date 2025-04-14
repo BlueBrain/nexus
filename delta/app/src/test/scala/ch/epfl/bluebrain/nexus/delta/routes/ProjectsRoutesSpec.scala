@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects => projectsPermissions, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects as projectsPermissions, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
@@ -26,7 +26,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
 
@@ -549,7 +549,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
       markedForDeletion: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json =
+  ): Json           =
     jsonContentOf(
       "projects/project-route-metadata-response.json",
       "project"           -> ref,
@@ -603,6 +603,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
         Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json")
       ),
       "_total"   -> Json.fromInt(results.size),
-      "_results" -> Json.arr(results: _*)
+      "_results" -> Json.arr(results*)
     )
 }

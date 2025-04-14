@@ -5,7 +5,7 @@ import munit.AnyFixture
 
 class BlazegraphSinkSuite extends SparqlSinkSuite {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(blazegraphClient)
 
   override lazy val client: SparqlClient = blazegraphClient()
 

@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.*
 import akka.http.scaladsl.server.directives.Credentials
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
-import cats.syntax.all._
+import cats.effect.unsafe.implicits.*
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress

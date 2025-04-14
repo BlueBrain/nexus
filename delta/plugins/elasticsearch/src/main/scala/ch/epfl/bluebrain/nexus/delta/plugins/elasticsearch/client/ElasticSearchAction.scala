@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 /**
   * Enumeration type for all possible bulk operations

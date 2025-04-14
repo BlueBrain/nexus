@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import io.circe.JsonObject
 import org.typelevel.log4cats
 
@@ -22,7 +22,7 @@ package object indexing {
         logger.warn(e)("ElasticSearch script 'update_relationships_script.painless' template not found")
       }
 
-  val graphAnalyticsMappings: IO[JsonObject]                             =
+  val graphAnalyticsMappings: IO[JsonObject] =
     loader
       .jsonObjectContentOf("elasticsearch/mappings.json")
       .onError { case e => logger.warn(e)("ElasticSearch mapping 'mappings.json' template not found") }

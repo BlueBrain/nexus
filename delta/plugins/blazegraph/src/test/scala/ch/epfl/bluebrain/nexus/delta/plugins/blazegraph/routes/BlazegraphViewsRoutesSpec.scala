@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.query.IncomingOutgoingLinks
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -26,10 +26,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceErrors.resourceAlreadyExistsError
-import ch.epfl.bluebrain.nexus.delta.sdk.views.BlazegraphViewErrors._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.BlazegraphViewErrors.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 import org.scalatest.Assertion
 
 class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {

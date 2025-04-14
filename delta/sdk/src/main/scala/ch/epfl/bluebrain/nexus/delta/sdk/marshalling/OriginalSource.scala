@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import akka.http.scaladsl.model.{HttpHeader, StatusCode}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 

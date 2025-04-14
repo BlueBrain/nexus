@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.{ComponentDescription, ServiceDependency}
@@ -14,13 +14,13 @@ import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.{emtyVersionBundle, Ve
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, JsonObject}
 
 import scala.collection.immutable.Iterable
@@ -77,7 +77,7 @@ object VersionRoutes {
     private def toMap(values: Iterable[ComponentDescription]): Map[String, String] =
       values.map(desc => desc.name -> desc.version).toMap
 
-    implicit private val versionBundleEncoder: Encoder.AsObject[VersionBundle]     =
+    implicit private val versionBundleEncoder: Encoder.AsObject[VersionBundle] =
       Encoder.encodeJsonObject.contramapObject { case VersionBundle(main, dependencies, plugins, env) =>
         JsonObject(
           main.name      -> main.version.asJson,

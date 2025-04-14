@@ -11,6 +11,6 @@ object CollectionUtils {
     * @example
     *   `CollectionUtils.quote(List(1, 2, 3)) = "'1','2','3'"`
     */
-  def quote(iterable: Iterable[_]): String = iterable.mkString("'", "','", "'")
+  def quote(iterable: Iterable[?]): String = iterable.mkString("'", "','", "'")
 
 }

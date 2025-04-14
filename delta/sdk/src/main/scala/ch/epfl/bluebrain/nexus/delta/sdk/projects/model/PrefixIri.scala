@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIRIFormatError, IllegalPrefixIRIFormatError}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import io.circe.{Decoder, Encoder}
-import cats.implicits._
+import cats.implicits.*
 
 /**
   * An Iri that ends with ''/'' or ''#''

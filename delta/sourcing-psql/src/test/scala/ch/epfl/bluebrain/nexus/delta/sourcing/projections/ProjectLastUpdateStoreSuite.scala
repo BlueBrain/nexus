@@ -14,7 +14,7 @@ import java.time.temporal.ChronoUnit
 
 class ProjectLastUpdateStoreSuite extends NexusSuite with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas    = doobie()
   private lazy val store  = ProjectLastUpdateStore(xas)

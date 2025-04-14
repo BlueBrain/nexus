@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
 import cats.effect.{Clock, IO}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectState
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import fs2.Stream
 
 /**

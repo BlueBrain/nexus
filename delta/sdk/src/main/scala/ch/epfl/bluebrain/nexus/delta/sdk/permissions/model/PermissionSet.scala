@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.*
 import io.circe.{Decoder, Encoder}
 
 /**

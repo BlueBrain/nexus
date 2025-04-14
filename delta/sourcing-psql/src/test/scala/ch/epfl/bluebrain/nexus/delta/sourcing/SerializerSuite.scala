@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.SerializerSuite.{Bar, Foo}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie._
-import doobie.syntax.all._
+import doobie.*
+import doobie.syntax.all.*
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -13,7 +13,7 @@ import munit.AnyFixture
 
 class SerializerSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas = doobie()
 

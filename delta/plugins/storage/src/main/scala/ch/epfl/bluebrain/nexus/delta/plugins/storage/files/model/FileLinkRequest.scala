@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.Uri.Path
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
 final case class FileLinkRequest(path: Path, mediaType: Option[ContentType], metadata: Option[FileCustomMetadata])

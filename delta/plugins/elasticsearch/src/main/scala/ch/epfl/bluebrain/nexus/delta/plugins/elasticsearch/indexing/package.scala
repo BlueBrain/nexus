@@ -17,7 +17,7 @@ package object indexing {
   def mainProjectTargetAlias(index: IndexLabel, project: ProjectRef): IndexLabel =
     IndexLabel.unsafe(s"${index.value}_${ProjectRef.hash(project)}")
 
-  private def projectFilter(project: ProjectRef): JsonObject                =
+  private def projectFilter(project: ProjectRef): JsonObject =
     JsonObject("term" := Json.obj("_project" := project))
 
   def mainIndexingAlias(index: IndexLabel, project: ProjectRef): IndexAlias =

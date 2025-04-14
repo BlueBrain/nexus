@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.Uri.Query
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{owl, schema, xsd}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
-import cats.implicits._
-import io.circe.syntax._
+import cats.implicits.*
+import io.circe.syntax.*
 
 class IriSpec extends BaseSpec {
 

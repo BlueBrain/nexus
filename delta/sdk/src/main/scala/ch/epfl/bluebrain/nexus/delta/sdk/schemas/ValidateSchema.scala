@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.kernel.Resource.ExitCase
-import cats.effect._
+import cats.effect.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe

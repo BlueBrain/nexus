@@ -17,7 +17,7 @@ import munit.AnyFixture
 
 class StorageDeletionTaskSuite extends NexusSuite with StorageFixtures with ActorSystemSetup.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(actorSystem)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(actorSystem)
   implicit private lazy val as: ActorSystem      = actorSystem()
   implicit private val uuidf: UUIDF              = UUIDF.random
 

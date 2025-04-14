@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.{`If-None-Match`, Accept, ETag}
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
-import ch.epfl.bluebrain.nexus.tests.HttpClient._
+import ch.epfl.bluebrain.nexus.tests.HttpClient.*
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
+import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader.*
 import ch.epfl.bluebrain.nexus.tests.config.StorageConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.kg.files.FilesAssertions.expectFileContent
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
-import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput._
+import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput.*
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import io.circe.optics.JsonPath.root
@@ -153,7 +153,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
           "storageId"   -> storageId,
           "storageType" -> storageType,
           "project"     -> projectRef
-        ): _*
+        )*
       )
 
       deltaClient.get[Json](s"/files/$projectRef/attachment:attachment.json", Coyote) { (json, response) =>
@@ -243,7 +243,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         "storageId"      -> storageId,
         "storageType"    -> storageType
       )
-      val expected = jsonContentOf("kg/files/list.json", mapping: _*)
+      val expected = jsonContentOf("kg/files/list.json", mapping*)
       filterSearchMetadata
         .andThen(filterResults(Set("_location")))(json) should equalIgnoreArrayOrder(expected)
     }
@@ -300,7 +300,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
         "self"      -> fileSelf(projectRef, id),
         "storageId" -> storageId
       )
-      val expected = jsonContentOf("kg/files/sparql.json", mapping: _*)
+      val expected = jsonContentOf("kg/files/sparql.json", mapping*)
       json should equalIgnoreArrayOrder(expected)
     }
   }
@@ -381,7 +381,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
           "storageType" -> storageType,
           "project"     -> projectRef,
           "storageType" -> storageType
-        ): _*
+        )*
       )
 
       deltaClient.get[Json](s"/files/$projectRef/attachment:attachment2", Coyote) { (json, response) =>

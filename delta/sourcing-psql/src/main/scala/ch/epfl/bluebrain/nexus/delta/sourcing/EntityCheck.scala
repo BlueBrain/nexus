@@ -4,10 +4,10 @@ import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
-import doobie._
-import doobie.syntax.all._
+import doobie.*
+import doobie.syntax.all.*
 
-import cats.implicits._
+import cats.implicits.*
 
 object EntityCheck {
 

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.{EitherAssertions, JsonAssertions, NexusSuite}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, MUnitExtractValue}
-import io.circe.parser._
+import io.circe.parser.*
 import io.circe.{Json, JsonObject}
 import munit.{Assertions, Location}
 

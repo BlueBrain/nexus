@@ -9,7 +9,7 @@ import java.time.Instant
 
 object PermissionsGen {
 
-  import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
+  import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.*
 
   /**
     * The collection of minimum permissions.

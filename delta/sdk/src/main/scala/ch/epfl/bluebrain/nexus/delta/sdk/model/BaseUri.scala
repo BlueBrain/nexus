@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalAbsoluteIRIFormatError
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalLabelFormat
 import io.circe.{Decoder, Encoder}

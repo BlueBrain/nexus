@@ -1,25 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.tombstone
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.StateTombstoneStore.Cause
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.StateTombstoneStoreSuite.{entityType, SimpleResource}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import munit.AnyFixture
 
 import java.time.Instant
 
 class StateTombstoneStoreSuite extends NexusSuite with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobieTruncateAfterTest)
 
   private lazy val xas            = doobieTruncateAfterTest()
   private lazy val tombstoneStore = new StateTombstoneStore(xas)
@@ -47,7 +47,7 @@ class StateTombstoneStoreSuite extends NexusSuite with Doobie.Fixture {
     val tag  = UserTag.unsafe("v1")
     val tag2 = UserTag.unsafe("v2")
     val tags = List(tag, tag2, Tag.latest)
-    save(originalState, tags: _*) >>
+    save(originalState, tags*) >>
       tags.traverse { t =>
         getCause(originalState, t).assertEquals(Some(Cause.deleted))
       }

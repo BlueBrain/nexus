@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.exporter
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
@@ -26,8 +26,8 @@ class ExporterSuite extends NexusSuite with Doobie.Fixture with TempDirectory.Fi
   private val queryConfig = QueryConfig.stopping(10)
 
   private lazy val doobieFixture                 =
-    doobieInject(PullRequest.eventStore(_, queryConfig, allEvents: _*), Exporter(exporterConfig, _))
-  override def munitFixtures: Seq[AnyFixture[_]] = List(tempDirectory, doobieFixture)
+    doobieInject(PullRequest.eventStore(_, queryConfig, allEvents*), Exporter(exporterConfig, _))
+  override def munitFixtures: Seq[AnyFixture[?]] = List(tempDirectory, doobieFixture)
 
   private lazy val exporterConfig   = ExportConfig(5, 4, 3, exportDirectory)
   private lazy val (_, _, exporter) = doobieFixture()

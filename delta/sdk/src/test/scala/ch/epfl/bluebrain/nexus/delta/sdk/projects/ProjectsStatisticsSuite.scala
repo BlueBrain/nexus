@@ -1,22 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatisticsSuite.{Cheese, Fruit}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -26,7 +26,7 @@ import java.time.Instant
 
 class ProjectsStatisticsSuite extends NexusSuite with Doobie.Fixture with ConfigFixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas = doobie()
 

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads
-import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
+import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads.*
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 

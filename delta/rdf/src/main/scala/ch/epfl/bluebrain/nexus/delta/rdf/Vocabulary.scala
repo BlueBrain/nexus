@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 
 // $COVERAGE-OFF$
 object Vocabulary {

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeRef
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 
-import cats.implicits._
+import cats.implicits.*
 
 /**
   * Definition of a pipe to include in a view

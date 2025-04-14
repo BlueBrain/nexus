@@ -5,17 +5,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.{logger, ProjectsLog}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, SuccessElemStream}

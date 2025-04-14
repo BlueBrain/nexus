@@ -4,10 +4,10 @@ import cats.effect.IO
 import org.typelevel.log4cats.Logger
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
-import pureconfig.generic.semiauto._
+import pureconfig.generic.semiauto.*
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
-import retry.RetryPolicies._
-import retry.syntax.all._
+import retry.RetryPolicies.*
+import retry.syntax.all.*
 import retry.{RetryDetails, RetryPolicies, RetryPolicy}
 
 import scala.concurrent.duration.FiniteDuration

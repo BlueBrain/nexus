@@ -15,7 +15,7 @@ trait CirceMarshalling {
     * `Json` => HTTP entity
     */
   implicit final def jsonMarshaller(implicit printer: Printer = Printer.noSpaces): ToEntityMarshaller[Json] =
-    Marshaller.oneOf(mediaTypes: _*) { mediaType =>
+    Marshaller.oneOf(mediaTypes*) { mediaType =>
       Marshaller.withFixedContentType(ContentType(mediaType)) { json =>
         HttpEntity(
           mediaType,

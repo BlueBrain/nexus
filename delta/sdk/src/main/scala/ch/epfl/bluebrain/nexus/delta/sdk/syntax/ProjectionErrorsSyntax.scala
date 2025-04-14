@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults

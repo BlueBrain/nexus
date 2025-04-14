@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.owl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd

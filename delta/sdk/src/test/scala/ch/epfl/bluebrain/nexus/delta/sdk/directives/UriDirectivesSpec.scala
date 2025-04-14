@@ -3,17 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.javadsl.server.InvalidRequiredValueForQueryParamRejection
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.server.Directives._
-import io.circe.literal._
+import akka.http.scaladsl.server.Directives.*
+import io.circe.literal.*
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route, ValidationRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectivesSpec.IntValue
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}

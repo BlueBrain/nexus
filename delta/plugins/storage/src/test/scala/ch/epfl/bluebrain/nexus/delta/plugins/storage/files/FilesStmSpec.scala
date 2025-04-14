@@ -6,12 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{DigestNotComputed, FileIsDeprecated, FileIsNotDeprecated, FileNotFound, IncorrectRev, ResourceAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage as DiskStorageType, RemoteDiskStorage as RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag

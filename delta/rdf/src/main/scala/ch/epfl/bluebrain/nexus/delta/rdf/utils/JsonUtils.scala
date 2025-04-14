@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.IterableUtils.singleEntry
-import io.circe._
-import io.circe.syntax._
+import io.circe.*
+import io.circe.syntax.*
 
 trait JsonUtils {
 
@@ -43,7 +43,7 @@ trait JsonUtils {
     def inner(obj: JsonObject): JsonObject = obj.filterKeys(!keys.contains(_))
     json.arrayOrObject(
       json,
-      arr => Json.fromValues(arr.map(j => removeKeys(j, keys: _*))),
+      arr => Json.fromValues(arr.map(j => removeKeys(j, keys*))),
       obj => Json.fromJsonObject(inner(obj))
     )
   }
@@ -72,13 +72,13 @@ trait JsonUtils {
     def inner(obj: JsonObject): Iterable[Json] =
       obj.toVector.flatMap {
         case (k, v) if keys.contains(k) => Vector(v)
-        case (_, v)                     => extractValuesFrom(v, keys: _*)
+        case (_, v)                     => extractValuesFrom(v, keys*)
       }
 
     json
       .arrayOrObject(
         Vector.empty[Json],
-        arr => arr.flatMap(j => extractValuesFrom(j, keys: _*)),
+        arr => arr.flatMap(j => extractValuesFrom(j, keys*)),
         obj => inner(obj).toVector
       )
       .toSet

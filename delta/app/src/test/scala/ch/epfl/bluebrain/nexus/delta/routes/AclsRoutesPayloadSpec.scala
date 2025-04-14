@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclValues
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
-import io.circe.literal._
+import io.circe.literal.*
 
 class AclsRoutesPayloadSpec extends BaseSpec {
 

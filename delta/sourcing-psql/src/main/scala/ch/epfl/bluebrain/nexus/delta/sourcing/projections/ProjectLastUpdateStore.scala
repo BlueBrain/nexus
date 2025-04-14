@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 
 /**
   * Keeps track of the last update on a given project

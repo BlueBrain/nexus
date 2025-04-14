@@ -4,15 +4,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.Acl.Metadata
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import io.circe._
+import io.circe.*
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
-import io.circe.syntax._
+import io.circe.syntax.*
 
 /**
   * An Access Control List codified as an address and a map where the keys are [[Identity]] and the values are a set of
@@ -64,21 +64,21 @@ final case class Acl(address: AclAddress, value: Map[Identity, Set[Permission]])
     * @return
     *   ''true'' if the underlying map is empty or if every permission set is empty
     */
-  def isEmpty: Boolean             =
+  def isEmpty: Boolean =
     value.isEmpty || value.forall { case (_, perms) => perms.isEmpty }
 
   /**
     * @return
     *   ''true'' if the underlying map is not empty and every permission set is not empty
     */
-  def nonEmpty: Boolean            =
+  def nonEmpty: Boolean =
     !isEmpty
 
   /**
     * @return
     *   a new [[Acl]] without the identities that have empty permission sets
     */
-  def removeEmpty(): Acl                     =
+  def removeEmpty(): Acl =
     Acl(address, value.filter { case (_, perms) => perms.nonEmpty })
 
   /**
@@ -142,7 +142,7 @@ object Acl {
   object Database {
 
     implicit val aclCodec: Codec[Acl] = {
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       implicit val configuration: Configuration            = Serializer.circeConfiguration
       final case class AclEntry(identity: Identity, permissions: Set[Permission])
       implicit val aclEntryCodec: Codec.AsObject[AclEntry] = deriveConfiguredCodec[AclEntry]

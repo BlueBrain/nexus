@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ContentTypes.*
+import akka.http.scaladsl.model.*
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
@@ -59,7 +59,7 @@ class FormDataExtractorSpec
       ).toJson
 
       Map.from(
-        filename.map("filename"                       -> _) ++
+        filename.map("filename" -> _) ++
           Option.when(!metadata.isEmpty())("metadata" -> metadata.noSpaces)
       )
     }

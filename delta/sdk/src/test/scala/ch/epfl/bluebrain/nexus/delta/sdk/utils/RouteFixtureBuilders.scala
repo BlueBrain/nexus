@@ -15,9 +15,9 @@ trait RouteFixtureBuilders {
 
   final protected def usersFixture(users: (User, AclAddress, Set[Permission])*): (AclSimpleCheck, Identities) = {
     AclSimpleCheck(
-      users: _*
+      users*
     ).accepted -> IdentitiesDummy(users.map { case (user, _, _) =>
       Caller(user, Set(user, Anonymous, Authenticated(user.realm), Group("group", user.realm)))
-    }: _*)
+    }*)
   }
 }

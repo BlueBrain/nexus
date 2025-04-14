@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import com.github.jknack.handlebars.{EscapingStrategy, Handlebars => JHandlebars}
-import scala.jdk.CollectionConverters._
+import com.github.jknack.handlebars.{EscapingStrategy, Handlebars as JHandlebars}
+import scala.jdk.CollectionConverters.*
 
 object Handlebars {
 

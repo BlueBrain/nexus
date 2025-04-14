@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import doobie.ConnectionIO
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import io.circe.syntax.EncoderOps
 
 final private[deletion] class ProjectDeletionStore(xas: Transactors, databasePartitioner: DatabasePartitioner) {

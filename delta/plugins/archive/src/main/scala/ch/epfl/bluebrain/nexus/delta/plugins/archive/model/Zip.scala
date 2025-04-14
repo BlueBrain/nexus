@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
   *   https://en.wikipedia.org/wiki/ZIP_(file_format)#Limits for the limitations
   */
 object Zip {
-  type WriteFlow[Metadata] = Flow[(Metadata, Source[ByteString, _]), ByteString, NotUsed]
+  type WriteFlow[Metadata] = Flow[(Metadata, Source[ByteString, ?]), ByteString, NotUsed]
 
   lazy val contentType: ContentType = MediaTypes.`application/zip`
 

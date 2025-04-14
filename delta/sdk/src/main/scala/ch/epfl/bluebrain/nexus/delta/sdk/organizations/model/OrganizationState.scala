@@ -69,7 +69,7 @@ final case class OrganizationState(
 object OrganizationState {
 
   val serializer: Serializer[Label, OrganizationState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration             = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[OrganizationState] = deriveConfiguredCodec[OrganizationState]
     Serializer(Organizations.encodeId)

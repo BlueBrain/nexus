@@ -133,7 +133,7 @@ class SearchSpec extends CatsEffectSpec with CirceLiteral with ConfigFixtures wi
     ).foreach { case (suite, expected) =>
       s"search within suite $suite accordingly to Bob's full access" in {
         val results = search.query(suite, Set.empty, matchAll, noParameters)(bob).accepted
-        assertContainProjects(results, expected: _*)
+        assertContainProjects(results, expected*)
       }
     }
 
@@ -143,7 +143,7 @@ class SearchSpec extends CatsEffectSpec with CirceLiteral with ConfigFixtures wi
     ).foreach { case (suite, expected) =>
       s"search within suite $suite accordingly to Alice's restricted access" in {
         val results = search.query(suite, Set.empty, matchAll, noParameters)(alice).accepted
-        assertContainProjects(results, expected: _*)
+        assertContainProjects(results, expected*)
       }
     }
 

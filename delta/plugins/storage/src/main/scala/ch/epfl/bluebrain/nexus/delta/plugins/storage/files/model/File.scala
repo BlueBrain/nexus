@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef, Tags}
 import io.circe.generic.extras.Configuration
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, Json}
 
 /**

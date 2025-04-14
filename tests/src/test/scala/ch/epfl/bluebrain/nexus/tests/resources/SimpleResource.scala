@@ -27,7 +27,7 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
         "self"       -> resourceSelf(project, resourceId),
         "project"    -> project,
         "resourceId" -> resourceId
-      ): _*
+      )*
     )
 
   def annotatedResource(user: Authenticated, project: String, resourceId: String, rev: Int, priority: Int)(implicit
@@ -42,7 +42,7 @@ object SimpleResource extends HandleBarsFixture with SelfFixture {
         "self"       -> resourceSelf(project, resourceId),
         "project"    -> project,
         "resourceId" -> resourceId
-      ): _*
+      )*
     )
 
   def sourcePayload(id: String, priority: Int): IO[Json] =

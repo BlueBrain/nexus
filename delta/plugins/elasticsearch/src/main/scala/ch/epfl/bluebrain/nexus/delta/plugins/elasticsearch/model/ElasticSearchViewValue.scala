@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.{NonEmptyChain, NonEmptySet}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.defaultPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicat
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, PipeRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Codec, Encoder, Json, JsonObject}
 
 /**
@@ -47,7 +47,7 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
   def tpe: ElasticSearchViewType
 
   def toJson(iri: Iri): Json = {
-    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Source._
+    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Source.*
     this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
   }
 
@@ -196,7 +196,7 @@ object ElasticSearchViewValue {
 
     implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = {
       import io.circe.generic.extras.Configuration
-      import io.circe.generic.extras.semiauto._
+      import io.circe.generic.extras.semiauto.*
       implicit val config: Configuration = Configuration(
         transformMemberNames = identity,
         transformConstructorNames = {

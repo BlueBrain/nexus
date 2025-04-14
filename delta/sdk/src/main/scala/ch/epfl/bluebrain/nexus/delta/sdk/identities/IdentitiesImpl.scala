@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes, Uri}
 import cats.data.OptionT
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import io.circe.{Decoder, HCursor, Json}
@@ -32,7 +32,7 @@ class IdentitiesImpl private[identities] (
     getUserInfo: (Uri, OAuth2BearerToken) => IO[Json],
     groups: GroupsCache
 ) extends Identities {
-  import scala.jdk.CollectionConverters._
+  import scala.jdk.CollectionConverters.*
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent("identities")
 
@@ -124,7 +124,7 @@ object IdentitiesImpl {
     val groupsCache = LocalCache[String, Set[Group]](config)
     val realmCache  = LocalCache[String, Realm](config)
 
-    val findActiveRealm: String => IO[Option[Realm]] = { (issuer: String) =>
+    val findActiveRealm: String => IO[Option[Realm]]      = { (issuer: String) =>
       val pagination = FromPagination(0, 1000)
       val params     = RealmSearchParams(issuer = Some(issuer), deprecated = Some(false))
       val sort       = ResourceF.defaultSort[Realm]

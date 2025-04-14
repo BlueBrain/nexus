@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.PurgeConfig
 import fs2.Stream

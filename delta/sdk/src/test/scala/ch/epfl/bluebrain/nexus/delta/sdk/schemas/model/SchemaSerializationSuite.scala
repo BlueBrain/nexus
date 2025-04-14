@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.SchemaGen
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tags}

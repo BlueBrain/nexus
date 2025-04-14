@@ -8,18 +8,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.{ProjectDeletionCoordinator, ProjectDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.job.ProjectHealthJob
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
@@ -141,7 +141,7 @@ object ProjectsModule extends ModuleDef {
       )
   }
 
-  many[SseEncoder[_]].add { base: BaseUri => ProjectEvent.sseEncoder(base) }
+  many[SseEncoder[?]].add { base: BaseUri => ProjectEvent.sseEncoder(base) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/projects-metadata.json"))
 

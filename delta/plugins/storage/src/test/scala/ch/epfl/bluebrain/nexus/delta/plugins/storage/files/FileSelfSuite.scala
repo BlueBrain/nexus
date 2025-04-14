@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy

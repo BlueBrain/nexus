@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.model.{EntityStreamSizeException, StatusCodes}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.ExceptionHandler
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{AuthTokenError, IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, JsonObject}
 
 object RdfExceptionHandler {
@@ -69,8 +69,8 @@ object RdfExceptionHandler {
     Encoder.AsObject.instance { r =>
       val tpe    = "PayloadTooLarge"
       val reason = s"""Incoming payload size (${r.actualSize.getOrElse(
-        "while streaming"
-      )}) exceeded size limit (${r.limit} bytes)"""
+          "while streaming"
+        )}) exceeded size limit (${r.limit} bytes)"""
       JsonObject(keywords.tpe -> tpe.asJson, "reason" -> reason.asJson)
     }
 

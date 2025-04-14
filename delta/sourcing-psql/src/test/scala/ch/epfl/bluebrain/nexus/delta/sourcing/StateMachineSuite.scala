@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand._
+import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Stream
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class StateMachineSuite extends NexusSuite {
 

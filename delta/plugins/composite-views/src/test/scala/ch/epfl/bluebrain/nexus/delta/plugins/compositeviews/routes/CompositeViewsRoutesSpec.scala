@@ -19,15 +19,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprecatedError, viewIsNotDeprecatedError}
-import io.circe.syntax._
+import io.circe.syntax.*
 import org.scalatest.Assertion
 
-import concurrent.duration._
+import concurrent.duration.*
 
 class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
@@ -73,7 +73,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
   private lazy val elasticSearchQuery =
     new ElasticSearchQueryDummy(Map((esId: IdSegment, esQuery) -> esResult), Map(esQuery -> esResult), views)
 
-  private lazy val routes             =
+  private lazy val routes =
     Route.seal(
       CompositeViewsRoutesHandler(
         groupDirectives,

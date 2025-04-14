@@ -6,8 +6,8 @@ import akka.http.scaladsl.model.{HttpEntity, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.testkit.TestKit
 import io.circe.DecodingFailure
-import io.circe.literal._
-import io.circe.syntax._
+import io.circe.literal.*
+import io.circe.syntax.*
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

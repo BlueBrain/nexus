@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.{Directive0, Route}
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{query => Query, read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.*
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{query as Query, read as Read, write as Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.query.IncomingOutgoingLinks
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -21,10 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirect
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{DecodingFailed, InvalidJsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{OriginalSource, RdfMarshalling}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -165,7 +165,7 @@ class BlazegraphViewsRoutes(
                       emitSource(views.fetch(id, project))
                     }
                   },
-                  //Incoming/outgoing links for views
+                  // Incoming/outgoing links for views
                   incomingOutgoing(id, project)
                 )
               }
@@ -173,7 +173,7 @@ class BlazegraphViewsRoutes(
           }
         }
       },
-      //Handle all other incoming and outgoing links
+      // Handle all other incoming and outgoing links
       pathPrefix(Segment) { segment =>
         extractCaller { implicit caller =>
           projectRef { project =>

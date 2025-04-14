@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.generic.extras
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Codec, Encoder, Json}
 
 /**

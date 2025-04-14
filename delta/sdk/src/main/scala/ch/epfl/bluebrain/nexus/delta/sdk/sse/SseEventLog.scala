@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.UnknownSseLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
-import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
@@ -109,7 +109,7 @@ object SseEventLog {
   }
 
   def apply(
-      sseEncoders: Set[SseEncoder[_]],
+      sseEncoders: Set[SseEncoder[?]],
       fetchOrg: Label => IO[Unit],
       fetchProject: ProjectRef => IO[Unit],
       config: SseConfig,
@@ -117,7 +117,7 @@ object SseEventLog {
   )(implicit jo: JsonKeyOrdering): IO[SseEventLog] =
     IO.pure {
       new SseEventLog {
-        implicit private val multiDecoder: MultiDecoder[SseData]        =
+        implicit private val multiDecoder: MultiDecoder[SseData] =
           MultiDecoder(sseEncoders.map { encoder => encoder.entityType -> encoder.toSse }.toMap)
 
         private val entityTypesBySelector: Map[Label, List[EntityType]] = sseEncoders
@@ -125,7 +125,7 @@ object SseEventLog {
           .groupMap(_._1)(_._2)
           .map { case (k, v) => k -> v.toList }
 
-        override val selectors: Set[Label]                              = sseEncoders.flatMap(_.selectors)
+        override val selectors: Set[Label] = sseEncoders.flatMap(_.selectors)
 
         private def stream(scope: Scope, selector: Option[Label], offset: Offset): Stream[IO, ServerSentEvent] = {
           Stream

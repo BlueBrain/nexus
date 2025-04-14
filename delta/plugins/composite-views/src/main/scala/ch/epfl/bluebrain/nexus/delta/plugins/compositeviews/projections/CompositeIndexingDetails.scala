@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{commonNamespace, projectionIndex, projectionNamespace}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeIndexingDescription.ProjectionSpace._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeIndexingDescription.ProjectionSpace.*
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeIndexingDescription, CompositeViewSource, ProjectionOffset, ProjectionStatistics}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run

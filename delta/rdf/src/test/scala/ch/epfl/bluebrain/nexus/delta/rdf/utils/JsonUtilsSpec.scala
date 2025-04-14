@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 class JsonUtilsSpec extends BaseSpec with Fixtures {
 

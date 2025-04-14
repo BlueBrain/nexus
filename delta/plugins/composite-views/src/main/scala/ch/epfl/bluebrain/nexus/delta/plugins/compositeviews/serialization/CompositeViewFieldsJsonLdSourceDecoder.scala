@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import scala.concurrent.duration.FiniteDuration
 

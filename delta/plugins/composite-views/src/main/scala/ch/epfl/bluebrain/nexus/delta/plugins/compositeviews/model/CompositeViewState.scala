@@ -98,7 +98,7 @@ final case class CompositeViewState(
 object CompositeViewState {
 
   implicit val serializer: Serializer[Iri, CompositeViewState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
     implicit val compositeViewValueCodec: Codec[CompositeViewValue] = CompositeViewValue.databaseCodec()
     implicit val codec: Codec.AsObject[CompositeViewState]          = deriveConfiguredCodec[CompositeViewState]

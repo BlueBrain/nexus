@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.testkit
 import cats.Eq
 import cats.implicits.catsSyntaxEq
 import ch.epfl.bluebrain.nexus.testkit.CirceEq.{ignoreJsonKeyOrderEq, IgnoredArrayOrder}
-import io.circe._
-import io.circe.syntax._
-import org.scalatest.matchers._
+import io.circe.*
+import io.circe.syntax.*
+import org.scalatest.matchers.*
 
 trait CirceEq {
   def equalIgnoreArrayOrder(json: Json): IgnoredArrayOrder = IgnoredArrayOrder(json)

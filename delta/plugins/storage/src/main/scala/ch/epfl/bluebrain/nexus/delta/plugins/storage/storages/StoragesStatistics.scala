@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatE
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.literal._
+import io.circe.literal.*
 import io.circe.{DecodingFailure, JsonObject}
 
 trait StoragesStatistics {

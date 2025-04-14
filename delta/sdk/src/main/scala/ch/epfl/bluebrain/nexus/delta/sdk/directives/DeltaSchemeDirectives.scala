@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.Uri.Path./
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.{Directive0, Directive1}
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext

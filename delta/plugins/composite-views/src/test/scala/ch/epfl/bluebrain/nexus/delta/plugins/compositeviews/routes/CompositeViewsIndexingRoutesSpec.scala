@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBra
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.test.{expandOnlyIris, expectIndexingView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
@@ -26,10 +26,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionProgress, RemainingElems}
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
 
   implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)

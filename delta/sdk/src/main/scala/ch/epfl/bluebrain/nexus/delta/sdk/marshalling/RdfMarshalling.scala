@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
-import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.MediaTypes.*
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromStringUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import io.circe.{Json, Printer}
 
 /**
@@ -62,7 +62,7 @@ trait RdfMarshalling {
       ordering: JsonKeyOrdering,
       printer: Printer = defaultPrinter
   ): ToEntityMarshaller[Json] =
-    Marshaller.oneOf(jsonMediaTypes.map(customContentTypeJsonMarshaller): _*)
+    Marshaller.oneOf(jsonMediaTypes.map(customContentTypeJsonMarshaller)*)
 
   /**
     * NTriples -> HttpEntity
@@ -71,7 +71,7 @@ trait RdfMarshalling {
     def inner(mediaType: MediaType.NonBinary): ToEntityMarshaller[NTriples] =
       Marshaller.StringMarshaller.wrap(mediaType)(_.value)
 
-    Marshaller.oneOf(ntriplesMediaTypes.map(inner): _*)
+    Marshaller.oneOf(ntriplesMediaTypes.map(inner)*)
   }
 
   /**

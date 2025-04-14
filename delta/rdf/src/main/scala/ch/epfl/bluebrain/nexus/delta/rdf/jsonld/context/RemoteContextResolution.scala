@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import cats.effect.IO
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext.StaticContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextNotFound, RemoteContextWrongPayload}
 import io.circe.Json
@@ -97,7 +97,7 @@ object RemoteContextResolution {
         case _: InvalidJson | _: InvalidJsonObject => RemoteContextWrongPayload(iri)
         case _: ResourcePathNotFound               => RemoteContextNotFound(iri)
       }
-    }: _*)
+    }*)
 
   /**
     * Helper method to construct a [[RemoteContextResolution]] .
@@ -106,10 +106,10 @@ object RemoteContextResolution {
     *   a pair of [[Iri]] and the resolved [[ContextValue]]
     */
   final def fixed(f: (Iri, ContextValue)*): RemoteContextResolution =
-    fixedIO(f.map { case (iri, json) => iri -> IO.pure(json) }: _*)
+    fixedIO(f.map { case (iri, json) => iri -> IO.pure(json) }*)
 
   /**
     * A remote context resolution that never resolves
     */
-  final val never: RemoteContextResolution                          = (iri: Iri) => IO.raiseError(RemoteContextNotFound(iri))
+  final val never: RemoteContextResolution = (iri: Iri) => IO.raiseError(RemoteContextNotFound(iri))
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.config
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * The batch configuration.

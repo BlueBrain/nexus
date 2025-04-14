@@ -1,22 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.{SparqlJsonLdResponse, SparqlNTriplesResponse, SparqlRdfXmlResponse, SparqlResultsResponse, SparqlXmlResultsResponse}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
@@ -193,13 +193,13 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
       q: SparqlQuery,
       additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlJsonLdResponse] = {
-    import CirceUnmarshalling._
+    import CirceUnmarshalling.*
     namespaces.toList
       .foldLeftM(Vector.empty[Json]) { (results, namespace) =>
         queryRequest[Json](namespace, q, SparqlJsonLd.mediaTypes, additionalHeaders)
           .map(results ++ _.arrayOrObject(Vector.empty[Json], identity, obj => Vector(obj.asJson)))
       }
-      .map(vector => SparqlJsonLdResponse(Json.arr(vector: _*)))
+      .map(vector => SparqlJsonLdResponse(Json.arr(vector*)))
   }
 
   private def sparqlNTriplesResponse(

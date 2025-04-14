@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.instances
 
 import akka.http.scaladsl.model.MediaType.NotCompressible
 import akka.http.scaladsl.model.{ContentType, MediaType, MediaTypes}
-import cats.syntax.all._
+import cats.syntax.all.*
 import io.circe.{Decoder, Encoder}
 
 import java.util.Locale

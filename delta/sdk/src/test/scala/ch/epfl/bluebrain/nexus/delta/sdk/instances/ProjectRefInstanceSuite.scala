@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.instances
 
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import munit.FunSuite
 

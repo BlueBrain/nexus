@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.JsonObject
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class SearchScopeInitializationSpec
     extends CatsEffectSpec

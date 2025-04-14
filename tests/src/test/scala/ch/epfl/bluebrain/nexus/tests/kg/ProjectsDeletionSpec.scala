@@ -94,14 +94,14 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
     }
 
     "add additional resources" in {
-      val resourcePayload             = SimpleResource.sourcePayload(5).accepted
-      val schemaPayload               = SchemaPayload.loadSimple().accepted
-      val resolverPayload             =
+      val resourcePayload        = SimpleResource.sourcePayload(5).accepted
+      val schemaPayload          = SchemaPayload.loadSimple().accepted
+      val resolverPayload        =
         jsonContentOf(
           "kg/resources/cross-project-resolver.json",
-          replacements(Bojack, "project" -> ref2): _*
+          replacements(Bojack, "project" -> ref2)*
         )
-      val aggregateSparqlPayload      =
+      val aggregateSparqlPayload =
         jsonContentOf("kg/views/agg-sparql-view.json", "project1" -> ref1, "project2" -> ref2)
 
       implicit val identity: Identity = Bojack

@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonKeyOrdering, JsonUtils}
-import io.circe._
-import io.circe.syntax._
+import io.circe.*
+import io.circe.syntax.*
 
 trait JsonSyntax {
   implicit final def jsonOpsSyntax(json: Json): JsonOps                  = new JsonOps(json)
@@ -69,12 +69,12 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
   /**
     * Removes the provided keys from the top object on the current json object.
     */
-  def removeKeys(keys: String*): JsonObject = JsonUtils.removeKeys(obj.asJson, keys: _*).asObject.get
+  def removeKeys(keys: String*): JsonObject = JsonUtils.removeKeys(obj.asJson, keys*).asObject.get
 
   /**
     * Removes the provided keys from everywhere on the current json object.
     */
-  def removeAllKeys(keys: String*): JsonObject = JsonUtils.removeAllKeys(obj.asJson, keys: _*).asObject.get
+  def removeAllKeys(keys: String*): JsonObject = JsonUtils.removeAllKeys(obj.asJson, keys*).asObject.get
 
   /**
     * Removes the metadata keys from the current json.
@@ -85,13 +85,13 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
     * Removes the provided key value pairs from everywhere on the json object.
     */
   def removeAll[A: Encoder](keyValues: (String, A)*): JsonObject =
-    JsonUtils.removeAll(obj.asJson, keyValues: _*).asObject.get
+    JsonUtils.removeAll(obj.asJson, keyValues*).asObject.get
 
   /**
     * Removes the provided values from everywhere on the current json object.
     */
   def removeAllValues[A: Encoder](values: A*): JsonObject =
-    JsonUtils.removeAllValues(obj.asJson, values: _*).asObject.get
+    JsonUtils.removeAllValues(obj.asJson, values*).asObject.get
 
   /**
     * Replace in the current json object with the found key value pairs in ''from'' with the value in ''toValue''
@@ -123,7 +123,7 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
     * @param keys
     *   the keys from where to extract the Json values
     */
-  def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(obj.asJson, keys: _*)
+  def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(obj.asJson, keys*)
 
   /**
     * Sort all the keys in the current json object.
@@ -241,12 +241,12 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Removes the provided keys from the top object on the current json.
     */
-  def removeKeys(keys: String*): Json = JsonUtils.removeKeys(json, keys: _*)
+  def removeKeys(keys: String*): Json = JsonUtils.removeKeys(json, keys*)
 
   /**
     * Removes the provided keys from everywhere on the current json.
     */
-  def removeAllKeys(keys: String*): Json = JsonUtils.removeAllKeys(json, keys: _*)
+  def removeAllKeys(keys: String*): Json = JsonUtils.removeAllKeys(json, keys*)
 
   /**
     * Removes the metadata keys from the current json.
@@ -256,12 +256,12 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Removes the provided key value pairs from everywhere on the json.
     */
-  def removeAll[A: Encoder](keyValues: (String, A)*): Json = JsonUtils.removeAll(json, keyValues: _*)
+  def removeAll[A: Encoder](keyValues: (String, A)*): Json = JsonUtils.removeAll(json, keyValues*)
 
   /**
     * Removes the provided values from everywhere on the current json.
     */
-  def removeAllValues[A: Encoder](values: A*): Json = JsonUtils.removeAllValues(json, values: _*)
+  def removeAllValues[A: Encoder](values: A*): Json = JsonUtils.removeAllValues(json, values*)
 
   /**
     * Replace in the current json the found key value pairs in ''from'' with the value in ''toValue''
@@ -296,7 +296,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
     * @param keys
     *   the keys from where to extract the Json values
     */
-  def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(json, keys: _*)
+  def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(json, keys*)
 
   /**
     * Sort all the keys in the current json.
@@ -327,7 +327,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Adds to the current json the passed ''key'' and ''valueOpt'' when the value is a Some
     */
-  def addIfExists[A: Encoder](key: String, valueOpt: Option[A]): Json   =
+  def addIfExists[A: Encoder](key: String, valueOpt: Option[A]): Json =
     valueOpt.fold(json)(value => json deepMerge Json.obj(key -> value.asJson))
 
   /**

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import cats.data.NonEmptyChain
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 
 /**
@@ -23,7 +23,7 @@ object PipeChain {
   type Compile = PipeChain => Either[ProjectionErr, Operation]
 
   def apply(first: (PipeRef, ExpandedJsonLd), others: (PipeRef, ExpandedJsonLd)*): PipeChain =
-    new PipeChain(NonEmptyChain(first, others: _*))
+    new PipeChain(NonEmptyChain(first, others*))
 
   /**
     * Attempts to compile the chain into a single [[Operation]]. Reasons for failing are inability to lookup references

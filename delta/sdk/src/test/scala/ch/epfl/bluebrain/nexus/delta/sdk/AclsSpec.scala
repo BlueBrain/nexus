@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclFixtures, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}

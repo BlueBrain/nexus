@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.*
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIRIFormatError, IllegalPrefixIRIFormatError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
-import io.circe.parser._
-import io.circe.syntax._
+import io.circe.parser.*
+import io.circe.syntax.*
 
 class PrefixIriSpec extends BaseSpec {
   "A PrefixIri" should {

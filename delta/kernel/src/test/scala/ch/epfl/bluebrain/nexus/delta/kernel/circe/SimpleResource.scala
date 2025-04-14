@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.circe
 
 import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.*
 
 import java.time.Instant
 

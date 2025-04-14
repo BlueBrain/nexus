@@ -12,16 +12,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.SchemaGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult.*
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ReservedResourceId, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision

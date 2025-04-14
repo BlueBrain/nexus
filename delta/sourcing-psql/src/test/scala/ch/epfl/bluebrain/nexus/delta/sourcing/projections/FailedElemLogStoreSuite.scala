@@ -22,7 +22,7 @@ import java.time.Instant
 
 class FailedElemLogStoreSuite extends NexusSuite with MutableClock.Fixture with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, mutableClockFixture)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie, mutableClockFixture)
 
   private lazy val xas = doobie()
 

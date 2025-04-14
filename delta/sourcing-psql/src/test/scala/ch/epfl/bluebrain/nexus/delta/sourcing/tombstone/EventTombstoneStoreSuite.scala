@@ -6,12 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.EventTombstoneStore.Value
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import munit.AnyFixture
 
 class EventTombstoneStoreSuite extends NexusSuite with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobieTruncateAfterTest)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobieTruncateAfterTest)
 
   private lazy val xas            = doobieTruncateAfterTest()
   private lazy val tombstoneStore = new EventTombstoneStore(xas)

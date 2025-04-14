@@ -1,20 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.*
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.{CirceMarshalling, CirceUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDelegationRequest.{FileDelegationCreationRequest, FileDelegationUpdateRequest}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, ResponseToJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller

@@ -4,7 +4,7 @@ import cats.effect.IO
 import fs2.Stream
 import munit.{Assertions, Location}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait StreamAssertions extends Assertions {
 

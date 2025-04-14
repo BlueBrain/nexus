@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import munit.{Assertions, Location}
 
 import scala.concurrent.duration.DurationInt

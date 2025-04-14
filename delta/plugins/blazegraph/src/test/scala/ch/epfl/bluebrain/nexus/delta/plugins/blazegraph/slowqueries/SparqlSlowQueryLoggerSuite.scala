@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.SparqlSlowQueryLoggerSuite._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.SparqlSlowQueryLoggerSuite.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.SparqlSlowQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
@@ -32,7 +32,7 @@ object SparqlSlowQueryLoggerSuite {
 
 class SparqlSlowQueryLoggerSuite extends NexusSuite with Doobie.Fixture with BlazegraphSlowQueryStoreFixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, blazegraphSlowQueryStore)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie, blazegraphSlowQueryStore)
 
   private def fixture = {
     val store  = blazegraphSlowQueryStore()

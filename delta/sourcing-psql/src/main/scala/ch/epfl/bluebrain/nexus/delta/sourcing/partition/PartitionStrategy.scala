@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.partition
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.{jsonbGet, jsonbPut}
-import cats.syntax.all._
+import cats.syntax.all.*
 import doobie.{Get, Put}
 import io.circe.{Codec, Printer}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
-import pureconfig.generic.auto._
+import pureconfig.generic.auto.*
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 

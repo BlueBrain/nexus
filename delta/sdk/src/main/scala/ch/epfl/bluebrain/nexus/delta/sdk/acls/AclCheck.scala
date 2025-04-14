@@ -189,7 +189,7 @@ object AclCheck {
 
     override def authorizeForEveryOr[E <: Throwable](path: AclAddress, permissions: Set[Permission])(onError: => E)(
         implicit caller: Caller
-    ): IO[Unit]                            =
+    ): IO[Unit] =
       path.ancestors
         .foldM((false, Set.empty[Permission])) {
           case ((true, set), _)        => IO.pure((true, set))

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jws
 
 import com.nimbusds.jose.jwk.RSAKey
-import pureconfig.generic.auto._
+import pureconfig.generic.auto.*
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigConvert, ConfigReader}
 

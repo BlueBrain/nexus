@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Project as ProjectAcl
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission

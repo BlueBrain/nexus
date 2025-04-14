@@ -13,14 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.initLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.SinkUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
-import java.nio.file.StandardOpenOption._
-import java.nio.file._
+import java.nio.file.StandardOpenOption.*
+import java.nio.file.*
 import java.util.UUID
 import scala.concurrent.Future
 

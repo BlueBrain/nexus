@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import pureconfig.ConfigReader
-import pureconfig.generic.semiauto._
+import pureconfig.generic.semiauto.*
 
 /**
   * The http specific configuration.

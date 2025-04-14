@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.realms as realmsPermissions
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl, RealmsProvisioningConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
@@ -183,7 +183,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
           Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json")
         ),
         "_total"   -> Json.fromInt(results.size),
-        "_results" -> Json.arr(results: _*)
+        "_results" -> Json.arr(results*)
       )
 
     "list realms" in {
@@ -234,7 +234,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json =
+  ): Json        =
     jsonContentOf(
       "realms/realm-route-metadata-response.json",
       "rev"        -> rev,

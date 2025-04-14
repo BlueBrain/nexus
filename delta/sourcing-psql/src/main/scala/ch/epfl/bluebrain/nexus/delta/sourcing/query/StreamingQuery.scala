@@ -4,13 +4,13 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, IriFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import doobie.Fragments
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import doobie.util.fragment.Fragment
 import doobie.util.query.Query0
 import fs2.{Chunk, Stream}

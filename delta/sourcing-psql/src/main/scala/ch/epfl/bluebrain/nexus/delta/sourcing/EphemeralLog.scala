@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.EphemeralStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.postgres.sqlstate
 
 /**

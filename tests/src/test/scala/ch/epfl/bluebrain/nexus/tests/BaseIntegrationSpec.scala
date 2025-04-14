@@ -1,23 +1,23 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import cats.effect.{IO, Ref}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.*
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectAsyncScalaTestAdapter, CatsEffectEventually, CatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, EitherValues, ScalaTestExtractValue}
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec._
-import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity._
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec.*
+import ch.epfl.bluebrain.nexus.tests.HttpClient.*
+import ch.epfl.bluebrain.nexus.tests.Identity.*
 import ch.epfl.bluebrain.nexus.tests.admin.{AdminDsl, ProjectPayload}
-import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
+import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader.*
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
@@ -28,13 +28,13 @@ import ch.epfl.bluebrain.nexus.tests.kg.files.StoragesDsl
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import org.scalactic.source.Position
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.scalatest.wordspec.AsyncWordSpecLike
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait BaseIntegrationSpec
     extends AsyncWordSpecLike

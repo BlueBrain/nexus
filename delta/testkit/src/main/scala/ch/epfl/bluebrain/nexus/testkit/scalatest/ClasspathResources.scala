@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.testkit.scalatest
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsIOValues => MUnitCatsIOValues}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsIOValues => ScalaTestCatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsIOValues as MUnitCatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues as ScalaTestCatsIOValues
 import io.circe.{Json, JsonObject}
-import munit.{Assertions => MUnitAssertions}
-import org.scalatest.{Assertions => ScalaTestAssertions}
+import munit.Assertions as MUnitAssertions
+import org.scalatest.Assertions as ScalaTestAssertions
 
 trait ExtractValue {
 
@@ -50,7 +50,7 @@ trait ClasspathResources extends ClasspathLoader with ExtractValue {
   final def jsonContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  ): Json = loader.jsonContentOf(resourcePath, attributes: _*).extract
+  ): Json = loader.jsonContentOf(resourcePath, attributes*).extract
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -66,7 +66,7 @@ trait ClasspathResources extends ClasspathLoader with ExtractValue {
       resourcePath: String,
       attributes: (String, Any)*
   ): String =
-    loader.contentOf(resourcePath, attributes: _*).extract
+    loader.contentOf(resourcePath, attributes*).extract
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
@@ -79,7 +79,7 @@ trait ClasspathResources extends ClasspathLoader with ExtractValue {
     *   found or is not a Json
     */
   final def jsonObjectContentOf(resourcePath: String, attributes: (String, Any)*): JsonObject = {
-    loader.jsonObjectContentOf(resourcePath, attributes: _*).extract
+    loader.jsonObjectContentOf(resourcePath, attributes*).extract
   }
 
 }

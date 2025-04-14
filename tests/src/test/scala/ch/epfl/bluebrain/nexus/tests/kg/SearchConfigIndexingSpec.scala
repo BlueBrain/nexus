@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
@@ -13,7 +13,7 @@ import org.scalatest.Assertion
 import tags.BlazegraphOnly
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 @BlazegraphOnly
 class SearchConfigIndexingSpec extends BaseIntegrationSpec {
@@ -1201,10 +1201,10 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     * Defines an ES query that searches for the document with the provided id and limits the resulting source to just
     * the requested field
     */
-  private def queryField(id: String, field: String)   =
+  private def queryField(id: String, field: String) =
     jsonContentOf("kg/search/id-query-single-field.json", "id" -> id, "field" -> field)
 
-  private def queryDocument(id: String)               =
+  private def queryDocument(id: String) =
     jsonContentOf("kg/search/id-query.json", "id" -> id)
 
   private def aggregationIn(json: Json): Option[Json] =

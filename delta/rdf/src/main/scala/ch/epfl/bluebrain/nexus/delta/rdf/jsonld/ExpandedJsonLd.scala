@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, JsonLdDecoderError}
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, IriOrBNode, RdfError}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 
 import java.util.UUID
@@ -93,7 +93,7 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
   /**
     * Adds the passed ''key'' and ''iri'' @id to the current document main entry
     */
-  def add(key: Iri, iri: Iri): ExpandedJsonLd          =
+  def add(key: Iri, iri: Iri): ExpandedJsonLd =
     add(key.toString, Json.obj(keywords.id -> iri.asJson))
 
   /**
@@ -122,31 +122,31 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
   /**
     * Adds the passed ''key'' and string ''value'' @value to the current document main entry
     */
-  def add(key: Iri, value: String): ExpandedJsonLd  =
+  def add(key: Iri, value: String): ExpandedJsonLd =
     add(key.toString, Json.obj(keywords.value -> value.asJson))
 
   /**
     * Adds the passed ''key'' and int ''value'' @value to the current document main entry
     */
-  def add(key: Iri, value: Int): ExpandedJsonLd     =
+  def add(key: Iri, value: Int): ExpandedJsonLd =
     add(key.toString, Json.obj(keywords.value -> value.asJson))
 
   /**
     * Adds the passed ''key'' and long ''value'' @value to the current document main entry
     */
-  def add(key: Iri, value: Long): ExpandedJsonLd    =
+  def add(key: Iri, value: Long): ExpandedJsonLd =
     add(key.toString, Json.obj(keywords.value -> value.asJson))
 
   /**
     * Adds the passed ''key'' and double ''value'' @value to the current document main entry
     */
-  def add(key: Iri, value: Double): ExpandedJsonLd  =
+  def add(key: Iri, value: Double): ExpandedJsonLd =
     add(key.toString, Json.obj(keywords.value -> value.asJson))
 
   /**
     * Removes the passed ''key'' from the current document main entry
     */
-  def remove(key: Iri): ExpandedJsonLd              =
+  def remove(key: Iri): ExpandedJsonLd =
     copy(obj = obj.remove(key.toString))
 
   private def add(key: String, value: Json): ExpandedJsonLd =

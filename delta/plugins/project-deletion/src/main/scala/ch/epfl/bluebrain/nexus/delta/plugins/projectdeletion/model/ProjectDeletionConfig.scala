@@ -44,8 +44,8 @@ object ProjectDeletionConfig {
           "_idleIntervalInSeconds"    -> Json.fromLong(cfg.idleInterval.toSeconds),
           "_idleCheckPeriodInSeconds" -> Json.fromLong(cfg.idleCheckPeriod.toSeconds),
           "_deleteDeprecatedProjects" -> Json.fromBoolean(cfg.deleteDeprecatedProjects),
-          "_includedProjects"         -> Json.arr(cfg.includedProjects.map(str => Json.fromString(str.regex)): _*),
-          "_excludedProjects"         -> Json.arr(cfg.excludedProjects.map(str => Json.fromString(str.regex)): _*)
+          "_includedProjects"         -> Json.arr(cfg.includedProjects.map(str => Json.fromString(str.regex))*),
+          "_excludedProjects"         -> Json.arr(cfg.excludedProjects.map(str => Json.fromString(str.regex))*)
         )
       }
 

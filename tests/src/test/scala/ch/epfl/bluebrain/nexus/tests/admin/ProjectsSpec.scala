@@ -5,12 +5,12 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ProjectMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, OpticsValidators}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -18,7 +18,7 @@ import org.scalactic.source.Position
 
 class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
 
-  import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
+  import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.*
 
   "projects API" should {
 
@@ -279,9 +279,9 @@ class ProjectsSpec extends BaseIntegrationSpec with OpticsValidators {
               "id"     -> s"$orgId/$projectId",
               "projId" -> projectId,
               "orgId"  -> orgId
-            ): _*
+            )*
           )
-        }: _*
+        }*
       )
     }
 

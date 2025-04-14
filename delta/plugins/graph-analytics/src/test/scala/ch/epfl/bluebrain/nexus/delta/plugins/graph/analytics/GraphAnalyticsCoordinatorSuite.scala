@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
@@ -19,12 +19,12 @@ import fs2.concurrent.SignallingRef
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.collection.mutable.{Set => MutableSet}
-import scala.concurrent.duration._
+import scala.collection.mutable.Set as MutableSet
+import scala.concurrent.duration.*
 
 class GraphAnalyticsCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(supervisor)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 10.millis)
 

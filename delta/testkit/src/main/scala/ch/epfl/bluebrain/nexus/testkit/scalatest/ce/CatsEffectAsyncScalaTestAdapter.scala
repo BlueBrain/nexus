@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
-import org.scalatest.Assertions._
+import cats.effect.unsafe.implicits.*
+import org.scalatest.Assertions.*
 import org.scalatest.{Assertion, AsyncTestSuite}
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -4,23 +4,23 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaOrg, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema as schemaOrg, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceAccess}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{delete, read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resources._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.*
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
@@ -741,7 +741,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
       deprecated: Boolean,
       createdBy: Subject,
       updatedBy: Subject
-  ): Json =
+  ): Json    =
     jsonContentOf(
       "resources/resource-route-metadata-response.json",
       "project"    -> project,

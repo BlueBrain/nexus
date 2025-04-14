@@ -5,7 +5,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait AkkaSourceHelpers extends ScalaFutures {
 

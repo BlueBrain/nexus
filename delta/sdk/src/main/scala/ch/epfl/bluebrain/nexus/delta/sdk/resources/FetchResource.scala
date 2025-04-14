@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Fetch.FetchF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ResourceNotFound, RevisionNotFound, TagNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEventLogReadOnly
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 

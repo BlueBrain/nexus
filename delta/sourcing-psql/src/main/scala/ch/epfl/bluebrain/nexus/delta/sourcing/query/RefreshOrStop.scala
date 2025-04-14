@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.ElemQueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ElemQueryConfig.{DelayConfig, PassivationConfig, StopConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshOrStop.Outcome
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshOrStop.Outcome._
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshOrStop.Outcome.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectActivitySignals
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 
-import concurrent.duration._
+import concurrent.duration.*
 import scala.util.Try
 
 /**

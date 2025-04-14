@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
@@ -35,7 +35,7 @@ class EventsSpec extends BaseIntegrationSpec {
   "fetching events" should {
 
     "add events to project" in {
-      //Created event
+      // Created event
       val resourceId = "https://dev.nexus.test.com/simplified-resource/1"
       val payload    = SimpleResource.sourcePayload(resourceId, 3).accepted
 
@@ -45,23 +45,23 @@ class EventsSpec extends BaseIntegrationSpec {
       implicit val identity: Identity = BugsBunny
 
       for {
-        //ResourceCreated event
+        // ResourceCreated event
         _          <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1", payload, BugsBunny) { expectCreated }
         _          <- deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, BugsBunny) { expectCreated }
-        //ResourceUpdated event
+        // ResourceUpdated event
         payload    <- SimpleResource.sourcePayload(resourceId, 5)
         _          <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1?rev=1", payload, BugsBunny) { expectOk }
-        //ResourceTagAdded event
+        // ResourceTagAdded event
         tagPayload  = tag("v1.0.0", 1)
         _          <- deltaClient.post[Json](s"/resources/$id/_/test-resource:1/tags?rev=2", tagPayload, BugsBunny) {
                         expectCreated
                       }
         // ResourceDeprecated event
         _          <- deltaClient.delete[Json](s"/resources/$id/_/test-resource:1?rev=3", BugsBunny) { expectOk }
-        //FileCreated event
+        // FileCreated event
         fileCreated = FileInput("attachment.json", "attachment.json", `application/json`, fileContent)
         _          <- deltaClient.uploadFile(id, None, fileCreated, None) { expectCreated }
-        //FileUpdated event
+        // FileUpdated event
         fileUpdated = FileInput("attachment.json", "attachment.json", `application/json`, updatedFileContent)
         _          <- deltaClient.uploadFile(id, None, fileUpdated, Some(1)) { expectOk }
       } yield succeed
@@ -78,7 +78,7 @@ class EventsSpec extends BaseIntegrationSpec {
           "FileCreated",
           "FileUpdated"
         )
-        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields)): _*)
+        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields))*)
         json shouldEqual expectedEvents("kg/events/events.json", orgId, projId)
       }
     }
@@ -94,7 +94,7 @@ class EventsSpec extends BaseIntegrationSpec {
           "FileCreated",
           "FileUpdated"
         )
-        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields)): _*)
+        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields))*)
         json shouldEqual expectedEvents("kg/events/events.json", orgId, projId)
       }
     }
@@ -103,7 +103,7 @@ class EventsSpec extends BaseIntegrationSpec {
       deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 1L) { sses =>
         sses.size shouldEqual 1
         sses.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
-        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields)): _*)
+        val json = Json.arr(sses.flatMap(_._2.map(events.filterFields))*)
         json shouldEqual expectedEvents("kg/events/events2.json", orgId2, projId)
       }
     }
@@ -116,6 +116,6 @@ class EventsSpec extends BaseIntegrationSpec {
         BugsBunny,
         "resources" -> s"${config.deltaUri}/resources/$id",
         "project"   -> s"$org/$proj"
-      ): _*
+      )*
     )
 }

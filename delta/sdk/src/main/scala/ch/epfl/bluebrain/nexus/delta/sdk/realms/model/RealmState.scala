@@ -5,7 +5,7 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -141,9 +141,9 @@ final case class RealmState(
 object RealmState {
 
   val serializer: Serializer[Label, RealmState] = {
-    import GrantType.Camel._
-    import ch.epfl.bluebrain.nexus.delta.rdf.instances._
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import GrantType.Camel.*
+    import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration      = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[RealmState] = deriveConfiguredCodec[RealmState]
     Serializer(Realms.encodeId)

@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import shapeless.Typeable
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import cats.effect.Ref
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 

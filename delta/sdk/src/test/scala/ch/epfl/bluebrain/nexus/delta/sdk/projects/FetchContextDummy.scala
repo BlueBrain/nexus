@@ -43,7 +43,7 @@ object FetchContextDummy {
       expected: Map[ProjectRef, ProjectContext],
       rejectOnCreate: Set[ProjectRef],
       rejectOnModify: Set[ProjectRef]
-  ): FetchContext                                  =
+  ): FetchContext =
     new FetchContextDummy(expected, rejectOnCreate, rejectOnModify)
 
 }

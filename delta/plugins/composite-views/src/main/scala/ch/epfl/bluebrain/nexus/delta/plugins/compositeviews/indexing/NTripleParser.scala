@@ -14,18 +14,19 @@ object NTripleParser {
     if (ntriples.isEmpty) {
       // If nothing is returned by the query, we skip
       IO.none
-    } else {
-      rootNodeOpt match {
-        case Some(rootNode) =>
-          IO.fromEither(Graph(ntriples.copy(rootNode = rootNode))).map { g =>
-            Some(g.replaceRootNode(rootNode))
-          }
-        case None           =>
-          IO.fromEither(Graph(ntriples)).map(Some(_))
+    } else
+      {
+        rootNodeOpt match {
+          case Some(rootNode) =>
+            IO.fromEither(Graph(ntriples.copy(rootNode = rootNode))).map { g =>
+              Some(g.replaceRootNode(rootNode))
+            }
+          case None           =>
+            IO.fromEither(Graph(ntriples)).map(Some(_))
+        }
+      }.onError {
+        case p: ParsingError =>
+          logger.error(p)("Blazegraph did not send back valid n-triples, please check the responses")
+        case _               => IO.unit
       }
-    }.onError {
-      case p: ParsingError =>
-        logger.error(p)("Blazegraph did not send back valid n-triples, please check the responses")
-      case _               => IO.unit
-    }
 }

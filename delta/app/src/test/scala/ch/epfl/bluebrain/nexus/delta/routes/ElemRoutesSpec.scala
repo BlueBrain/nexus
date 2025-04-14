@@ -51,7 +51,7 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
         project: ProjectRef,
         selectFilter: SelectFilter,
         start: Offset
-    ): IO[Option[RemainingElems]]                                                                                =
+    ): IO[Option[RemainingElems]] =
       IO.pure(Some(RemainingElems(999L, Instant.EPOCH)))
   }
 

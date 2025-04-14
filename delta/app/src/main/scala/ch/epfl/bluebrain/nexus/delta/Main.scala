@@ -5,7 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.{ExitCode, IO, IOApp, Resource}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo, StrictEntity}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
@@ -126,8 +126,8 @@ object Main extends IOApp {
     )
 
   private def routes(locator: Locator, clusterConfig: ClusterConfig): Route = {
-    import akka.http.scaladsl.server.Directives._
-    import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
+    import akka.http.scaladsl.server.Directives.*
+    import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.*
     val nodeHeader = RawHeader("X-Delta-Node", clusterConfig.nodeIndex.toString)
     respondWithHeader(nodeHeader) {
       cors(locator.get[CorsSettings]) {
@@ -137,9 +137,9 @@ object Main extends IOApp {
               encodeResponse {
                 val (strict, rest) = locator.get[Set[PriorityRoute]].partition(_.requiresStrictEntity)
                 concat(
-                  concat(rest.toVector.sortBy(_.priority).map(_.route): _*),
+                  concat(rest.toVector.sortBy(_.priority).map(_.route)*),
                   locator.get[StrictEntity].apply() {
-                    concat(strict.toVector.sortBy(_.priority).map(_.route): _*)
+                    concat(strict.toVector.sortBy(_.priority).map(_.route)*)
                   }
                 )
               }

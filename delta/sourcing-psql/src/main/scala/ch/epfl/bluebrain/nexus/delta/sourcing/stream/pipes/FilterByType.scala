@@ -54,7 +54,7 @@ object FilterByType extends PipeDef {
               types.asRestrictedTo
                 .map(_.iris.toList)
                 .getOrElse(List.empty)
-                .map(iri => Json.obj("@id" -> iri.asJson)): _*
+                .map(iri => Json.obj("@id" -> iri.asJson))*
             )
           )
         )

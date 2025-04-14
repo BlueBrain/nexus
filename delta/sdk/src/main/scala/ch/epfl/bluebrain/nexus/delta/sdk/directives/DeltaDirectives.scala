@@ -3,18 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.Directives.*
+import akka.http.scaladsl.server.*
 import cats.effect.IO
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, JsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}

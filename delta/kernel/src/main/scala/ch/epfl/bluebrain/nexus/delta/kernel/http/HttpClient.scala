@@ -13,9 +13,9 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling._
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError._
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling.*
+import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.*
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import io.circe.{Decoder, Json}
 
 import java.net.{ConnectException, UnknownHostException}
@@ -39,7 +39,7 @@ trait HttpClient {
   /**
     * Execute the argument request and unmarshal the response Json response.
     */
-  def toJson(req: HttpRequest): IO[Json]                                                    =
+  def toJson(req: HttpRequest): IO[Json] =
     fromJsonTo[Json](req)
 
   /**

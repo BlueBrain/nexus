@@ -13,19 +13,19 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetrics, EventMetricsProjection, MetricsIndexDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -157,7 +157,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[EventMetricsProjection].fromEffect {
     (
-        metricEncoders: Set[ScopedEventMetricEncoder[_]],
+        metricEncoders: Set[ScopedEventMetricEncoder[?]],
         xas: Transactors,
         supervisor: Supervisor,
         projections: Projections,
@@ -352,7 +352,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       }))
     }
 
-  many[SseEncoder[_]].add { base: BaseUri => ElasticSearchViewEvent.sseEncoder(base) }
+  many[SseEncoder[?]].add { base: BaseUri => ElasticSearchViewEvent.sseEncoder(base) }
 
   many[RemoteContextResolution].addEffect {
     (

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MarkElems
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.EventMetricsSink.empty
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

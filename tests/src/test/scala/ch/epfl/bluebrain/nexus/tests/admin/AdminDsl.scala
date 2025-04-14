@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.testkit.Generators
 import ch.epfl.bluebrain.nexus.tests.HttpClient
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -49,7 +49,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
       "deprecated" -> deprecated.toString,
       "schema"     -> schema
     )
-    loader.jsonContentOf("admin/org-response.json", resp: _*)
+    loader.jsonContentOf("admin/org-response.json", resp*)
   }
 
   def createProjectRespJson(
@@ -76,7 +76,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig)
       "markedForDeletion" -> markedForDeletion.toString,
       "schema"            -> schema
     )
-    loader.jsonContentOf("admin/project-response.json", resp: _*)
+    loader.jsonContentOf("admin/project-response.json", resp*)
   }
 
   private def queryParams(rev: Int) =

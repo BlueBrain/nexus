@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
@@ -14,7 +14,7 @@ import scala.concurrent.duration.DurationInt
 
 class ProjectActivitySignalsSuite extends NexusSuite with MutableClock.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(mutableClockFixture)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(mutableClockFixture)
   private lazy val mutableClock: MutableClock    = mutableClockFixture()
 
   private def assertActivitySignal(

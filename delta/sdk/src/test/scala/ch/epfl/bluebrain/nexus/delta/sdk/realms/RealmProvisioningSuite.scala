@@ -18,7 +18,7 @@ import munit.AnyFixture
 
 class RealmProvisioningSuite extends NexusSuite with Doobie.Fixture with ConfigFixtures with IOFromMap {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private val provisioning = RealmsProvisioningConfig(enabled = false, Map.empty)
   private val config       = RealmsConfig(eventLogConfig, pagination, provisioning)

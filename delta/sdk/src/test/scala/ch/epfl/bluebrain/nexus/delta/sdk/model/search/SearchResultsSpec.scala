@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
-import cats.syntax.functor._
+import cats.syntax.functor.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec

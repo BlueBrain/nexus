@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
@@ -33,7 +33,7 @@ class AuthDirectivesSpec extends BaseSpec with RouteHelpers with CatsEffectSpec 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.error -> ContextValue.fromFile("contexts/error.json").accepted)
 
-  implicit private val jsonKeys: JsonKeyOrdering    =
+  implicit private val jsonKeys: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details"))
 
   val user: Subject = User("alice", Label.unsafe("wonderland"))

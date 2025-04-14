@@ -3,17 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlTarget
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
-import pureconfig.generic.auto._
+import pureconfig.generic.auto.*
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * Configuration for the Blazegraph views module.

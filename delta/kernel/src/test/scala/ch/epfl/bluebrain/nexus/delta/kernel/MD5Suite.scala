@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import cats.effect.{IO, Ref}
-import cats.implicits._
+import cats.implicits.*
 import munit.CatsEffectSuite
 
 class MD5Suite extends CatsEffectSuite {

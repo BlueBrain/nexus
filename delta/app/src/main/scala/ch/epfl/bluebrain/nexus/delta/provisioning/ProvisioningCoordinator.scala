@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.provisioning
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ProvisioningAction
 

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
 class AclAddressSpec extends BaseSpec with AclFixtures {

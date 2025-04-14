@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdAssembly
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.SchemaClaim.DefinedSchemaClaim
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.InvalidSchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
