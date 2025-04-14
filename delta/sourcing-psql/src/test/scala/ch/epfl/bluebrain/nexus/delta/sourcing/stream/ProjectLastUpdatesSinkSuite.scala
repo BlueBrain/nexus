@@ -19,7 +19,7 @@ import scala.concurrent.duration.DurationInt
 
 class ProjectLastUpdatesSinkSuite extends NexusSuite with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas    = doobie()
   private lazy val store  = ProjectLastUpdateStore(xas)

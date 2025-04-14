@@ -2,20 +2,20 @@ package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
-import cats.implicits._
+import cats.effect.unsafe.implicits.*
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics.error
-import ch.epfl.bluebrain.nexus.tests.iam.types._
+import ch.epfl.bluebrain.nexus.tests.iam.types.*
 import ch.epfl.bluebrain.nexus.tests.{HttpClient, Identity}
 import io.circe.Json
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, OptionValues}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class AclDsl(cl: HttpClient) extends CirceUnmarshalling with OptionValues with Matchers {
 

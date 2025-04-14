@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder}
 
 /**

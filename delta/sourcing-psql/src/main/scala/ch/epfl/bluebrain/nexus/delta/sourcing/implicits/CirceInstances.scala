@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.implicits
 
 import cats.Show
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.data.NonEmptyList
 import doobie.util.{Get, Put}
 import io.circe.jawn.parse
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json, Printer}
 import org.postgresql.util.PGobject
 

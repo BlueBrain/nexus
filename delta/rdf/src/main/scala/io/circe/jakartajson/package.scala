@@ -1,11 +1,11 @@
 package io.circe
 
 import io.circe.syntax.EncoderOps
-import jakarta.json.JsonValue.{ValueType => JakartaValueType}
-import jakarta.json.{Json => JakartaJson, JsonNumber => JakartaJsonNumber, JsonObject => JakartaJsonObject, JsonString, JsonValue => JakartaJsonValue}
+import jakarta.json.JsonValue.ValueType as JakartaValueType
+import jakarta.json.{Json as JakartaJson, JsonNumber as JakartaJsonNumber, JsonObject as JakartaJsonObject, JsonString, JsonValue as JakartaJsonValue}
 
-import scala.jdk.CollectionConverters._
-import java.math.{BigDecimal => JBigDecimal}
+import scala.jdk.CollectionConverters.*
+import java.math.BigDecimal as JBigDecimal
 
 /**
   * Support for converting between Jakarta Json and Circe Based on

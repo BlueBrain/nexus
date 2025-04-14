@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.config.Configs
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
@@ -59,8 +59,7 @@ object AppConfig {
     * Loads the application in two steps, wrapping the error type:
     *
     *   1. loads the default default.conf and identifies the database configuration
-    *
-    * 2. reloads the config using the selected database configuration and the plugin configurations
+    *   2. reloads the config using the selected database configuration and the plugin configurations
     */
   def loadOrThrow(
       externalConfigPath: Option[String] = None,
@@ -73,8 +72,7 @@ object AppConfig {
     * Loads the application in two steps:
     *
     *   1. loads the default default.conf and identifies the database configuration
-    *
-    * 2. reloads the config using the selected database configuration and the plugin configurations
+    *   2. reloads the config using the selected database configuration and the plugin configurations
     */
   def load(
       externalConfigPath: Option[String] = None,

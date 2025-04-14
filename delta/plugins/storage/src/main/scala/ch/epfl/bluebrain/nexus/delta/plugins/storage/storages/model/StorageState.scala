@@ -82,7 +82,7 @@ final case class StorageState(
 object StorageState {
 
   implicit def serializer: Serializer[Iri, StorageState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration = Serializer.circeConfiguration
 
     implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec

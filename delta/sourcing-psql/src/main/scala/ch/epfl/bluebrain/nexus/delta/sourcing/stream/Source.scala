@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{SourceOutMatchErr, SourceOutPipeInMatchErr}
 import fs2.Stream
 import shapeless.Typeable
-import cats.implicits._
+import cats.implicits.*
 
 /**
   * Sources emit Stream elements of type [[Source#Out]] from a predefined
@@ -115,7 +115,7 @@ trait Source { self =>
           override def apply(offset: Offset): Stream[IO, Elem[Unit]] =
             self
               .apply(offset)
-              .broadcastThrough(verified.toList.map { _.asFs2 }: _*)
+              .broadcastThrough(verified.toList.map { _.asFs2 }*)
         }
       }
 

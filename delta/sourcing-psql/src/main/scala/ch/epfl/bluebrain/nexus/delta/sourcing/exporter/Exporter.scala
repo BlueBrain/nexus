@@ -5,15 +5,15 @@ import cats.effect.std.Semaphore
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.Exporter.ExportResult
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.utils.StreamingUtils
 import doobie.Fragments
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.util.query.Query0
 import fs2.Stream
-import fs2.io.file._
+import fs2.io.file.*
 import io.circe.syntax.EncoderOps
 
 trait Exporter {

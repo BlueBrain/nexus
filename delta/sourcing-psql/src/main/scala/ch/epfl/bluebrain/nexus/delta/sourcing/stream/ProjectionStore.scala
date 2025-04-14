@@ -4,13 +4,13 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.ProjectionProgressRow
-import doobie._
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import fs2.Stream
 
 import java.time.Instant

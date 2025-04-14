@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.jwt
 
 import cats.data.NonEmptySet
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.RSAKey
@@ -13,7 +13,7 @@ import java.util.Date
 
 object TokenGenerator {
 
-  import scala.jdk.CollectionConverters._
+  import scala.jdk.CollectionConverters.*
 
   def generateToken(
       subject: String,

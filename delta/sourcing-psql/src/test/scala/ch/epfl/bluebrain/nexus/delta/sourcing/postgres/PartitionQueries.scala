@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import doobie.syntax.all._
+import doobie.syntax.all.*
 
 object PartitionQueries {
 

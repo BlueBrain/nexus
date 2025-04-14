@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.jwt
 
 import cats.data.NonEmptySet
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.*
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.JWKSet
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext}
 import com.nimbusds.jwt.proc.{DefaultJWTClaimsVerifier, DefaultJWTProcessor}
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
 
 import java.time.Instant
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 /**
@@ -79,7 +79,7 @@ object ParsedToken {
       Option.when(
         claimsSet.getClaims.containsKey("groups")
       ) {
-        import scala.jdk.CollectionConverters._
+        import scala.jdk.CollectionConverters.*
         Try(claimsSet.getStringListClaim("groups").asScala.toList)
           .filter(_ != null)
           .map(_.map(_.trim))

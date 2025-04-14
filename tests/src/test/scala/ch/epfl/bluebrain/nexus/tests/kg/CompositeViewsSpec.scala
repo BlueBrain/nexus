@@ -2,18 +2,18 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
-import cats.implicits._
+import cats.effect.unsafe.implicits.*
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
-import ch.epfl.bluebrain.nexus.tests.HttpClient._
+import ch.epfl.bluebrain.nexus.tests.HttpClient.*
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
 import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuery}
 import io.circe.Json
-import io.circe.optics.JsonPath._
+import io.circe.optics.JsonPath.*
 import org.scalatest.Assertion
 
 class CompositeViewsSpec extends BaseIntegrationSpec {
@@ -23,8 +23,8 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
   case class Stats(totalEvents: Long, remainingEvents: Long)
 
   object Stats {
-    import io.circe._
-    import io.circe.generic.semiauto._
+    import io.circe.*
+    import io.circe.generic.semiauto.*
     implicit val decoder: Decoder[Stats]          = deriveDecoder[Stats]
     implicit val encoder: Encoder.AsObject[Stats] = deriveEncoder[Stats]
   }
@@ -115,7 +115,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           "remoteEndpoint" -> "http://delta:8080/v1",
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
-        ): _*
+        )*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite", view, Jerry) { (json, response) =>
@@ -140,7 +140,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           "remoteEndpoint" -> "http://delta:8080/v1/other",
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
-        ): _*
+        )*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { expectBadRequest }
@@ -156,7 +156,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           "remoteEndpoint" -> "http://fail.does.not.exist.at.all.asndkajbskhabsdfjhabsdfjkh/v1",
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
-        ): _*
+        )*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { expectBadRequest }
@@ -256,7 +256,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           "token"          -> jerryToken,
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
-        ): _*
+        )*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite-ctx", view, Jerry) { (json, response) =>
@@ -343,7 +343,7 @@ class CompositeViewsSpec extends BaseIntegrationSpec {
           "remoteEndpoint" -> "http://delta:8080/v1",
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
-        ): _*
+        )*
       )
     val createView  = deltaClient.put[Json](s"/views/$albumsProjectRef/$viewId", viewPayload, Jerry) { expectCreated }
 

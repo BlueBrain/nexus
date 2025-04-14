@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextObject, ContextRemoteIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 
 /**
@@ -57,7 +57,7 @@ sealed trait ContextValue {
   /**
     * Filter out the remote contexts that are not fixed platform contexts
     */
-  def excludeRemoteContexts: ContextValue         =
+  def excludeRemoteContexts: ContextValue =
     visit({ case iriCtx if iriCtx.isPlatformContext => iriCtx })
 
   /**
@@ -87,7 +87,7 @@ object ContextValue {
     override def visit(
         iri: PartialFunction[ContextRemoteIri, ContextRemoteIri],
         obj: PartialFunction[ContextObject, ContextObject]
-    ): ContextValue                                      =
+    ): ContextValue =
       this
   }
 
@@ -132,7 +132,7 @@ object ContextValue {
     override def visit(
         iri: PartialFunction[ContextRemoteIri, ContextRemoteIri],
         obj: PartialFunction[ContextObject, ContextObject]
-    ): ContextValue                                      =
+    ): ContextValue =
       iri.applyOrElse(self, (_: ContextRemoteIri) => ContextEmpty)
   }
 
@@ -154,7 +154,7 @@ object ContextValue {
     override def visit(
         iri: PartialFunction[ContextRemoteIri, ContextRemoteIri],
         obj: PartialFunction[ContextObject, ContextObject]
-    ): ContextValue                                      =
+    ): ContextValue =
       obj.applyOrElse(self, (_: ContextObject) => ContextEmpty)
   }
 

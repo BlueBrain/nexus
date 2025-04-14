@@ -4,9 +4,9 @@ import ch.qos.logback.classic.spi.{ILoggingEvent, ThrowableProxyUtil}
 import ch.qos.logback.core.encoder.EncoderBase
 import io.circe.syntax.KeyOps
 import io.circe.{Json, Printer}
-import io.opentelemetry.semconv.ExceptionAttributes._
+import io.opentelemetry.semconv.ExceptionAttributes.*
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class OtelJsonEncoder extends EncoderBase[ILoggingEvent] {
 

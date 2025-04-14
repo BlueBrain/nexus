@@ -17,7 +17,7 @@ final class UriStringContextOps(private val sc: StringContext) extends AnyVal {
   /**
     * Construct a Uri without checking the validity of the format.
     */
-  def uri(args: Any*): Uri = Uri(sc.s(args: _*))
+  def uri(args: Any*): Uri = Uri(sc.s(args*))
 }
 
 final class UriStringOps(private val string: String) extends AnyVal {

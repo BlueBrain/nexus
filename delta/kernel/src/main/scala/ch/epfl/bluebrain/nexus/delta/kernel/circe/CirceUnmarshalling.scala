@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.ContentTypeRange
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
 import io.circe.{jawn, Decoder, Json}
 
 import scala.collection.immutable.Seq
@@ -24,7 +24,7 @@ trait CirceUnmarshalling {
     */
   implicit final val jsonUnmarshaller: FromEntityUnmarshaller[Json] =
     Unmarshaller.byteStringUnmarshaller
-      .forContentTypes(unmarshallerContentTypes: _*)
+      .forContentTypes(unmarshallerContentTypes*)
       .map {
         case ByteString.empty => throw Unmarshaller.NoContentException
         case data             => jawn.parseByteBuffer(data.asByteBuffer).fold(throw _, identity)

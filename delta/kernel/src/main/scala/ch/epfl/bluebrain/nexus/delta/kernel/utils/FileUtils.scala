@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.LoadFileError.{InvalidJson, UnaccessibleFile}
 import io.circe.Decoder
 import io.circe.parser.decode

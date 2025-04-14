@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits.catsSyntaxApplicativeError
@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes._
+import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.{baseUriPrefix, projectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.directives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -90,7 +90,7 @@ object SupervisionRoutes {
 
   implicit val versionHttpResponseFields: HttpResponseFields[SupervisionBundle] = HttpResponseFields.defaultOk
 
-  private val allProjectsAreHealthy                              =
+  private val allProjectsAreHealthy =
     Json.obj("status" := "All projects are healthy.")
 
   private val unhealthyProjectsEncoder: Encoder[Set[ProjectRef]] =

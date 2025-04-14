@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import io.circe.optics.JsonPath.root
 import io.circe.{Json, JsonObject}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, Assertions, OptionValues}
-import Optics._
+import Optics.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, ScalaTestExtractValue}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin.{apiMappings, effectiveApiMappings, enforceSchema}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload

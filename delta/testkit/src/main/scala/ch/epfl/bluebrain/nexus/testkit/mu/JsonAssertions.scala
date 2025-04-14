@@ -31,7 +31,7 @@ trait JsonAssertions { self: Assertions =>
         obtainedSorted,
         expectedSorted,
         s"Both Json are not equal (ignoring array order)\n${jsonPrinter
-          .print(obtainedSorted)}\ndid not equal\n${jsonPrinter.print(expectedSorted)}"
+            .print(obtainedSorted)}\ndid not equal\n${jsonPrinter.print(expectedSorted)}"
       )
     }
   }

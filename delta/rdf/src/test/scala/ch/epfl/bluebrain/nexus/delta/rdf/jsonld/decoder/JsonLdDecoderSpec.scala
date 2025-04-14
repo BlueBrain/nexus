@@ -9,15 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.{Deco
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderSpec.Drink.{Cocktail, Volume}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderSpec.Menu.DrinkMenu
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderSpec.{AbsoluteIri, Drink, Menu}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto._
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.*
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.*
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 import java.util.UUID
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class JsonLdDecoderSpec extends CatsEffectSpec with Fixtures {
 

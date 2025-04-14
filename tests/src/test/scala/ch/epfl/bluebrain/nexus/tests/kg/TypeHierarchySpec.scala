@@ -114,8 +114,8 @@ class TypeHierarchySpec extends BaseIntegrationSpec {
             "@type" : "AuthorizationFailed",
             "reason" : "The supplied authentication is not authorized to access this resource.",
             "details" : "Permission 'typehierarchy/write' is missing on '/'.\\nIncoming request was 'http://localhost:8080/v1/type-hierarchy${rev
-      .map(r => s"?rev=$r")
-      .getOrElse("")}' ('$method')."
+        .map(r => s"?rev=$r")
+        .getOrElse("")}' ('$method')."
           }
         """
 

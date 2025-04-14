@@ -5,13 +5,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.*
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 
 import java.time.Instant
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.Set as MutableSet
 import scala.concurrent.duration.DurationInt
 
 class FailedElemPersistenceSuite extends NexusSuite {

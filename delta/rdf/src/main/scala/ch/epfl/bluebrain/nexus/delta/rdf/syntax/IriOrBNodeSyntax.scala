@@ -13,7 +13,7 @@ final class IriStringContextOps(private val sc: StringContext) extends AnyVal {
   /**
     * Construct an Iri without checking the validity of the format.
     */
-  def iri(args: Any*): Iri = Iri.unsafe(sc.s(args: _*))
+  def iri(args: Any*): Iri = Iri.unsafe(sc.s(args*))
 }
 
 final class IriStringOps(private val string: String) extends AnyVal {
@@ -29,5 +29,5 @@ final class BNodeStringContextOps(private val sc: StringContext) extends AnyVal 
   /**
     * Construct a [[BNode]].
     */
-  def bnode(args: Any*): BNode = BNode.unsafe(sc.s(args: _*))
+  def bnode(args: Any*): BNode = BNode.unsafe(sc.s(args*))
 }

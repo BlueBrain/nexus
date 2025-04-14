@@ -31,10 +31,10 @@ object JsonLdValue {
 
   implicit val jsonLdEncoder: JsonLdEncoder[JsonLdValue] = {
     new JsonLdEncoder[JsonLdValue] {
-      override def context(value: JsonLdValue): ContextValue                                             = value.encoder.context(value.value)
+      override def context(value: JsonLdValue): ContextValue = value.encoder.context(value.value)
       override def expand(
           value: JsonLdValue
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd]  =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[ExpandedJsonLd] =
         value.encoder.expand(value.value)
       override def compact(
           value: JsonLdValue

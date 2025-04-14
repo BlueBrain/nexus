@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * Tests related to automatic project deletion

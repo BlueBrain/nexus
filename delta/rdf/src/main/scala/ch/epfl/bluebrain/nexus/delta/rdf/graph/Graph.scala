@@ -1,25 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ParsingError, SparqlConstructQueryError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
-import ch.epfl.bluebrain.nexus.delta.rdf._
+import ch.epfl.bluebrain.nexus.delta.rdf.*
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{fakeId, rdfType}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.TitaniumJsonLdApi._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
+import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter.*
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.TitaniumJsonLdApi.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
-import org.apache.jena.graph.{Node, Triple => JenaTriple}
+import org.apache.jena.graph.{Node, Triple as JenaTriple}
 import org.apache.jena.query.{DatasetFactory, QueryExecutionFactory}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
@@ -27,7 +27,7 @@ import org.apache.jena.sparql.graph.GraphFactory
 
 import java.util.UUID
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 /**

@@ -4,7 +4,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import io.circe.Json
 object SchemaPayloads {
-  private val loader = ClasspathResourceLoader()
+  private val loader                                                = ClasspathResourceLoader()
   def withPowerLevelShape(id: String, maxPowerLevel: Int): IO[Json] = {
     loader.jsonContentOf("kg/schemas/schema-with-power-level.json", "id" -> id, "maxPowerLevel" -> maxPowerLevel)
   }

@@ -9,7 +9,7 @@ import munit.AnyFixture
 
 class StreamingUtilsSuite extends NexusSuite with TempDirectory.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(tempDirectory)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(tempDirectory)
 
   private lazy val exportDirectory = tempDirectory()
 

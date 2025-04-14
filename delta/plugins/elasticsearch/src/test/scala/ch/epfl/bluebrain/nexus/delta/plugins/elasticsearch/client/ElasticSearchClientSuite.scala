@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -23,7 +23,7 @@ import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
 import munit.AnyFixture
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
 
@@ -31,7 +31,7 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
 
   private val page = FromPagination(0, 100)
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 
   private lazy val client = esClient()
 

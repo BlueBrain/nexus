@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
@@ -16,9 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Serializer, Transactors}
 import doobie.free.connection
-import doobie.{ConnectionIO, _}
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.{ConnectionIO, *}
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import io.circe.Decoder
 
 /**
@@ -136,7 +136,7 @@ object ScopedStateStore {
       xas: Transactors
   ): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
 
-    import IriInstances._
+    import IriInstances.*
     implicit val putId: Put[Id]      = serializer.putId
     implicit val getValue: Get[S]    = serializer.getValue
     implicit val putValue: Put[S]    = serializer.putValue

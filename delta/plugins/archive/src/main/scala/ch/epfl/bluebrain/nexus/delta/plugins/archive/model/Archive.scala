@@ -66,7 +66,7 @@ object Archive {
   }
 
   implicit private def archiveJsonEncoder: Encoder.AsObject[Archive] = {
-    import io.circe.generic.extras.semiauto._
+    import io.circe.generic.extras.semiauto.*
     implicit val cfg: Configuration = Configuration.default.copy(transformMemberNames = {
       case "expiresInSeconds" => "_expiresInSeconds"
       case other              => other

@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie.{Get, Put}
 import io.circe.generic.extras.Configuration
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Codec, Encoder, Printer}
 
 /**

@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
@@ -105,7 +105,7 @@ class ArchiveDownloadSpec
     val file2                = FileGen.resourceFor(id2, projectRef, storageRef, fileAttributes(file2Name, file2Size))
     val file2Content: String = "file content 2"
 
-    val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[_, _]]] = {
+    val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[?, ?]]] = {
       case (`id1`, `projectRef`) =>
         IO.pure(Some(JsonLdContent(file1, file1.value.asJson, None)))
       case (`id2`, `projectRef`) =>

@@ -19,13 +19,13 @@ import fs2.Stream
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import cats.effect.Ref
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class CompositeProjectionsSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas = doobie()
 

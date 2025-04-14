@@ -4,29 +4,29 @@ import akka.http.scaladsl.model.MediaRange
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.headers.{`Content-Length`, Accept}
 import akka.http.scaladsl.server.Directives.{extractRequestEntity, optionalHeaderValueByName, provide, reject}
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.*
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read as Read, write as Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FileUriDirectives.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragePluginExceptionHandler.handleStorageExceptions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import io.circe.parser
@@ -60,7 +60,7 @@ final class FilesRoutes(
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling { self =>
 
-  import schemeDirectives._
+  import schemeDirectives.*
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {

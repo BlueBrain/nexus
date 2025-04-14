@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import com.typesafe.config.ConfigFactory
 import pureconfig.ConfigSource
@@ -60,7 +60,7 @@ class ProjectDeletionConfigSpec extends CatsEffectSpec {
            |included-projects = ["some.+"]
            |excluded-projects = [".+"]
            |""".stripMargin
-      intercept[ConfigReaderException[_]] {
+      intercept[ConfigReaderException[?]] {
         ConfigSource.fromConfig(ConfigFactory.parseString(configString)).loadOrThrow[ProjectDeletionConfig]
       }
     }

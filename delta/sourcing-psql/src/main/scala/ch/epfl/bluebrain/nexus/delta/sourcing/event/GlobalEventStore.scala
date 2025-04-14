@@ -1,17 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 
-import doobie._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.postgres.implicits.*
 
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import fs2.Stream
 
 /**

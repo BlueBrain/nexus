@@ -9,18 +9,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{SchemaJobRoutes, SchemasRoutes}
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{FetchResource, Resources, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaDefinition, SchemaLog}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas._
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.*
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.{SchemaValidationCoordinator, SchemaValidationStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -141,7 +141,7 @@ object SchemasModule extends ModuleDef {
       )
   }
 
-  many[SseEncoder[_]].add { base: BaseUri => SchemaEvent.sseEncoder(base) }
+  many[SseEncoder[?]].add { base: BaseUri => SchemaEvent.sseEncoder(base) }
 
   many[ApiMappings].add(Schemas.mappings)
 

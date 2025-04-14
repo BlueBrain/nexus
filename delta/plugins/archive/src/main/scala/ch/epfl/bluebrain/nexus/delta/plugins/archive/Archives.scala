@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{entityType, expandIri, ArchiveLog}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.*
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller

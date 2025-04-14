@@ -14,7 +14,7 @@ class ProjectHealerSuite extends NexusSuite {
   private def scopeInitializer(projectInitializationWasExecuted: Ref[IO, Boolean]) = new ScopeInitializer {
     override def initializeOrganization(organizationResource: OrganizationResource)(implicit
         caller: Identity.Subject
-    ): IO[Unit]                                                                                      = IO.unit
+    ): IO[Unit] = IO.unit
     override def initializeProject(project: ProjectRef)(implicit caller: Identity.Subject): IO[Unit] =
       projectInitializationWasExecuted.set(true)
   }
@@ -22,7 +22,7 @@ class ProjectHealerSuite extends NexusSuite {
   private def failingScopeInitializer = new ScopeInitializer {
     override def initializeOrganization(organizationResource: OrganizationResource)(implicit
         caller: Identity.Subject
-    ): IO[Unit]                                                                                      =
+    ): IO[Unit] =
       IO.raiseError(ScopeInitializationFailed("failed during org creation"))
     override def initializeProject(project: ProjectRef)(implicit caller: Identity.Subject): IO[Unit] =
       IO.raiseError(ScopeInitializationFailed("failed during project creation"))

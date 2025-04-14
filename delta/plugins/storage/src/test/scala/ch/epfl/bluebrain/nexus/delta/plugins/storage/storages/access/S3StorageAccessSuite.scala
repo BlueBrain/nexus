@@ -11,7 +11,7 @@ import munit.AnyFixture
 
 class S3StorageAccessSuite extends NexusSuite with LocalStackS3StorageClient.Fixture with S3Helpers {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(localStackS3Client)
 
   implicit private lazy val (s3Client: S3StorageClient, underlying: S3AsyncClientOp[IO], _: S3StorageConfig) =
     localStackS3Client()

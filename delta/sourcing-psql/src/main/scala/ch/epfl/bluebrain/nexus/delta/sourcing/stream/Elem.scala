@@ -220,9 +220,9 @@ object Elem {
 
   object SuccessElem {
     implicit def read[Value](implicit s: Decoder[Value]): Read[SuccessElem[Value]] = {
-      import doobie._
-      import doobie.postgres.implicits._
-      import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+      import doobie.*
+      import doobie.postgres.implicits.*
+      import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
       implicit val v: Get[Value] = pgDecoderGetT[Value]
       Read[(EntityType, Iri, Value, Int, Instant, Long, Label, Label)].map {
         case (tpe, id, value, rev, instant, offset, org, proj) =>

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.data.NonEmptyList
 import cats.effect.{IO, Ref}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.logger
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, Projection}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait IndexingAction {
 
@@ -84,7 +84,7 @@ object IndexingAction {
   ) {
 
     def apply[A](project: ProjectRef, res: ResourceF[A], indexingMode: IndexingMode)(implicit
-        shift: ResourceShift[_, A, _]
+        shift: ResourceShift[?, A, ?]
     ): IO[Unit] =
       indexingMode match {
         case Async => IO.unit

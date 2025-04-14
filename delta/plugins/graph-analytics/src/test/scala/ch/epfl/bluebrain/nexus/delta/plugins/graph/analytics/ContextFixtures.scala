@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
 
 trait ContextFixtures extends ClasspathResources {

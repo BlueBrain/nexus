@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{Pro
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Priority
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef

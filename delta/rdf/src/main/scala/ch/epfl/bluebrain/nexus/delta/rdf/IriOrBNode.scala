@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Order
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
-import io.circe._
+import io.circe.*
 import org.apache.jena.iri.{IRI, IRIFactory}
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert

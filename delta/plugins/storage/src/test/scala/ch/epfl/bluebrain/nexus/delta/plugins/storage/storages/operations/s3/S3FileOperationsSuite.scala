@@ -36,7 +36,7 @@ class S3FileOperationsSuite
 
   override def munitIOTimeout: Duration = 120.seconds
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client, actorSystem)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(localStackS3Client, actorSystem)
 
   implicit private lazy val (s3StorageClient: S3StorageClient, underlying: S3AsyncClientOp[IO], conf: S3StorageConfig) =
     localStackS3Client()

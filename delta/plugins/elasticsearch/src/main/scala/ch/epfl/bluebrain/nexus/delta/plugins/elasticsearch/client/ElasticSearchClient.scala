@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.client.RequestBuilding._
+import akka.http.scaladsl.client.RequestBuilding.*
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, NotFound, OK}
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling._
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling.*
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpUnexpectedError}
@@ -17,16 +17,16 @@ import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{ResultEntry, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe._
-import io.circe.literal._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import io.circe.*
+import io.circe.literal.*
+import io.circe.syntax.*
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.reflect.ClassTag
 
 /**

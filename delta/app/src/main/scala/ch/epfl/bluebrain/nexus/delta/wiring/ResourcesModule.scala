@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidateShacl
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{ResourceDefinition, ResourceLog}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.FetchSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
@@ -107,9 +107,9 @@ object ResourcesModule extends ModuleDef {
       )
   }
 
-  many[SseEncoder[_]].add { base: BaseUri => ResourceEvent.sseEncoder(base) }
+  many[SseEncoder[?]].add { base: BaseUri => ResourceEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { ResourceEvent.resourceEventMetricEncoder }
+  many[ScopedEventMetricEncoder[?]].add { ResourceEvent.resourceEventMetricEncoder }
 
   many[ApiMappings].add(Resources.mappings)
 
@@ -121,6 +121,6 @@ object ResourcesModule extends ModuleDef {
     Resource.shift(resources)(base)
   }
 
-  many[ResourceShift[_, _, _]].ref[Resource.Shift]
+  many[ResourceShift[?, ?, ?]].ref[Resource.Shift]
 
 }

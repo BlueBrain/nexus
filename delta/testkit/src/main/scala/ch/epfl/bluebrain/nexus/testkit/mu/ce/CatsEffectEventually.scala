@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectEventually.logger
 import munit.{Assertions, CatsEffectAssertions, Location}

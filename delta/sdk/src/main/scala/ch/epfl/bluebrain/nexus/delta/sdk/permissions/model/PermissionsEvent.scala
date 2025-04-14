@@ -100,7 +100,7 @@ object PermissionsEvent {
   ) extends PermissionsEvent
 
   val serializer: Serializer[Label, PermissionsEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration            = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
     Serializer(_ => Permissions.id)

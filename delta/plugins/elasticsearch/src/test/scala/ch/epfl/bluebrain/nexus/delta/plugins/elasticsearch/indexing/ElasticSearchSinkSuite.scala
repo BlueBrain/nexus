@@ -19,11 +19,11 @@ import io.circe.Json
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 
   private def createSink(index: IndexLabel) =
     ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)

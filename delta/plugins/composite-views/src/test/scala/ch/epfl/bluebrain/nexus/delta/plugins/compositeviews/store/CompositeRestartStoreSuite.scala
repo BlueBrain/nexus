@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
@@ -16,7 +16,7 @@ import java.time.Instant
 
 class CompositeRestartStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas = doobie()
 

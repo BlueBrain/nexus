@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import cats.data.NonEmptySet
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.InvalidResourceCollection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

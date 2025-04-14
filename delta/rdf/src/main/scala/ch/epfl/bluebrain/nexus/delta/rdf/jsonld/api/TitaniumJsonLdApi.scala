@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig.ErrorHandling
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.TitaniumJsonLdApi.tryExpensiveIO
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.*
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import com.apicatalog.jsonld.JsonLdOptions.RdfDirection
 import com.apicatalog.jsonld.context.ActiveContext
@@ -14,19 +14,19 @@ import com.apicatalog.jsonld.document.{JsonDocument, RdfDocument}
 import com.apicatalog.jsonld.loader.DocumentLoader
 import com.apicatalog.jsonld.processor.ProcessingRuntime
 import com.apicatalog.jsonld.uri.UriValidationPolicy
-import com.apicatalog.jsonld.{JsonLd, JsonLdError, JsonLdErrorCode, JsonLdOptions => TitaniumJsonLdOptions}
-import io.circe.jakartajson._
-import io.circe.syntax._
+import com.apicatalog.jsonld.{JsonLd, JsonLdError, JsonLdErrorCode, JsonLdOptions as TitaniumJsonLdOptions}
+import io.circe.jakartajson.*
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import jakarta.json.JsonStructure
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.jena.irix.IRIxResolver
 import org.apache.jena.riot.RIOT
-import org.apache.jena.riot.system._
+import org.apache.jena.riot.system.*
 import org.apache.jena.sparql.core.DatasetGraph
 
 import java.net.URI
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 /**
@@ -162,7 +162,7 @@ final class TitaniumJsonLdApi(config: JsonLdApiConfig) extends JsonLdApi {
       .map(_.foldLeft(Map.empty[Iri, RemoteContext])(_ ++ _))
 
   private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[DocumentLoader] =
-    remoteContexts(jsons: _*).map(TitaniumDocumentLoader(_))
+    remoteContexts(jsons*).map(TitaniumDocumentLoader(_))
 
   private def toOpts(dl: DocumentLoader)(implicit options: JsonLdOptions): TitaniumJsonLdOptions = {
     val opts = new TitaniumJsonLdOptions(dl)

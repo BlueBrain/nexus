@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import munit.AnyFixture
 
 import java.time.Instant
@@ -17,9 +17,9 @@ class ScopedEventStoreSuite extends NexusSuite with Doobie.Fixture with Doobie.A
 
   private val queryConfig = QueryConfig.stopping(10)
 
-  private lazy val fixture = doobieInject(PullRequest.eventStore(_, queryConfig, allEvents: _*))
+  private lazy val fixture = doobieInject(PullRequest.eventStore(_, queryConfig, allEvents*))
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(fixture)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(fixture)
 
   private val project1 = ProjectRef.unsafe("org", "proj1")
   private val project2 = ProjectRef.unsafe("org", "proj2")

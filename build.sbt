@@ -852,7 +852,7 @@ lazy val servicePackaging = {
   )
 }
 
-ThisBuild / scapegoatVersion := scalacScapegoatVersion
+ThisBuild / scapegoatVersion             := scalacScapegoatVersion
 ThisBuild / scapegoatDisabledInspections := Seq(
   "AsInstanceOf",
   "ClassNames",
@@ -925,7 +925,7 @@ def runTestsWithCoverageCommandsForModules(modules: List[String]) = {
     modules.map(module => s";$module/test").mkString +
     modules.map(module => s";$module/coverageReport").mkString
 }
-def runTestsCommandsForModules(modules: List[String]) = {
+def runTestsCommandsForModules(modules: List[String])             = {
   modules.map(module => s";$module/test").mkString
 }
 

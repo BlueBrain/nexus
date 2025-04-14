@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.kernel.cache
 import cats.effect.IO
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 
-import scala.concurrent.duration._
-import scala.jdk.CollectionConverters._
-import scala.jdk.DurationConverters._
+import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
+import scala.jdk.DurationConverters.*
 
 /**
   * An arbitrary key value store.

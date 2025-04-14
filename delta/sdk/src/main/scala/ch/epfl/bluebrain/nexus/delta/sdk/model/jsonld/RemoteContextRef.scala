@@ -64,7 +64,7 @@ object RemoteContextRef {
   implicit final val remoteContextRefsJsonLdEncoder: JsonLdEncoder[Set[RemoteContextRef]] = {
     implicit val remoteContextsEncoder: Encoder.AsObject[Set[RemoteContextRef]] = Encoder.AsObject.instance {
       remoteContexts =>
-        JsonObject("remoteContexts" -> Json.arr(remoteContexts.map(_.asJson).toSeq: _*))
+        JsonObject("remoteContexts" -> Json.arr(remoteContexts.map(_.asJson).toSeq*))
     }
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.remoteContexts))
   }

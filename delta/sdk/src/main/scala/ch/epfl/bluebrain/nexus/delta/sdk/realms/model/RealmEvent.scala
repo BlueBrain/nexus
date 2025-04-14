@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
@@ -231,11 +231,11 @@ object RealmEvent {
       subject: Subject
   ) extends RealmEvent
 
-  import GrantType.Camel._
-  import ch.epfl.bluebrain.nexus.delta.rdf.instances._
+  import GrantType.Camel.*
+  import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
 
   val serializer: Serializer[Label, RealmEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration      = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[RealmEvent] = deriveConfiguredCodec[RealmEvent]
     Serializer(Realms.encodeId)

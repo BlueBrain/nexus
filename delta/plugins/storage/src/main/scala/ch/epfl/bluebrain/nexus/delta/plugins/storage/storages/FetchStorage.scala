@@ -37,7 +37,7 @@ object FetchStorage {
 
     override def onWrite(id: Option[Iri], project: ProjectRef)(implicit
         caller: Caller
-    ): IO[(ResourceRef.Revision, Storage)]                                                              =
+    ): IO[(ResourceRef.Revision, Storage)] =
       for {
         storage <- id match {
                      case Some(id) => storages.fetch(Latest(id), project)

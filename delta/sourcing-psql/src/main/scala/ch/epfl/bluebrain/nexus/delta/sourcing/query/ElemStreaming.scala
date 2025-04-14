@@ -6,7 +6,7 @@ import doobie.Fragments
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ElemQueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -14,8 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming.{logger, newSt
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery.{entityTypeFilter, logQuery, stateFilter, typesSqlArray}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ProjectActivitySignals, RemainingElems}
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import doobie.util.query.Query0
 import fs2.{Chunk, Stream}
 import io.circe.Json
@@ -73,6 +73,7 @@ final class ElemStreaming(
       start: Offset,
       selectFilter: SelectFilter
   ): Stream[IO, Elem[Unit]] = {
+    val refresh: RefreshOrStop                    = RefreshOrStop(scope, queryConfig, activitySignals)
     def query(offset: Offset): Query0[Elem[Unit]] = {
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
@@ -94,7 +95,6 @@ final class ElemStreaming(
           DroppedElem(entityType, id, ProjectRef(org, project), instant, Offset.at(offset), rev)
       }
     }
-    val refresh: RefreshOrStop = RefreshOrStop(scope, queryConfig, activitySignals)
     execute[Unit](start, query, refresh)
   }
 

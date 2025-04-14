@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.IriFilter
 import io.circe.{Json, JsonObject}
 import munit.FunSuite
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class SearchViewFactorySuite extends FunSuite {
 

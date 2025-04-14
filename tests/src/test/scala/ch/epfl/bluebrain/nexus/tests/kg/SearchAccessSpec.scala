@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
 import io.circe.Json
-import io.circe.optics.JsonPath._
+import io.circe.optics.JsonPath.*
 import tags.BlazegraphOnly
 
 @BlazegraphOnly

@@ -10,18 +10,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls as aclsPermissions, *}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class AclsRoutesSpec extends BaseRouteSpec {
 
@@ -80,7 +80,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       aclJson(acl) deepMerge meta
     }
     jsonContentOf("acls/acls-route-response.json", "total" -> total) deepMerge
-      Json.obj("_results"                                  -> Json.fromValues(results))
+      Json.obj("_results" -> Json.fromValues(results))
   }
 
   private val identities = IdentitiesDummy(caller)
@@ -368,7 +368,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json =
+  ): Json        =
     jsonContentOf(
       "acls/acl-route-metadata-response.json",
       "rev"        -> rev,

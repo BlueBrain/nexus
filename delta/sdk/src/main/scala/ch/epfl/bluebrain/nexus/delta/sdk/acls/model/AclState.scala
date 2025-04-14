@@ -87,8 +87,8 @@ final case class AclState(
 object AclState {
 
   val serializer: Serializer[AclAddress, AclState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    import Acl.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
+    import Acl.Database.*
     implicit val configuration: Configuration    = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[AclState] = Codec.AsObject.from(
       deriveConfiguredDecoder[AclState],

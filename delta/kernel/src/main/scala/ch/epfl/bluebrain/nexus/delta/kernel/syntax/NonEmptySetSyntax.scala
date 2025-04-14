@@ -17,7 +17,7 @@ final class NonEmptySetOps[A](private val nes: NonEmptySet[A]) extends AnyVal {
   /**
     * Converts a NonEmptySet into a Set
     */
-  def toSet: Set[A]                          =
+  def toSet: Set[A] =
     nes.foldLeft(Set.empty[A]) { case (s, a) => s + a }
 
 }

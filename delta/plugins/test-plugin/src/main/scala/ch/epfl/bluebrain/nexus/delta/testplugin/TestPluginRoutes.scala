@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.testplugin
 
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 

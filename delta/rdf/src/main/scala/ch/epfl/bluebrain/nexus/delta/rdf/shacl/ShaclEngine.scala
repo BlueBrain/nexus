@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
 import org.apache.jena.query.Dataset
-import org.apache.jena.rdf.model._
+import org.apache.jena.rdf.model.*
 import org.topbraid.jenax.util.JenaDatatypes
 import org.topbraid.shacl.engine.{Constraint, ShapesGraph}
 import org.topbraid.shacl.validation.ValidationEngine

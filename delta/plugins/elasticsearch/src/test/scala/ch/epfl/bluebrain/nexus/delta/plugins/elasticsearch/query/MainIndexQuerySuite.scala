@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.{And, Or}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuerySuite._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuerySuite.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -20,9 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -35,7 +35,7 @@ import munit.{AnyFixture, Location}
 import java.time.Instant
 
 class MainIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fixture with Fixtures {
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 
   private lazy val client = esClient()
 
@@ -338,7 +338,7 @@ object MainIndexQuerySuite {
   case class AggregationsValue(projects: Aggregation, types: Aggregation)
 
   def extractAggs(aggregation: AggregationResult): Option[AggregationsValue] = {
-    import io.circe.generic.auto._
+    import io.circe.generic.auto.*
     aggregation.value.asJson.as[AggregationsValue].toOption
   }
 

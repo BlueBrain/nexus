@@ -11,9 +11,9 @@ import io.circe.parser.parse
 import org.scalatest.{OptionValues, Suite}
 import org.scalatest.concurrent.ScalaFutures
 
-import java.nio.file.{Files => JFiles}
+import java.nio.file.Files as JFiles
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import java.security.MessageDigest
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.Span

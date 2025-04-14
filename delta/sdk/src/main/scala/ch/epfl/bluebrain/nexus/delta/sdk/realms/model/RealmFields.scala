@@ -4,8 +4,8 @@ import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import io.circe.Decoder
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import pureconfig.module.cats._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
+import pureconfig.module.cats.*
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import pureconfig.ConfigReader

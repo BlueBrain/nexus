@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * Configuration for the Blazegraph slow queries logging.

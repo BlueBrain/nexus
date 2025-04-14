@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures._
+import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures.*
 import ch.epfl.bluebrain.nexus.delta.rdf.GraphHelpers
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.rdfType
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmpty, ContextObject}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords

@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts as fileContexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts as storageContexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 
 trait RemoteContextResolutionFixture {
 
-  import RemoteContextResolutionFixture._
+  import RemoteContextResolutionFixture.*
   implicit val api: JsonLdApi = TitaniumJsonLdApi.strict
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(

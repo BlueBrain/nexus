@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{ElemRoutes, EventsRoutes}
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -27,7 +27,7 @@ object EventsModule extends ModuleDef {
         config: AppConfig,
         organizations: Organizations,
         projects: Projects,
-        sseEncoders: Set[SseEncoder[_]],
+        sseEncoders: Set[SseEncoder[?]],
         xas: Transactors,
         jo: JsonKeyOrdering
     ) =>

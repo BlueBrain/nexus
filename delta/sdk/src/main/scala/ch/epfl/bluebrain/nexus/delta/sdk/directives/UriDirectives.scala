@@ -3,16 +3,16 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.Directives.*
+import akka.http.scaladsl.server.*
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
+import cats.implicits.*
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources

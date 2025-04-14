@@ -9,11 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class PurgeProjectionCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(supervisor)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 

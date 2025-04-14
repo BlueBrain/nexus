@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm.Metadata
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe._
+import io.circe.*
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
@@ -76,8 +76,8 @@ object Realm {
     */
   final case class Metadata(label: Label)
 
-  import GrantType.Camel._
-  import ch.epfl.bluebrain.nexus.delta.rdf.instances._
+  import GrantType.Camel.*
+  import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
 
   implicit private[Realm] val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "authorizationEndpoint" => nxv.authorizationEndpoint.prefix

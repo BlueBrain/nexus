@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.SparqlSlowQueryStoreSuite._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.SparqlSlowQueryStoreSuite.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.SparqlSlowQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
@@ -19,7 +19,7 @@ class SparqlSlowQueryStoreSuite
     with Doobie.Fixture
     with Doobie.Assertions
     with BlazegraphSlowQueryStoreFixture {
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, blazegraphSlowQueryStore)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie, blazegraphSlowQueryStore)
 
   private lazy val store = blazegraphSlowQueryStore()
 
@@ -56,7 +56,7 @@ class SparqlSlowQueryStoreSuite
 }
 
 object SparqlSlowQueryStoreSuite {
-  private val view = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
+  private val view                                           = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
   private def queryAtTime(instant: Instant): SparqlSlowQuery = {
     SparqlSlowQuery(
       view,

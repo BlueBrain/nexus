@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Codec, Encoder, Json, JsonObject}
 
 /**
@@ -37,7 +37,7 @@ object IdentityResolution {
   }
 
   object Database {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
 
     implicit private val configuration: Configuration                        = Serializer.circeConfiguration
     implicit val identityResolutionCodec: Codec.AsObject[IdentityResolution] =

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.logback
 import ch.qos.logback.classic.spi.{ILoggingEvent, ThrowableProxyUtil}
 import ch.qos.logback.core.LayoutBase
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 class JsonLayout extends LayoutBase[ILoggingEvent] {
   override def doLayout(event: ILoggingEvent): String = {

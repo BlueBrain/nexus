@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
-import doobie._
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 
 import scala.concurrent.duration.FiniteDuration
@@ -38,7 +38,7 @@ object EphemeralStateStore {
   ): EphemeralStateStore[Id, S] =
     new EphemeralStateStore[Id, S] {
 
-      import IriInstances._
+      import IriInstances.*
       implicit val putId: Put[Id]   = serializer.putId
       implicit val getValue: Get[S] = serializer.getValue
       implicit val putValue: Put[S] = serializer.putValue

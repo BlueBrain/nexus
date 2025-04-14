@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Priority
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.PriorityAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import doobie.syntax.all._
+import doobie.syntax.all.*
 
 trait ValidatePriority {
 

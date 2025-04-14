@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocumen
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -85,7 +85,7 @@ object GraphAnalyticsResult {
       new Index(project, id, remoteContexts, rev, true, types, createdAt, createdBy, updatedAt, updatedBy, None)
 
     implicit val encoder: Encoder[Index] = Encoder.instance { i =>
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       Json
         .obj(
           keywords.id      := i.id,

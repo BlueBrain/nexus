@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IllegalEndpointFormat, IllegalGrantTypeFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{GrantType, RealmRejection, WellKnown}
 import com.nimbusds.jose.jwk.{JWK, KeyType}
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.*
 import io.circe.{CursorOp, Decoder, Json}
 
 import scala.util.Try
@@ -30,7 +30,7 @@ object WellKnownResolver {
     * Constructs a WellKnown instance from an uri
     */
   def apply(fetch: Uri => IO[Json])(configUri: Uri): IO[WellKnown] = {
-    import GrantType.Snake._
+    import GrantType.Snake.*
 
     def issuer(json: Json): Either[RealmRejection, String] =
       json.hcursor

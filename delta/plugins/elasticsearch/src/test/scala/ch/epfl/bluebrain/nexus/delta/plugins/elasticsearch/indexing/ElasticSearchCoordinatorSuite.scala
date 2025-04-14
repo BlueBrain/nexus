@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
@@ -25,12 +25,12 @@ import io.circe.Json
 import munit.AnyFixture
 
 import java.time.Instant
-import scala.collection.mutable.{Set => MutableSet}
-import scala.concurrent.duration._
+import scala.collection.mutable.Set as MutableSet
+import scala.concurrent.duration.*
 
 class ElasticSearchCoordinatorSuite extends NexusSuite with SupervisorSetup.Fixture with CirceLiteral with Fixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(supervisor)
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 

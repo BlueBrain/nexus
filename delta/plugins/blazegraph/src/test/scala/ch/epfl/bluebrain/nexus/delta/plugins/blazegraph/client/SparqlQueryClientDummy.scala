@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.http.scaladsl.model.HttpHeader
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy.bNode
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.*
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery

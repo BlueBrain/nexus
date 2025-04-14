@@ -10,7 +10,7 @@ import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * Allow to define different transactors (and connection pools) for the different query purposes

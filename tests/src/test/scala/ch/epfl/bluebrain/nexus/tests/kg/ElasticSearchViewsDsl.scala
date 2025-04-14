@@ -10,7 +10,7 @@ import io.circe.Json
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 final class ElasticSearchViewsDsl(deltaClient: HttpClient) extends CirceUnmarshalling with CirceLiteral with Matchers {
 

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import munit.AfterEach
 import munit.catseffect.IOFixture
 

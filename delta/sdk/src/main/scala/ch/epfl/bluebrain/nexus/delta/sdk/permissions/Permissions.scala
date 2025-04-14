@@ -4,11 +4,11 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent.*
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}

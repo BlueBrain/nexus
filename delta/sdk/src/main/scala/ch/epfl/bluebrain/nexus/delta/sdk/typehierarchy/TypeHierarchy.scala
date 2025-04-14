@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchyComman
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchyEvent.{TypeHierarchyCreated, TypeHierarchyUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchyRejection.{IncorrectRev, RevisionNotFound, TypeHierarchyAlreadyExists, TypeHierarchyDoesNotExist}
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.{TypeHierarchyCommand, TypeHierarchyEvent, TypeHierarchyRejection, TypeHierarchyState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, GlobalEventLog, StateMachine, Transactors}

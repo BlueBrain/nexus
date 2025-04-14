@@ -69,14 +69,14 @@ class ResourceHistorySpec extends BaseIntegrationSpec {
     "succeed on a resource for a user with access" in eventually {
       deltaClient.get[Json](s"/history/resources/$project/$encodedResourceId", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        val expected = jsonContentOf("resources/history-resource.json", mapping: _*)
+        val expected = jsonContentOf("resources/history-resource.json", mapping*)
         filterInstantField(json) shouldEqual expected
       }
     }
 
     "succeed on a file for a user with access" in eventually {
       deltaClient.get[Json](s"/history/resources/$project/$encodedFileId", Rick) { (json, response) =>
-        val expected = jsonContentOf("resources/history-file.json", mapping: _*)
+        val expected = jsonContentOf("resources/history-file.json", mapping*)
         response.status shouldEqual StatusCodes.OK
         filterInstantField(json) shouldEqual expected
       }

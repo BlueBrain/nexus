@@ -8,10 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, OrganizationsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{orgs => orgsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.orgs as orgsPermissions
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -161,7 +161,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
 
     def expectedResults(results: Json*): Json =
       json"""{"@context": ["${contexts.metadata}", "${contexts.organizations}", "${contexts.search}"], "_total": ${results.size}}""" deepMerge
-        Json.obj("_results" -> Json.arr(results: _*))
+        Json.obj("_results" -> Json.arr(results*))
 
     "list organizations" in {
 
@@ -364,7 +364,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json =
+  ): Json        =
     jsonContentOf(
       "organizations/org-route-metadata-response.json",
       "rev"        -> rev,

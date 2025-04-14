@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.client.RequestBuilding._
+import akka.http.scaladsl.client.RequestBuilding.*
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes.*
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import cats.data.NonEmptyList
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.Handlebars
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlResultsJson
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 
 import scala.reflect.ClassTag
 
@@ -89,7 +89,7 @@ final class RDF4JClient(client: HttpClient, endpoint: Uri, repositoryTemplate: S
     implicit val sparqlQueryMarshaller: ToEntityMarshaller[SparqlQuery] =
       Marshaller.StringMarshaller.wrap(`application/sparql-query`)(_.value)
     val req                                                             = Post(queryEndpoint(namespace), q)
-      .withHeaders(accept(mediaTypes.toList), additionalHeaders: _*)
+      .withHeaders(accept(mediaTypes.toList), additionalHeaders*)
       .withHttpCredentials
     client.fromEntityTo[A](req).adaptError { case e: HttpClientError =>
       WrappedHttpClientError(e)

@@ -7,14 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.literal.JsonStringContext
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, Json, JsonObject}
 
 final case class QueryBuilder private[client] (private val query: JsonObject) {
@@ -33,7 +33,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     * @param page
     *   the pagination information
     */
-  def withPage(page: Pagination): QueryBuilder    =
+  def withPage(page: Pagination): QueryBuilder =
     page match {
       case FromPagination(from, size)      => copy(query.add("from", from.asJson).add("size", size.asJson))
       case SearchAfterPagination(sa, size) => copy(query.add(searchAfter, sa.asJson).add("size", size.asJson))
@@ -59,8 +59,8 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
       Nil
     } else {
       typeOperator match {
-        case TypeOperator.And => List(and(terms: _*))
-        case TypeOperator.Or  => List(or(terms: _*))
+        case TypeOperator.And => List(and(terms*))
+        case TypeOperator.Or  => List(or(terms*))
       }
     }
   }
@@ -70,7 +70,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     */
   def withFilters(params: ResourcesSearchParams, projects: Set[ProjectRef])(implicit baseUri: BaseUri): QueryBuilder = {
     val (includeTypes, excludeTypes) = params.types.partition(_.include)
-    val projectsTerm                 = or(projects.map { project => term("_project", project) }.toSeq: _*)
+    val projectsTerm                 = or(projects.map { project => term("_project", project) }.toSeq*)
     QueryBuilder(
       query deepMerge queryPayload(
         mustTerms = typesTerms(params.typeOperator, includeTypes) ++
@@ -95,7 +95,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     )
   }
 
-  private def or(terms: JsonObject*)  =
+  private def or(terms: JsonObject*) =
     JsonObject("bool" -> Json.obj("should" -> terms.asJson))
 
   private def and(terms: JsonObject*) =
@@ -134,7 +134,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   }
 
   private def range(k: String, timeRange: TimeRange): Option[JsonObject] = {
-    import TimeRange._
+    import TimeRange.*
     def range(value: Json) = Some(JsonObject("range" -> Json.obj(k -> value)))
     timeRange match {
       case Anytime             => None
@@ -144,7 +144,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     }
   }
 
-  private def term[A: Encoder](k: String, value: A): JsonObject             =
+  private def term[A: Encoder](k: String, value: A): JsonObject =
     JsonObject("term" -> Json.obj(k -> value.asJson))
 
   private def terms[A: Encoder](k: String, values: Iterable[A]): JsonObject =

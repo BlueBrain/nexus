@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel
 
 import cats.effect.IO
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import org.typelevel.log4cats.{Logger => Log4CatsLogger, LoggerName}
+import org.typelevel.log4cats.{Logger as Log4CatsLogger, LoggerName}
 
 import scala.reflect.{classTag, ClassTag}
 

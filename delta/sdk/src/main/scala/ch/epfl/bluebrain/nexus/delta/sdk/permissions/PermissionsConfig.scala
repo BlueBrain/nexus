@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
-import pureconfig.generic.semiauto._
-import cats.implicits._
+import pureconfig.generic.semiauto.*
+import cats.implicits.*
 
 /**
   * The permissions module config.

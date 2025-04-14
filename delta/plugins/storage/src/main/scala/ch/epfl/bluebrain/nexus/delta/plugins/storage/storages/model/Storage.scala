@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, Json, JsonObject}
 
 sealed trait Storage extends Product with Serializable {
@@ -99,7 +99,7 @@ object Storage {
   implicit private val storageMetadataEncoder: Encoder.AsObject[Metadata] =
     Encoder.encodeJsonObject.contramapObject(meta => JsonObject("_algorithm" -> meta.algorithm.asJson))
 
-  implicit val storageMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
+  implicit val storageMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.storagesMetadata))
 
   implicit val storageOrderingFields: OrderingFields[Storage] =

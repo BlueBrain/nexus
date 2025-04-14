@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.Decoder.Result
-import io.circe._
+import io.circe.*
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
-import cats.implicits._
+import cats.implicits.*
 
 /**
   * Parent type for unique identities as recognized by the system. A client usually has multiple identities with the

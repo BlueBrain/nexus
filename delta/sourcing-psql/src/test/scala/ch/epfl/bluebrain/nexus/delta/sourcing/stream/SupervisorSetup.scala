@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.catseffect.IOFixture
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 final case class SupervisorSetup(supervisor: Supervisor, projections: Projections, projectionErrors: ProjectionErrors)
 

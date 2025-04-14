@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreamingSuite.Release
@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.StateTombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, DecodingFailure, Json}
@@ -32,7 +32,7 @@ import java.time.Instant
 
 class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private val qc = QueryConfig(2, RefreshStrategy.Stop)
 
@@ -92,23 +92,23 @@ class ElemStreamingSuite extends NexusSuite with Doobie.Fixture {
   test("Setting up the state log") {
     {
       for {
-        _ <- prStore.save(prState11) //1
-        _ <- prStore.save(prState12) //2
-        _ <- releaseStore.save(release11) //3
-        _ <- prStore.save(prState21) //4
-        _ <- prStore.save(prState34) //5
-        _ <- prStore.save(prState11, customTag) //6
-        _ <- prStore.save(prState13) //7
-        _ <- releaseStore.save(release12) //8
-        _ <- releaseStore.save(release12, customTag) //9
-        _ <- prStore.save(prState13, customTag) //10
-        _ <- tombstoneStore.save(PullRequest.entityType, prState13, customTag) //11
-        _ <- prStore.save(prState12, customTag) //12
-        _ <- releaseStore.save(release21) //13
-        _ <- tombstoneStore.save(PullRequest.entityType, prState11, customTag) //14
-        _ <- prStore.save(prState14) //15
-        _ <- tombstoneStore.save(Release.entityType, release12, customTag) //16
-        _ <- prStore.save(prState14, customTag) //17
+        _ <- prStore.save(prState11)                                           // 1
+        _ <- prStore.save(prState12)                                           // 2
+        _ <- releaseStore.save(release11)                                      // 3
+        _ <- prStore.save(prState21)                                           // 4
+        _ <- prStore.save(prState34)                                           // 5
+        _ <- prStore.save(prState11, customTag)                                // 6
+        _ <- prStore.save(prState13)                                           // 7
+        _ <- releaseStore.save(release12)                                      // 8
+        _ <- releaseStore.save(release12, customTag)                           // 9
+        _ <- prStore.save(prState13, customTag)                                // 10
+        _ <- tombstoneStore.save(PullRequest.entityType, prState13, customTag) // 11
+        _ <- prStore.save(prState12, customTag)                                // 12
+        _ <- releaseStore.save(release21)                                      // 13
+        _ <- tombstoneStore.save(PullRequest.entityType, prState11, customTag) // 14
+        _ <- prStore.save(prState14)                                           // 15
+        _ <- tombstoneStore.save(Release.entityType, release12, customTag)     // 16
+        _ <- prStore.save(prState14, customTag)                                // 17
       } yield ()
     }.transact(xas.write)
   }
@@ -265,7 +265,7 @@ object ElemStreamingSuite {
     val entityType: EntityType = EntityType("release")
 
     val serializer: Serializer[Iri, Release] = {
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       implicit val configuration: Configuration   = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[Release] = deriveConfiguredCodec[Release]
       Serializer()

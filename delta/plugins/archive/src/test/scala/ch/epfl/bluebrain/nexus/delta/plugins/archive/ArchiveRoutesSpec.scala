@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -51,7 +51,7 @@ import io.circe.Json
 import io.circe.syntax.EncoderOps
 
 import java.util.UUID
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveHelpers {
 
@@ -115,7 +115,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
   private val generatedId = project.base.iri / uuid.toString
 
-  val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[_, _]]] = {
+  val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[?, ?]]] = {
     case (`fileId`, `projectRef`) =>
       IO.pure(Some(JsonLdContent(file, file.value.asJson, None)))
     case _                        =>
@@ -167,7 +167,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
       createdBy: Subject = subject,
       updatedBy: Subject = subject,
       expiresInSeconds: Long = 18000L
-  ): Json =
+  ): Json          =
     jsonContentOf(
       "responses/archive-metadata-response.json",
       "project"          -> project,

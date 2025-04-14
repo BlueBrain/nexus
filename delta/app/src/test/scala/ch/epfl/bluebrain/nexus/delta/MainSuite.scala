@@ -32,7 +32,7 @@ class MainSuite extends NexusSuite with MainSuite.Fixture {
   private val pluginsParentPath  = Paths.get("target/plugins").toAbsolutePath
   private val pluginLoaderConfig = PluginLoaderConfig(pluginsParentPath.toString)
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(main)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(main)
 
   test("ensure the plugin jar files have been copied correctly") {
     if (Files.list(pluginsParentPath).toArray.length == 0)
@@ -90,7 +90,7 @@ object MainSuite {
           "app.defaults.database.access.username"            -> PostgresUser,
           "app.default.database.access.password"             -> PostgresPassword,
           "plugins.elasticsearch.indexing-enabled"           -> "false",
-          //TODO Investigate how to remove this property from the config
+          // TODO Investigate how to remove this property from the config
           "plugins.elasticsearch.disable-metrics-projection" -> "true",
           "plugins.graph-analytics.enabled"                  -> "true",
           "plugins.graph-analytics.indexing-enabled"         -> "false",

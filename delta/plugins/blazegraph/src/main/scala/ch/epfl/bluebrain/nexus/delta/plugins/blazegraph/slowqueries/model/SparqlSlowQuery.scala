@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import doobie.Read
 import io.circe.Json
-import doobie.postgres.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import doobie.postgres.implicits.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 
 import java.time.Instant
 import scala.concurrent.duration.{DurationLong, FiniteDuration}

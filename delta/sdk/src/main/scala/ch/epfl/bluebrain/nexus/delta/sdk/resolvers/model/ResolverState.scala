@@ -95,8 +95,8 @@ final case class ResolverState(
 object ResolverState {
 
   implicit val serializer: Serializer[Iri, ResolverState] = {
-    import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.Database._
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.Database.*
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration                      = Serializer.circeConfiguration
     implicit val resolverValueCodec: Codec.AsObject[ResolverValue] = deriveConfiguredCodec[ResolverValue]
     implicit val codec: Codec.AsObject[ResolverState]              = deriveConfiguredCodec[ResolverState]

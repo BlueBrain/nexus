@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas => nxvschemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas as nxvschemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project

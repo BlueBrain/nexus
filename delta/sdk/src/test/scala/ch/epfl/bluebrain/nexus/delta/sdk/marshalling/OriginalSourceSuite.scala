@@ -62,7 +62,7 @@ class OriginalSourceSuite extends NexusSuite with CirceLiteral {
       val obtainedMetadata = obj.filterKeys(_.startsWith("_"))
       assertEquals(obtainedMetadata, metadataJson)
       val payloadData      = obj.filterKeys { k => !k.startsWith("_") && !k.startsWith("@") }
-      assertEquals(payloadData, JsonObject(payloadFields: _*))
+      assertEquals(payloadData, JsonObject(payloadFields*))
     }
 
     result.asJson.arrayOrObject(

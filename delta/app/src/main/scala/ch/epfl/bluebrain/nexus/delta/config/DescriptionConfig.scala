@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert

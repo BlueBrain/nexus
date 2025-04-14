@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion.model
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport.Stage
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import doobie._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
+import doobie.*
 import io.circe.{Codec, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -40,7 +40,7 @@ object ProjectDeletionReport {
 
   implicit val projectDeletionReportCodec: Codec[ProjectDeletionReport] = {
     implicit val config: Configuration = Configuration.default
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     deriveConfiguredCodec[ProjectDeletionReport]
   }
 

@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpTimeoutError}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RdfMediaTypes}
@@ -19,16 +19,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, IriFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import io.circe.parser.decode
-import fs2._
+import fs2.*
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * Collection of functions for interacting with a remote delta instance.
@@ -150,7 +150,7 @@ object DeltaClient {
 
     private def typeQuery(restriction: IriFilter) = restriction match {
       case IriFilter.None           => Query.Empty
-      case IriFilter.Include(types) => Query(types.map(t => "type" -> t.toString).toList: _*)
+      case IriFilter.Include(types) => Query(types.map(t => "type" -> t.toString).toList*)
     }
 
     private def elemAddress(source: RemoteProjectSource) =

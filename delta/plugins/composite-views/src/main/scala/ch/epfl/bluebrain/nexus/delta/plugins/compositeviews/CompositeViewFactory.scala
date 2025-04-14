@@ -67,7 +67,7 @@ object CompositeViewFactory {
 
   private[compositeviews] def create(
       input: CompositeViewSourceFields
-  )(implicit projectBase: ProjectBase, uuidF: UUIDF)                    =
+  )(implicit projectBase: ProjectBase, uuidF: UUIDF) =
     generate.map { case (uuid, id) =>
       val source = input.toSource(uuid, id)
       source.id -> source

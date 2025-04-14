@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import io.circe.Json
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class DefaultIndexingActionSuite extends NexusSuite with Fixtures {
 

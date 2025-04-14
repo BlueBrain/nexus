@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.GraphResourceToDocument
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -168,7 +168,7 @@ object CompositeViewProjection {
 
   implicit final val projectionEncoder: Encoder.AsObject[CompositeViewProjection] = {
     import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
+    import io.circe.generic.extras.semiauto.*
     implicit val config: Configuration = Configuration(
       transformMemberNames = {
         case "id"  => keywords.id

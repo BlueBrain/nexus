@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingView
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
@@ -27,7 +27,7 @@ import fs2.Stream
 import io.circe.Json
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with Fixtures {
 
@@ -166,7 +166,7 @@ class ElasticSearchIndexingActionSuite extends NexusSuite with CirceLiteral with
     indexingAction
       .projections(project, elem)
       .fold(emptyAcc) {
-        case (acc, s: SuccessElem[_]) => acc.success(s.id)
+        case (acc, s: SuccessElem[?]) => acc.success(s.id)
         case (acc, d: DroppedElem)    => acc.drop(d.id)
         case (acc, f: FailedElem)     => acc.failed(f.id)
       }

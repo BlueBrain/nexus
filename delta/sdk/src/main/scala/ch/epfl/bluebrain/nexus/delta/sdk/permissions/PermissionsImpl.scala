@@ -5,11 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{entityType, labelId}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsImpl.PermissionsLog
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand.*
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection.{RevisionNotFound, UnexpectedState}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 

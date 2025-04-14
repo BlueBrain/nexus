@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
 import shapeless.Typeable
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.{FiniteDuration, *}
 
 final class NoopSink[A: Typeable] extends Sink {
 

@@ -79,7 +79,7 @@ object Arithmetic {
     }
 
     val serializer: Serializer[Iri, ArithmeticEvent] = {
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       implicit val configuration: Configuration           = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[ArithmeticEvent] = deriveConfiguredCodec[ArithmeticEvent]
       Serializer()
@@ -116,7 +116,7 @@ object Arithmetic {
   object Total {
 
     val serializer: Serializer[Iri, Total] = {
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[Total] = deriveConfiguredCodec[Total]
       Serializer()

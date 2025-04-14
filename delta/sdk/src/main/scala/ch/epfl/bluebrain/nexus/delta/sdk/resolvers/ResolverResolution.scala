@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{DeprecationCheck, ResolverResolutionResult}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.{CrossProjectResolver, InProjectResolver}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.{ResolverFailedReport, ResolverReport, ResolverSuccessReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverRejection, ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
@@ -100,7 +100,7 @@ final class ResolverResolution[R](
     */
   def resolve(ref: ResourceRef, projectRef: ProjectRef, resolverId: Iri)(implicit
       caller: Caller
-  ): IO[Either[ResolverReport, R]]   =
+  ): IO[Either[ResolverReport, R]] =
     resolveReport(ref, projectRef, resolverId)
       .map { case (report, resource) => resource.toRight(report) }
 
@@ -157,7 +157,7 @@ final class ResolverResolution[R](
       ref: ResourceRef,
       resolver: CrossProjectResolver
   )(implicit caller: Caller): IO[ResolverResolutionResult[R]] = {
-    import resolver.value._
+    import resolver.value.*
 
     def fetchInProject(p: ProjectRef) = fetch(ref, p).flatMap(
       IO.fromOption(_)(ResolutionFetchRejection(ref, p))
@@ -274,10 +274,10 @@ object ResolverResolution {
   def apply(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      fetch: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]],
+      fetch: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?, ?]]],
       excludeDeprecated: Boolean
-  ): ResolverResolution[JsonLdContent[_, _]] = {
-    val deprecationCheck = DeprecationCheck[JsonLdContent[_, _]](excludeDeprecated, _.resource.deprecated)
+  ): ResolverResolution[JsonLdContent[?, ?]] = {
+    val deprecationCheck = DeprecationCheck[JsonLdContent[?, ?]](excludeDeprecated, _.resource.deprecated)
     apply(aclCheck, resolvers, fetch, _.resource.types, Permissions.resources.read, deprecationCheck)
   }
 

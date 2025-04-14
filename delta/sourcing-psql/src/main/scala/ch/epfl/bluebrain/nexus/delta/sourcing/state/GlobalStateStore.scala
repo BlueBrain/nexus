@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
-import doobie._
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import doobie.util.transactor.Transactor
 import fs2.Stream
 
@@ -65,7 +65,7 @@ object GlobalStateStore {
       xas: Transactors
   ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
-    import IriInstances._
+    import IriInstances.*
     implicit val putId: Put[Id]   = serializer.putId
     implicit val getValue: Get[S] = serializer.getValue
     implicit val putValue: Put[S] = serializer.putValue
@@ -126,7 +126,7 @@ object GlobalStateStore {
         xas
       ).map { case (value, _) => value }
 
-    override def currentStates(offset: Offset): Stream[IO, S]                    = states(offset, RefreshStrategy.Stop)
+    override def currentStates(offset: Offset): Stream[IO, S] = states(offset, RefreshStrategy.Stop)
   }
 
 }

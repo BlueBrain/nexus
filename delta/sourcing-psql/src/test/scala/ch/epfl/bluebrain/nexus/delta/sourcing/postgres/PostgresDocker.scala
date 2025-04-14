@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.PostgresDocker._
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.PostgresDocker.*
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
-import scala.concurrent.duration._
-import scala.jdk.DurationConverters._
+import scala.concurrent.duration.*
+import scala.jdk.DurationConverters.*
 
 trait PostgresDocker extends BeforeAndAfterAll { this: Suite =>
 

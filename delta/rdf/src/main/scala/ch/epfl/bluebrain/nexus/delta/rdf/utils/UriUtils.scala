@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.Uri.Path.Slash
-import cats.syntax.all._
+import cats.syntax.all.*
 
 import scala.util.Try
 

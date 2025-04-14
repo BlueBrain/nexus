@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.Order
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import io.circe.{Decoder, Encoder}

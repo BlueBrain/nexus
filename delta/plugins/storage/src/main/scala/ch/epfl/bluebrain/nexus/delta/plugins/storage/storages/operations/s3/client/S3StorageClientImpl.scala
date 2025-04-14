@@ -2,24 +2,24 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.cli
 
 import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{PutObjectRequest, _}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{PutObjectRequest, *}
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
 import fs2.aws.s3.S3
 import fs2.aws.s3.models.Models.{BucketName, FileKey, PartSizeMB}
-import fs2.interop.reactivestreams.{PublisherOps, _}
+import fs2.interop.reactivestreams.{PublisherOps, *}
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import org.reactivestreams.Subscriber
 import software.amazon.awssdk.core.async.AsyncRequestBody
-import software.amazon.awssdk.services.s3.model._
+import software.amazon.awssdk.services.s3.model.*
 
 import java.nio.ByteBuffer
 import java.util.Optional
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) extends S3StorageClient {
 
@@ -176,7 +176,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       .evalMap { publisher =>
         val body = new AsyncRequestBody {
           override def contentLength(): Optional[java.lang.Long]       = Optional.of(put.contentLength)
-          override def subscribe(s: Subscriber[_ >: ByteBuffer]): Unit = publisher.subscribe(s)
+          override def subscribe(s: Subscriber[? >: ByteBuffer]): Unit = publisher.subscribe(s)
         }
         client.putObject(put.asAws, body)
       }

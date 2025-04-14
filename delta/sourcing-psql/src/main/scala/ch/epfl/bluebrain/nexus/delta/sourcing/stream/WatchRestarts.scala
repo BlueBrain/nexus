@@ -33,7 +33,7 @@ object WatchRestarts {
 
   private def dropped(offset: Offset, restart: ProjectionRestart): Elem.DroppedElem = success(offset, restart).dropped
 
-  //FIXME: Execute watch restarts so that they don't require to be mapped as elems
+  // FIXME: Execute watch restarts so that they don't require to be mapped as elems
   def apply(supervisor: Supervisor, projections: Projections): IO[ExecutionStatus] = {
     supervisor.run(
       CompiledProjection.fromStream(

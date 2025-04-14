@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.partition
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import doobie.ConnectionIO
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.util.fragment.Fragment
 
 /**
@@ -134,10 +134,13 @@ object DatabasePartitioner {
                          | PARTITION BY LIST (project);
                          |""".stripMargin)
 
-    private def createProjectPartition(mainTable: String, project: ProjectRef): Fragment =
+    private def createProjectPartition(mainTable: String, project: ProjectRef): Fragment = {
+      val orgPart = orgPartition(mainTable, project.organization)
       Fragment.const(s"""| CREATE TABLE IF NOT EXISTS ${projectPartition(mainTable, project)}
-                         | PARTITION OF ${orgPartition(mainTable, project.organization)} FOR VALUES IN ('${project.project}')
+                         | PARTITION OF $orgPart
+                         | FOR VALUES IN ('${project.project}')
                          |""".stripMargin)
+    }
 
     private def projectPartition(mainTable: String, projectRef: ProjectRef) =
       s"${mainTable}_${ProjectRef.hash(projectRef)}"

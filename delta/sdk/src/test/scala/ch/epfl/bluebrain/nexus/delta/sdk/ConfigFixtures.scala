@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait ConfigFixtures {
 

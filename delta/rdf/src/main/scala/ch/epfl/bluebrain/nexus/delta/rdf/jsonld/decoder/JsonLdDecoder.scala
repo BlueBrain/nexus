@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
 import cats.Order
 import cats.data.{NonEmptyList, NonEmptySet}
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import cats.implicits.*
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -107,10 +107,10 @@ object JsonLdDecoder {
   implicit val floatJsonLdDecoder: JsonLdDecoder[Float]     = _.getOr(keywords.value, _.toFloatOption)
   implicit val booleanJsonLdDecoder: JsonLdDecoder[Boolean] = _.getOr(keywords.value, _.toBooleanOption)
 
-  implicit val instantJsonLdDecoder: JsonLdDecoder[Instant]                    = _.getValueTry(Instant.parse)
-  implicit val uuidJsonLdDecoder: JsonLdDecoder[UUID]                          = _.getValueTry(UUID.fromString)
-  implicit val durationJsonLdDecoder: JsonLdDecoder[Duration]                  = _.getValueTry(Duration.apply)
-  implicit val finiteDurationJsonLdDecoder: JsonLdDecoder[FiniteDuration]      =
+  implicit val instantJsonLdDecoder: JsonLdDecoder[Instant]               = _.getValueTry(Instant.parse)
+  implicit val uuidJsonLdDecoder: JsonLdDecoder[UUID]                     = _.getValueTry(UUID.fromString)
+  implicit val durationJsonLdDecoder: JsonLdDecoder[Duration]             = _.getValueTry(Duration.apply)
+  implicit val finiteDurationJsonLdDecoder: JsonLdDecoder[FiniteDuration] =
     _.getValue(str => Try(Duration(str)).toOption.collectFirst { case f: FiniteDuration => f })
 
   implicit def vectorJsonLdDecoder[A: JsonLdDecoder]: JsonLdDecoder[Vector[A]] = listJsonLdDecoder[A].map(_.toVector)
@@ -123,7 +123,7 @@ object JsonLdDecoder {
   ): JsonLdDecoder[NonEmptySet[A]] =
     setJsonLdDecoder[A].flatMap { s =>
       s.toList match {
-        case ::(head, tail) => Right(NonEmptySet.of(head, tail: _*))
+        case ::(head, tail) => Right(NonEmptySet.of(head, tail*))
         case Nil            => Left(ParsingFailure(s"Expected a NonEmptySet[${A.simpleName}], but the current set is empty"))
       }
     }

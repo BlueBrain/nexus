@@ -4,7 +4,7 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig._
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.*
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, SearchRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution

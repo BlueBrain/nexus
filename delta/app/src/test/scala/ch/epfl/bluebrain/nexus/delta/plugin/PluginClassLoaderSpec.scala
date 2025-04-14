@@ -17,7 +17,7 @@ class PluginClassLoaderSpec extends BaseSpec with BeforeAndAfterAll {
   )
 
   override def beforeAll(): Unit = {
-    //make sure that the jar file exists in expected place
+    // make sure that the jar file exists in expected place
     val _ = jarPath.toFile.exists() shouldEqual true
   }
 

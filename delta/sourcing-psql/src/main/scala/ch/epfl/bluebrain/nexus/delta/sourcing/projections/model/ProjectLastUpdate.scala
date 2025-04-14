@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import doobie.postgres.implicits._
+import doobie.postgres.implicits.*
 import doobie.Read
 
 import java.time.Instant

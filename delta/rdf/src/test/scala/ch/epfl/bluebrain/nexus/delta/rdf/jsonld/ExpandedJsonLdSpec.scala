@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -149,7 +149,7 @@ class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers 
           iri"http://localhost/d" -> ContextValue(json"""["http://localhost/e", {"d": "http://localhost/d"} ]"""),
           iri"http://localhost/e" -> ContextValue(json"""["http://localhost/c", {"e": "http://localhost/e"} ]""")
         )
-      implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(contexts.toSeq: _*)
+      implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(contexts.toSeq*)
 
       val input =
         json"""{"@context": ["http://localhost/c", {"a": "http://localhost/a"} ], "a": "A", "c": "C", "d": "D"}"""

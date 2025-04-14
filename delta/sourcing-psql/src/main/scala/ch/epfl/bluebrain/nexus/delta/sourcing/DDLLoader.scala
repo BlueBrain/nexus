@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.PartitionStrategy
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.util.fragment.Fragment
 import io.github.classgraph.ClassGraph
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object DDLLoader {
 

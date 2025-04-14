@@ -51,7 +51,7 @@ object Message {
   object MessageState {
 
     val serializer: Serializer[Iri, MessageState] = {
-      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+      import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
       implicit val configuration: Configuration        = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[MessageState] = deriveConfiguredCodec[MessageState]
       Serializer()

@@ -4,17 +4,17 @@ import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
-import cats.implicits._
+import cats.effect.unsafe.implicits.*
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.{AkkaSource, Logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.*
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.OriginalSource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ResourceShifts}
@@ -86,7 +86,7 @@ object ArchiveDownload {
     */
   def apply(
       aclCheck: AclCheck,
-      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]],
+      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?, ?]]],
       fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileResponse],
       fileSelf: FileSelf
   )(implicit
@@ -148,7 +148,7 @@ object ArchiveDownload {
 
       private def asSourceList(
           list: List[(ArchiveMetadata, IO[AkkaSource])]
-      )                                                                                                            =
+      ) =
         list.map { case (metadata, source) =>
           metadata -> Source.lazyFutureSource(() => source.unsafeToFuture())
         }
@@ -194,8 +194,7 @@ object ArchiveDownload {
             }
             Option((archiveMetadata, contentTask))
           }
-        if (ignoreNotFound) entry.recover { case _: ResourceNotFound => None }
-        else entry
+        if (ignoreNotFound) entry.recover { case _: ResourceNotFound => None } else entry
       }
 
       private def pathOf(
@@ -218,8 +217,7 @@ object ArchiveDownload {
           val metadata = Zip.metadata(path)
           Option((metadata, IO.pure(Source.single(content))))
         }
-        if (ignoreNotFound) archiveEntry.recover { case _: ResourceNotFound => None }
-        else archiveEntry
+        if (ignoreNotFound) archiveEntry.recover { case _: ResourceNotFound => None } else archiveEntry
       }
 
       private def resourceRefToByteString(
@@ -237,7 +235,7 @@ object ArchiveDownload {
       }
 
       private def valueToByteString[A](
-          value: JsonLdContent[A, _],
+          value: JsonLdContent[A, ?],
           repr: ResourceRepresentation
       ): IO[ByteString] = {
         implicit val encoder: JsonLdEncoder[A] = value.encoder

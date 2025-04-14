@@ -25,7 +25,7 @@ object IriEncoder {
   def jsonEncoder[A](implicit base: BaseUri, iriEncoder: IriEncoder[A]): Encoder[A] =
     Encoder.encodeJson.contramap(iriEncoder(_).asJson)
 
-  //It does not matter what the base is for ordering
+  // It does not matter what the base is for ordering
   private val dummyValue: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   /**

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 import cats.effect.IO
 import cats.effect.std.Env
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 
 trait EventMetricsProjection
@@ -43,7 +43,7 @@ object EventMetricsProjection {
     *   ScopedEventMetricEncoder are silently ignored.
     */
   def apply(
-      metricEncoders: Set[ScopedEventMetricEncoder[_]],
+      metricEncoders: Set[ScopedEventMetricEncoder[?]],
       supervisor: Supervisor,
       projections: Projections,
       eventMetrics: EventMetrics,
@@ -58,7 +58,7 @@ object EventMetricsProjection {
       MultiDecoder(metricEncoders.map { encoder => encoder.entityType -> encoder.toMetric }.toMap)
 
     // define how to get metrics from a given offset
-    val metrics                                                  = (offset: Offset) => EventStreaming.fetchScoped(Scope.root, allEntityTypes, offset, queryConfig, xas)
+    val metrics = (offset: Offset) => EventStreaming.fetchScoped(Scope.root, allEntityTypes, offset, queryConfig, xas)
 
     val sink = new EventMetricsSink(eventMetrics, batchConfig.maxElements, batchConfig.maxInterval)
 

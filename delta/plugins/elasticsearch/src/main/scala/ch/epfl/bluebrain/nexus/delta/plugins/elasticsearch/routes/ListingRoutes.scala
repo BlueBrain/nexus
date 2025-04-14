@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.server._
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
+import akka.http.scaladsl.server.*
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{ElasticSearchQueryError, MainIndexQuery, MainIndexRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
@@ -39,7 +39,7 @@ class ListingRoutes(
     with ElasticSearchViewsDirectives
     with RdfMarshalling {
 
-  import schemeDirectives._
+  import schemeDirectives.*
 
   def routes: Route = concat(genericResourcesRoutes, resourcesListings)
 
@@ -150,7 +150,7 @@ class ListingRoutes(
           )
         }
       }
-    }.toSeq: _*)
+    }.toSeq*)
 
   private def list(request: MainIndexRequest, scope: Scope)(implicit caller: Caller): Route =
     (get & paginated & extractUri) { (page, uri) =>

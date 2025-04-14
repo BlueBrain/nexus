@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json}
 
 /**

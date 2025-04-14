@@ -4,11 +4,11 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.SparqlSlowQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import doobie.syntax.all._
-import doobie.postgres.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import io.circe.syntax.EncoderOps
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
 
 import java.time.Instant
 

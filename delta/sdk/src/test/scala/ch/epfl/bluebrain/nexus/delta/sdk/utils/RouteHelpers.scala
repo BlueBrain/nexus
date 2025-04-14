@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.ETag
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.stream.Materializer
@@ -18,7 +18,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, Suite}
 
 import java.nio.charset.StandardCharsets
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.reflect.ClassTag
 
 trait RouteHelpers extends ScalatestRouteTest with ScalaFutures {

@@ -50,7 +50,7 @@ class MultiResolutionSuite extends NexusSuite with Fixtures {
   private val resourceValue = content(resourceFR, resourceFR.value.source)
   private val schemaValue   = content(resourceFS, resourceFS.value.source)
 
-  def fetch: (ResourceRef, ProjectRef) => Fetch[JsonLdContent[_, _]] =
+  def fetch: (ResourceRef, ProjectRef) => Fetch[JsonLdContent[?, ?]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
         case Latest(`resourceId`)       => IO.pure(Some(resourceValue))

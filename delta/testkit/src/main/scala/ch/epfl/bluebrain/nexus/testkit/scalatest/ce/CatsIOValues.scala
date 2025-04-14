@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import org.scalactic.source
 import org.scalatest.{Assertion, Assertions}
 

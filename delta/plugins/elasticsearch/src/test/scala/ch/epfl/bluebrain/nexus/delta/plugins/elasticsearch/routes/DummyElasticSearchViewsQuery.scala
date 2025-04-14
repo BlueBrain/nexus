@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, 
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.CirceLiteral._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral.*
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 
 import scala.concurrent.duration.FiniteDuration

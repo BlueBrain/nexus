@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.EventTombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import io.circe.Decoder
 import munit.AnyFixture
 
@@ -23,7 +23,7 @@ import java.time.Instant
 
 class EventStreamingSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private lazy val xas = doobie()
 

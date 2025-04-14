@@ -8,13 +8,13 @@ trait CirceLiteral {
 
 final class CirceLiteralOps(private val sc: StringContext) extends AnyVal {
   def json(args: Any*): Json =
-    parser.parse(sc.s(args: _*)) match {
+    parser.parse(sc.s(args*)) match {
       case Right(value) => value
       case Left(err)    => throw new IllegalArgumentException(s"Failed to parse string into json. Details: '$err'")
     }
 
   def jobj(args: Any*): JsonObject = {
-    val result = json(args: _*)
+    val result = json(args*)
     result.asObject match {
       case Some(obj) => obj
       case None      => throw new IllegalArgumentException(s"Failed to convert to json object the json '$result'")

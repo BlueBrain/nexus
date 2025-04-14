@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.model.{ContentRange, EntityStreamSizeException, StatusCodes}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Reject
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import io.circe.syntax.*
 import io.circe.{DecodingFailure, Encoder, JsonObject}
 
 // $COVERAGE-OFF$
@@ -42,7 +42,7 @@ object RdfRejectionHandler {
       .handle { case r: MissingCookieRejection => discardEntityAndForceEmit(r) }
       .handle { case r: MissingFormFieldRejection => discardEntityAndForceEmit(r) }
       .handle { case r: MissingHeaderRejection => discardEntityAndForceEmit(r) }
-      .handle { case r: MissingAttributeRejection[_] => discardEntityAndForceEmit(r) }
+      .handle { case r: MissingAttributeRejection[?] => discardEntityAndForceEmit(r) }
       .handle { case r: InvalidOriginRejection => discardEntityAndForceEmit(r) }
       .handle { case r: MissingQueryParamRejection => discardEntityAndForceEmit(r) }
       .handle { case r: InvalidRequiredValueForQueryParamRejection => discardEntityAndForceEmit(r) }
@@ -50,7 +50,7 @@ object RdfRejectionHandler {
       .handle { case r: TooManyRangesRejection => discardEntityAndForceEmit(r) }
       .handle { case r: CircuitBreakerOpenRejection => discardEntityAndForceEmit(r) }
       .handle { case r: UnsatisfiableRangeRejection => discardEntityAndForceEmit(r) }
-      .handleAll[Reject[_]] {
+      .handleAll[Reject[?]] {
         case Seq(head)                   => head.forceComplete
         case multiple @ Seq(head, _ @_*) => discardEntityAndForceEmit(head.status, multiple)
         case _                           => discardEntityAndForceEmit(StatusCodes.InternalServerError, RejectionExpected)
@@ -106,10 +106,10 @@ object RdfRejectionHandler {
       )
     }
 
-  implicit private val methodRejectionResponseFields: HttpResponseFields[MethodRejection]                       =
+  implicit private val methodRejectionResponseFields: HttpResponseFields[MethodRejection] =
     HttpResponseFields.fromStatusAndHeaders(r => StatusCodes.MethodNotAllowed -> Seq(Allow(r.supported)))
 
-  implicit private val methodSeqRejectionResponseFields: HttpResponseFields[Seq[MethodRejection]]               =
+  implicit private val methodSeqRejectionResponseFields: HttpResponseFields[Seq[MethodRejection]] =
     HttpResponseFields.fromStatusAndHeaders(r => StatusCodes.MethodNotAllowed -> Seq(Allow(r.map(r => r.supported))))
 
   implicit private[marshalling] val authFailedRejectionEncoder: Encoder.AsObject[AuthenticationFailedRejection] =
@@ -131,7 +131,7 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, rejectionMessage)
     }
 
-  implicit private val authFailedRejectionResponseFields: HttpResponseFields[AuthenticationFailedRejection]         =
+  implicit private val authFailedRejectionResponseFields: HttpResponseFields[AuthenticationFailedRejection] =
     HttpResponseFields.fromStatusAndHeaders(r => StatusCodes.Unauthorized -> Seq(`WWW-Authenticate`(r.challenge)))
 
   implicit private val authFailedRejectionSeqResponseFields: HttpResponseFields[Seq[AuthenticationFailedRejection]] =
@@ -428,7 +428,7 @@ object RdfRejectionHandler {
       tpe: Option[String] = None
   ): JsonObject =
     JsonObject.fromIterable(
-      List(keywords.tpe                            -> tpe.getOrElse(ClassUtils.simpleName(value)).asJson) ++
+      List(keywords.tpe -> tpe.getOrElse(ClassUtils.simpleName(value)).asJson) ++
         Option.when(reason.trim.nonEmpty)("reason" -> reason.asJson) ++
         details.collect { case d if d.trim.nonEmpty => "details" -> d.asJson }
     )
@@ -440,7 +440,7 @@ object RdfRejectionHandler {
 
     type ResourceNotFound = ResourceNotFound.type
 
-    private[marshalling] val resourceNotFoundJson                                                  =
+    private[marshalling] val resourceNotFoundJson =
       JsonObject(keywords.tpe -> "ResourceNotFound".asJson, "reason" -> "The requested resource does not exist.".asJson)
 
     implicit private[marshalling] val resourceRejectionEncoder: Encoder.AsObject[ResourceNotFound] =
@@ -454,7 +454,7 @@ object RdfRejectionHandler {
 
     type RejectionExpected = RejectionExpected.type
 
-    private[marshalling] val rejectionRejectedJson                                                  =
+    private[marshalling] val rejectionRejectedJson =
       JsonObject(keywords.tpe -> "RejectionExpected".asJson, "reason" -> "At least one rejection was expected.".asJson)
 
     implicit private[marshalling] val resourceRejectionEncoder: Encoder.AsObject[RejectionExpected] =
@@ -474,7 +474,7 @@ object RdfRejectionHandler {
       case r: MalformedHeaderRejection                   => r.asJsonObject
       case r: MalformedQueryParamRejection               => r.asJsonObject
       case r: ValidationRejection                        => r.asJsonObject
-      case r: MissingAttributeRejection[_]               => r.asJsonObject
+      case r: MissingAttributeRejection[?]               => r.asJsonObject
       case RequestEntityExpectedRejection                => RequestEntityExpectedRejection.asJsonObject
       case ExpectedWebSocketRequestRejection             => ExpectedWebSocketRequestRejection.asJsonObject
       case r: TooManyRangesRejection                     => r.asJsonObject

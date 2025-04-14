@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugin
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
@@ -12,7 +12,7 @@ import io.github.classgraph.ClassGraph
 
 import java.io.{File, FilenameFilter}
 import java.lang.reflect.InvocationTargetException
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /**
   * Class responsible for loading [[PluginDef]] s.
@@ -62,7 +62,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                   }
                 // nothing resolved, pick the first error and return
                 case ((file, error) :: rest, Nil) =>
-                  IO.raiseError(PluginLoadErrors(NonEmptyList.of((file, error), rest: _*)))
+                  IO.raiseError(PluginLoadErrors(NonEmptyList.of((file, error), rest*)))
                 // some new plugins were loaded, but not all, adding the loaded ones and executing another pass
                 case (errors, loaded)             =>
                   IO.delay {
@@ -105,7 +105,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                            }
     } yield pluginDef.map(_ -> pluginClassLoader)
 
-  private def loadPluginDefClasses(loader: ClassLoader)                                                 =
+  private def loadPluginDefClasses(loader: ClassLoader) =
     new ClassGraph()
       .overrideClassLoaders(loader)
       .enableAllInfo()

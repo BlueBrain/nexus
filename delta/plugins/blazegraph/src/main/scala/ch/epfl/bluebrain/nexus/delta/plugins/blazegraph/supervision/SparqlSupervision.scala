@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.SparqlSupervision.SparqlNamespaceTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -51,8 +51,8 @@ object SparqlSupervision {
 
       JsonObject(
         "total"      := value.total,
-        "assigned"   := Json.arr(assigned: _*),
-        "unassigned" := Json.arr(unassigned: _*)
+        "assigned"   := Json.arr(assigned*),
+        "unassigned" := Json.arr(unassigned*)
       )
     }
   }

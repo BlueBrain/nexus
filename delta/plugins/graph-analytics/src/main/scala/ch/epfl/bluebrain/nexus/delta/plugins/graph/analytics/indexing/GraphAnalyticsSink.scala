@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
 import io.circe.JsonObject
-import io.circe.literal._
+import io.circe.literal.*
 import io.circe.syntax.EncoderOps
 import shapeless.Typeable
 
@@ -80,7 +80,7 @@ final class GraphAnalyticsSink(
             val bulkAction = ElasticSearchAction.Index(index, documentId(success), None, g.asJson)
             acc.add(bulkAction).update(g.id, g.types)
         }
-      //TODO: handle correctly the deletion of individual resources when the feature is implemented
+      // TODO: handle correctly the deletion of individual resources when the feature is implemented
       case (acc, _: DroppedElem)                             => acc
       case (acc, _: FailedElem)                              => acc
     }

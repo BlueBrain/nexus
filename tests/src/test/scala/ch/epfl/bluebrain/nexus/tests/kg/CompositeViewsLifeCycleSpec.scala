@@ -44,8 +44,8 @@ final class CompositeViewsLifeCycleSpec extends BaseIntegrationSpec {
         "kg/views/composite/composite-view-lifecycle.json",
         replacements(
           Jerry,
-          values: _*
-        ): _*
+          values*
+        )*
       )
     )
   }

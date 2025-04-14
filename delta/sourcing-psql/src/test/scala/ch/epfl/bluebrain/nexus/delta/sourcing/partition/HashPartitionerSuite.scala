@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.partition
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.PullRequestCreated
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie.resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.{PartitionQueries, ScopedEventQueries, ScopedStateQueries}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Transactors}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import munit.AnyFixture
 import munit.catseffect.IOFixture
 
@@ -27,7 +27,7 @@ class HashPartitionerSuite extends NexusSuite {
   private val hashDoobie: IOFixture[(DatabasePartitioner, Transactors)] =
     ResourceSuiteLocalFixture("doobie", resource(partitioningStrategy))
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(hashDoobie)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(hashDoobie)
 
   implicit private lazy val (partitioner: DatabasePartitioner, xas: Transactors) = hashDoobie()
 

@@ -16,10 +16,10 @@ trait XmlSupport {
     xmlMediaTypes.map(ContentTypeRange(_))
 
   implicit val nodeSeqUnmarshaller: FromEntityUnmarshaller[NodeSeq] =
-    ScalaXmlSupport.nodeSeqUnmarshaller(xmlContentTypeRanges: _*)
+    ScalaXmlSupport.nodeSeqUnmarshaller(xmlContentTypeRanges*)
 
   implicit val nodeSeqMarshaller: ToEntityMarshaller[NodeSeq] =
-    Marshaller.oneOf(xmlMediaTypes.map(ScalaXmlSupport.nodeSeqMarshaller): _*)
+    Marshaller.oneOf(xmlMediaTypes.map(ScalaXmlSupport.nodeSeqMarshaller)*)
 
 }
 object XmlSupport extends XmlSupport {}

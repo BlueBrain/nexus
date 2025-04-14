@@ -20,18 +20,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Flow => AkkaFlow, Keep, Sink => AkkaSink}
-import akka.testkit._
+import akka.stream.scaladsl.{Flow as AkkaFlow, Keep, Sink as AkkaSink}
+import akka.testkit.*
 import cats.effect.IO
-import fs2._
-import org.scalatest._
+import fs2.*
+import org.scalatest.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.immutable.Seq
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util._
+import scala.concurrent.*
+import scala.concurrent.duration.*
+import scala.util.*
 
 object StreamConverterSpec {
   implicit class AwaitHelper[A](f: Future[A]) {
@@ -47,7 +47,7 @@ class StreamConverterSpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
-  import StreamConverterSpec._
+  import StreamConverterSpec.*
 
   private def expectError(run: => Any): Assertion =
     intercept[Exception](run).getMessage should be(error.getMessage)

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -17,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
-import io.circe.syntax._
-import io.circe._
+import io.circe.syntax.*
+import io.circe.*
 
 import java.time.Instant
 import java.util.UUID
@@ -211,8 +211,8 @@ object ElasticSearchViewEvent {
   ) extends ElasticSearchViewEvent
 
   val serializer: Serializer[Iri, ElasticSearchViewEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
+    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Database.*
     implicit val configuration: Configuration                  = Serializer.circeConfiguration
     implicit val codec: Codec.AsObject[ElasticSearchViewEvent] = deriveConfiguredCodec[ElasticSearchViewEvent]
     Serializer.dropNulls()

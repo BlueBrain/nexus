@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 
 import java.time.Instant
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait InstantSyntax {
   implicit final def instantSyntax(instant: Instant): InstantOps = new InstantOps(instant)

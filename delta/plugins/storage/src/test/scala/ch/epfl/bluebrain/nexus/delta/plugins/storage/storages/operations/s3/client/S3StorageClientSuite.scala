@@ -22,7 +22,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
   private val expectedContentType = ContentTypes.`text/plain(UTF-8)`
   private val contentType         = ContentTypes.`application/json`
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(localStackS3Client)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(localStackS3Client)
 
   test("Copy a file containing special characters between buckets") {
     givenAnS3Bucket { bucket =>

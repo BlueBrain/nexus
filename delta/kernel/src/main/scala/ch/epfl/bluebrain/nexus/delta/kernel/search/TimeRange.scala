@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.search
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange.ParseError._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange.ParseError.*
 
 import java.time.Instant
 import scala.util.Try

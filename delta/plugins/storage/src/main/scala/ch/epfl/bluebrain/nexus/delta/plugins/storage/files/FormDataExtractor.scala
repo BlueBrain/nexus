@@ -3,13 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`multipart/form-data`
 import akka.http.scaladsl.model.Multipart.FormData
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.server.*
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, MultipartUnmarshallers, Unmarshaller}
 import akka.stream.scaladsl.{Keep, Sink}
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
 

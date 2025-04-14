@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
 import org.scalatest.Assertion
@@ -80,7 +80,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
             "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
             "self"           -> viewSelf(project1, viewId),
             "project-parent" -> project1
-          ): _*
+          )*
         )
 
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -108,7 +108,7 @@ class SparqlViewsSpec extends BaseIntegrationSpec {
             "project-parent" -> project2,
             "project1"       -> project1,
             "project2"       -> project2
-          ): _*
+          )*
         )
 
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)

@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsImpl.AclsLog
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -63,7 +63,7 @@ final class AclsImpl private (
       .compile
       .toList
       .map { as =>
-        val col = AclCollection(as: _*)
+        val col = AclCollection(as*)
         col.value.get(AclAddress.Root) match {
           case None if filter.withAncestors => col + AclState.initial(minimum).toResource
           case _                            => col
@@ -77,7 +77,7 @@ final class AclsImpl private (
       .map(_.filter(caller.identities))
       .span("listSelfAcls", Map("withAncestors" -> filter.withAncestors))
 
-  override def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource]         =
+  override def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource] =
     eval(ReplaceAcl(acl, rev, caller)).span("replaceAcls")
 
   override def append(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource] =

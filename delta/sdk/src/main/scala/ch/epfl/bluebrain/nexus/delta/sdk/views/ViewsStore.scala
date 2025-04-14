@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
@@ -28,7 +28,7 @@ object ViewsStore {
 
   private val logger = Logger[ViewsStore.type]
 
-  import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+  import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 
   def apply[Rejection, Value](
       serializer: Serializer[Iri, Value],

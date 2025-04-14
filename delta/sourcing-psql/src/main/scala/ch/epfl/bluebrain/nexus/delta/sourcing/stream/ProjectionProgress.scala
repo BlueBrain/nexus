@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -15,7 +15,7 @@ final case class ProjectionProgress(offset: Offset, instant: Instant, processed:
   /**
     * Takes a new message in account for the progress
     */
-  def +(elem: Elem[_]): ProjectionProgress =
+  def +(elem: Elem[?]): ProjectionProgress =
     elem match {
       case d: DroppedElem    =>
         copy(
@@ -26,7 +26,7 @@ final case class ProjectionProgress(offset: Offset, instant: Instant, processed:
         )
       case f: FailedElem     =>
         copy(offset = f.offset, instant = f.instant, processed = processed + 1, failed = failed + 1)
-      case s: SuccessElem[_] =>
+      case s: SuccessElem[?] =>
         copy(
           instant = instant.max(s.instant),
           offset = s.offset.max(offset),

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptySet
 import cats.effect.IO
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{toValue, ElasticSearchViewFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -24,8 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.*
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 
 /**
@@ -128,7 +128,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
                 )
               )
             case (true, false)  =>
-              //TODO implement strict json-ld decoding
+              // TODO implement strict json-ld decoding
               if (cursor.downField(pipeline).succeeded)
                 indexingFieldsJsonLdDecoder(cursor)
               else
@@ -147,7 +147,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
   }
 
-  import ElasticSearchViewFields._
+  import ElasticSearchViewFields.*
 
   private def toValue(fields: ElasticSearchViewFields): ElasticSearchViewValue = fields match {
     case i: LegacyIndexingElasticSearchViewFields =>

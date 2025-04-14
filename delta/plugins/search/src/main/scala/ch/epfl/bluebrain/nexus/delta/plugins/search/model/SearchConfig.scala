@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils.loadJsonAs
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError._
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -52,7 +52,7 @@ object SearchConfig {
   def load(config: Config): IO[SearchConfig] = {
     val pluginConfig                    = config.getConfig("plugins.search")
     def getFilePath(configPath: String) = Path.of(pluginConfig.getString(configPath))
-    def loadSuites = {
+    def loadSuites                      = {
       val suiteSource = ConfigSource.fromConfig(pluginConfig).at("suites")
       IO.fromEither(suiteSource.load[Suites].leftMap(InvalidSuites))
     }

@@ -17,7 +17,7 @@ class UserPermissionsSpec extends BaseIntegrationSpec {
   val StorageReadPermission  = Permission("s3-storage", "read")
   val StorageWritePermission = Permission("s3-storage", "write")
 
-  override def beforeAll(): Unit = {
+  override def beforeAll(): Unit                          = {
     super.beforeAll()
     val result = for {
       _ <- permissionDsl.addPermissions(StorageReadPermission, StorageWritePermission)

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalPermissionFor
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.acls
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import scala.util.Random
 

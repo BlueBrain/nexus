@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentType, Uri}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -136,7 +136,7 @@ object FileAttributes {
   }
 
   object NonMetadataKey {
-    private val keys = Set("description", "name")
+    private val keys                         = Set("description", "name")
     def unapply(key: String): Option[String] = {
       Option.when(keys.contains(key))(key)
     }

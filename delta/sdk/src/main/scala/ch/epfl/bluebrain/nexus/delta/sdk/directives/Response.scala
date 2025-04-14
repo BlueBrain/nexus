@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import io.circe.syntax.*
 import io.circe.{Encoder, Json}
 
 /**
@@ -64,7 +64,7 @@ object Response {
 
   object Reject {
 
-    implicit final val seqRejectEncoder: Encoder[Seq[Reject[_]]] =
+    implicit final val seqRejectEncoder: Encoder[Seq[Reject[?]]] =
       Encoder.instance { rejections =>
         val rejectionsJson = Json.obj("rejections" -> rejections.map(_.jsonValueWithStatus).asJson)
         val tpe            = extractDistinctTypes(rejections) match {
@@ -74,10 +74,10 @@ object Response {
         rejectionsJson deepMerge Json.obj(keywords.tpe -> tpe.asJson)
       }
 
-    private def extractDistinctTypes(rejections: Seq[Reject[_]]) =
+    private def extractDistinctTypes(rejections: Seq[Reject[?]]) =
       rejections.map(_.json.hcursor.get[String](keywords.tpe).toOption).flatten.distinct
 
-    implicit final val rejectJsonLdEncoder: JsonLdEncoder[Seq[Reject[_]]] =
+    implicit final val rejectJsonLdEncoder: JsonLdEncoder[Seq[Reject[?]]] =
       JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
   }
 }

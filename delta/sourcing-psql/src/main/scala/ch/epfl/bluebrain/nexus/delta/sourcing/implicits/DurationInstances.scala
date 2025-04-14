@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.implicits
 
 import doobie.{Get, Put}
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.{FiniteDuration, *}
 
 trait DurationInstances {
 

@@ -8,16 +8,16 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUID
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesLog
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.files as fileCtxId
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.{DelegateFilesRoutes, FilesRoutes, LinkFilesRoutes}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.files as filesSchemaId
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, FormDataExtractor, MediaTypeDetector}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{ShowFileLocation, StorageTypeConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.access.{S3StorageAccess, StorageAccess}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages as storageCtxId, storagesMetadata as storageMetaCtxId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3FileOperations, S3LocationGenerator}
@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRou
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -264,7 +264,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     File.shift(files)(base, showLocation)
   }
 
-  many[ResourceShift[_, _, _]].ref[File.Shift]
+  many[ResourceShift[?, ?, ?]].ref[File.Shift]
 
   many[ScopeInitialization].addSet { (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>
     Option.when(cfg.enableDefaultCreation)(StorageScopeInitialization(storages, serviceAccount, cfg.defaults)).toSet
@@ -294,12 +294,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(Storages.mappings + Files.mappings)
 
-  many[SseEncoder[_]].add { (base: BaseUri) => StorageEvent.sseEncoder(base) }
-  many[SseEncoder[_]].add { (base: BaseUri, showLocation: ShowFileLocation) =>
+  many[SseEncoder[?]].add { (base: BaseUri) => StorageEvent.sseEncoder(base) }
+  many[SseEncoder[?]].add { (base: BaseUri, showLocation: ShowFileLocation) =>
     FileEvent.sseEncoder(base, showLocation)
   }
 
-  many[ScopedEventMetricEncoder[_]].add { FileEvent.fileEventMetricEncoder }
+  many[ScopedEventMetricEncoder[?]].add { FileEvent.fileEventMetricEncoder }
 
   many[PriorityRoute].add { (storagesRoutes: StoragesRoutes) =>
     PriorityRoute(priority, storagesRoutes.routes, requiresStrictEntity = true)

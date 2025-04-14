@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, Json, JsonObject}
 
 /**
@@ -121,7 +121,7 @@ object SchemaRejection {
       nonOntologyResources: Set[ResourceRef]
   ) extends SchemaRejection(
         s"Failed to resolve imports ${(schemaImports.keySet ++ resourceImports.keySet ++ nonOntologyResources)
-          .mkString("'", "', '", "'")} for schema '$id'."
+            .mkString("'", "', '", "'")} for schema '$id'."
       )
 
   /**

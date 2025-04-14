@@ -63,7 +63,7 @@ object GraphResourceStream {
         project: ProjectRef,
         selectFilter: SelectFilter,
         start: Offset
-    ): IO[Option[RemainingElems]]                                                                                      = IO.none
+    ): IO[Option[RemainingElems]] = IO.none
   }
 
   /**
@@ -105,14 +105,14 @@ object GraphResourceStream {
           project: ProjectRef,
           selectFilter: SelectFilter,
           start: Offset
-      ): ElemStream[GraphResource]                                                                                     = stream
+      ): ElemStream[GraphResource] = stream
       override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
         stream
       override def remaining(
           project: ProjectRef,
           selectFilter: SelectFilter,
           start: Offset
-      ): IO[Option[RemainingElems]]                                                                                    = IO.none
+      ): IO[Option[RemainingElems]] = IO.none
     }
 
 }

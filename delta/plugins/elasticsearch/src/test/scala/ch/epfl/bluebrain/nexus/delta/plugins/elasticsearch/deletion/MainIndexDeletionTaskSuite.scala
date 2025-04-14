@@ -20,7 +20,7 @@ class MainIndexDeletionTaskSuite
 
   implicit private val subject: Subject = Anonymous
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 
   private lazy val client = esClient()
 

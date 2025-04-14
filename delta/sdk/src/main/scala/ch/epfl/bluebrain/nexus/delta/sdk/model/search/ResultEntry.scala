@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
 import cats.Functor
-import cats.syntax.functor._
+import cats.syntax.functor.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Encoder, Json}
 
 /**

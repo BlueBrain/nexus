@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.mu.EitherAssertions
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 import munit.FunSuite
 
 class ResourceRefSuite extends FunSuite with EitherAssertions {

@@ -67,7 +67,7 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
       attributes: (String, Any)*
   ): IO[Json] =
     for {
-      text <- contentOf(resourcePath, attributes: _*)
+      text <- contentOf(resourcePath, attributes*)
       json <- IO.fromEither(parse(text).left.map(InvalidJson(resourcePath, text, _)))
     } yield json
 
@@ -83,7 +83,7 @@ class ClasspathResourceLoader private (classLoader: ClassLoader) {
     */
   final def jsonObjectContentOf(resourcePath: String, attributes: (String, Any)*): IO[JsonObject] =
     for {
-      json    <- jsonContentOf(resourcePath, attributes: _*)
+      json    <- jsonContentOf(resourcePath, attributes*)
       jsonObj <- IO.fromOption(json.asObject)(InvalidJsonObject(resourcePath))
     } yield jsonObj
 
@@ -109,7 +109,7 @@ object ClasspathResourceLoader {
     * This is necessary when files on the classpath are located in modules from a plugin. Otherwise, prefer using the
     * standard ClasspathResourceLoader.
     */
-  def withContext(`class`: Class[_]): ClasspathResourceLoader = new ClasspathResourceLoader(
+  def withContext(`class`: Class[?]): ClasspathResourceLoader = new ClasspathResourceLoader(
     `class`.getClassLoader
   )
 }

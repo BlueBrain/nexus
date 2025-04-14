@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext, ProjectState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateGet
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.{Get, Put}
 
 /**

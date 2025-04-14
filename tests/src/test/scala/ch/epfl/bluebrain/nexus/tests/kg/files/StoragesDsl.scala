@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.*
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.tests.HttpClient
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import io.circe.Json
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.matchers.should.Matchers
 
 class StoragesDsl(deltaClient: HttpClient) extends CirceUnmarshalling with Matchers with CirceEq {
@@ -39,7 +39,7 @@ class StoragesDsl(deltaClient: HttpClient) extends CirceUnmarshalling with Match
       filterKey("credentials")(json) should equalIgnoreArrayOrder(expected)
     }
 
-  def diskPayloadDefaultPerms(id: String): IO[Json]                  =
+  def diskPayloadDefaultPerms(id: String): IO[Json] =
     loader.jsonContentOf("kg/storages/disk.json", "id" -> id)
 
   def diskPayload(id: String, read: String, write: String): IO[Json] =

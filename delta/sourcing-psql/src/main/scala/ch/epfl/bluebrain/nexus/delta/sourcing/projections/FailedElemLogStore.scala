@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import cats.effect.{Clock, IO}
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{FailureReason, ProjectionMetadata, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{FragmentEncoder, Transactors}
-import doobie._
-import doobie.syntax.all._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.syntax.all.*
+import doobie.postgres.implicits.*
 import fs2.Stream
 
 import java.time.Instant

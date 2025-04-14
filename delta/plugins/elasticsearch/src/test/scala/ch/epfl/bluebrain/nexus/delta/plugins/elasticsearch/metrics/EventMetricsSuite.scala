@@ -21,7 +21,7 @@ class EventMetricsSuite
     with EventMetricsIndex.Fixture
     with Fixtures {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, metricsIndex)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(esClient, metricsIndex)
 
   private lazy val client = esClient()
   private lazy val mIndex = metricsIndex()

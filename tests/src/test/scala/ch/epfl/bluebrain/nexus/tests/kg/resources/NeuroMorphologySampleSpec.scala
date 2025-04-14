@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.resources
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.Bob

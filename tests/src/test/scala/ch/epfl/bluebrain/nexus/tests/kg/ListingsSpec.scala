@@ -3,17 +3,17 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.*
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
-import ch.epfl.bluebrain.nexus.tests.Optics.{`@id` => atId, filterSearchMetadata, filterSearchMetadataAndLinks, listing}
+import ch.epfl.bluebrain.nexus.tests.Optics.{`@id` as atId, filterSearchMetadata, filterSearchMetadataAndLinks, listing}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import org.scalatest.Assertion
-import org.scalatest.LoneElement._
+import org.scalatest.LoneElement.*
 
 import java.net.URLEncoder
 import java.util.UUID
@@ -98,7 +98,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         "self"    -> resolverSelf(ref11, defaultResolverId)
       )
 
-      val expected = jsonContentOf("kg/listings/default-resolver.json", mapping: _*)
+      val expected = jsonContentOf("kg/listings/default-resolver.json", mapping*)
 
       eventually {
         deltaClient.get[Json](s"/resolvers/$ref11", Bob) { (json, response) =>
@@ -121,7 +121,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         "searchViewSelf"        -> viewSelf(ref11, searchView)
       )
 
-      val expected = jsonContentOf("kg/listings/default-view.json", mapping: _*)
+      val expected = jsonContentOf("kg/listings/default-view.json", mapping*)
       eventually {
         deltaClient.get[Json](s"/views/$ref11", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -141,7 +141,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         "resourceType" -> resourceType,
         "id"           -> resource11WithSchemaId,
         "self"         -> resource11WithSchemaSelf
-      ): _*
+      )*
     )
 
     "get the resources with schema" in eventually {
@@ -251,7 +251,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
           "proj2"        -> proj13,
           "id2"          -> resource13Id,
           "self2"        -> resource13Self
-        ): _*
+        )*
       )
 
       eventually {
@@ -284,7 +284,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
           "proj3"        -> proj13,
           "proj4"        -> proj21,
           "resourceType" -> resourceType
-        ): _*
+        )*
       )
 
       eventually {
@@ -303,7 +303,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
           "org"          -> org1,
           "proj"         -> proj12,
           "resourceType" -> resourceType
-        ): _*
+        )*
       )
 
       deltaClient.get[Json](s"/resources?type=$testResourceType", Alice) { (json, response) =>

@@ -76,7 +76,7 @@ object PermissionsState {
   )
 
   val serializer: Serializer[Label, PermissionsState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration            = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[PermissionsState] = deriveConfiguredCodec[PermissionsState]
     Serializer(_ => Permissions.id)

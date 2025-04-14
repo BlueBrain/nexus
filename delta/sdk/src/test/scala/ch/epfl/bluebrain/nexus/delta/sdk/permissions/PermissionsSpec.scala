@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls, permissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand.*
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent.*
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 

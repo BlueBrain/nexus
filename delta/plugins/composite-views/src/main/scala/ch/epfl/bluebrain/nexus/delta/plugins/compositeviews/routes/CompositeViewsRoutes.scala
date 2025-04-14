@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.*
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions.{read as Read, write as Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.{Json, JsonObject}
@@ -75,7 +75,7 @@ class CompositeViewsRoutes(
       extractCaller { implicit caller =>
         projectRef { implicit project =>
           concat(
-            //Create a view without id segment
+            // Create a view without id segment
             (pathEndOrSingleSlash & post & entity(as[Json]) & noParameter("rev")) { source =>
               authorizeFor(project, Write).apply {
                 emitMetadata(Created, views.create(project, source))
@@ -97,7 +97,7 @@ class CompositeViewsRoutes(
                         }
                       }
                     },
-                    //Deprecate a view
+                    // Deprecate a view
                     (delete & parameter("rev".as[Int])) { rev =>
                       authorizeFor(project, Write).apply {
                         emitMetadata(views.deprecate(viewId, project, rev))

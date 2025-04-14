@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 /**
   * The configuration used in order to build derivation for [[JsonLdDecoder]] using magnolia.

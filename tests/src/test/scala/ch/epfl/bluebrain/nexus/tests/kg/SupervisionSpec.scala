@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKeys, projections}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
-import io.circe._
+import io.circe.*
 
 class SupervisionSpec extends BaseIntegrationSpec {
 
@@ -38,13 +38,13 @@ class SupervisionSpec extends BaseIntegrationSpec {
   }
 
   "An elasticsearch view projection supervision description" should {
-    val viewName                                                      = "sv-es-view"
-    val viewId                                                        = s"https://dev.nexus.test.com/simplified-resource/$viewName"
-    val module                                                        = "elasticsearch"
-    val projectionName                                                = s"$module-$fullId-$viewId"
-    val createEsViewPayload                                           =
+    val viewName            = "sv-es-view"
+    val viewId              = s"https://dev.nexus.test.com/simplified-resource/$viewName"
+    val module              = "elasticsearch"
+    val projectionName      = s"$module-$fullId-$viewId"
+    val createEsViewPayload =
       jsonContentOf("kg/supervision/es-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Book")
-    val updateEsViewPayload                                           =
+    val updateEsViewPayload =
       jsonContentOf("kg/supervision/es-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Movie")
 
     def elasticsearchProjectionMetadata(revision: Int, restarts: Int) =
@@ -105,13 +105,13 @@ class SupervisionSpec extends BaseIntegrationSpec {
 
   "A blazegraph view projection supervision description" should {
 
-    val viewName                                                   = "sv-bg-view"
-    val viewId                                                     = s"https://dev.nexus.test.com/simplified-resource/$viewName"
-    val module                                                     = "blazegraph"
-    val projectionName                                             = s"$module-$fullId-$viewId"
-    val createBgViewPayload                                        =
+    val viewName            = "sv-bg-view"
+    val viewId              = s"https://dev.nexus.test.com/simplified-resource/$viewName"
+    val module              = "blazegraph"
+    val projectionName      = s"$module-$fullId-$viewId"
+    val createBgViewPayload =
       jsonContentOf("kg/supervision/bg-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Book")
-    val updateBgViewPayload                                        =
+    val updateBgViewPayload =
       jsonContentOf("kg/supervision/bg-payload.json", "viewName" -> viewName, "type" -> "https://schema.org/Movie")
 
     def blazegraphProjectionMetadata(revision: Int, restarts: Int) =
@@ -249,7 +249,7 @@ class SupervisionSpec extends BaseIntegrationSpec {
       viewId: String,
       revision: Int,
       restarts: Int
-  ) =
+  )         =
     jsonContentOf(
       "kg/supervision/scoped-projection-metadata.json",
       "module"         -> module,

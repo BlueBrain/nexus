@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
 import cats.effect.{IO, Resource}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.{DatabasePartitioner, PartitionStrategy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DDLLoader, Transactors}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.Fragment
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import doobie.postgres.sqlstate
 import munit.Location
 import munit.catseffect.IOFixture

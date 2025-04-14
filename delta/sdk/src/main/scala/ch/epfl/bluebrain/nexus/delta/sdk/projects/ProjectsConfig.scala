@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader
-import pureconfig.generic.semiauto._
+import pureconfig.generic.semiauto.*
 
 import scala.concurrent.duration.FiniteDuration
 

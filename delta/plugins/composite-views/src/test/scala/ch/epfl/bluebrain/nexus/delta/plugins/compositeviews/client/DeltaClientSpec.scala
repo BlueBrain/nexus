@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling.*
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.RouteResult
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, IriFilter, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -33,7 +33,7 @@ import org.scalatest.concurrent.ScalaFutures
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class DeltaClientSpec
     extends TestKit(ActorSystem("DeltaClientSpec"))

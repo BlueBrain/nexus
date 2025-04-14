@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.query
 
 import cats.effect.{IO, Resource}
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.SparqlClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
@@ -28,7 +28,7 @@ class IncomingOutgoingLinksSuite extends NexusSuite with SparqlClientSetup.Fixtu
 
   private val queries: IOFixture[Queries] = ResourceSuiteLocalFixture("queries", Resource.eval(Queries.load))
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient, queries)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(blazegraphClient, queries)
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

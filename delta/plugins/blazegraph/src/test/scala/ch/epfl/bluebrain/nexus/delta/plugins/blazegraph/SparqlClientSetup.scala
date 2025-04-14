@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.testkit.rd4j.RDF4JContainer
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 object SparqlClientSetup extends Fixtures {
 

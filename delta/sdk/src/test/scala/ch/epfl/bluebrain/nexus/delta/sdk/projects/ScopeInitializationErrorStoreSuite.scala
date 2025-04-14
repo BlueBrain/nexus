@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.implicits._
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ScopeInitializationErrorStore.ScopeInitErrorRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.clock.MutableClock
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import munit.AnyFixture
 
 import java.time.Instant
@@ -18,7 +18,7 @@ class ScopeInitializationErrorStoreSuite
     with Doobie.Fixture
     with Doobie.Assertions {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, mutableClockFixture)
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie, mutableClockFixture)
   private lazy val xas                           = doobie()
   private lazy val mutableClock: MutableClock    = mutableClockFixture()
 
@@ -35,7 +35,7 @@ class ScopeInitializationErrorStoreSuite
   test("Inserting an error should succeed") {
     val project     = genRandomProjectRef()
     // format: off
-    val expectedRow = 
+    val expectedRow =
       List(ScopeInitErrorRow(1, entityType, project.organization, project.project, scopeInitError.reason, Instant.EPOCH))
     // format: on
 

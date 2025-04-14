@@ -5,10 +5,10 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.*
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
-import cats.implicits._
+import cats.implicits.*
 
 final class GraphAnalyticsSpec extends BaseIntegrationSpec {
   private val org          = genId()

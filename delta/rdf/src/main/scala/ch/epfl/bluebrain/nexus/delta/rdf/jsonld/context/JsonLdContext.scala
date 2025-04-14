@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 
 /**
@@ -67,7 +67,7 @@ final case class JsonLdContext(
   /**
     * Attempts to shorten the passed ''iri'' when it starts with the ''base''
     */
-  def compactBase(iri: Iri): Option[String]  =
+  def compactBase(iri: Iri): Option[String] =
     base.collect { case b if iri.startsWith(b) => iri.stripPrefix(b) }
 
   /**
@@ -139,7 +139,7 @@ final case class JsonLdContext(
     * @return
     *   the merged context
     */
-  def merge(that: JsonLdContext): JsonLdContext          =
+  def merge(that: JsonLdContext): JsonLdContext =
     JsonLdContext(
       value.merge(that.value),
       that.base.orElse(base),
@@ -192,7 +192,7 @@ final case class JsonLdContext(
   private def expandedTermDefinition(dt: String, iri: Iri): Json =
     Json.obj(keywords.tpe -> dt.asJson, keywords.id -> iri.asJson)
 
-  private def min(a: String, b: String): String                  =
+  private def min(a: String, b: String): String =
     if (a.compareTo(b) > 0) b else a
 }
 

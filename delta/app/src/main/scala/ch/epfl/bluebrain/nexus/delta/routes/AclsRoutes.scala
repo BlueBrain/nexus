@@ -1,38 +1,38 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.javadsl.server.Rejections.validationRejection
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes.*
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.Uri.Path._
+import akka.http.scaladsl.model.Uri.Path.*
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.{Directive1, MalformedQueryParamRejection, Route}
 import cats.effect.IO
-import cats.syntax.all._
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
-import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
+import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl.*
+import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.*
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.{malformedQueryParamEncoder, malformedQueryParamResponseFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{QueryParamsUnmarshalling, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.acls as aclsPermissions
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe._
+import io.circe.*
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
@@ -118,15 +118,15 @@ class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implici
                   (put & entity(as[ReplaceAcl])) { case ReplaceAcl(AclValues(values)) =>
                     authorizeFor(address, aclsPermissions.write).apply {
                       val status = if (rev == 0) Created else OK
-                      emitMetadata(status, acls.replace(Acl(address, values: _*), rev))
+                      emitMetadata(status, acls.replace(Acl(address, values*), rev))
                     }
                   },
                   // Append or subtract ACLs
                   (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsPermissions.write)) {
                     case Append(AclValues(values))   =>
-                      emitMetadata(acls.append(Acl(address, values: _*), rev))
+                      emitMetadata(acls.append(Acl(address, values*), rev))
                     case Subtract(AclValues(values)) =>
-                      emitMetadata(acls.subtract(Acl(address, values: _*), rev))
+                      emitMetadata(acls.subtract(Acl(address, values*), rev))
                   },
                   // Delete ACLs
                   delete {

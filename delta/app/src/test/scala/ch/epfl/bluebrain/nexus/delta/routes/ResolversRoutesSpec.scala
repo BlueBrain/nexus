@@ -14,13 +14,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.Json
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -122,7 +122,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private lazy val routes =
     Route.seal(ResolversRoutes(identities, aclCheck, resolvers, multiResolution, groupDirectives))
 
-  private def withId(id: String, payload: Json)   =
+  private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))
 
   private val inProjectPayload                    = jsonContentOf("resolvers/in-project-success.json")
@@ -733,7 +733,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json =
+  ): Json    =
     jsonContentOf(
       "resolvers/resolver-route-metadata-response.json",
       "project"    -> projectRef,

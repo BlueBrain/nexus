@@ -2,23 +2,23 @@ package ch.epfl.bluebrain.nexus.delta.kernel.http
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `application/octet-stream`}
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes.*
+import akka.http.scaladsl.model.*
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.effect.IO
-import cats.effect.unsafe.implicits._
+import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.OnceStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient.HttpSingleRequest
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpSerializationError, HttpServerStatusError, HttpUnexpectedError}
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientSpec.{Count, Value}
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientWorthRetry.onServerError
-import io.circe.generic.semiauto._
-import io.circe.literal._
+import io.circe.generic.semiauto.*
+import io.circe.literal.*
 import io.circe.parser.parse
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
@@ -26,7 +26,7 @@ import org.scalatest.{Assertion, BeforeAndAfterEach}
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class HttpClientSpec
     extends TestKit(ActorSystem("HttpClientSpec"))

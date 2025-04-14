@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.{DecodingFailure, ParsingFailure}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, JsonLdDecoderError}
-import io.circe.CursorOp._
+import io.circe.CursorOp.*
 import io.circe.{ACursor, CursorOp, Decoder, Json}
 
 import scala.reflect.ClassTag

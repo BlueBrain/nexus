@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsImpl.RealmsLog
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{RealmNotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
