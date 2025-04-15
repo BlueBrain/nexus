@@ -135,7 +135,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
         s"$viewEndpoint/projections/$bgProjectionEncodedId/offset" -> projectionOffsets
       )
       forAll(endpoints) { case (endpoint, expected) =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
+        Get(endpoint) ~> as(reader) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expected
         }
@@ -168,7 +168,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
         s"$viewEndpoint/sources/$encodedSource/statistics"             -> sourceStats
       )
       forAll(endpoints) { case (endpoint, expected) =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
+        Get(endpoint) ~> as(reader) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expected
         }
@@ -182,7 +182,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fetch indexing description" in {
-      Get(s"$viewEndpoint/description") ~> asReader ~> routes ~> check {
+      Get(s"$viewEndpoint/description") ~> as(reader) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/view-indexing-description.json",
@@ -203,7 +203,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
           Offset.start.asJson
         )
 
-      Delete(s"$viewEndpoint/offset") ~> asWriter ~> routes ~> check {
+      Delete(s"$viewEndpoint/offset") ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual viewOffsets
         lastRestart.value shouldEqual FullRestart(indexingView.ref, Instant.EPOCH, writer)
@@ -222,7 +222,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
         )
       )
       forAll(endpoints) { case (endpoint, expectedResult, restart) =>
-        Delete(endpoint) ~> asWriter ~> routes ~> check {
+        Delete(endpoint) ~> as(writer) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResult
           lastRestart.value shouldEqual restart
@@ -231,13 +231,13 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "return no failures without write permission" in {
-      Get(s"$viewEndpoint/failures") ~> asReader ~> routes ~> check {
+      Get(s"$viewEndpoint/failures") ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "return failures as a listing" in {
-      Get(s"$viewEndpoint/failures") ~> asWriter ~> routes ~> check {
+      Get(s"$viewEndpoint/failures") ~> as(writer) ~> routes ~> check {
         response.status shouldBe StatusCodes.OK
         response.asJson.removeAllKeys("stacktrace") shouldEqual jsonContentOf("routes/list-indexing-errors.json")
       }

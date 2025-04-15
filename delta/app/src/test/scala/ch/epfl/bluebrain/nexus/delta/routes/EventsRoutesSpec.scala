@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -8,13 +8,11 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{ServerSentEventStream, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
@@ -26,11 +24,7 @@ class EventsRoutesSpec extends BaseRouteSpec {
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  implicit private val caller: Caller =
-    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val identities = IdentitiesDummy(caller)
-  private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
+  private val identities = IdentitiesDummy.fromUsers(alice)
 
   private val project   = Label.unsafe("projects")
   private val resources = Label.unsafe("resources")
@@ -116,14 +110,14 @@ class EventsRoutesSpec extends BaseRouteSpec {
       )
 
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asAlice ~> `Last-Event-ID`("2") ~> routes ~> check {
+        Get(endpoint) ~> as(alice) ~> `Last-Event-ID`("2") ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotFound
         }
       }
     }
 
     "get the resource events" in {
-      Get("/v1/resources/events") ~> asAlice ~> routes ~> check {
+      Get("/v1/resources/events") ~> as(alice) ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         chunksStream.asString(2).strip shouldEqual contentOf("events/resource-events.txt").strip
       }
@@ -136,7 +130,7 @@ class EventsRoutesSpec extends BaseRouteSpec {
       )
 
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("0") ~> asAlice ~> routes ~> check {
+        Get(endpoint) ~> `Last-Event-ID`("0") ~> as(alice) ~> routes ~> check {
           mediaType shouldBe MediaTypes.`text/event-stream`
           chunksStream.asString(2).strip shouldEqual contentOf("events/project-events.txt").strip
         }

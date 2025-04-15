@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -16,25 +15,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.*
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ReservedResourceId, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef, Tags}
 
 import java.time.Instant
 
 class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixture with ValidateResourceFixture {
-
-  implicit private val caller: Caller =
-    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val permissions = Set(Permissions.resources.write)
   private val aclCheck    = AclSimpleCheck((alice, projectRef, permissions)).accepted
@@ -111,7 +104,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
   private lazy val routes =
     Route.seal(
       new ResourcesTrialRoutes(
-        IdentitiesDummy(caller),
+        IdentitiesDummy.fromUsers(alice),
         aclCheck,
         generateSchema,
         resourcesTrial
@@ -129,7 +122,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "generate a resource without passing a schema" in {
       val payload = json"""{ "resource": $validSource }"""
-      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") shouldBe empty
@@ -140,7 +133,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "generate a resource passing a new schema and using post" in {
       val payload = json"""{ "schema": $schemaSource, "resource": $validSource }"""
-      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") should not be empty
@@ -151,7 +144,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fails to generate a resource when passing an invalid new schema" in {
       val payload = json"""{ "schema": { "invalid":  "xxx" }, "resource": $validSource }"""
-      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
           json"""{
@@ -166,7 +159,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fails to generate a resource when the resource payload is invalid and without passing a schema" in {
       val payload = json"""{ "resource": $invalidSource }"""
-      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""
@@ -182,7 +175,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fail to generate a resource passing a new schema" in {
       val payload = json"""{ "schema": $schemaSource, "resource": $invalidSource }"""
-      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") should not be empty
@@ -199,7 +192,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     s"successfully validate $myId for a user with access against the unconstrained schema" in {
       val unconstrained = UrlUtils.encode(schemas.resources.toString)
-      Get(s"/v1/resources/$projectRef/$unconstrained/myId/validate") ~> asAlice ~> routes ~> check {
+      Get(s"/v1/resources/$projectRef/$unconstrained/myId/validate") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""{
@@ -212,7 +205,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
     }
 
     s"successfully validate $myId for a user with access against its latest schema" in {
-      Get(s"/v1/resources/$projectRef/_/myId/validate") ~> asAlice ~> routes ~> check {
+      Get(s"/v1/resources/$projectRef/_/myId/validate") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""{
@@ -233,7 +226,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
     "fail to validate an unknown resource" in {
       val unknownResource = nxv + "unknown"
       val unknownEncoded  = UrlUtils.encode(unknownResource.toString)
-      Get(s"/v1/resources/$projectRef/_/$unknownEncoded/validate") ~> asAlice ~> routes ~> check {
+      Get(s"/v1/resources/$projectRef/_/$unknownEncoded/validate") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
           "resources/errors/not-found.json",

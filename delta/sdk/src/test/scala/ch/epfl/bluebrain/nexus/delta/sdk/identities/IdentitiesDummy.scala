@@ -33,7 +33,7 @@ object IdentitiesDummy {
   /**
     * Create a new dummy Identities implementation from a list of users
     */
-  def generateFromUsers(users: User*): Identities =
+  def fromUsers(users: User*): Identities =
     new IdentitiesDummy(users.map { u =>
       val caller = Caller(u, Set(u, Anonymous, Authenticated(u.realm), Group("group", u.realm)))
       AuthToken(u.subject) -> caller

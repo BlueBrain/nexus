@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Json
 import org.scalatest.Assertion
@@ -51,14 +51,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
   private val reader = User("reader", realm)
   private val writer = User("writer", realm)
 
-  implicit private val callerReader: Caller =
-    Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val callerWriter: Caller =
-    Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val identities                    = IdentitiesDummy(callerReader, callerWriter)
-
-  private val asReader = addCredentials(OAuth2BearerToken("reader"))
-  private val asWriter = addCredentials(OAuth2BearerToken("writer"))
+  private val identities = IdentitiesDummy.fromUsers(reader, writer)
 
   private val am         = ApiMappings("nxv" -> nxv.base, "storage" -> schemas.storage)
   private val projBase   = nxv.base
@@ -73,7 +66,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
   private val s3Read    = Permission.unsafe("s3/read")
   private val s3Write   = Permission.unsafe("s3/write")
 
-  override val allowedPerms = Seq(
+  override val allowedPerms: Seq[Permission] = Seq(
     permissions.read,
     permissions.write,
     events.read,
@@ -132,21 +125,21 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "create a storage" in {
       val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id", "bucket": "mybucket2"}"""
-      Post("/v1/storages/myorg/myproject", payload.toEntity) ~> asWriter ~> routes ~> check {
+      Post("/v1/storages/myorg/myproject", payload.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage)
       }
     }
 
     "reject the creation of a storage which already exists" in {
-      Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("storages/errors/already-exists.json", "id" -> s3Id)
       }
     }
 
     "fail to update a storage without storages/write permission" in {
-      Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.toEntity) ~> asReader ~> routes ~> check {
+      Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.toEntity) ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
@@ -157,7 +150,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
         s"/v1/storages/myorg/myproject/$s3IdEncoded"
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
-        Put(s"$endpoint?rev=${idx + 1}", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
+        Put(s"$endpoint?rev=${idx + 1}", s3FieldsJson.toEntity) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 2)
         }
@@ -165,7 +158,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "reject the update of a non-existent storage" in {
-      Put("/v1/storages/myorg/myproject/myid10?rev=1", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/myid10?rev=1", s3FieldsJson.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
           jsonContentOf("storages/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
@@ -173,7 +166,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "reject the update of a storage at a non-existent revision" in {
-      Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.toEntity) ~> asWriter ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
@@ -181,13 +174,13 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "fail to deprecate a storage without storages/write permission" in {
-      Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> asReader ~> routes ~> check {
+      Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "deprecate a storage" in {
-      Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> asWriter ~> routes ~> check {
+      Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           storageMetadata(
@@ -203,14 +196,14 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "reject the deprecation of a storage without rev" in {
-      Delete("/v1/storages/myorg/myproject/myid") ~> asWriter ~> routes ~> check {
+      Delete("/v1/storages/myorg/myproject/myid") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
     "reject the deprecation of a already deprecated storage" in {
-      Delete(s"/v1/storages/myorg/myproject/s3-storage?rev=4") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/storages/myorg/myproject/s3-storage?rev=4") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("storages/errors/storage-deprecated.json", "id" -> s3Id)
       }
@@ -218,7 +211,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "fail to undeprecate a storage without storages/write permission" in {
       givenADeprecatedStorage { storage =>
-        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=2") ~> as(reader) ~> routes ~> check {
           response.shouldBeForbidden
         }
       }
@@ -226,7 +219,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "undeprecate a deprecated storage" in {
       givenADeprecatedStorage { storage =>
-        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=2") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             storageMetadata(
@@ -244,7 +237,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "reject the undeprecation of a storage without rev" in {
       givenADeprecatedStorage { storage =>
-        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
         }
@@ -253,7 +246,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "reject the undeprecation of a storage that is not deprecated" in {
       givenAStorage { storage =>
-        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/storages/myorg/myproject/$storage/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf(
             "storages/errors/storage-not-deprecated.json",
@@ -270,7 +263,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "fetch a storage" in {
-      Get("/v1/storages/myorg/myproject/s3-storage") ~> asReader ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/s3-storage") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "storages/s3-storage-fetched.json",
@@ -289,7 +282,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
         s"/v1/resources/myorg/myproject/storage/$s3IdEncoded"
       )
       forAll(endpoints) { endpoint =>
-        Get(s"$endpoint?rev=4") ~> asReader ~> routes ~> check {
+        Get(s"$endpoint?rev=4") ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf(
             "storages/s3-storage-fetched.json",
@@ -308,7 +301,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
         s"/v1/resources/myorg/myproject/_/$s3IdEncoded/source"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
+        Get(endpoint) ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedSource
         }
@@ -321,7 +314,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
         s"/v1/storages/myorg/myproject/$s3IdEncoded/source"
       )
       forAll(endpoints) { endpoint =>
-        Get(s"$endpoint?rev=4") ~> asReader ~> routes ~> check {
+        Get(s"$endpoint?rev=4") ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual s3FieldsJson
         }
@@ -329,14 +322,14 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     }
 
     "get storage statistics for an existing entry" in {
-      Get("/v1/storages/myorg/myproject/s3-storage/statistics") ~> asReader ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/s3-storage/statistics") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storages/statistics.json")
       }
     }
 
     "fail to get storage statistics for an unknown storage" in {
-      Get("/v1/storages/myorg/myproject/unknown/statistics") ~> asReader ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/unknown/statistics") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
           "storages/errors/not-found.json",
@@ -356,7 +349,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     "redirect to fusion for the latest version if the Accept header is set to text/html" in {
       givenAStorage { storage =>
-        Get(s"/v1/storages/myorg/myproject/$storage") ~> asReader ~> Accept(`text/html`) ~> routes ~> check {
+        Get(s"/v1/storages/myorg/myproject/$storage") ~> as(reader) ~> Accept(`text/html`) ~> routes ~> check {
           response.status shouldEqual StatusCodes.SeeOther
           response.header[Location].value.uri shouldEqual Uri(
             s"https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/$storage"
@@ -367,7 +360,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     def givenAStorage(test: String => Assertion): Assertion = {
       val id = genString()
-      Put(s"/v1/storages/myorg/myproject/$id", diskFieldsJson.toEntity) ~> asWriter ~> routes ~> check {
+      Put(s"/v1/storages/myorg/myproject/$id", diskFieldsJson.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
       test(id)
@@ -375,7 +368,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
 
     def givenADeprecatedStorage(test: String => Assertion): Assertion = {
       givenAStorage { id =>
-        Delete(s"/v1/storages/myorg/myproject/$id?rev=1") ~> asWriter ~> routes ~> check {
+        Delete(s"/v1/storages/myorg/myproject/$id?rev=1") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
         }
         test(id)

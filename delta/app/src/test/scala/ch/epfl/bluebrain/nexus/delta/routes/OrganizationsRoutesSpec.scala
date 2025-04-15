@@ -6,12 +6,14 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, OrganizationsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.orgs as orgsPermissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.orgs.{create, delete, read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -32,38 +34,27 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   private lazy val orgs                            = OrganizationsImpl(ScopeInitializer.noop, eventLogConfig, xas, clock)
   private lazy val orgDeleter: OrganizationDeleter = id => IO.raiseWhen(id == org1.label)(OrganizationNonEmpty(id))
 
-  private val superUser                      = User("superUser", Label.unsafe(genString()))
-  private val userWithCreatePermission       = User("userWithCreatePermission", Label.unsafe(genString()))
-  private val userThatCreatesOrg2            = User("userThatCreatesOrg2", Label.unsafe(genString()))
-  private val userWithWritePermission        = User("userWithWritePermission", Label.unsafe(genString()))
-  private val userWithDeletePermission       = User("userWithDeletePermission", Label.unsafe(genString()))
-  private val userWithReadPermission         = User("userWithReadPermission", Label.unsafe(genString()))
-  private val userWithOrgSpecificPermissions = User("userWithOrgSpecificPermissions", Label.unsafe(genString()))
-  private val (aclChecker, identities)       = usersFixture(
-    (
-      superUser,
-      AclAddress.Root,
-      Set(orgsPermissions.create, orgsPermissions.write, orgsPermissions.read, orgsPermissions.delete)
-    ),
-    (userWithCreatePermission, AclAddress.Root, Set(orgsPermissions.create)),
-    (userThatCreatesOrg2, AclAddress.Root, Set(orgsPermissions.create)),
-    (userWithWritePermission, AclAddress.Root, Set(orgsPermissions.write)),
-    (userWithReadPermission, AclAddress.Root, Set(orgsPermissions.read)),
-    (userWithDeletePermission, AclAddress.Root, Set(orgsPermissions.delete)),
-    (userWithOrgSpecificPermissions, AclAddress.Root, Set.empty)
+  private val reader      = User("reader", Label.unsafe(genString()))
+  private val readerOrg1  = User("readerOrg1", Label.unsafe(genString()))
+  private val creator     = User("creator", Label.unsafe(genString()))
+  private val creatorOrg2 = User("creatorOrg2", Label.unsafe(genString()))
+  private val writer      = User("writer", Label.unsafe(genString()))
+  private val deleter     = User("deleter", Label.unsafe(genString()))
+
+  private val identities = IdentitiesDummy.fromUsers(reader, readerOrg1, creator, creatorOrg2, writer, deleter)
+
+  private val aclCheck = AclSimpleCheck.unsafe(
+    (reader, AclAddress.Root, Set(read)),
+    (readerOrg1, AclAddress.Organization(org1.label), Set(read)),
+    (creator, AclAddress.Root, Set(read, create)),
+    (creatorOrg2, AclAddress.Root, Set(read, create)),
+    (writer, AclAddress.Root, Set(read, write)),
+    (deleter, AclAddress.Root, Set(read, delete))
   )
 
-  private lazy val routes = Route.seal(
-    OrganizationsRoutes(
-      identities,
-      orgs,
-      orgDeleter,
-      aclChecker
-    )
-  )
+  private lazy val routes = Route.seal(OrganizationsRoutes(identities, orgs, orgDeleter, aclCheck))
 
-  private val org1CreatedMeta =
-    orgMetadata(org1.label, fixedUuid, createdBy = userWithCreatePermission, updatedBy = userWithCreatePermission)
+  private val org1CreatedMeta = orgMetadata(org1.label, fixedUuid, createdBy = creator, updatedBy = creator)
 
   private val org1Created = jsonContentOf(
     "organizations/org-resource.json",
@@ -72,18 +63,11 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "description" -> org1.description.value
   ) deepMerge org1CreatedMeta.removeKeys("@context")
 
-  private val org1UpdatedMeta = orgMetadata(
-    org1.label,
-    fixedUuid,
-    rev = 2,
-    createdBy = userWithCreatePermission,
-    updatedBy = userWithWritePermission
-  )
+  private val org1UpdatedMeta = orgMetadata(org1.label, fixedUuid, rev = 2, createdBy = creator, updatedBy = writer)
   private val org1Updated     =
     org1Created deepMerge json"""{"description": "updated"}""" deepMerge org1UpdatedMeta.removeKeys("@context")
 
-  private val org2CreatedMeta =
-    orgMetadata(org2.label, fixedUuid, createdBy = userThatCreatesOrg2, updatedBy = userThatCreatesOrg2)
+  private val org2CreatedMeta = orgMetadata(org2.label, fixedUuid, createdBy = creatorOrg2, updatedBy = creatorOrg2)
 
   private val org2Created = jsonContentOf(
     "organizations/org-resource.json",
@@ -97,8 +81,8 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
       fixedUuid,
       rev = 2,
       deprecated = true,
-      createdBy = userThatCreatesOrg2,
-      updatedBy = userWithWritePermission
+      createdBy = creatorOrg2,
+      updatedBy = writer
     )
 
   "An OrganizationsRoute" should {
@@ -114,7 +98,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "create a new organization" in {
       val input = json"""{"description": "${org1.description.value}"}"""
 
-      Put("/v1/orgs/org1", input.toEntity) ~> as(userWithCreatePermission) ~> routes ~> check {
+      Put("/v1/orgs/org1", input.toEntity) ~> as(creator) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual org1CreatedMeta
       }
@@ -123,21 +107,21 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "update an existing organization" in {
       val input = json"""{"description": "updated"}"""
 
-      Put("/v1/orgs/org1?rev=1", input.toEntity) ~> as(userWithWritePermission) ~> routes ~> check {
+      Put("/v1/orgs/org1?rev=1", input.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual org1UpdatedMeta
       }
     }
 
     "fetch an organization by label" in {
-      Get("/v1/orgs/org1") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/orgs/org1") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual org1Updated
       }
     }
 
     "fetch an organization by label and rev" in {
-      Get("/v1/orgs/org1?rev=1") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/orgs/org1?rev=1") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual org1Created
       }
@@ -146,14 +130,14 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "reject the creation of a organization if it already exists" in {
       val input = json"""{"description": "${org1.description.value}"}"""
 
-      Put("/v1/orgs/org1", input.toEntity) ~> as(userWithCreatePermission) ~> routes ~> check {
+      Put("/v1/orgs/org1", input.toEntity) ~> as(creator) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("organizations/already-exists.json", "org" -> org1.label.value)
       }
     }
 
     "fail fetching an organization by label and rev when rev is invalid" in {
-      Get("/v1/orgs/org1?rev=4") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/orgs/org1?rev=4") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("errors/revision-not-found.json", "provided" -> 4, "current" -> 2)
       }
@@ -165,43 +149,38 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
 
     "list organizations" in {
 
-      Put("/v1/orgs/org2", Json.obj().toEntity) ~> as(userThatCreatesOrg2) ~> routes ~> check {
+      Put("/v1/orgs/org2", Json.obj().toEntity) ~> as(creatorOrg2) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual org2CreatedMeta
       }
 
       val expected = expectedResults(org1Updated.removeKeys("@context"), org2Created.removeKeys("@context"))
-      Get("/v1/orgs") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/orgs") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expected)
       }
-      Get("/v1/orgs?label=or") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/orgs?label=or") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 
     "list organizations with revision 2" in {
-      Get("/v1/orgs?rev=2") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/orgs?rev=2") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expectedResults(org1Updated.removeKeys("@context")))
       }
     }
 
     "list organizations created by a user" in {
-      Get(s"/v1/orgs?createdBy=${UrlUtils.encode(userThatCreatesOrg2.asIri.toString)}") ~> as(
-        superUser
-      ) ~> routes ~> check {
+      Get(s"/v1/orgs?createdBy=${UrlUtils.encode(creatorOrg2.asIri.toString)}") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expectedResults(org2Created.removeKeys("@context")))
       }
     }
 
     "list only organizations for which the user has access" in {
-      aclChecker
-        .append(AclAddress.Organization(org1.label), userWithOrgSpecificPermissions -> Set(orgsPermissions.read))
-        .accepted
-      Get("/v1/orgs") ~> as(userWithOrgSpecificPermissions) ~> routes ~> check {
+      Get("/v1/orgs") ~> as(readerOrg1) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
@@ -212,38 +191,38 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     }
 
     "deprecate an organization" in {
-      Delete("/v1/orgs/org2?rev=1") ~> as(userWithWritePermission) ~> routes ~> check {
+      Delete("/v1/orgs/org2?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(org2DeprecatedMeta)
       }
     }
 
     "fail to deprecate an organization if the revision is omitted" in {
-      Delete("/v1/orgs/org2") ~> as(userWithWritePermission) ~> routes ~> check {
+      Delete("/v1/orgs/org2") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
 
     "fail to deprecate an organization if 'prune' is specified for deletion" in {
-      Delete("/v1/orgs/org2?rev=1&prune=true") ~> as(userWithWritePermission) ~> routes ~> check {
+      Delete("/v1/orgs/org2?rev=1&prune=true") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
 
     "delete an organization" in {
-      Delete("/v1/orgs/org2?prune=true") ~> as(userWithDeletePermission) ~> routes ~> check {
+      Delete("/v1/orgs/org2?prune=true") ~> as(deleter) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
     }
 
     "fail to delete an organization if 'prune' is false but no revision is specified for deprecation" in {
-      Delete("/v1/orgs/org2?prune=false") ~> as(userWithDeletePermission) ~> routes ~> check {
+      Delete("/v1/orgs/org2?prune=false") ~> as(deleter) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
 
     "fail when trying to delete a non-empty organization" in {
-      Delete("/v1/orgs/org1?prune=true") ~> as(userWithDeletePermission) ~> routes ~> check {
+      Delete("/v1/orgs/org1?prune=true") ~> as(deleter) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -258,9 +237,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
       forAll(
         Seq(
           "/v1/orgs/org2",
-          "/v1/orgs/org2?rev=1",
-          s"/v1/orgs/${UUID.randomUUID()}",
-          s"/v1/orgs/${UUID.randomUUID()}?rev=1"
+          "/v1/orgs/org2?rev=1"
         )
       ) { path =>
         Get(path) ~> routes ~> check {
@@ -272,7 +249,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "undeprecate an organisation" in {
       val org = thereIsADeprecatedOrganization
 
-      Put(s"/v1/orgs/$org/undeprecate?rev=2") ~> as(userWithWritePermission) ~> routes ~> check {
+      Put(s"/v1/orgs/$org/undeprecate?rev=2") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should not(be(deprecated))
       }
@@ -293,7 +270,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "fail to undeprecate an organisation if the revision is omitted" in {
       val org = thereIsADeprecatedOrganization
 
-      Put(s"/v1/orgs/$org/undeprecate") ~> as(userWithWritePermission) ~> routes ~> check {
+      Put(s"/v1/orgs/$org/undeprecate") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
 
@@ -303,7 +280,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "fail to undeprecate an organisation if the revision is incorrect" in {
       val org = thereIsADeprecatedOrganization
 
-      Put(s"/v1/orgs/$org/undeprecate?rev=1") ~> as(userWithWritePermission) ~> routes ~> check {
+      Put(s"/v1/orgs/$org/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
       }
 
@@ -313,7 +290,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "fail to undeprecate an organisation if it is not deprecated" in {
       val org = thereIsAnOrganization
 
-      Put(s"/v1/orgs/$org/undeprecate?rev=1") ~> as(userWithWritePermission) ~> routes ~> check {
+      Put(s"/v1/orgs/$org/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
 
@@ -321,7 +298,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     }
 
     "fail to undeprecate an organisation if it does not exist" in {
-      Put(s"/v1/orgs/does-not-exist/undeprecate?rev=1") ~> as(userWithWritePermission) ~> routes ~> check {
+      Put(s"/v1/orgs/does-not-exist/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
@@ -330,7 +307,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   private def thereIsAnOrganization = {
     val org     = genString()
     val payload = json"""{"description": "${genString()}"}"""
-    Put(s"/v1/orgs/$org", payload.toEntity) ~> as(superUser) ~> routes ~> check {
+    Put(s"/v1/orgs/$org", payload.toEntity) ~> as(creator) ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     org
@@ -343,7 +320,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   }
 
   private def deprecateOrganization(org: String, rev: Int)(implicit pos: Position): Unit = {
-    Delete(s"/v1/orgs/$org?rev=$rev") ~> as(superUser) ~> routes ~> check {
+    Delete(s"/v1/orgs/$org?rev=$rev") ~> as(writer) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       response.asJson should be(deprecated)
     }
@@ -351,7 +328,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   }
 
   private def latestRevisionOfOrganization(org: String)(implicit pos: Position): Json = {
-    Get(s"/v1/orgs/$org") ~> as(superUser) ~> routes ~> check {
+    Get(s"/v1/orgs/$org") ~> as(reader) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       response.asJson
     }

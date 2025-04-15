@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -10,12 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.SchemaValidationCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
@@ -26,17 +24,13 @@ import java.time.Instant
 
 class SchemaJobRoutesSpec extends BaseRouteSpec {
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val asAlice = addCredentials(OAuth2BearerToken("alice"))
-
   private val project    = ProjectGen.project("org", "project")
   private val rev        = 1
   private val resourceId = nxv + "myid"
 
   private val fetchContext = FetchContextDummy(List(project))
 
-  private val identities = IdentitiesDummy(caller)
+  private val identities = IdentitiesDummy.fromUsers(alice)
 
   private val aclCheck = AclSimpleCheck((alice, Root, Set(Permissions.schemas.run))).accepted
 
@@ -85,14 +79,14 @@ class SchemaJobRoutesSpec extends BaseRouteSpec {
     }
 
     "fail to start a validation job for an unknown project" in {
-      Post("/v1/jobs/schemas/validation/xxx/xxx") ~> asAlice ~> routes ~> check {
+      Post("/v1/jobs/schemas/validation/xxx/xxx") ~> as(alice) ~> routes ~> check {
         response.shouldFail(StatusCodes.NotFound, "ProjectNotFound")
         runTrigger.get.accepted shouldEqual false
       }
     }
 
     "start a validation job on the project with appropriate access" in {
-      Post("/v1/jobs/schemas/validation/org/project") ~> asAlice ~> routes ~> check {
+      Post("/v1/jobs/schemas/validation/org/project") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Accepted
         runTrigger.get.accepted shouldEqual true
       }
@@ -105,7 +99,7 @@ class SchemaJobRoutesSpec extends BaseRouteSpec {
     }
 
     "fail to get statistics on a validation job for an unknown project" in {
-      Get("/v1/jobs/schemas/validation/xxx/xxx/statistics") ~> asAlice ~> routes ~> check {
+      Get("/v1/jobs/schemas/validation/xxx/xxx/statistics") ~> as(alice) ~> routes ~> check {
         response.shouldFail(StatusCodes.NotFound, "ProjectNotFound")
       }
     }
@@ -126,7 +120,7 @@ class SchemaJobRoutesSpec extends BaseRouteSpec {
         "totalEvents": 9000
       }"""
 
-      Get("/v1/jobs/schemas/validation/org/project/statistics") ~> asAlice ~> routes ~> check {
+      Get("/v1/jobs/schemas/validation/org/project/statistics") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual expectedResponse
       }
@@ -139,7 +133,7 @@ class SchemaJobRoutesSpec extends BaseRouteSpec {
     }
 
     "fail to download errors on a validation job for an unknown project" in {
-      Get("/v1/jobs/schemas/validation/xxx/xxx/errors") ~> asAlice ~> routes ~> check {
+      Get("/v1/jobs/schemas/validation/xxx/xxx/errors") ~> as(alice) ~> routes ~> check {
         response.shouldFail(StatusCodes.NotFound, "ProjectNotFound")
       }
     }
@@ -150,7 +144,7 @@ class SchemaJobRoutesSpec extends BaseRouteSpec {
            |{"id":"$resourceId","project":"${project.ref}","offset":{"value":42,"@type":"At"},"rev":1,"reason":{"type":"ValidationFail","value":{"details":"..."}}}
            |""".stripMargin
 
-      Get("/v1/jobs/schemas/validation/org/project/errors") ~> Accept(`*/*`) ~> asAlice ~> routes ~> check {
+      Get("/v1/jobs/schemas/validation/org/project/errors") ~> Accept(`*/*`) ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asString shouldEqual expectedResponse
       }

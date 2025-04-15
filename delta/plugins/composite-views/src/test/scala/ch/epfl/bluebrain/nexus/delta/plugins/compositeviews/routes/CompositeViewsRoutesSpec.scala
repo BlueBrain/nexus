@@ -104,34 +104,34 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "create a view" in {
-      Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> asWriter ~> routes ~> check {
+      Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual viewMetadata(1, false)
       }
     }
 
     "reject creation of a view which already exists" in {
-      Put(s"/v1/views/myorg/myproj/$uuid", viewSource.toEntity) ~> asWriter ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid", viewSource.toEntity) ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("routes/errors/view-already-exists.json", "uuid" -> uuid)
       }
     }
 
     "fail to update a view without permission" in {
-      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSource.toEntity) ~> asReader ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSource.toEntity) ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "update a view" in {
-      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSourceUpdated.toEntity) ~> asWriter ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSourceUpdated.toEntity) ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual viewMetadata(2, false)
       }
     }
 
     "reject update of a view at a non-existent revision" in {
-      Put(s"/v1/views/myorg/myproj/$uuid?rev=3", viewSourceUpdated.toEntity) ~> asWriter ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproj/$uuid?rev=3", viewSourceUpdated.toEntity) ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("routes/errors/incorrect-rev.json", "provided" -> 3, "expected" -> 2)
       }
@@ -144,7 +144,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fetch a view" in {
-      Get(s"/v1/views/myorg/myproj/$uuid") ~> asReader ~> routes ~> check {
+      Get(s"/v1/views/myorg/myproj/$uuid") ~> as(reader) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(view(2, false, "2 minutes"))
       }
@@ -156,7 +156,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
         s"/v1/resources/myorg/myproj/_/$uuid?rev=1"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
+        Get(endpoint) ~> as(reader) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson should equalIgnoreArrayOrder(
             view(1, false, "1 minute")
@@ -169,7 +169,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "fetch a view source" in {
       val endpoints = List(s"/v1/views/myorg/myproj/$uuid/source", s"/v1/resources/myorg/myproj/_/$uuid/source")
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
+        Get(endpoint) ~> as(reader) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual viewSourceUpdated.removeAllKeys("token")
         }
@@ -177,7 +177,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get(s"/v1/views/myorg/myproj/$uuid?rev=1&tag=mytag") ~> asReader ~> routes ~> check {
+      Get(s"/v1/views/myorg/myproj/$uuid?rev=1&tag=mytag") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
       }
@@ -225,20 +225,20 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fail to deprecate a view without permission" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asReader ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "reject a deprecation of a view without rev" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$uuid") ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
       }
     }
 
     "deprecate a view" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid?rev=2") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$uuid?rev=2") ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual viewMetadata(3, true)
       }
@@ -246,7 +246,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "fail to undeprecate a view without permission" in {
       givenADeprecatedView { view =>
-        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> asReader ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> as(reader) ~> routes ~> check {
           response.shouldBeForbidden
         }
       }
@@ -254,7 +254,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "reject an undeprecation of a view without rev" in {
       givenADeprecatedView { view =>
-        Put(s"/v1/views/myorg/myproj/$view/undeprecate") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate") ~> as(writer) ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
         }
@@ -263,7 +263,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "reject an undeprecation of a view that is not deprecated" in {
       givenAView { view =>
-        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual viewIsNotDeprecatedError(nxv + view)
         }
@@ -272,7 +272,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "undeprecate a view" in {
       givenADeprecatedView { view =>
-        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproj/$view/undeprecate?rev=2") ~> as(writer) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual viewMetadataWithId(nxv + view, 3, deprecated = false)
         }
@@ -331,7 +331,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
   private def givenAView(test: String => Assertion): Assertion = {
     val viewId = genString()
-    Put(s"/v1/views/myorg/myproj/$viewId", viewSource.toEntity) ~> asWriter ~> routes ~> check {
+    Put(s"/v1/views/myorg/myproj/$viewId", viewSource.toEntity) ~> as(writer) ~> routes ~> check {
       response.status shouldEqual StatusCodes.Created
     }
     test(viewId)
@@ -339,7 +339,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
   private def givenADeprecatedView(test: String => Assertion): Assertion = {
     givenAView { view =>
-      Delete(s"/v1/views/myorg/myproj/$view?rev=1") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproj/$view?rev=1") ~> as(writer) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
       }
       test(view)

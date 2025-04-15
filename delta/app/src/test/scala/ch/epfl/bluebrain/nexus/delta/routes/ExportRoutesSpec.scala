@@ -1,27 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.Exporter.ExportResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.{ExportEventQuery, Exporter}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import fs2.io.file.Path
 
 class ExportRoutesSpec extends BaseRouteSpec {
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val identities = IdentitiesDummy(caller)
-
-  private val asAlice = addCredentials(OAuth2BearerToken("alice"))
+  private val identities = IdentitiesDummy.fromUsers(alice)
 
   private val exportTrigger = Ref.unsafe[IO, Boolean](false)
 
@@ -51,7 +44,7 @@ class ExportRoutesSpec extends BaseRouteSpec {
     }
 
     "trigger the 'export/run' permission" in {
-      Post("/v1/export/events", query.toEntity) ~> asAlice ~> routes ~> check {
+      Post("/v1/export/events", query.toEntity) ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Accepted
         exportTrigger.get.accepted shouldEqual true
       }

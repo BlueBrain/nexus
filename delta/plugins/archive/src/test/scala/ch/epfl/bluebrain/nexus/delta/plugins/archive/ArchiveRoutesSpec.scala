@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/zip`
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
@@ -23,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -43,9 +43,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -60,10 +60,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
   implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
 
-  private val subject: Subject            = Identity.User("user", Label.unsafe("realm"))
-  implicit private val caller: Caller     = Caller(subject)
-  private val subjectNoFilePerms: Subject = Identity.User("nofileperms", Label.unsafe("realm"))
-  private val callerNoFilePerms: Caller   = Caller(subjectNoFilePerms)
+  private val readAll      = User("readAll", Label.unsafe("realm"))
+  private val noFileAccess = User("noFileAccess", Label.unsafe("realm"))
 
   private val project    =
     ProjectGen.project("org", "proj", base = nxv.base, mappings = ApiMappings("file" -> schemas.files))
@@ -81,10 +79,10 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     Permissions.resources.read
   )
 
-  private val asSubject     = addCredentials(OAuth2BearerToken("user"))
-  private val asNoFilePerms = addCredentials(OAuth2BearerToken("nofileperms"))
-  private val acceptMeta    = Accept(`application/ld+json`)
-  private val acceptAll     = Accept(`*/*`)
+  private val acceptMeta   = Accept(`application/ld+json`)
+  private val acceptAll    = Accept(`*/*`)
+  private val acceptZip    = Accept(`application/zip`)
+  private val acceptJsonLd = Accept(`application/ld+json`)
 
   private val fetchContext = FetchContextDummy(List(project))
 
@@ -108,7 +106,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     Client
   )
   private val file: ResourceF[File] =
-    FileGen.resourceFor(fileId, projectRef, storageRef, fileAttributes, createdBy = subject, updatedBy = subject)
+    FileGen.resourceFor(fileId, projectRef, storageRef, fileAttributes, createdBy = readAll, updatedBy = readAll)
 
   private val notFoundId   = uri"http://localhost/${genString()}"
   private val notFoundSelf = uri"http://delta:8080/files/${encode(notFoundId.toString)}"
@@ -125,13 +123,13 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   val fetchFileContent: (Iri, ProjectRef, Caller) => IO[FileResponse] = (id, p, c) => {
     val s = c.subject
     (id, p, s) match {
-      case (_, _, `subjectNoFilePerms`) =>
+      case (_, _, `noFileAccess`)      =>
         IO.raiseError(AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
-      case (`fileId`, `projectRef`, _)  =>
+      case (`fileId`, `projectRef`, _) =>
         IO.pure(
           FileResponse.noCache("file.txt", `text/plain(UTF-8)`, Some(12L), Source.single(ByteString(fileContent)))
         )
-      case (id, ref, _)                 =>
+      case (id, ref, _)                =>
         IO.raiseError(FileNotFound(id, ref))
     }
   }
@@ -139,8 +137,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   private lazy val routes = {
     for {
       aclCheck       <- AclSimpleCheck(
-                          (subject, AclAddress.Root, perms.toSet),
-                          (subjectNoFilePerms, AclAddress.Root, perms.toSet)
+                          (readAll, AclAddress.Root, perms.toSet),
+                          (noFileAccess, AclAddress.Root, perms.toSet)
                         )
       archiveDownload = ArchiveDownload(
                           aclCheck,
@@ -152,9 +150,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
                               case _          => IO.raiseError(InvalidPath(input))
                             }
                         )
-      archives        =
-        Archives(fetchContext, archiveDownload, archivesConfig, xas, clock)
-      identities      = IdentitiesDummy(caller, callerNoFilePerms)
+      archives        = Archives(fetchContext, archiveDownload, archivesConfig, xas, clock)
+      identities      = IdentitiesDummy.fromUsers(readAll, noFileAccess)
       r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck).routes)
     } yield r
   }.accepted
@@ -164,8 +161,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
       project: ProjectRef,
       rev: Int = 1,
       deprecated: Boolean = false,
-      createdBy: Subject = subject,
-      updatedBy: Subject = subject,
+      createdBy: Subject = readAll,
+      updatedBy: Subject = readAll,
       expiresInSeconds: Long = 18000L
   ): Json          =
     jsonContentOf(
@@ -229,7 +226,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     val archiveCtxJson = jsonContentOf("responses/archive-resource-context.json")
 
     "create an archive without specifying an id" in {
-      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> as(readAll) ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(generatedId, project.ref)
       }
@@ -237,7 +234,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
     "create an archive without specifying an id and redirect" in {
       uuidF.fixed(UUID.randomUUID()).accepted
-      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> as(readAll) ~> acceptAll ~> routes ~> check {
         uuidF.fixed(uuid).accepted
         status shouldEqual StatusCodes.SeeOther
         header[Location].value.uri.toString() startsWith baseUri.endpoint.toString() shouldEqual true
@@ -247,7 +244,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     "create an archive with a specific id" in {
       val id        = iri"http://localhost/${genString()}"
       val encodedId = encode(id.toString).replaceAll("%3A", ":")
-      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
+      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> as(readAll) ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(id, project.ref)
       }
@@ -257,10 +254,9 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
       val id        = iri"http://localhost/${genString()}"
       val encodedId = encode(id.toString).replaceAll("%3A", ":")
 
-      Put(
-        s"/v1/archives/$projectRef/$encodedId",
-        archiveWithFileSelf.toEntity
-      ) ~> asSubject ~> acceptMeta ~> routes ~> check {
+      Put(s"/v1/archives/$projectRef/$encodedId", archiveWithFileSelf.toEntity) ~> as(
+        readAll
+      ) ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(id, project.ref)
       }
@@ -269,14 +265,14 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     "create an archive with a specific id and redirect" in {
       val id        = iri"http://localhost/${genString()}"
       val encodedId = encode(id.toString).replaceAll("%3A", ":")
-      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
+      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> as(readAll) ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.SeeOther
         header[Location].value.uri.toString() shouldEqual s"${baseUri.endpoint}/archives/$projectRef/$encodedId"
       }
     }
 
     "fetch an archive json representation" in {
-      Get(s"/v1/archives/$projectRef/$uuid") ~> asSubject ~> acceptMeta ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/$uuid") ~> as(readAll) ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           archiveMetadata(generatedId, project.ref)
@@ -287,9 +283,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     }
 
     "fetch a zip archive ignoring not found" in {
-      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> Accept(
-        `application/zip`
-      ) ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> as(readAll) ~> acceptZip ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         header[`Content-Type`].value.value() shouldEqual `application/zip`.value
         val result = fromZip(responseEntity.dataBytes)(materializer, executor)
@@ -309,8 +303,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
             fileId,
             file.value.attributes,
             storageRef,
-            createdBy = subject,
-            updatedBy = subject
+            createdBy = readAll,
+            updatedBy = readAll
           )
         val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata
@@ -318,16 +312,14 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     }
 
     "fail to fetch an archive json representation that doesn't exist" in {
-      Get(s"/v1/archives/$projectRef/missing?ignoreNotFound=true") ~> asSubject ~> Accept(
-        `application/ld+json`
-      ) ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/missing?ignoreNotFound=true") ~> as(readAll) ~> acceptJsonLd ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("responses/archive-not-found.json")
       }
     }
 
     "fail to download an archive that doesn't exist" in {
-      Get(s"/v1/archives/$projectRef/missing?ignoreNotFound=true") ~> asSubject ~> acceptAll ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/missing?ignoreNotFound=true") ~> as(readAll) ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("responses/archive-not-found.json")
       }
@@ -346,7 +338,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     }
 
     "fail to download an archive when lacking file permissions" in {
-      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asNoFilePerms ~> acceptAll ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> as(noFileAccess) ~> acceptAll ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
@@ -373,7 +365,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
               }
             ]
           }"""
-      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> as(readAll) ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("responses/duplicate-paths.json")
       }
@@ -389,14 +381,14 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
               }
             ]
           }"""
-      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> as(readAll) ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("responses/decoding-failed.json")
       }
     }
 
     "fail to create an archive when the same id already exists" in {
-      Put(s"/v1/archives/$projectRef/$uuid", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
+      Put(s"/v1/archives/$projectRef/$uuid", archive.toEntity) ~> as(readAll) ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("responses/archive-already-exists.json")
       }
