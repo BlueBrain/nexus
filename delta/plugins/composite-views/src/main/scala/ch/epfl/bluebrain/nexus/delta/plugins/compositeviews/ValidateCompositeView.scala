@@ -83,9 +83,8 @@ object ValidateCompositeView {
       _          <- IO.raiseWhen(value.projections.length > maxProjections)(
                       TooManyProjections(value.projections.length, maxProjections)
                     )
-      allIds      = value.sources.keys.toList ++ value.projections.keys.toList
-      distinctIds = allIds.distinct
-      _          <- IO.raiseWhen(allIds.size != distinctIds.size)(DuplicateIds(allIds))
+      idIntersect = value.sources.keys.intersect(value.projections.keys)
+      _          <- IO.raiseWhen(idIntersect.nonEmpty)(DuplicateIds(idIntersect))
       _          <- value.sources.toNel.foldLeftM(()) { case (_, (_, s)) => validateSource(s) }
       _          <- value.projections.toNel.foldLeftM(()) { case (_, (_, p)) => validateProjection(p) }
 

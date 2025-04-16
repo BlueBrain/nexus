@@ -176,7 +176,7 @@ object CompositeViewRejection {
     * @param ids
     *   the ids provided
     */
-  final case class DuplicateIds(ids: Seq[Iri])
+  final case class DuplicateIds(ids: Set[Iri])
       extends CompositeViewRejection(
         s"The ids of projection or source contain a duplicate. Ids provided: ${ids.mkString("'", "', '", "'")}"
       )

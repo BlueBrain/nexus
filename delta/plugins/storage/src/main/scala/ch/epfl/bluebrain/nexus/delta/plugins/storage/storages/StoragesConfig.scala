@@ -57,8 +57,8 @@ object StoragesConfig {
       amazon: Option[S3StorageConfig]
   ) {
     def showFileLocation: ShowFileLocation = {
-      val diskType = if (disk.showLocation) Set(StorageType.DiskStorage) else Set()
-      val s3Type   = if (amazon.exists(_.showLocation)) Set(StorageType.S3Storage) else Set()
+      val diskType = if (disk.showLocation) Set(StorageType.DiskStorage) else Set.empty
+      val s3Type   = if (amazon.exists(_.showLocation)) Set(StorageType.S3Storage) else Set.empty
       ShowFileLocation(diskType ++ s3Type)
     }
   }
@@ -76,12 +76,9 @@ object StoragesConfig {
         obj                 <- cursor.asObjectCursor
         diskCursor          <- obj.atKey("disk")
         disk                <- ConfigReader[DiskStorageConfig].from(diskCursor)
-        _                   <-
-          Option
-            .when(disk.allowedVolumes.contains(disk.defaultVolume))(())
-            .toRight(
-              ConfigReaderFailures(ConvertFailure(WrongAllowedKeys(disk.defaultVolume), None, "disk.allowed-volumes"))
-            )
+        _                   <- Either.raiseUnless(disk.allowedVolumes.contains(disk.defaultVolume))(
+                                 ConfigReaderFailures(ConvertFailure(WrongAllowedKeys(disk.defaultVolume), None, "disk.allowed-volumes"))
+                               )
         amazonCursor        <- obj.atKeyOrUndefined("amazon").asObjectCursor
         amazonEnabledCursor <- amazonCursor.atKey("enabled")
         amazonEnabled       <- amazonEnabledCursor.asBoolean
