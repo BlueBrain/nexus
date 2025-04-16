@@ -69,14 +69,18 @@ lazy val akkaHttpXml     = "com.typesafe.akka" %% "akka-http-xml"     % akkaHttp
 lazy val akkaSlf4j          = "com.typesafe.akka"            %% "akka-slf4j"               % akkaVersion
 lazy val akkaStream         = "com.typesafe.akka"            %% "akka-stream"              % akkaVersion
 lazy val akkaTestKit        = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion
-lazy val alpakkaFile        = "com.lightbend.akka"           %% "akka-stream-alpakka-file" % alpakkaVersion
-lazy val alpakkaSse         = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
+lazy val alpakkaFile        = "com.lightbend.akka"           %% "akka-stream-alpakka-file" % alpakkaVersion excludeAll (
+  ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
+)
+lazy val alpakkaSse         = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion excludeAll (
+  ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
+  ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
+)
 lazy val awsSdk             = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
 lazy val betterMonadicFor   = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
 lazy val caffeine           = "com.github.ben-manes.caffeine" % "caffeine"                 % caffeineVersion
 lazy val catsCore           = "org.typelevel"                %% "cats-core"                % catsVersion
 lazy val catsEffect         = "org.typelevel"                %% "cats-effect"              % catsEffectVersion
-lazy val catsEffectLaws     = "org.typelevel"                %% "cats-effect-laws"         % catsEffectVersion
 lazy val catsRetry          = "com.github.cb372"             %% "cats-retry"               % catsRetryVersion
 lazy val circeCore          = "io.circe"                     %% "circe-core"               % circeVersion
 lazy val circeGeneric       = "io.circe"                     %% "circe-generic"            % circeVersion
@@ -94,27 +98,40 @@ lazy val doobie             = Seq(
   "org.postgresql" % "postgresql"    % postgresJdbcVersion
 )
 lazy val fs2                = "co.fs2"                       %% "fs2-core"                 % fs2Version
-lazy val fs2ReactiveStreams = "co.fs2"                       %% "fs2-reactive-streams"     % fs2Version
 lazy val fs2io              = "co.fs2"                       %% "fs2-io"                   % fs2Version
-lazy val fs2Aws             = "io.laserdisc"                 %% "fs2-aws-core"             % fs2AwsVersion
-lazy val fs2AwsS3           = "io.laserdisc"                 %% "fs2-aws-s3"               % fs2AwsVersion
-lazy val glassFishJakarta   = "org.glassfish"                 % "jakarta.json"             % glassFishJakartaVersion
-lazy val handleBars         = "com.github.jknack"             % "handlebars"               % handleBarsVersion
-lazy val jenaArq            = "org.apache.jena"               % "jena-arq"                 % jenaVersion
-lazy val kamonAkkaHttp      = "io.kamon"                     %% "kamon-akka-http"          % kamonVersion
-lazy val kamonCore          = "io.kamon"                     %% "kamon-core"               % kamonVersion
-lazy val kanelaAgent        = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
-lazy val kindProjector      = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
-lazy val log4cats           = "org.typelevel"                %% "log4cats-slf4j"           % log4catsVersion
-lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
-lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
-lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
-lazy val munitCatsEffect    = "org.typelevel"                %% "munit-cats-effect"        % munitCatsEffectVersion
-lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
+
+lazy val fs2Aws = Seq(
+  "co.fs2"       %% "fs2-reactive-streams" % fs2Version,
+  "io.laserdisc" %% "fs2-aws-core"         % fs2AwsVersion,
+  "io.laserdisc" %% "fs2-aws-s3"           % fs2AwsVersion
+).map {
+  _.excludeAll(
+    ExclusionRule(organization = "org.typelevel", name = "cats-kernel_2.13"),
+    ExclusionRule(organization = "org.typelevel", name = "cats-core_2.13"),
+    ExclusionRule(organization = "org.typelevel", name = "cats-effect_2.13"),
+    ExclusionRule(organization = "com.chuusai", name = "shapeless_2.13"),
+    ExclusionRule(organization = "co.fs2", name = "fs2-core_2.13"),
+    ExclusionRule(organization = "co.fs2", name = "fs2-io_2.13")
+  )
+}
+
+lazy val glassFishJakarta = "org.glassfish"                 % "jakarta.json"      % glassFishJakartaVersion
+lazy val handleBars       = "com.github.jknack"             % "handlebars"        % handleBarsVersion
+lazy val jenaArq          = "org.apache.jena"               % "jena-arq"          % jenaVersion
+lazy val kamonAkkaHttp    = "io.kamon"                     %% "kamon-akka-http"   % kamonVersion
+lazy val kamonCore        = "io.kamon"                     %% "kamon-core"        % kamonVersion
+lazy val kanelaAgent      = "io.kamon"                      % "kanela-agent"      % kanelaAgentVersion
+lazy val kindProjector    = "org.typelevel"                %% "kind-projector"    % kindProjectorVersion cross CrossVersion.full
+lazy val log4cats         = "org.typelevel"                %% "log4cats-slf4j"    % log4catsVersion
+lazy val logback          = "ch.qos.logback"                % "logback-classic"   % logbackVersion
+lazy val magnolia         = "com.softwaremill.magnolia1_2" %% "magnolia"          % magnoliaVersion
+lazy val munit            = "org.scalameta"                %% "munit"             % munitVersion
+lazy val munitCatsEffect  = "org.typelevel"                %% "munit-cats-effect" % munitCatsEffectVersion
+lazy val nimbusJoseJwt    = "com.nimbusds"                  % "nimbus-jose-jwt"   % nimbusJoseJwtVersion
 
 lazy val otel4s            = "org.typelevel"                   %% "otel4s-oteljava"                           % otel4sVersion
-lazy val otelAutoconfigure = "io.opentelemetry"                 % "opentelemetry-sdk-extension-autoconfigure" % otelVersion
-lazy val otelExporterOtlp  = "io.opentelemetry"                 % "opentelemetry-exporter-otlp"               % otelVersion
+lazy val otelAutoconfigure = "io.opentelemetry"                 % "opentelemetry-sdk-extension-autoconfigure" % otelVersion % Runtime
+lazy val otelExporterOtlp  = "io.opentelemetry"                 % "opentelemetry-exporter-otlp"               % otelVersion % Runtime
 lazy val otelLogback       = "io.opentelemetry.instrumentation" % "opentelemetry-logback-appender-1.0"        % otelLogbackVersion
 lazy val otelLogbackMdc    = "io.opentelemetry.instrumentation" % "opentelemetry-logback-mdc-1.0"             % otelLogbackVersion
 
@@ -246,20 +263,15 @@ lazy val testkit = project
   .settings(
     coverageMinimumStmtTotal := 0,
     libraryDependencies     ++= Seq(
-      alpakkaFile excludeAll (
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
-      ),
-      catsRetry,
-      doobiePostgres,
-      fs2Aws,
-      fs2AwsS3,
+      alpakkaFile,
+      logback,
       munit,
       munitCatsEffect,
       scalaTest,
       testContainers,
       testContainersScala,
       testContainersScalaLocalStack
-    ) ++ doobie,
+    ) ++ doobie ++ fs2Aws,
     addCompilerPlugin(kindProjector)
   )
 
@@ -277,11 +289,7 @@ lazy val sourcingPsql = project
       circeGenericExtras,
       circeParser,
       classgraph,
-      distageCore,
-      munit           % Test,
-      munitCatsEffect % Test,
-      catsEffectLaws  % Test,
-      logback         % Test
+      distageCore
     ) ++ doobie,
     Test / fork          := true,
     addCompilerPlugin(kindProjector)
@@ -306,8 +314,7 @@ lazy val rdf = project
       magnolia,
       scalaReflect,
       titaniumJsonLd,
-      topBraidShacl,
-      logback % Test
+      topBraidShacl
     ),
     Test / fork          := true,
     addCompilerPlugin(betterMonadicFor)
@@ -352,8 +359,8 @@ lazy val app = project
       classgraph,
       logback,
       otel4s,
-      otelAutoconfigure % Runtime,
-      otelExporterOtlp  % Runtime,
+      otelAutoconfigure,
+      otelExporterOtlp,
       otelLogback,
       otelLogbackMdc
     ),
@@ -445,10 +452,7 @@ lazy val elasticsearchPlugin = project
     moduleName                 := "delta-elasticsearch-plugin",
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
-    libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided,
-      logback       % Test
-    ),
+    libraryDependencies        += kamonAkkaHttp % Provided,
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch",
     addCompilerPlugin(betterMonadicFor),
@@ -468,10 +472,7 @@ lazy val blazegraphPlugin = project
   .settings(
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
-    libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided,
-      logback       % Test
-    ),
+    libraryDependencies        += kamonAkkaHttp % Provided,
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.blazegraph",
     addCompilerPlugin(betterMonadicFor),
@@ -495,12 +496,8 @@ lazy val compositeViewsPlugin = project
     name                       := "delta-composite-views-plugin",
     moduleName                 := "delta-composite-views-plugin",
     libraryDependencies       ++= Seq(
-      alpakkaSse excludeAll (
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
-      ),
-      kamonAkkaHttp % Provided,
-      logback       % Test
+      alpakkaSse,
+      kamonAkkaHttp % Provided
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
@@ -526,10 +523,7 @@ lazy val searchPlugin = project
   .settings(
     name                       := "delta-search-plugin",
     moduleName                 := "delta-search-plugin",
-    libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided,
-      logback       % Test
-    ),
+    libraryDependencies        += kamonAkkaHttp % Provided,
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.search",
     addCompilerPlugin(betterMonadicFor),
@@ -554,22 +548,8 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided,
-      logback       % Test
-    ) ++ Seq(
-      fs2ReactiveStreams,
-      fs2Aws,
-      fs2AwsS3
-    ).map {
-      _ excludeAll (
-        ExclusionRule(organization = "org.typelevel", name = "cats-kernel_2.13"),
-        ExclusionRule(organization = "org.typelevel", name = "cats-core_2.13"),
-        ExclusionRule(organization = "org.typelevel", name = "cats-effect_2.13"),
-        ExclusionRule(organization = "com.chuusai", name = "shapeless_2.13"),
-        ExclusionRule(organization = "co.fs2", name = "fs2-core_2.13"),
-        ExclusionRule(organization = "co.fs2", name = "fs2-io_2.13")
-      )
-    },
+      kamonAkkaHttp % Provided
+    ) ++ fs2Aws,
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",
     addCompilerPlugin(betterMonadicFor),
@@ -594,11 +574,8 @@ lazy val archivePlugin = project
     name                       := "delta-archive-plugin",
     moduleName                 := "delta-archive-plugin",
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided,
-      alpakkaFile excludeAll (
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
-      ),
-      logback       % Test
+      alpakkaFile,
+      kamonAkkaHttp % Provided
     ),
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
@@ -620,9 +597,7 @@ lazy val projectDeletionPlugin = project
   .settings(
     name                       := "delta-project-deletion-plugin",
     moduleName                 := "delta-project-deletion-plugin",
-    libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided
-    ),
+    libraryDependencies        += kamonAkkaHttp % Provided,
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion",
     addCompilerPlugin(betterMonadicFor),
@@ -646,10 +621,7 @@ lazy val graphAnalyticsPlugin = project
   .settings(
     name                       := "delta-graph-analytics-plugin",
     moduleName                 := "delta-graph-analytics-plugin",
-    libraryDependencies       ++= Seq(
-      kamonAkkaHttp % Provided,
-      logback       % Test
-    ),
+    libraryDependencies        += kamonAkkaHttp % Provided,
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics",
@@ -701,10 +673,8 @@ lazy val tests = project
       awsSdk          % Test,
       scalaTest       % Test,
       akkaSlf4j       % Test,
-      alpakkaSse      % Test,
-      fs2Aws          % Test,
-      fs2AwsS3        % Test
-    ),
+      alpakkaSse      % Test
+    ) ++ fs2Aws,
     Test / parallelExecution           := false,
     Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
     // Scalate gets errors with layering with this project so we disable it
