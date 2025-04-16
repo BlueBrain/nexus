@@ -29,8 +29,8 @@ final case class CompositeIndexingDescription(
     projectionName: String,
     commonSpace: String,
     projectionSpaces: NonEmptyMap[Iri, ProjectionSpace],
-    offsets: List[ProjectionOffset],
-    statistics: List[ProjectionStatistics]
+    offsets: Vector[ProjectionOffset],
+    statistics: Vector[ProjectionStatistics]
 )
 
 object CompositeIndexingDescription {

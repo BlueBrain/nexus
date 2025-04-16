@@ -39,12 +39,12 @@ trait ArchiveHelpers extends ScalaFutures with EitherValues with OptionValues {
     fromZip(Source.single(byteString))
 
   def fromZip(source: Source[ByteString, Any])(implicit m: Materializer, e: ExecutionContext): ArchiveContent = {
-    val path   = JFiles.createTempFile("test", ".zip")
+    val path = JFiles.createTempFile("test", ".zip")
     source
       .completionTimeout(10.seconds)
       .runWith(FileIO.toPath(path))
       .futureValue(PatienceConfiguration.Timeout(Span(10, Seconds)))
-    val result = Archive
+    Archive
       .zipReader(path.toFile)
       .mapAsync(1) { case (metadata, source) =>
         source
@@ -59,7 +59,6 @@ trait ArchiveHelpers extends ScalaFutures with EitherValues with OptionValues {
         map + elem
       }
       .futureValue
-    result
   }
 
 }
