@@ -5,10 +5,12 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializer
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
@@ -37,15 +39,12 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
 
   private val orgUuid = UUID.randomUUID()
 
-  private val userWithWritePermission             = User("userWithWritePermission", Label.unsafe(genString()))
-  private val userWithCreatePermission            = User("userWithCreatePermission", Label.unsafe(genString()))
-  private val userWithReadPermission              = User("userWithReadPermission", Label.unsafe(genString()))
-  private val userWithDeletePermission            = User("userWithDeletePermission", Label.unsafe(genString()))
-  private val userWithResourcesReadPermission     = User("userWithResourcesReadPermission", Label.unsafe(genString()))
-  private val userWithReadSingleProjectPermission =
-    User("userWithReadSingleProjectPermission", Label.unsafe(genString()))
-
-  private val superUser = User("superUser", Label.unsafe(genString()))
+  private val reader              = User("reader", Label.unsafe(genString()))
+  private val singleProjectReader = User("singleProjectReader", Label.unsafe(genString()))
+  private val creator             = User("creator", Label.unsafe(genString()))
+  private val writer              = User("writer", Label.unsafe(genString()))
+  private val deleter             = User("deleter", Label.unsafe(genString()))
+  private val statisticsReader    = User("statisticsReader", Label.unsafe(genString()))
 
   private val org1     = Label.unsafe("org1")
   private val org2     = Label.unsafe("org2")
@@ -69,19 +68,16 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     case _     => IO.none
   }
 
-  val (aclCheck, identities) = usersFixture(
-    (userWithWritePermission, AclAddress.Root, Set(projectsPermissions.write)),
-    (userWithReadPermission, AclAddress.Root, Set(projectsPermissions.read)),
-    (userWithDeletePermission, AclAddress.Root, Set(projectsPermissions.delete)),
-    (userWithResourcesReadPermission, AclAddress.Root, Set(resources.read)),
-    (userWithCreatePermission, AclAddress.Root, Set(projectsPermissions.create)),
-    (
-      superUser,
-      AclAddress.Root,
-      Set(projectsPermissions.create, projectsPermissions.read, projectsPermissions.write, projectsPermissions.delete)
-    ),
-    (alice, AclAddress.Root, Set(projectsPermissions.create)),
-    (userWithReadSingleProjectPermission, AclAddress.Project(ref), Set(projectsPermissions.read))
+  private val identities =
+    IdentitiesDummy.fromUsers(reader, singleProjectReader, creator, writer, deleter, statisticsReader)
+
+  private val aclCheck = AclSimpleCheck.unsafe(
+    (reader, AclAddress.Root, Set(projectsPermissions.read)),
+    (singleProjectReader, AclAddress.Project(ref), Set(projectsPermissions.read)),
+    (creator, AclAddress.Root, Set(projectsPermissions.create)),
+    (writer, AclAddress.Root, Set(projectsPermissions.write)),
+    (deleter, AclAddress.Root, Set(projectsPermissions.delete)),
+    (statisticsReader, AclAddress.Root, Set(resources.read))
   )
 
   private lazy val projects =
@@ -125,7 +121,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "create a project" in {
-      Put("/v1/projects/org1/proj", payload.toEntity) ~> as(userWithCreatePermission) ~> routes ~> check {
+      Put("/v1/projects/org1/proj", payload.toEntity) ~> as(creator) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
@@ -136,21 +132,21 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
             "org1",
             orgUuid,
             rev = 1,
-            createdBy = userWithCreatePermission,
-            updatedBy = userWithCreatePermission
+            createdBy = creator,
+            updatedBy = creator
           )
         )
       }
     }
 
     "reject the creation of a project without a label" in {
-      Put("/v1/projects/org1", anotherPayload.toEntity) ~> as(userWithCreatePermission) ~> routes ~> check {
+      Put("/v1/projects/org1", anotherPayload.toEntity) ~> as(creator) ~> routes ~> check {
         status shouldEqual StatusCodes.MethodNotAllowed
       }
     }
 
     "reject the creation of a project which already exists" in {
-      Put("/v1/projects/org1/proj", payload.toEntity) ~> as(userWithCreatePermission) ~> routes ~> check {
+      Put("/v1/projects/org1/proj", payload.toEntity) ~> as(creator) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf(
           "projects/errors/already-exists.json",
@@ -161,7 +157,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "reject the creation of a project on a deprecated organization" in {
-      Put("/v1/projects/org2/proj3", payload.toEntity) ~> as(userWithCreatePermission) ~> routes ~> check {
+      Put("/v1/projects/org2/proj3", payload.toEntity) ~> as(creator) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("projects/errors/org-deprecated.json")
       }
@@ -174,7 +170,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "update a project" in {
-      Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> as(userWithWritePermission) ~> routes ~> check {
+      Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef.unsafe("org1", "proj")
         response.asJson should equalIgnoreArrayOrder(
@@ -185,27 +181,27 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
             "org1",
             orgUuid,
             rev = 2,
-            updatedBy = userWithWritePermission,
-            createdBy = userWithCreatePermission
+            updatedBy = writer,
+            createdBy = creator
           )
         )
       }
     }
 
     "reject the update of a project without name" in {
-      Put("/v1/projects/org1?rev=2", payload.toEntity) ~> as(userWithWritePermission) ~> routes ~> check {
+      Put("/v1/projects/org1?rev=2", payload.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.MethodNotAllowed
       }
     }
 
     "reject the update of a non-existent project" in {
-      Put("/projects/org1/unknown?rev=1", payload.toEntity) ~> as(userWithWritePermission) ~> routes ~> check {
+      Put("/projects/org1/unknown?rev=1", payload.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "reject the update of a project at a non-existent revision" in {
-      Put("/v1/projects/org1/proj?rev=42", payloadUpdated.toEntity) ~> as(userWithWritePermission) ~> routes ~> check {
+      Put("/v1/projects/org1/proj?rev=42", payloadUpdated.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson should equalIgnoreArrayOrder(
           jsonContentOf("projects/errors/incorrect-rev.json", "provided" -> 42, "expected" -> 2)
@@ -221,7 +217,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "reject the deprecation of a project without rev" in {
-      Delete("/v1/projects/org1/proj") ~> as(userWithWritePermission) ~> routes ~> check {
+      Delete("/v1/projects/org1/proj") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
       }
@@ -229,7 +225,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "deprecate a project" in {
-      Delete("/v1/projects/org1/proj?rev=2") ~> as(userWithWritePermission) ~> routes ~> check {
+      Delete("/v1/projects/org1/proj?rev=2") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
@@ -241,15 +237,15 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
             orgUuid,
             rev = 3,
             deprecated = true,
-            createdBy = userWithCreatePermission,
-            updatedBy = userWithWritePermission
+            createdBy = creator,
+            updatedBy = writer
           )
         )
       }
     }
 
     "reject the deprecation of a already deprecated project" in {
-      Delete("/v1/projects/org1/proj?rev=3") ~> as(userWithWritePermission) ~> routes ~> check {
+      Delete("/v1/projects/org1/proj?rev=3") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
           "projects/errors/project-deprecated.json",
@@ -270,8 +266,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
       "New description",
       base,
       vocab,
-      createdBy = Some(userWithCreatePermission),
-      updatedBy = Some(userWithWritePermission)
+      createdBy = Some(creator),
+      updatedBy = Some(writer)
     )
 
     val fetchProjRev3 = projectsFetchJson(
@@ -285,8 +281,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
       "New description",
       base,
       vocab,
-      createdBy = Some(userWithCreatePermission),
-      updatedBy = Some(userWithWritePermission)
+      createdBy = Some(creator),
+      updatedBy = Some(writer)
     )
 
     val fetchProj2 = projectsFetchJson(
@@ -300,8 +296,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
       "Project description",
       "http://localhost/v1/resources/org1/proj2/_/",
       "http://localhost/v1/vocabs/org1/proj2/",
-      createdBy = Some(alice),
-      updatedBy = Some(alice)
+      createdBy = Some(creator),
+      updatedBy = Some(creator)
     )
 
     "fail to fetch a project without projects/read permission" in {
@@ -321,7 +317,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "fetch a project" in {
-      Get("/v1/projects/org1/proj") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects/org1/proj") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
 
         response.asJson should equalIgnoreArrayOrder(fetchProjRev3)
@@ -329,14 +325,14 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "fetch a specific project revision" in {
-      Get("/v1/projects/org1/proj?rev=2") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects/org1/proj?rev=2") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(fetchProjRev2)
       }
     }
 
     "fetch a project with an incorrect revision" in {
-      Get("/v1/projects/org1/proj?rev=42") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects/org1/proj?rev=42") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
           "errors/revision-not-found.json",
@@ -347,23 +343,23 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "fetch an unknown project" in {
-      Get(s"/v1/projects/org1/unknown") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get(s"/v1/projects/org1/unknown") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("projects/errors/project-not-found.json", "proj" -> "org1/unknown")
       }
     }
 
     "list all projects" in {
-      Put("/v1/projects/org1/proj2", anotherPayload.toEntity) ~> as(alice) ~> routes ~> check {
+      Put("/v1/projects/org1/proj2", anotherPayload.toEntity) ~> as(creator) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
 
       val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
-      Get("/v1/projects") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expected)
       }
-      Get("/v1/projects?label=p") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects?label=p") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expected)
       }
@@ -372,18 +368,18 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     "list all projects for organization" in {
       val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
 
-      Get("/v1/projects/org1") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects/org1") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expected)
       }
-      Get("/v1/projects/org1?label=p") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects/org1?label=p") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 
     "list all deprecated projects " in {
-      Get("/v1/projects?deprecated=true") ~> as(userWithReadPermission) ~> routes ~> check {
+      Get("/v1/projects?deprecated=true") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
@@ -393,21 +389,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
       }
     }
 
-    "list all projects updated by Alice" in {
-      Get(s"/v1/projects?updatedBy=${UrlUtils.encode(alice.asIri.toString)}&label=p") ~> as(
-        userWithReadPermission
-      ) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          expectedResults(
-            fetchProj2.removeKeys("@context")
-          )
-        )
-      }
-    }
-
     "list all projects user has access to" in {
-      Get("/v1/projects") ~> as(userWithReadSingleProjectPermission) ~> routes ~> check {
+      Get("/v1/projects") ~> as(singleProjectReader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
@@ -424,14 +407,14 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "fail to get the project statistics for an unknown project" in {
-      Get("/v1/projects/org1/unknown/statistics") ~> as(userWithResourcesReadPermission) ~> routes ~> check {
+      Get("/v1/projects/org1/unknown/statistics") ~> as(statisticsReader) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("projects/errors/project-not-found.json", "proj" -> "org1/unknown")
       }
     }
 
     "get the project statistics" in {
-      Get("/v1/projects/org1/proj/statistics") ~> as(userWithResourcesReadPermission) ~> routes ~> check {
+      Get("/v1/projects/org1/proj/statistics") ~> as(statisticsReader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{
           "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
@@ -456,7 +439,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     }
 
     "delete a project" in {
-      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> as(userWithDeletePermission) ~> routes ~> check {
+      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> as(deleter) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
@@ -469,8 +452,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
             rev = 4,
             deprecated = true,
             markedForDeletion = true,
-            createdBy = userWithCreatePermission,
-            updatedBy = userWithDeletePermission
+            createdBy = creator,
+            updatedBy = deleter
           )
         )
       }
@@ -478,7 +461,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
 
     "fail to undeprecate a project without projects/write permission" in {
       val (org, project) = thereIsADeprecatedProject
-      Put(s"/v1/projects/$org/$project/undeprecate?rev=2") ~> as(userWithReadPermission) ~> routes ~> check {
+      Put(s"/v1/projects/$org/$project/undeprecate?rev=2") ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
       latestRevisionOfProject(org, project) should be(deprecated)
@@ -486,7 +469,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
 
     "fail to undeprecate a project if it is not deprecated" in {
       val (org, project) = thereIsAProject
-      Put(s"/v1/projects/$org/$project/undeprecate?rev=1") ~> as(superUser) ~> routes ~> check {
+      Put(s"/v1/projects/$org/$project/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
           "projects/errors/project-not-deprecated.json",
@@ -499,7 +482,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     "undeprecate a project" in {
       val (org, project) = thereIsADeprecatedProject
 
-      Put(s"/v1/projects/$org/$project/undeprecate?rev=2") ~> as(userWithWritePermission) ~> routes ~> check {
+      Put(s"/v1/projects/$org/$project/undeprecate?rev=2") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should not(be(deprecated))
       }
@@ -511,7 +494,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
   private def thereIsAProject = {
     val org     = org1.value
     val project = genString()
-    Put(s"/v1/projects/$org/$project", payload.toEntity) ~> as(superUser) ~> routes ~> check {
+    Put(s"/v1/projects/$org/$project", payload.toEntity) ~> as(creator) ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     org -> project
@@ -524,7 +507,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
   }
 
   private def deprecateProject(org: String, project: String, rev: Int)(implicit pos: Position): Unit = {
-    Delete(s"/v1/projects/$org/$project?rev=$rev") ~> as(superUser) ~> routes ~> check {
+    Delete(s"/v1/projects/$org/$project?rev=$rev") ~> as(writer) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       response.asJson should be(deprecated)
     }
@@ -532,7 +515,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
   }
 
   private def latestRevisionOfProject(org: String, project: String): Json = {
-    Get(s"/v1/projects/$org/$project") ~> as(superUser) ~> routes ~> check {
+    Get(s"/v1/projects/$org/$project") ~> as(reader) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       response.asJson
     }

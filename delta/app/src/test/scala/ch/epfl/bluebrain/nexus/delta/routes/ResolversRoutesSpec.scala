@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceAccess
@@ -26,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProj
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.Json
@@ -40,9 +39,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  private val asAlice = addCredentials(OAuth2BearerToken(alice.subject))
-  private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
-
   private val org      = Label.unsafe("org")
   private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person, "resolver" -> schemas.resolvers)
   private val projBase = nxv.base
@@ -51,10 +47,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private val project2 =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val identities = IdentitiesDummy(
-    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm))),
-    Caller(bob, Set(bob))
-  )
+  private val identities = IdentitiesDummy.fromUsers(alice, bob)
 
   val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
@@ -98,7 +91,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   )
 
   private val aclCheck = AclSimpleCheck(
-    (Anonymous, AclAddress.Root, Set(Permissions.events.read)),
     (alice, AclAddress.Organization(org), Set(Permissions.resolvers.read, Permissions.resolvers.write)),
     (bob, AclAddress.Project(project.ref), Set(Permissions.resolvers.read, Permissions.resolvers.write))
   ).accepted
@@ -156,7 +148,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         forAll(
           create("in-project", project.ref, inProjectPayload)
         ) { case (id, request) =>
-          request ~> asBob ~> routes ~> check {
+          request ~> as(bob) ~> routes ~> check {
             status shouldEqual StatusCodes.Created
             response.asJson shouldEqual
               resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob)
@@ -170,7 +162,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           create("cross-project-use-current", project2.ref, crossProjectUseCurrentPayload)
             ++ create("cross-project-provided-entities", project2.ref, crossProjectProvidedEntitiesPayload)
         ) { case (id, request) =>
-          request ~> asAlice ~> routes ~> check {
+          request ~> as(alice) ~> routes ~> check {
             status shouldEqual StatusCodes.Created
             response.asJson shouldEqual
               resolverMetadata(id, CrossProject, project2.ref, createdBy = alice, updatedBy = alice)
@@ -183,7 +175,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         forAll(
           create("in-project", project.ref, inProjectPayload)
         ) { case (id, request) =>
-          request ~> asAlice ~> routes ~> check {
+          request ~> as(alice) ~> routes ~> check {
             status shouldEqual StatusCodes.Conflict
             response.asJson shouldEqual jsonContentOf(
               "resolvers/errors/already-exists.json",
@@ -210,7 +202,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
               jsonContentOf("resolvers/cross-project-both-resolution-error.json")
             )
         ) { case (_, request) =>
-          request ~> asAlice ~> routes ~> check {
+          request ~> as(alice) ~> routes ~> check {
             status shouldEqual StatusCodes.BadRequest
           }
         }
@@ -220,7 +212,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         forAll(
           create(genString(), project2.ref, inProjectPayload) ++ create(genString(), project2.ref, inProjectPayload)
         ) { case (_, request) =>
-          request ~> asBob ~> routes ~> check {
+          request ~> as(bob) ~> routes ~> check {
             response.shouldBeForbidden
           }
 
@@ -238,7 +230,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Put(
           s"/v1/resolvers/${project.ref}/in-project-put?rev=1",
           inProjectPayload.deepMerge(newPriority).toEntity
-        ) ~> asBob ~> routes ~> check {
+        ) ~> as(bob) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             resolverMetadata(nxv + "in-project-put", InProject, project.ref, rev = 2, createdBy = bob, updatedBy = bob)
@@ -249,7 +241,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Put(
           s"/v1/resolvers/${project2.ref}/cross-project-use-current-put?rev=1",
           crossProjectUseCurrentPayload.deepMerge(newPriority).toEntity
-        ) ~> asAlice ~> routes ~> check {
+        ) ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual resolverMetadata(
             nxv + "cross-project-use-current-put",
@@ -264,7 +256,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Put(
           s"/v1/resolvers/${project2.ref}/cross-project-provided-entities-put?rev=1",
           crossProjectProvidedEntitiesPayload.deepMerge(newPriority).toEntity
-        ) ~> asAlice ~> routes ~> check {
+        ) ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual resolverMetadata(
             nxv + "cross-project-provided-entities-put",
@@ -281,7 +273,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Put(
           s"/v1/resolvers/${project.ref}/in-project-put?rev=5",
           inProjectPayload.deepMerge(newPriority).toEntity
-        ) ~> asBob ~> routes ~> check {
+        ) ~> as(bob) ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual jsonContentOf(
             "resolvers/errors/incorrect-rev.json",
@@ -292,7 +284,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "fail if the revision is incorrect" in {
-        Put(s"/v1/resolvers/${project.ref}/xxxx?rev=1", inProjectPayload.toEntity) ~> asAlice ~> routes ~> check {
+        Put(s"/v1/resolvers/${project.ref}/xxxx?rev=1", inProjectPayload.toEntity) ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
             "resolvers/errors/not-found.json",
@@ -312,7 +304,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
             Put(
               s"/v1/resolvers/${project2.ref}/cross-project-use-current-put?rev=1",
               crossProjectUseCurrentPayload.deepMerge(newPriority).toEntity
-            ) ~> asBob ~> routes
+            ) ~> as(bob) ~> routes
           )
         ) { request =>
           request ~> check {
@@ -325,7 +317,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     "deprecating a resolver" should {
 
       "succeed" in {
-        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=2") ~> asAlice ~> routes ~> check {
+        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=2") ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             resolverMetadata(
@@ -341,7 +333,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "fail if resolver has already been deprecated" in {
-        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=3") ~> asAlice ~> routes ~> check {
+        Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=3") ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
             jsonContentOf("resolvers/errors/resolver-deprecated.json", "id" -> (nxv + "in-project-put"))
@@ -349,7 +341,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "fail if no revision is provided" in {
-        Delete(s"/v1/resolvers/${project.ref}/in-project-put") ~> asAlice ~> routes ~> check {
+        Delete(s"/v1/resolvers/${project.ref}/in-project-put") ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
             jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
@@ -360,7 +352,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         Put(
           s"/v1/resolvers/${project.ref}/in-project-put?rev=3",
           inProjectPayload.toEntity
-        ) ~> asBob ~> routes ~> check {
+        ) ~> as(bob) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf(
             "resolvers/errors/resolver-deprecated.json",
@@ -373,7 +365,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         forAll(
           List(
             Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=1") ~> routes,
-            Delete(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put?rev=1") ~> asBob ~> routes
+            Delete(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put?rev=1") ~> as(bob) ~> routes
           )
         ) { request =>
           request ~> check {
@@ -444,7 +436,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
             s"/v1/resources/${project.ref}/resolver/in-project-put"
           )
         forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> asBob ~> routes ~> check {
+          Get(endpoint) ~> as(bob) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual inProjectLast.deepMerge(resolverMetaContext)
           }
@@ -452,7 +444,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "get the latest version of an cross-project resolver using current caller" in {
-        Get(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put") ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual crossProjectUseCurrentLast.deepMerge(resolverMetaContext)
         }
@@ -460,7 +452,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
       "get the latest version of an cross-project resolver using provided entities" in {
         val ctx = json""" {"@context": [{"nxv" : "${nxv.base}"}, "${contexts.resolvers}", "${contexts.metadata}"]}"""
-        Get(s"/v1/resolvers/${project2.ref}/cross-project-provided-entities-put") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project2.ref}/cross-project-provided-entities-put") ~> as(alice) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual crossProjectProvidedIdentitiesLast
             .replace(
@@ -478,7 +470,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           s"/v1/resources/${project.ref}/resolver/in-project-put?rev=1"
         )
         forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> asBob ~> routes ~> check {
+          Get(endpoint) ~> as(bob) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             val id       = nxv + "in-project-put"
             val expected = inProjectPayload
@@ -497,7 +489,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           s"/v1/resources/${project.ref}/resolver/in-project-put/source"
         )
         forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> asBob ~> routes ~> check {
+          Get(endpoint) ~> as(bob) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             val expected = inProjectPayload.deepMerge(json"""{"priority": 34}""")
             response.asJson shouldEqual expected
@@ -512,7 +504,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           s"/v1/resources/${project.ref}/resolver/in-project-put/source?rev=1"
         )
         forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> asBob ~> routes ~> check {
+          Get(endpoint) ~> as(bob) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             val expected = inProjectPayload
             response.asJson shouldEqual expected
@@ -521,7 +513,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "fail if the resolver does not exist" in {
-        Get(s"/v1/resolvers/${project.ref}/xxxx") ~> asBob ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/xxxx") ~> as(bob) ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
             "resolvers/errors/not-found.json",
@@ -532,7 +524,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "fail if the revision is not found" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put?rev=10") ~> asBob ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/in-project-put?rev=10") ~> as(bob) ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
             "errors/revision-not-found.json",
@@ -543,7 +535,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "fail if attempting to fetch by tag" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put?tag=some") ~> asBob ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/in-project-put?tag=some") ~> as(bob) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
             json"""
@@ -560,7 +552,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         forAll(
           List(
             Get(s"/v1/resolvers/${project.ref}/in-project-put") ~> routes,
-            Get(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put") ~> asBob ~> routes
+            Get(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put") ~> as(bob) ~> routes
           )
         ) { request =>
           request ~> check {
@@ -572,7 +564,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
     "listing resolvers" should {
       "succeed if the user has read access to the given project" in {
-        Get(s"/v1/resolvers/${project.ref}") ~> asBob ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}") ~> as(bob) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson.asObject.value("_total").value shouldEqual Json.fromLong(3L)
         }
@@ -603,7 +595,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a resource for the given id" in {
         // First we resolve with a in-project resolver, the second one with a cross-project resolver
         forAll(List(project, project2)) { p =>
-          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded") ~> asAlice ~> routes ~> check {
+          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded") ~> as(alice) ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.asJson shouldEqual resourceResolved
           }
@@ -613,7 +605,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a resource and return the original payload" in {
         // First we resolve with a in-project resolver, the second one with a cross-project resolver
         forAll(List(project, project2)) { p =>
-          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded/source") ~> asAlice ~> routes ~> check {
+          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded/source") ~> as(alice) ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.asJson shouldEqual resourceFR.value.source
           }
@@ -623,7 +615,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a resource and return the annotated original payload" in {
         // First we resolve with a in-project resolver, the second one with a cross-project resolver
         forAll(List(project, project2)) { p =>
-          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded/source?annotate=true") ~> asAlice ~> routes ~> check {
+          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded/source?annotate=true") ~> as(alice) ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.asJson shouldEqual resourceResolved
           }
@@ -631,7 +623,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "succeed as a resource and return the resolution report" in {
-        Get(s"/v1/resolvers/${project.ref}/_/$idResourceEncoded?showReport=true") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/_/$idResourceEncoded?showReport=true") ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved-resource-resolution-report.json")
         }
@@ -640,7 +632,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a resource for the given id using the given resolver" in {
         forAll(List(project -> "in-project-post", project2 -> "cross-project-provided-entities-post")) {
           case (p, resolver) =>
-            Get(s"/v1/resolvers/${p.ref}/$resolver/$idResourceEncoded") ~> asAlice ~> routes ~> check {
+            Get(s"/v1/resolvers/${p.ref}/$resolver/$idResourceEncoded") ~> as(alice) ~> routes ~> check {
               response.status shouldEqual StatusCodes.OK
               response.asJson shouldEqual resourceResolved
             }
@@ -650,7 +642,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a resource and return the resolution report for the given resolver" in {
         Get(
           s"/v1/resolvers/${project.ref}/in-project-post/$idResourceEncoded?showReport=true"
-        ) ~> asAlice ~> routes ~> check {
+        ) ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved-resolver-resolution-report.json")
         }
@@ -659,7 +651,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a schema for the given id" in {
         // First we resolve with a in-project resolver, the second one with a cross-project resolver
         forAll(List(project, project2)) { p =>
-          Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
+          Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded?rev=5") ~> as(alice) ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.asJson shouldEqual schemaResolved
           }
@@ -667,7 +659,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
 
       "succeed as a schema and return the resolution report" in {
-        Get(s"/v1/resolvers/${project.ref}/_/$idSchemaEncoded?rev=5&showReport=true") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/_/$idSchemaEncoded?rev=5&showReport=true") ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resource-resolution-report.json")
         }
@@ -676,7 +668,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a schema for the given id using the given resolver" in {
         forAll(List(project -> "in-project-post", project2 -> "cross-project-provided-entities-post")) {
           case (p, resolver) =>
-            Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
+            Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded?rev=5") ~> as(alice) ~> routes ~> check {
               response.status shouldEqual StatusCodes.OK
               response.asJson shouldEqual schemaResolved
             }
@@ -686,21 +678,21 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "succeed as a schema and return the resolution report for the given resolver" in {
         Get(
           s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded?rev=5&showReport=true"
-        ) ~> asAlice ~> routes ~> check {
+        ) ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resolver-resolution-report.json")
         }
       }
 
       "fail for an unknown resource id" in {
-        Get(s"/v1/resolvers/${project.ref}/_/$unknownResourceEncoded") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/_/$unknownResourceEncoded") ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf("resolvers/unknown-resource-resource-resolution-report.json")
         }
       }
 
       "fail for an unknown resource id using the given resolver" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-post/$unknownResourceEncoded") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/in-project-post/$unknownResourceEncoded") ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf("resolvers/unknown-resource-resolver-resolution-report.json")
         }

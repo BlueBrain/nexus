@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -9,12 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{ServerSentEventStream, SseElemStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
@@ -28,11 +26,7 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  implicit private val caller: Caller =
-    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val identities = IdentitiesDummy(caller)
-  private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
+  private val identities = IdentitiesDummy.fromUsers(alice)
 
   private val elem1 = ServerSentEvent("""{"id":"id1"}""", "Success", "1")
   private val elem2 = ServerSentEvent("""{"id":"id2"}""", "Dropped", "2")
@@ -102,14 +96,14 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
     }
 
     "get the continuous elems" in {
-      Get("/v1/elems/org/proj/continuous") ~> asAlice ~> routes ~> check {
+      Get("/v1/elems/org/proj/continuous") ~> as(alice) ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         chunksStream.asString(3).strip shouldEqual expected
       }
     }
 
     "get the current elems" in {
-      Get("/v1/elems/org/proj/currents") ~> asAlice ~> routes ~> check {
+      Get("/v1/elems/org/proj/currents") ~> as(alice) ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         chunksStream.asString(3).strip shouldEqual expected
       }
@@ -123,7 +117,7 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
           "maxInstant" : "1970-01-01T00:00:00Z"}
           """
 
-      Get("/v1/elems/org/proj/remaining") ~> asAlice ~> routes ~> check {
+      Get("/v1/elems/org/proj/remaining") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual expected
       }

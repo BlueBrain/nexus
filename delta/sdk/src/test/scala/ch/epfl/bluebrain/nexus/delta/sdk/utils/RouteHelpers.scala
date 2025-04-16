@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.headers.ETag
+import akka.http.scaladsl.model.headers.{ETag, OAuth2BearerToken}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.testkit.TestDuration
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import io.circe.parser.parse
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject, Printer}
@@ -31,6 +32,8 @@ trait RouteHelpers extends ScalatestRouteTest with ScalaFutures {
   implicit def httpJsonSyntax(json: Json): JsonToHttpEntityOps                         = new JsonToHttpEntityOps(json)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds.dilated, 10.milliseconds)
+
+  def as(user: User): RequestTransformer = addCredentials(OAuth2BearerToken(user.subject))
 }
 
 trait Consumer extends ScalaFutures with Matchers {

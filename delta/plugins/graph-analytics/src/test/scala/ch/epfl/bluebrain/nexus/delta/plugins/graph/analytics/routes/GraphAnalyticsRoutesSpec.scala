@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
@@ -15,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
@@ -23,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import org.scalatest.CancelAfterFailure
 
@@ -41,11 +38,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
       Vocabulary.contexts.error      -> jsonContentOf("contexts/error.json").topContextValueOrEmpty
     )
 
-  implicit private val caller: Caller =
-    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val identities = IdentitiesDummy(caller)
-  private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
+  private val identities = IdentitiesDummy.fromUsers(alice)
 
   private val aclCheck = AclSimpleCheck().accepted
   private val project  = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
@@ -97,7 +90,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
       }
 
       "fetch" in {
-        Get("/v1/graph-analytics/org/project/relationships") ~> asAlice ~> routes ~> check {
+        Get("/v1/graph-analytics/org/project/relationships") ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("routes/relationships.json")
         }
@@ -113,7 +106,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
       }
 
       "fetch" in {
-        Get("/v1/graph-analytics/org/project/properties/Person") ~> asAlice ~> routes ~> check {
+        Get("/v1/graph-analytics/org/project/properties/Person") ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("routes/properties.json")
         }
@@ -129,7 +122,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
       }
 
       "fetch" in {
-        Get("/v1/graph-analytics/org/project/statistics") ~> asAlice ~> routes ~> check {
+        Get("/v1/graph-analytics/org/project/statistics") ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("routes/statistics.json")
         }
@@ -141,14 +134,14 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
       val query = json"""{ "query": { "match_all": {} } }"""
 
       "fail without authorization" in {
-        Post("/v1/graph-analytics/org/project/_search", query.toEntity) ~> asAlice ~> routes ~> check {
+        Post("/v1/graph-analytics/org/project/_search", query.toEntity) ~> as(alice) ~> routes ~> check {
           response.shouldBeForbidden
         }
       }
 
       "succeed" in {
         aclCheck.append(AclAddress.Root, alice -> Set(permissions.query)).accepted
-        Post("/v1/graph-analytics/org/project/_search", query.toEntity) ~> asAlice ~> routes ~> check {
+        Post("/v1/graph-analytics/org/project/_search", query.toEntity) ~> as(alice) ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual viewQueryResponse
         }

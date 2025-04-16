@@ -1,32 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.MultiFetch
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchRequest
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import io.circe.Json
 
 class MultiFetchRoutesSpec extends BaseRouteSpec {
 
-  implicit private val caller: Caller =
-    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val asAlice = addCredentials(OAuth2BearerToken("alice"))
-
-  private val identities = IdentitiesDummy(caller)
+  private val identities = IdentitiesDummy.fromUsers(alice)
 
   private val project1 = ProjectRef.unsafe("org", "proj1")
   private val project2 = ProjectRef.unsafe("org", "proj2")
@@ -76,7 +68,7 @@ class MultiFetchRoutesSpec extends BaseRouteSpec {
 
     def multiFetchQuery[T](payload: Json)(checks: => T) =
       List(Get, Post).foreach { method =>
-        method(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check { checks }
+        method(endpoint, payload.toEntity) ~> as(alice) ~> routes ~> check { checks }
       }
 
     "return unauthorised results for a user with no access" in {

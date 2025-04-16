@@ -7,16 +7,12 @@ import akka.http.scaladsl.server.Directives.handleExceptions
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 
 class IdentitiesRoutesSpec extends BaseRouteSpec {
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val identities = IdentitiesDummy(caller)
+  private val identities = IdentitiesDummy.fromUsers(alice)
 
   private val aclCheck = AclSimpleCheck().accepted
 

@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UTF-8)`}
 import akka.http.scaladsl.model.MediaRanges.*
 import akka.http.scaladsl.model.MediaTypes.{`multipart/form-data`, `text/html`}
-import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts as storageContexts, permissions as storagesPermissions, FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, NexusHeaders}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -69,17 +69,7 @@ class FilesRoutesSpec
   private val writer   = User("writer", realm)
   private val s3writer = User("s3writer", realm)
 
-  implicit private val callerReader: Caller   =
-    Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val callerWriter: Caller   =
-    Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val callerS3Writer: Caller =
-    Caller(s3writer, Set(s3writer, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val identities                      = IdentitiesDummy(callerReader, callerWriter, callerS3Writer)
-
-  private val asReader   = addCredentials(OAuth2BearerToken("reader"))
-  private val asWriter   = addCredentials(OAuth2BearerToken("writer"))
-  private val asS3Writer = addCredentials(OAuth2BearerToken("s3writer"))
+  private val identities = IdentitiesDummy.fromUsers(reader, writer, s3writer)
 
   private val fetchContext = FetchContextDummy(Map(project.ref -> project.context))
 
@@ -140,17 +130,14 @@ class FilesRoutesSpec
     val writePermissions = Set(storagesPermissions.write, diskWrite, permissions.write)
     val readPermissions  = Set(diskRead, s3Read, permissions.read)
     aclCheck.append(AclAddress.Root, writer -> writePermissions, writer -> readPermissions).accepted
-    aclCheck.append(AclAddress.Root, callerWriter.subject -> writePermissions).accepted
+    aclCheck.append(AclAddress.Root, writer -> writePermissions).accepted
     aclCheck.append(AclAddress.Root, reader -> readPermissions).accepted
-    aclCheck.append(AclAddress.Root, s3writer -> Set(s3Write), callerS3Writer.subject -> Set(s3Write)).accepted
+    aclCheck.append(AclAddress.Root, s3writer -> Set(s3Write), s3writer -> Set(s3Write)).accepted
 
     val defaults = json"""{"maxFileSize": 1000, "volume": "$path"}"""
     val s3Perms  = json"""{"readPermission": "$s3Read", "writePermission": "$s3Write"}"""
-    storages.create(s3Id, projectRef, diskFieldsJson deepMerge defaults deepMerge s3Perms)(callerWriter).accepted
-    storages
-      .create(dId, projectRef, diskFieldsJson deepMerge defaults)(callerWriter)
-      .void
-      .accepted
+    storages.create(s3Id, projectRef, diskFieldsJson deepMerge defaults deepMerge s3Perms)(Caller(writer)).accepted
+    storages.create(dId, projectRef, diskFieldsJson deepMerge defaults)(Caller(s3writer)).void.accepted
   }
 
   def postJson(path: String, json: Json): HttpRequest = {
@@ -190,7 +177,7 @@ class FilesRoutesSpec
     }
 
     "create a file" in {
-      postFile("/v1/files/org/proj", entity()) ~> asWriter ~> routes ~> check {
+      postFile("/v1/files/org/proj", entity()) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val attr = attributes(path)
         response.asJson shouldEqual fileMetadata(projectRef, generatedId, attr, diskIdRev)
@@ -203,7 +190,7 @@ class FilesRoutesSpec
         val kw       = metadata.keywords.get.map { case (k, v) => k.toString -> v }
         val file     = entity(genString())
 
-        postFileWithMetadata("/v1/files/org/proj", file, metadata.asJson) ~> asWriter ~> routes ~> check {
+        postFileWithMetadata("/v1/files/org/proj", file, metadata.asJson) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson should have(description(metadata.description.get))
           response.asJson should have(name(metadata.name.get))
@@ -217,7 +204,9 @@ class FilesRoutesSpec
       val invalidMetadata = genCustomMetadata().copy(keywords = Some(Map(invalidKey -> "value")))
       val id              = genString()
 
-      putFileWithMetadata(s"/v1/files/org/proj/$id", entity(), invalidMetadata.asJson) ~> asWriter ~> routes ~> check {
+      putFileWithMetadata(s"/v1/files/org/proj/$id", entity(), invalidMetadata.asJson) ~> as(
+        writer
+      ) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
           json"""
@@ -229,7 +218,7 @@ class FilesRoutesSpec
               }
                 """
 
-        Get(s"/v1/files/org/proj/$id") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id") ~> Accept(`*/*`) ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
         }
       }
@@ -237,7 +226,7 @@ class FilesRoutesSpec
 
     "create and tag a file" in {
       withUUIDF(uuid2) {
-        postFile("/v1/files/org/proj?tag=mytag", entity()) ~> asWriter ~> routes ~> check {
+        postFile("/v1/files/org/proj?tag=mytag", entity()) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           val attr      = attributes(path, id = uuid2)
           val expected  = fileMetadata(projectRef, generatedId2, attr, diskIdRev)
@@ -250,14 +239,14 @@ class FilesRoutesSpec
     }
 
     "fail to create a file without s3/write permission" in {
-      putFile("/v1/files/org/proj/file1?storage=s3-storage", entity()) ~> asWriter ~> routes ~> check {
+      putFile("/v1/files/org/proj/file1?storage=s3-storage", entity()) ~> as(writer) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "create a file on s3 with an authenticated user and provided id" in {
       val id = genString()
-      putFile(s"/v1/files/org/proj/$id?storage=s3-storage", entity(id)) ~> asS3Writer ~> routes ~> check {
+      putFile(s"/v1/files/org/proj/$id?storage=s3-storage", entity(id)) ~> as(s3writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val attr = attributes(path, id)
         response.asJson shouldEqual
@@ -270,7 +259,7 @@ class FilesRoutesSpec
         putFile(
           "/v1/files/org/proj/fileTagged?storage=s3-storage&tag=mytag",
           entity("fileTagged.txt")
-        ) ~> asS3Writer ~> routes ~> check {
+        ) ~> as(s3writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           val attr      = attributes(path, "fileTagged.txt", id = uuid2)
           val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
@@ -284,7 +273,7 @@ class FilesRoutesSpec
 
     "reject the creation of a file which already exists" in {
       givenAFile { id =>
-        putFile(s"/v1/files/org/proj/$id", entity()) ~> asWriter ~> routes ~> check {
+        putFile(s"/v1/files/org/proj/$id", entity()) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual fileAlreadyExistsError(nxvBase(id))
         }
@@ -295,14 +284,14 @@ class FilesRoutesSpec
       putFile(
         "/v1/files/org/proj/file-too-large",
         randomEntity(filename = "large-file.txt", 1100)
-      ) ~> asWriter ~> routes ~> check {
+      ) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.PayloadTooLarge
         response.asJson shouldEqual jsonContentOf("files/errors/file-too-large.json")
       }
     }
 
     "reject the creation of a file to a storage that does not exist" in {
-      putFile("/v1/files/org/proj/file2?storage=not-exist", entity()) ~> asWriter ~> routes ~> check {
+      putFile("/v1/files/org/proj/file2?storage=not-exist", entity()) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
           jsonContentOf("storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
@@ -325,7 +314,7 @@ class FilesRoutesSpec
         )
         forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
           val filename = s"file-idx-$idx.txt"
-          putFile(s"$endpoint?rev=${idx + 1}", entity(filename)) ~> asWriter ~> routes ~> check {
+          putFile(s"$endpoint?rev=${idx + 1}", entity(filename)) ~> as(writer) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             val attr = attributes(path, filename)
             response.asJson shouldEqual
@@ -344,7 +333,7 @@ class FilesRoutesSpec
           s"/v1/files/org/proj/$id?rev=1",
           entity(genString()),
           metadata.asJson
-        ) ~> asWriter ~> routes ~> check {
+        ) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson should have(description(metadata.description.get))
           response.asJson should have(name(metadata.name.get))
@@ -362,7 +351,7 @@ class FilesRoutesSpec
           s"/v1/files/org/proj/$id?rev=1",
           entity(genString()),
           invalidMetadata.asJson
-        ) ~> asWriter ~> routes ~> check {
+        ) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
             json"""
@@ -392,7 +381,7 @@ class FilesRoutesSpec
         val metadata = genCustomMetadata()
         val kw       = metadata.keywords.get.map { case (k, v) => k.toString -> v }
         val headers  = RawHeader(NexusHeaders.fileMetadata, metadata.asJson.noSpaces)
-        Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> asWriter ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson should have(description(metadata.description.get))
           response.asJson should have(name(metadata.name.get))
@@ -407,11 +396,13 @@ class FilesRoutesSpec
         val userTag  = UserTag.unsafe("mytag")
 
         val headers = RawHeader(NexusHeaders.fileMetadata, metadata.asJson.noSpaces)
-        Put(s"/v1/files/org/proj/$id?rev=1&tag=${userTag.value}").withHeaders(headers) ~> asWriter ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id?rev=1&tag=${userTag.value}").withHeaders(headers) ~> as(
+          writer
+        ) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           Get(s"/v1/files/org/proj/$id?tag=${userTag.value}") ~> Accept(
             MediaTypes.`application/json`
-          ) ~> asReader ~> routes ~> check {
+          ) ~> as(reader) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
           }
         }
@@ -420,7 +411,7 @@ class FilesRoutesSpec
 
     "return an error when attempting to update custom metadata without providing it" in {
       givenAFile { id =>
-        Put(s"/v1/files/org/proj/$id?rev=1") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id?rev=1") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
             json"""
@@ -440,7 +431,7 @@ class FilesRoutesSpec
         val invalidMetadata = genCustomMetadata().copy(keywords = Some(Map(invalidKey -> "value")))
 
         val headers = RawHeader(NexusHeaders.fileMetadata, invalidMetadata.asJson.noSpaces)
-        Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> asWriter ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id?rev=1").withHeaders(headers) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual
             json"""
@@ -457,10 +448,10 @@ class FilesRoutesSpec
 
     "update and tag a file in one request" in {
       givenAFile { id =>
-        putFile(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"$id.txt")) ~> asWriter ~> routes ~> check {
+        putFile(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"$id.txt")) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
         }
-        Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> asWriter ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
         }
       }
@@ -468,7 +459,7 @@ class FilesRoutesSpec
 
     "reject the update of a non-existent file" in {
       val nonExistentFile = genString()
-      putFile(s"/v1/files/org/proj/$nonExistentFile?rev=1", entity("other.txt")) ~> asWriter ~> routes ~> check {
+      putFile(s"/v1/files/org/proj/$nonExistentFile?rev=1", entity("other.txt")) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
           jsonContentOf("files/errors/not-found.json", "id" -> (nxv + nonExistentFile), "proj" -> "org/proj")
@@ -477,7 +468,9 @@ class FilesRoutesSpec
 
     "reject the update of a non-existent file storage" in {
       givenAFile { id =>
-        putFile(s"/v1/files/org/proj/$id?rev=1&storage=not-exist", entity("other.txt")) ~> asWriter ~> routes ~> check {
+        putFile(s"/v1/files/org/proj/$id?rev=1&storage=not-exist", entity("other.txt")) ~> as(
+          writer
+        ) ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual
             jsonContentOf("storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
@@ -487,7 +480,7 @@ class FilesRoutesSpec
 
     "reject the update of a file at a non-existent revision" in {
       givenAFile { id =>
-        putFile(s"/v1/files/org/proj/$id?rev=10", entity("other.txt")) ~> asWriter ~> routes ~> check {
+        putFile(s"/v1/files/org/proj/$id?rev=10", entity("other.txt")) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual
             jsonContentOf("files/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)
@@ -505,7 +498,7 @@ class FilesRoutesSpec
 
     "deprecate a file" in {
       givenAFile { id =>
-        Delete(s"/v1/files/org/proj/$id?rev=1") ~> asWriter ~> routes ~> check {
+        Delete(s"/v1/files/org/proj/$id?rev=1") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val attr = attributes(path, id)
           response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = 2, deprecated = true)
@@ -515,7 +508,7 @@ class FilesRoutesSpec
 
     "reject the deprecation of a file without rev" in {
       givenAFile { id =>
-        Delete(s"/v1/files/org/proj/$id") ~> asWriter ~> routes ~> check {
+        Delete(s"/v1/files/org/proj/$id") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
         }
@@ -524,7 +517,7 @@ class FilesRoutesSpec
 
     "reject the deprecation of an already deprecated file" in {
       givenADeprecatedFile { id =>
-        Delete(s"/v1/files/org/proj/$id?rev=2") ~> asWriter ~> routes ~> check {
+        Delete(s"/v1/files/org/proj/$id?rev=2") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("files/errors/file-deprecated.json", "id" -> (nxv + id))
         }
@@ -533,7 +526,7 @@ class FilesRoutesSpec
 
     "fail to undeprecate a file without files/write permission" in {
       givenADeprecatedFile { id =>
-        Put(s"/v1/files/org/proj/$id/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id/undeprecate?rev=2") ~> as(reader) ~> routes ~> check {
           response.shouldBeForbidden
         }
       }
@@ -541,12 +534,12 @@ class FilesRoutesSpec
 
     "undeprecate a file" in {
       givenADeprecatedFile { id =>
-        Put(s"/v1/files/org/proj/$id/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id/undeprecate?rev=2") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             fileMetadata(projectRef, nxv + id, attributes(path, id), diskIdRev, rev = 3, deprecated = false)
 
-          Get(s"/v1/files/org/proj/$id") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
+          Get(s"/v1/files/org/proj/$id") ~> Accept(`*/*`) ~> as(reader) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
           }
         }
@@ -555,7 +548,7 @@ class FilesRoutesSpec
 
     "reject the undeprecation of a file without rev" in {
       givenADeprecatedFile { id =>
-        Put(s"/v1/files/org/proj/$id/undeprecate") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id/undeprecate") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("errors/missing-query-param.json", "field" -> "rev")
         }
@@ -564,7 +557,7 @@ class FilesRoutesSpec
 
     "reject the undeprecation of a file that is not deprecated" in {
       givenAFile { id =>
-        Put(s"/v1/files/org/proj/$id/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/files/org/proj/$id/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual fileIsNotDeprecatedError(nxvBase(id))
         }
@@ -574,7 +567,7 @@ class FilesRoutesSpec
     "tag a file" in {
       givenAFile { id =>
         val payload = json"""{"tag": "mytag", "rev": 1}"""
-        postJson(s"/v1/files/org/proj/$id/tags?rev=1", payload) ~> asWriter ~> routes ~> check {
+        postJson(s"/v1/files/org/proj/$id/tags?rev=1", payload) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           val attr = attributes(path, id)
           response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = 2)
@@ -596,7 +589,7 @@ class FilesRoutesSpec
     "fail to fetch a file when the accept header does not match file media type" in {
       givenATaggedFile(tag) { id =>
         forAll(List("", "?rev=1", s"?tags=$tag")) { suffix =>
-          Get(s"/v1/files/org/proj/$id$suffix") ~> Accept(`video/*`) ~> asReader ~> routes ~> check {
+          Get(s"/v1/files/org/proj/$id$suffix") ~> Accept(`video/*`) ~> as(reader) ~> routes ~> check {
             response.status shouldEqual StatusCodes.NotAcceptable
             response.asJson shouldEqual jsonContentOf("errors/content-type.json", "expected" -> "text/plain")
             response.headers should not contain varyHeader
@@ -611,7 +604,7 @@ class FilesRoutesSpec
           forAll(
             List(s"/v1/files/org/proj/$id", s"/v1/resources/org/proj/_/$id", s"/v1/resources/org/proj/file/$id")
           ) { endpoint =>
-            Get(endpoint) ~> accept ~> asReader ~> routes ~> check {
+            Get(endpoint) ~> accept ~> as(reader) ~> routes ~> check {
               status shouldEqual StatusCodes.OK
               contentType.value shouldEqual `text/plain(UTF-8)`.value
               header("Content-Disposition").value.value() shouldEqual
@@ -637,7 +630,7 @@ class FilesRoutesSpec
         )
         forAll(endpoints) { endpoint =>
           forAll(List("rev=1", s"tag=$tag")) { param =>
-            Get(s"$endpoint?$param") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
+            Get(s"$endpoint?$param") ~> Accept(`*/*`) ~> as(reader) ~> routes ~> check {
               status shouldEqual StatusCodes.OK
               contentType.value shouldEqual `text/plain(UTF-8)`.value
               header("Content-Disposition").value.value() shouldEqual
@@ -667,7 +660,7 @@ class FilesRoutesSpec
 
     "fetch a file metadata" in {
       givenAFile { id =>
-        Get(s"/v1/files/org/proj/$id") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id") ~> Accept(`application/ld+json`) ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val attr = attributes(path, id)
           response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev)
@@ -688,7 +681,7 @@ class FilesRoutesSpec
         )
         forAll(endpoints) { endpoint =>
           forAll(List("rev=1", s"tag=$tag")) { param =>
-            Get(s"$endpoint?$param") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+            Get(s"$endpoint?$param") ~> Accept(`application/ld+json`) ~> as(reader) ~> routes ~> check {
               status shouldEqual StatusCodes.OK
               response.asJson shouldEqual
                 fileMetadata(projectRef, nxv + id, attr, diskIdRev)
@@ -703,14 +696,14 @@ class FilesRoutesSpec
     "fetch the file tags" in {
       givenAFile { id =>
         val taggingPayload = json"""{"tag": "$tag", "rev": 1}"""
-        Post(s"/v1/files/org/proj/$id/tags?rev=1", taggingPayload.toEntity) ~> asWriter ~> routes ~> check {
+        Post(s"/v1/files/org/proj/$id/tags?rev=1", taggingPayload.toEntity) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
         }
-        Get(s"/v1/resources/org/proj/_/$id/tags?rev=1") ~> asReader ~> routes ~> check {
+        Get(s"/v1/resources/org/proj/_/$id/tags?rev=1") ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
         }
-        Get(s"/v1/files/org/proj/$id/tags") ~> asReader ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id/tags") ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "$tag"}]}""".addContext(contexts.tags)
         }
@@ -719,7 +712,7 @@ class FilesRoutesSpec
 
     "return not found if tag not found" in {
       givenATaggedFile("mytag") { id =>
-        Get(s"/v1/files/org/proj/$id?tag=myother") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id?tag=myother") ~> Accept(`application/ld+json`) ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "myother")
         }
@@ -728,7 +721,9 @@ class FilesRoutesSpec
 
     "reject if provided rev and tag simultaneously" in {
       givenATaggedFile(tag) { id =>
-        Get(s"/v1/files/org/proj/$id?tag=$tag&rev=1") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id?tag=$tag&rev=1") ~> Accept(`application/ld+json`) ~> as(
+          reader
+        ) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("errors/tag-and-rev-error.json")
         }
@@ -736,7 +731,7 @@ class FilesRoutesSpec
     }
 
     def deleteTag(id: String, tag: String, rev: Int) =
-      Delete(s"/v1/files/org/proj/$id/tags/$tag?rev=$rev") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/files/org/proj/$id/tags/$tag?rev=$rev") ~> as(writer) ~> routes ~> check {
         val attr = attributes(path, s"$id")
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = rev + 1)
@@ -751,7 +746,7 @@ class FilesRoutesSpec
     "not return the deleted tag" in {
       givenATaggedFile(tag) { id =>
         deleteTag(id, tag, 1)
-        Get(s"/v1/files/org/proj/$id/tags") ~> asReader ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id/tags") ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
         }
@@ -761,7 +756,7 @@ class FilesRoutesSpec
     "fail to fetch file by the deleted tag" in {
       givenATaggedFile(tag) { id =>
         deleteTag(id, tag, 1)
-        Get(s"/v1/files/org/proj/$id?tag=$tag") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+        Get(s"/v1/files/org/proj/$id?tag=$tag") ~> Accept(`application/ld+json`) ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf("errors/tag-not-found.json", "tag" -> "mytag")
         }
@@ -784,7 +779,7 @@ class FilesRoutesSpec
 
   def givenAFileInProject(projRef: String)(test: String => Assertion): Assertion = {
     val id = genString()
-    Put(s"/v1/files/$projRef/$id", entity(s"$id")) ~> asWriter ~> routes ~> check {
+    Put(s"/v1/files/$projRef/$id", entity(s"$id")) ~> as(writer) ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     test(id)
@@ -792,7 +787,7 @@ class FilesRoutesSpec
 
   def givenATaggedFile(tag: String)(test: String => Assertion): Assertion = {
     val id = genString()
-    Put(s"/v1/files/org/proj/$id?tag=$tag", entity(s"$id")) ~> asWriter ~> routes ~> check {
+    Put(s"/v1/files/org/proj/$id?tag=$tag", entity(s"$id")) ~> as(writer) ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     test(id)
@@ -800,7 +795,7 @@ class FilesRoutesSpec
 
   def givenADeprecatedFile(test: String => Assertion): Assertion =
     givenAFile { id =>
-      Delete(s"/v1/files/org/proj/$id?rev=1") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/files/org/proj/$id?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
       test(id)
@@ -814,8 +809,8 @@ class FilesRoutesSpec
       storageType: StorageType = StorageType.DiskStorage,
       rev: Int = 1,
       deprecated: Boolean = false,
-      createdBy: Subject = callerWriter.subject,
-      updatedBy: Subject = callerWriter.subject
+      createdBy: Subject = writer,
+      updatedBy: Subject = writer
   )(implicit baseUri: BaseUri): Json =
     FilesRoutesSpec
       .fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)

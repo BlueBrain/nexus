@@ -98,20 +98,20 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   "Elasticsearch views routes" should {
 
     "fail to create a view without views/write permission" in {
-      Post("/v1/views/myorg/myproject", payload.toEntity) ~> asReader ~> routes ~> check {
+      Post("/v1/views/myorg/myproject", payload.toEntity) ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "create a view" in {
-      Post("/v1/views/myorg/myproject", payload.toEntity) ~> asWriter ~> routes ~> check {
+      Post("/v1/views/myorg/myproject", payload.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual elasticSearchViewMetadata(myId)
       }
     }
 
     "create a view with an authenticated user and provided id" in {
-      Put("/v1/views/myorg/myproject/myid2", payloadNoId.toEntity) ~> asWriter ~> routes ~> check {
+      Put("/v1/views/myorg/myproject/myid2", payloadNoId.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual elasticSearchViewMetadata(myId2)
       }
@@ -121,7 +121,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       Put(
         "/v1/views/myorg/myproject/myid3",
         payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "filterDeprecated" } ]}""").toEntity
-      ) ~> asWriter ~> routes ~> check {
+      ) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual
           elasticSearchViewMetadata(myId3)
@@ -130,7 +130,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
     "reject the creation of a view which already exists" in {
       givenAView { view =>
-        Put(s"/v1/views/$projectRef/$view", payloadNoId.toEntity) ~> asWriter ~> routes ~> check {
+        Put(s"/v1/views/$projectRef/$view", payloadNoId.toEntity) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual resourceAlreadyExistsError(nxv + view, projectRef)
         }
@@ -141,7 +141,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       Put(
         "/v1/views/myorg/myproject/unknown-pipe",
         payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "xxx" } ]}""").toEntity
-      ) ~> asWriter ~> routes ~> check {
+      ) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
           jsonContentOf("routes/errors/pipe-not-found.json", "id" -> myId, "project" -> "myorg/myproject")
@@ -149,7 +149,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     }
 
     "fail to update a view without views/write permission" in {
-      Put(s"/v1/views/myorg/myproject/myid?rev=1", payload.toEntity) ~> asReader ~> routes ~> check {
+      Put(s"/v1/views/myorg/myproject/myid?rev=1", payload.toEntity) ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
@@ -160,7 +160,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         s"/v1/views/myorg/myproject/$myIdEncoded"
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
-        Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> asWriter ~> routes ~> check {
+        Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = idx + 2)
         }
@@ -169,14 +169,14 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
     "reject the update of a non-existent view" in {
       val payload = payloadUpdated.removeKeys(keywords.id)
-      Put("/v1/views/myorg/myproject/myid10?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
+      Put("/v1/views/myorg/myproject/myid10?rev=1", payload.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual viewNotFoundError(nxv + "myid10", projectRef)
       }
     }
 
     "reject the update of a view at a non-existent revision" in {
-      Put("/v1/views/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> asWriter ~> routes ~> check {
+      Put("/v1/views/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("routes/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
@@ -184,20 +184,20 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     }
 
     "fail to deprecate a view without views/write permission" in {
-      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> asReader ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> as(reader) ~> routes ~> check {
         response.shouldBeForbidden
       }
     }
 
     "deprecate a view" in {
-      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> asWriter ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/myid?rev=3") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = 4, deprecated = true)
       }
     }
 
     "reject the deprecation of a view without rev" in {
-      Delete("/v1/views/myorg/myproject/myid") ~> asWriter ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/myid") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
       }
@@ -205,7 +205,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
     "reject the deprecation of a already deprecated view" in {
       givenADeprecatedView { view =>
-        Delete(s"/v1/views/myorg/myproject/$view?rev=2") ~> asWriter ~> routes ~> check {
+        Delete(s"/v1/views/myorg/myproject/$view?rev=2") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual viewIsDeprecatedError(nxv + view)
         }
@@ -226,7 +226,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         Put(
           s"/v1/views/myorg/myproject/$view/undeprecate?rev=2",
           payloadUpdated.toEntity
-        ) ~> asReader ~> routes ~> check {
+        ) ~> as(reader) ~> routes ~> check {
           response.shouldBeForbidden
         }
       }
@@ -237,7 +237,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         Put(
           s"/v1/views/myorg/myproject/$view/undeprecate?rev=2",
           payloadUpdated.toEntity
-        ) ~> asWriter ~> routes ~> check {
+        ) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual elasticSearchViewMetadata(nxv + view, rev = 3)
         }
@@ -246,7 +246,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
     "reject the undeprecation of a view without rev" in {
       givenADeprecatedView { view =>
-        Put(s"/v1/views/myorg/myproject/$view/undeprecate", payloadUpdated.toEntity) ~> asWriter ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproject/$view/undeprecate", payloadUpdated.toEntity) ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
         }
@@ -255,7 +255,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
     "reject the undeprecation of a view that is not deprecated" in {
       givenAView { view =>
-        Put(s"/v1/views/myorg/myproject/$view/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+        Put(s"/v1/views/myorg/myproject/$view/undeprecate?rev=1") ~> as(writer) ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual viewIsNotDeprecatedError(nxv + view)
         }
@@ -273,7 +273,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
     "fetch a view" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
-      Get("/v1/views/myorg/myproject/myid") ~> asReader ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual elasticSearchView(
           myId,
@@ -293,7 +293,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         "/v1/resources/myorg/myproject/view/myid2"
       )
       forAll(endpoints) { endpoint =>
-        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+        Get(s"$endpoint?rev=1") ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual elasticSearchView(myId2)
         }
@@ -308,7 +308,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> asReader ~> routes ~> check {
+        Get(endpoint) ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payloadNoId
         }
@@ -320,7 +320,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         s"/v1/views/myorg/myproject/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
-        Get(s"$endpoint?rev=1") ~> asReader ~> routes ~> check {
+        Get(s"$endpoint?rev=1") ~> as(reader) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payloadNoId
         }
@@ -328,7 +328,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     }
 
     "return not found if tag not found" in {
-      Get("/v1/views/myorg/myproject/myid2?tag=myother") ~> asReader ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid2?tag=myother") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
           "routes/errors/fetch-by-tag-not-supported.json",
@@ -339,7 +339,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get("/v1/views/myorg/myproject/myid2?tag=mytag&rev=1") ~> asReader ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid2?tag=mytag&rev=1") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
       }
@@ -378,7 +378,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     }
 
     "reject if deprecating the default view" in {
-      Delete("/v1/views/myorg/myproject/nxv:defaultElasticSearchIndex?rev=1") ~> asWriter ~> routes ~> check {
+      Delete("/v1/views/myorg/myproject/nxv:defaultElasticSearchIndex?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual json"""{
           "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
@@ -394,7 +394,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   private def givenAView(test: String => Assertion): Assertion = {
     val viewId         = genString()
     val viewDefPayload = payload deepMerge json"""{"@id": "$viewId"}"""
-    Post("/v1/views/myorg/myproject", viewDefPayload.toEntity) ~> asWriter ~> routes ~> check {
+    Post("/v1/views/myorg/myproject", viewDefPayload.toEntity) ~> as(writer) ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     test(viewId)
@@ -402,7 +402,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private def givenADeprecatedView(test: String => Assertion): Assertion = {
     givenAView { view =>
-      Delete(s"/v1/views/myorg/myproject/$view?rev=1") ~> asWriter ~> routes ~> check {
+      Delete(s"/v1/views/myorg/myproject/$view?rev=1") ~> as(writer) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
       test(view)

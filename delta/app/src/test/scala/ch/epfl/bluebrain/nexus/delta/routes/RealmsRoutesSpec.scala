@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -9,14 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.realms as realmsPermissions
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl, RealmsProvisioningConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
@@ -44,9 +42,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
     clock
   )
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val identities = IdentitiesDummy(caller)
+  private val identities = IdentitiesDummy.fromUsers(alice)
   private val aclCheck   = AclSimpleCheck().accepted
 
   private lazy val routes = Route.seal(RealmsRoutes(identities, realms, aclCheck))
@@ -125,7 +121,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
     "create another realm with an authenticated user" in {
       val input = json"""{"name": "$gitlabName", "openIdConfig": "$gitlabOpenId", "logo": "$githubLogo"}"""
-      Put("/v1/realms/gitlab", input.toEntity) ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+      Put("/v1/realms/gitlab", input.toEntity) ~> as(alice) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual gitlabCreatedMeta
       }
@@ -221,7 +217,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
     }
 
     "deprecate a realm" in {
-      Delete("/v1/realms/gitlab?rev=1") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+      Delete("/v1/realms/gitlab?rev=1") ~> as(alice) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(gitlabDeprecatedMeta)
       }

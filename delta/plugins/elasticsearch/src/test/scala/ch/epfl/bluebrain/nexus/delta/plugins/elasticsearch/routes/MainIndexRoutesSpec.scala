@@ -76,47 +76,47 @@ class MainIndexRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   "Default index route" should {
     s"fail to get statistics if the user has no access to $project2" in {
-      Get(s"/views/$project2/documents/statistics") ~> asReader ~> routes ~> check {
+      Get(s"/views/$project2/documents/statistics") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
       }
     }
 
     s"get statistics if the user has access to $project1" in {
-      Get(s"/views/$project1/documents/statistics") ~> asReader ~> routes ~> check {
+      Get(s"/views/$project1/documents/statistics") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual proj1stats
       }
 
-      Get(s"/views/$project1/$encodedDefaultViewId/statistics") ~> asReader ~> routes ~> check {
+      Get(s"/views/$project1/$encodedDefaultViewId/statistics") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual proj1stats
       }
     }
 
     s"fail perform a search if the user has no access to $project2" in {
-      Post(s"/views/$project2/documents/_search", json"""{}""".toEntity) ~> asReader ~> routes ~> check {
+      Post(s"/views/$project2/documents/_search", json"""{}""".toEntity) ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
       }
     }
 
     s"return a search if the user has no access to $project1" in {
-      Post(s"/views/$project1/documents/_search", json"""{}""".toEntity) ~> asReader ~> routes ~> check {
+      Post(s"/views/$project1/documents/_search", json"""{}""".toEntity) ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual searchResult
       }
 
-      Post(s"/views/$project1/$encodedDefaultViewId/_search", json"""{}""".toEntity) ~> asReader ~> routes ~> check {
+      Post(s"/views/$project1/$encodedDefaultViewId/_search", json"""{}""".toEntity) ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual searchResult
       }
     }
 
     "return 404 when trying a segment different from the default view id" in {
-      Get(s"/views/$project1/fail/statistics") ~> asReader ~> routes ~> check {
+      Get(s"/views/$project1/fail/statistics") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
 
-      Post(s"/views/$project1/fail/_search", json"""{}""".toEntity) ~> asReader ~> routes ~> check {
+      Post(s"/views/$project1/fail/_search", json"""{}""".toEntity) ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }

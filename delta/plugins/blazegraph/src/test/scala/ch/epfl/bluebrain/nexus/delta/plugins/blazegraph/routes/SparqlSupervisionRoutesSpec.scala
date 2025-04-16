@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.supervision.SparqlSupervision
@@ -10,23 +9,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 class SparqlSupervisionRoutesSpec extends BaseRouteSpec {
 
   private val supervisor = User("supervisor", realm)
 
-  implicit private val callerSupervisor: Caller =
-    Caller(supervisor, Set(supervisor, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val asSupervisor = addCredentials(OAuth2BearerToken("supervisor"))
-
-  private val identities = IdentitiesDummy(callerSupervisor)
+  private val identities = IdentitiesDummy.fromUsers(supervisor)
   private val aclCheck   = AclSimpleCheck(
     (supervisor, AclAddress.Root, Set(supervision.read))
   ).accepted
@@ -83,7 +76,7 @@ class SparqlSupervisionRoutesSpec extends BaseRouteSpec {
            ]
          }"""
 
-      Get("/supervision/blazegraph") ~> asSupervisor ~> routes ~> check {
+      Get("/supervision/blazegraph") ~> as(supervisor) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual expected
       }

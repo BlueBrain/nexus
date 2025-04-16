@@ -1,19 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects, supervision}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectHealer, ProjectsHealth}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
@@ -26,13 +24,10 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   private val supervisor = User("supervisor", realm)
 
-  implicit private val callerSupervisor: Caller =
-    Caller(supervisor, Set(supervisor, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val asSupervisor = addCredentials(OAuth2BearerToken("supervisor"))
-
-  private val identities = IdentitiesDummy(callerSupervisor)
-  private val aclCheck   = AclSimpleCheck().accepted
+  private val identities = IdentitiesDummy.fromUsers(supervisor)
+  private val aclCheck   = AclSimpleCheck.unsafe(
+    (supervisor, AclAddress.Root, Set(supervision.read, projects.write))
+  )
 
   private val project  = ProjectRef.unsafe("myorg", "myproject")
   private val project2 = ProjectRef.unsafe("myorg", "myproject2")
@@ -88,11 +83,6 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   private val routes = routesTemplate(Set.empty, noopHealer)
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    aclCheck.append(AclAddress.Root, supervisor -> Set(supervision.read, projects.write)).accepted
-  }
-
   "The supervision projection endpoint" should {
 
     "be forbidden without supervision/read permission" in {
@@ -102,7 +92,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     }
 
     "be accessible with supervision/read permission and return expected payload" in {
-      Get("/v1/supervision/projections") ~> asSupervisor ~> routes ~> check {
+      Get("/v1/supervision/projections") ~> as(supervisor) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("supervision/supervision-running-proj-response.json")
       }
@@ -120,14 +110,14 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
     "return a successful http code when there are no unhealthy projects" in {
       val routesWithHealthyProjects = routesTemplate(Set.empty, noopHealer)
-      Get("/v1/supervision/projects") ~> asSupervisor ~> routesWithHealthyProjects ~> check {
+      Get("/v1/supervision/projects") ~> as(supervisor) ~> routesWithHealthyProjects ~> check {
         response.status shouldEqual StatusCodes.OK
       }
     }
 
     "return an error code when there are unhealthy projects" in {
       val routesWithUnhealthyProjects = routesTemplate(unhealthyProjects, noopHealer)
-      Get("/v1/supervision/projects") ~> asSupervisor ~> routesWithUnhealthyProjects ~> check {
+      Get("/v1/supervision/projects") ~> as(supervisor) ~> routesWithUnhealthyProjects ~> check {
         response.status shouldEqual StatusCodes.InternalServerError
         response.asJson shouldEqual
           json"""
@@ -161,7 +151,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       val project          = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
       val routesWithHealer = routesTemplate(Set.empty, projectHealer)
 
-      Post(s"/v1/supervision/projects/$project/heal") ~> asSupervisor ~> routesWithHealer ~> check {
+      Post(s"/v1/supervision/projects/$project/heal") ~> as(supervisor) ~> routesWithHealer ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""
@@ -175,7 +165,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
     "return an error if the healing failed" in {
       val routesWithFailingHealer = routesTemplate(Set.empty, failingHealer)
-      Post("/v1/supervision/projects/myorg/myproject/heal") ~> asSupervisor ~> routesWithFailingHealer ~> check {
+      Post("/v1/supervision/projects/myorg/myproject/heal") ~> as(supervisor) ~> routesWithFailingHealer ~> check {
         response.status shouldEqual StatusCodes.InternalServerError
         response.asJson shouldEqual
           json"""
@@ -200,7 +190,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     }
 
     "be accessible with supervision/read permission and return expected payload" in {
-      Get("/v1/supervision/activity/projects") ~> asSupervisor ~> routes ~> check {
+      Get("/v1/supervision/activity/projects") ~> as(supervisor) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{ "$project": true, "$project2": false }"""
       }
