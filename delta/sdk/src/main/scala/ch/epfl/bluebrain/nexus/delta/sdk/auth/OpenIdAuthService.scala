@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.auth
 
 import cats.effect.IO
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
@@ -21,6 +22,11 @@ import org.http4s.{BasicCredentials, Headers, Request, Uri, UrlForm}
   */
 class OpenIdAuthService(client: Client[IO], realms: Realms) {
 
+  private val urlForm = UrlForm(
+    "scope"      -> "openid",
+    "grant_type" -> "client_credentials"
+  )
+
   /**
     * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
     */
@@ -28,35 +34,27 @@ class OpenIdAuthService(client: Client[IO], realms: Realms) {
     for {
       realm       <- findRealm(credentials.realm)
       response    <- requestToken(realm.tokenEndpoint, credentials.user, credentials.password)
-      parsedToken <- parseResponse(response)
+      parsedToken <- IO.fromEither(parseResponse(response))
     } yield {
       parsedToken
     }
   }
 
-  private def findRealm(id: Label): IO[Realm] = {
-    for {
-      realm <- realms.fetch(id)
-      _     <- IO.raiseWhen(realm.deprecated)(RealmIsDeprecated(realm.value))
-    } yield realm.value
-  }
+  private def findRealm(id: Label): IO[Realm] =
+    realms.fetch(id).flatMap { realm =>
+      IO.raiseWhen(realm.deprecated)(RealmIsDeprecated(realm.value)).as(realm.value)
+    }
 
   private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]): IO[Json] = {
     val request = Request[IO](
       method = POST,
       uri = tokenEndpoint,
       headers = Headers(Authorization(BasicCredentials(user, password.value)))
-    ).withEntity(
-      UrlForm(
-        "scope"      -> "openid",
-        "grant_type" -> "client_credentials"
-      )
-    )
+    ).withEntity(urlForm)
     client.expectOr[Json](request) { response =>
-      response.body.compile.to(Array).flatMap { body =>
-        val s = new String(body)
+      response.bodyAsString.flatMap { body =>
         logger
-          .error(s"The token could not be retrieved. The service returned: ${response.status} => $s")
+          .error(s"The token could not be retrieved. The service returned: ${response.status} => $body")
           .as(
             AuthTokenHttpError(response.status)
           )
@@ -64,17 +62,13 @@ class OpenIdAuthService(client: Client[IO], realms: Realms) {
     }
   }
 
-  private def parseResponse(json: Json): IO[ParsedToken] = {
-    for {
-      rawToken    <- json.hcursor.get[String]("access_token") match {
-                       case Left(failure) => IO.raiseError(AuthTokenNotFoundInResponse(failure))
-                       case Right(value)  => IO.pure(value)
-                     }
-      parsedToken <- IO.fromEither(ParsedToken.fromToken(AuthToken(rawToken)))
-    } yield {
-      parsedToken
-    }
-  }
+  private def parseResponse(json: Json) =
+    json.hcursor
+      .get[String]("access_token")
+      .leftMap(AuthTokenNotFoundInResponse)
+      .flatMap { rawToken =>
+        ParsedToken.fromToken(AuthToken(rawToken))
+      }
 }
 
 object OpenIdAuthService {
