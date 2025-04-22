@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.RealmOpenIdConfigAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import doobie.syntax.all.*
+import org.http4s.Uri
 
 object OpenIdExists {
 

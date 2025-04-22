@@ -1,24 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.auth
 
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.model.HttpMethods.POST
-import akka.http.scaladsl.model.headers.Authorization
-import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.OpenIdAuthService.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, RealmIsDeprecated}
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
+import org.http4s.Method.POST
+import org.http4s.client.Client
+import org.http4s.headers.Authorization
+import org.http4s.{BasicCredentials, Headers, Request, Uri, UrlForm}
 
 /**
   * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
   */
-class OpenIdAuthService(httpClient: HttpClient, realms: Realms) {
+class OpenIdAuthService(client: Client[IO], realms: Realms) {
 
   /**
     * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
@@ -41,25 +42,26 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms) {
   }
 
   private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]): IO[Json] = {
-    httpClient
-      .toJson(
-        HttpRequest(
-          method = POST,
-          uri = tokenEndpoint,
-          headers = Authorization(HttpCredentials.createBasicHttpCredentials(user, password.value)) :: Nil,
-          entity = akka.http.scaladsl.model
-            .FormData(
-              Map(
-                "scope"      -> "openid",
-                "grant_type" -> "client_credentials"
-              )
-            )
-            .toEntity
-        )
+    val request = Request[IO](
+      method = POST,
+      uri = tokenEndpoint,
+      headers = Headers(Authorization(BasicCredentials(user, password.value)))
+    ).withEntity(
+      UrlForm(
+        "scope"      -> "openid",
+        "grant_type" -> "client_credentials"
       )
-      .adaptError { case e: HttpClientError =>
-        AuthTokenHttpError(e)
+    )
+    client.expectOr[Json](request) { response =>
+      response.body.compile.to(Array).flatMap { body =>
+        val s = new String(body)
+        logger
+          .error(s"The token could not be retrieved. The service returned: ${response.status} => $s")
+          .as(
+            AuthTokenHttpError(response.status)
+          )
       }
+    }
   }
 
   private def parseResponse(json: Json): IO[ParsedToken] = {
@@ -73,4 +75,8 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms) {
       parsedToken
     }
   }
+}
+
+object OpenIdAuthService {
+  private val logger = Logger[this.type]
 }

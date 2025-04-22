@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInsta
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, HttpResponseFieldsInstances, IdentityInstances, IriInstances, ProjectRefInstances}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IORejectSyntax, IriEncodingSyntax, ProjectionErrorsSyntax}
+import org.http4s.circe.CirceInstances
 
 /**
   * Aggregate instances and syntax from rdf plus the current sdk instances and syntax to avoid importing multiple
@@ -15,6 +16,7 @@ package object implicits
     extends TripleInstances
     with UriInstances
     with SecretInstances
+    with CirceInstances
     with CredentialsInstances
     with HttpResponseFieldsInstances
     with IdentityInstances

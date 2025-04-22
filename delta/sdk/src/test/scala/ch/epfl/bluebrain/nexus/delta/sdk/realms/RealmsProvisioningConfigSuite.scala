@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import org.http4s.implicits.http4sLiteralsSyntax
 import pureconfig.ConfigSource
 
 class RealmsProvisioningConfigSuite extends NexusSuite {

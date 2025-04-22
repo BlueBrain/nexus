@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
@@ -15,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import org.http4s.Uri
 
 final class RealmsImpl private (log: RealmsLog) extends Realms {
 

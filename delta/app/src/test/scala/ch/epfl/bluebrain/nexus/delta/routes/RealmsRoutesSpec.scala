@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -18,13 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import io.circe.Json
+import org.http4s.Uri
 
 class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
 
-  val githubLogo: Uri = "https://localhost/ghlogo"
+  val githubLogo: Uri = Uri.unsafeFromString("https://localhost/ghlogo")
 
   private val provisioning = RealmsProvisioningConfig(enabled = false, Map.empty)
   private val config       = RealmsConfig(eventLogConfig, pagination, provisioning)

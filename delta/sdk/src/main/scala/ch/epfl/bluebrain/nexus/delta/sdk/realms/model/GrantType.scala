@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json}
+import org.http4s.Uri
 
 /**
   * OAuth2 grant type enumeration.
@@ -106,5 +106,5 @@ object GrantType {
   }
 
   private def toCustom(string: String): Option[CustomGrantType] =
-    Option(Uri(string)).filter(_.isAbsolute).map(CustomGrantType)
+    Uri.fromString(string).toOption.filter(_.scheme.isDefined).map(CustomGrantType)
 }

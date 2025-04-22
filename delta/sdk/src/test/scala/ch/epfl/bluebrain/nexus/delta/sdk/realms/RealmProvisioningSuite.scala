@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
-import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.ProvisioningAction.Outcome
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
@@ -15,6 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
+import org.http4s.Uri
+import org.http4s.implicits.http4sLiteralsSyntax
 
 class RealmProvisioningSuite extends NexusSuite with Doobie.Fixture with ConfigFixtures with IOFromMap {
 

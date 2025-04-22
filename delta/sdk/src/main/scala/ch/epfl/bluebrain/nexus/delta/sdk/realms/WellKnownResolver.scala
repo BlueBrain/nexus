@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
@@ -9,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{GrantType, RealmRejection
 import com.nimbusds.jose.jwk.{JWK, KeyType}
 import io.circe.generic.semiauto.*
 import io.circe.{CursorOp, Decoder, Json}
+import org.http4s.Uri
 
 import scala.util.Try
 
@@ -48,13 +48,12 @@ object WellKnownResolver {
         .leftMap(df => IllegalGrantTypeFormat(configUri, CursorOp.opsToPath(df.history)))
 
     def jwksUri(json: Json): Either[RealmRejection, Uri] =
-      for {
-        value <- json.hcursor
-                   .get[String]("jwks_uri")
-                   .leftMap(df => IllegalJwksUriFormat(configUri, CursorOp.opsToPath(df.history)))
-        uri   <- value.toUri.leftMap(_ => IllegalJwksUriFormat(configUri, ".jwks_uri"))
-        _     <- Either.cond(uri.isAbsolute, uri, IllegalJwksUriFormat(configUri, ".jwks_uri"))
-      } yield uri
+      json.hcursor
+        .get[Uri]("jwks_uri")
+        .leftMap(df => IllegalJwksUriFormat(configUri, CursorOp.opsToPath(df.history)))
+        .flatMap { uri =>
+          Either.cond(uri.scheme.isDefined, uri, IllegalJwksUriFormat(configUri, ".jwks_uri"))
+        }
 
     def endpoints(json: Json): Either[RealmRejection, Endpoints] =
       Endpoints

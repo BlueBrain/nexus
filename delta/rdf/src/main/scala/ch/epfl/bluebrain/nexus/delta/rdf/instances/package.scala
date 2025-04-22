@@ -1,3 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-package object instances extends TripleInstances with UriInstances with SecretInstances
+import org.http4s.circe.CirceInstances
+
+package object instances extends TripleInstances with UriInstances with SecretInstances with CirceInstances
