@@ -113,12 +113,17 @@ object SearchResults {
   final def apply[A](total: Long, results: Seq[A]): UnscoredSearchResults[A] =
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
+  final def apply[A](stream: Stream[IO, A]): IO[UnscoredSearchResults[A]] =
+    stream.compile.toVector.map { values =>
+      SearchResults(values.size.toLong, values)
+    }
+
   final def apply[A](
       stream: Stream[IO, A],
       pagination: Pagination.FromPagination,
       ordering: Ordering[A]
   ): IO[UnscoredSearchResults[A]] =
-    stream.compile.toList
+    stream.compile.toVector
       .map { resources =>
         SearchResults(
           resources.size.toLong,

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel
 import cats.effect.IO
 import org.typelevel.log4cats.Logger
 import pureconfig.ConfigReader
-import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
+import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.*
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.RetryPolicies.*
@@ -61,14 +61,6 @@ object RetryStrategy {
       val message = s"""Error $err while $action, giving up (total retries: $totalRetries)"""
       logger.error(message)
   }
-
-  /**
-    * Fail without retry
-    * @param onError
-    *   what action to perform on error
-    */
-  def alwaysGiveUp[E](onError: (E, RetryDetails) => IO[Unit]): RetryStrategy[E] =
-    RetryStrategy(RetryStrategyConfig.AlwaysGiveUp, _ => false, onError)
 
   /**
     * Retry at a constant interval
@@ -187,26 +179,19 @@ object RetryStrategyConfig {
       for {
         obj      <- cursor.asObjectCursor
         rc       <- obj.atKey("retry")
-        retry    <- ConfigReader[String].from(rc)
-        strategy <- retry match {
+        strategy <- ConfigReader[String].from(rc).flatMap {
                       case "never"         => Right(AlwaysGiveUp)
                       case "once"          => onceRetryStrategy.from(obj)
                       case "constant"      => constantRetryStrategy.from(obj)
                       case "exponential"   => exponentialRetryStrategy.from(obj)
                       case "maximum-delay" => maximumCumulativeDelayStrategy.from(obj)
                       case other           =>
-                        Left(
-                          ConfigReaderFailures(
-                            ConvertFailure(
-                              CannotConvert(
-                                other,
-                                "string",
-                                "'retry' value must be one of ('never', 'once', 'constant', 'exponential')"
-                              ),
-                              obj
-                            )
-                          )
+                        val reason = CannotConvert(
+                          other,
+                          "string",
+                          "'retry' value must be one of ('never', 'once', 'constant', 'exponential')"
                         )
+                        obj.failed(reason)
                     }
       } yield strategy
     }

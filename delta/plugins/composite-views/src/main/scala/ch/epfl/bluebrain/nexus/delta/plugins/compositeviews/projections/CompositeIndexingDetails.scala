@@ -54,9 +54,9 @@ final class CompositeIndexingDetails(
 
   private def listOffsets(view: IndexingViewRef, c: CompositeBranch => Boolean) =
     fetchProgress(view).map { progress =>
-      progress.branches.foldLeft(List.empty[ProjectionOffset]) {
+      progress.branches.foldLeft(Vector.empty[ProjectionOffset]) {
         case (acc, (branch, progress)) if branch.run == Run.Main && c(branch) =>
-          ProjectionOffset(branch.source, branch.target, progress.offset) :: acc
+          acc :+ ProjectionOffset(branch.source, branch.target, progress.offset)
         case (acc, _)                                                         => acc
       }
     }
@@ -100,7 +100,7 @@ final class CompositeIndexingDetails(
       sourceById  = view.value.sources.foldLeft(Map.empty[Iri, CompositeViewSource]) { case (acc, source) =>
                       acc + (source.id -> source)
                     }
-      statistics <- progress.branches.toList.traverseFilter {
+      statistics <- progress.branches.toVector.traverseFilter {
                       case (branch, progress) if branch.run == Run.Main && c(branch) =>
                         sourceById.get(branch.source).traverse { s =>
                           fetchRemaining(s, view.project, progress.offset)

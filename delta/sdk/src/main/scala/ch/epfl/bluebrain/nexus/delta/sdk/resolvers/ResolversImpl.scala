@@ -127,14 +127,9 @@ final class ResolversImpl private (
   }.span("fetchResolver")
 
   def list(project: ProjectRef): IO[UnscoredSearchResults[ResolverResource]] =
-    log
-      .currentStates(Scope.Project(project), _.toResource)
-      .compile
-      .toList
-      .map { results =>
-        SearchResults(results.size.toLong, results)
-      }
-      .span("listResolvers")
+    SearchResults(
+      log.currentStates(Scope.Project(project), _.toResource)
+    ).span("listResolvers")
 
   private def eval(cmd: ResolverCommand): IO[ResolverResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
