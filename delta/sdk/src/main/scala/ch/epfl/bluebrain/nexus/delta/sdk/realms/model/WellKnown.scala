@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
-import akka.http.scaladsl.model.Uri
 import io.circe.Json
+import org.http4s.Uri
 
 /**
   * Data type that represents the required well known configuration for an OIDC provider.

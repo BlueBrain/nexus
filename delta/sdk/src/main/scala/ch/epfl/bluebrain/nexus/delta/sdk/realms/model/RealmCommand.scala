@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
-import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import org.http4s.Uri
 
 /**
   * Enumeration of Realm command types.

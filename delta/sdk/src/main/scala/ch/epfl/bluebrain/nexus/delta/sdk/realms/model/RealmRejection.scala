@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.syntax.*
 import io.circe.{Encoder, JsonObject}
+import org.http4s.Uri
 
 /**
   * Enumeration of Realm rejection types.

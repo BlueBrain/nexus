@@ -1,11 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.data.NonEmptySet
 import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.*
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
@@ -22,6 +19,8 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.nimbusds.jwt.{JWTClaimsSet, PlainJWT}
 import io.circe.{parser, Json}
+import org.http4s.client.UnexpectedStatus
+import org.http4s.{Credentials, Method, Status, Uri}
 
 import java.time.Instant
 import java.util.Date
@@ -101,7 +100,7 @@ class IdentitiesImplSuite extends NexusSuite with IOFromMap {
   private def userInfo(uri: Uri): IO[Json] =
     ioFromMap(
       Map(github.userInfoEndpoint -> json"""{ "groups": ["group3", "group4"] }"""),
-      (_: Uri) => HttpUnexpectedError(HttpRequest(), "Error while getting response")
+      (uri: Uri) => UnexpectedStatus(Status.InternalServerError, Method.GET, uri)
     )(uri)
 
   private val realmCache  = LocalCache[String, Realm]()
@@ -113,7 +112,7 @@ class IdentitiesImplSuite extends NexusSuite with IOFromMap {
         new IdentitiesImpl(
           realmCache,
           findRealm,
-          (uri: Uri, _: OAuth2BearerToken) => userInfo(uri),
+          (uri: Uri, _: Credentials.Token) => userInfo(uri),
           groupsCache
         )
 

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -12,6 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import org.http4s.Uri
+import org.http4s.implicits.http4sLiteralsSyntax
 
 import java.time.Instant
 
@@ -112,7 +113,7 @@ class RealmsEvaluateSuite extends NexusSuite with IOFromMap {
     }
   }
 
-  val wellKnownWrongUri: Uri = "https://localhost/auth/realms/myrealmwrong"
+  val wellKnownWrongUri: Uri = uri"https://localhost/auth/realms/myrealmwrong"
   List(
     None          -> CreateRealm(label, name, wellKnownWrongUri, None, None, subject),
     Some(current) -> UpdateRealm(label, 1, name, wellKnownWrongUri, None, None, subject)

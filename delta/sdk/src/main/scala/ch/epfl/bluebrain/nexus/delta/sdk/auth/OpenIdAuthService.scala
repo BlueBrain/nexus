@@ -1,24 +1,31 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.auth
 
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.model.HttpMethods.POST
-import akka.http.scaladsl.model.headers.Authorization
-import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.OpenIdAuthService.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, RealmIsDeprecated}
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
+import org.http4s.Method.POST
+import org.http4s.client.Client
+import org.http4s.headers.Authorization
+import org.http4s.{BasicCredentials, Headers, Request, Uri, UrlForm}
 
 /**
   * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
   */
-class OpenIdAuthService(httpClient: HttpClient, realms: Realms) {
+class OpenIdAuthService(client: Client[IO], realms: Realms) {
+
+  private val urlForm = UrlForm(
+    "scope"      -> "openid",
+    "grant_type" -> "client_credentials"
+  )
 
   /**
     * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
@@ -27,50 +34,43 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms) {
     for {
       realm       <- findRealm(credentials.realm)
       response    <- requestToken(realm.tokenEndpoint, credentials.user, credentials.password)
-      parsedToken <- parseResponse(response)
+      parsedToken <- IO.fromEither(parseResponse(response))
     } yield {
       parsedToken
     }
   }
 
-  private def findRealm(id: Label): IO[Realm] = {
-    for {
-      realm <- realms.fetch(id)
-      _     <- IO.raiseWhen(realm.deprecated)(RealmIsDeprecated(realm.value))
-    } yield realm.value
-  }
+  private def findRealm(id: Label): IO[Realm] =
+    realms.fetch(id).flatMap { realm =>
+      IO.raiseWhen(realm.deprecated)(RealmIsDeprecated(realm.value)).as(realm.value)
+    }
 
   private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]): IO[Json] = {
-    httpClient
-      .toJson(
-        HttpRequest(
-          method = POST,
-          uri = tokenEndpoint,
-          headers = Authorization(HttpCredentials.createBasicHttpCredentials(user, password.value)) :: Nil,
-          entity = akka.http.scaladsl.model
-            .FormData(
-              Map(
-                "scope"      -> "openid",
-                "grant_type" -> "client_credentials"
-              )
-            )
-            .toEntity
-        )
-      )
-      .adaptError { case e: HttpClientError =>
-        AuthTokenHttpError(e)
+    val request = Request[IO](
+      method = POST,
+      uri = tokenEndpoint,
+      headers = Headers(Authorization(BasicCredentials(user, password.value)))
+    ).withEntity(urlForm)
+    client.expectOr[Json](request) { response =>
+      response.bodyAsString.flatMap { body =>
+        logger
+          .error(s"The token could not be retrieved. The service returned: ${response.status} => $body")
+          .as(
+            AuthTokenHttpError(response.status)
+          )
       }
-  }
-
-  private def parseResponse(json: Json): IO[ParsedToken] = {
-    for {
-      rawToken    <- json.hcursor.get[String]("access_token") match {
-                       case Left(failure) => IO.raiseError(AuthTokenNotFoundInResponse(failure))
-                       case Right(value)  => IO.pure(value)
-                     }
-      parsedToken <- IO.fromEither(ParsedToken.fromToken(AuthToken(rawToken)))
-    } yield {
-      parsedToken
     }
   }
+
+  private def parseResponse(json: Json) =
+    json.hcursor
+      .get[String]("access_token")
+      .leftMap(AuthTokenNotFoundInResponse)
+      .flatMap { rawToken =>
+        ParsedToken.fromToken(AuthToken(rawToken))
+      }
+}
+
+object OpenIdAuthService {
+  private val logger = Logger[this.type]
 }

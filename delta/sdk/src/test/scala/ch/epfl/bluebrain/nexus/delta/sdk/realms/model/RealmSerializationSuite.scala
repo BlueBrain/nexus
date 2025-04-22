@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
-import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -9,6 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
+import org.http4s.Uri
+import org.http4s.implicits.http4sLiteralsSyntax
 
 import java.time.Instant
 
@@ -20,18 +21,18 @@ class RealmSerializationSuite extends SerializationSuite {
   val realm: Label                           = Label.unsafe("myrealm")
   val name: Name                             = Name.unsafe("name")
   val subject: Subject                       = User("username", realm)
-  val openIdConfig: Uri                      = Uri("http://localhost:8080/.wellknown")
+  val openIdConfig: Uri                      = uri"http://localhost:8080/.wellknown"
   val issuer: String                         = "http://localhost:8080/issuer"
   val keys: Set[Json]                        = Set(Json.obj("k" -> Json.fromString(issuer)))
   val grantTypes: Set[GrantType]             =
     Set(AuthorizationCode, Implicit, Password, ClientCredentials, DeviceCode, RefreshToken)
-  val logo: Uri                              = Uri("http://localhost:8080/logo.png")
+  val logo: Uri                              = uri"http://localhost:8080/logo.png"
   val acceptedAudiences: NonEmptySet[String] = NonEmptySet.of("audience")
-  val authorizationEndpoint: Uri             = Uri("http://localhost:8080/authorize")
-  val tokenEndpoint: Uri                     = Uri("http://localhost:8080/token")
-  val userInfoEndpoint: Uri                  = Uri("http://localhost:8080/userinfo")
-  val revocationEndpoint: Uri                = Uri("http://localhost:8080/revocation")
-  val endSessionEndpoint: Uri                = Uri("http://localhost:8080/logout")
+  val authorizationEndpoint: Uri             = uri"http://localhost:8080/authorize"
+  val tokenEndpoint: Uri                     = uri"http://localhost:8080/token"
+  val userInfoEndpoint: Uri                  = uri"http://localhost:8080/userinfo"
+  val revocationEndpoint: Uri                = uri"http://localhost:8080/revocation"
+  val endSessionEndpoint: Uri                = uri"http://localhost:8080/logout"
 
   private val realmMapping = Map(
     RealmCreated(

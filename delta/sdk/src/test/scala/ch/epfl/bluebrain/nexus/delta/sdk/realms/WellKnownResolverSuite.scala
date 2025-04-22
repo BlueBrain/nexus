@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
-import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpUnexpectedError
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.JsonSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType.*
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IllegalEndpointFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}
@@ -10,21 +9,24 @@ import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import io.circe.Json
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
+import org.http4s.circe.CirceInstances
+import org.http4s.{Method, Status, Uri}
+import org.http4s.client.UnexpectedStatus
+import org.http4s.implicits.http4sLiteralsSyntax
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.KeyOps
 
-class WellKnownResolverSuite extends NexusSuite with IOFromMap with CirceLiteral {
+class WellKnownResolverSuite extends NexusSuite with IOFromMap with CirceLiteral with CirceInstances with JsonSyntax {
 
-  private val openIdUri = Uri("https://localhost/auth/realms/master/.well-known/openid-configuration")
-  private val jwksUri   = Uri("https://localhost/auth/realms/master/protocol/openid-connect/certs")
+  private val openIdUri = uri"https://localhost/auth/realms/master/.well-known/openid-configuration"
+  private val jwksUri   = uri"https://localhost/auth/realms/master/protocol/openid-connect/certs"
   private val issuer    = "https://localhost/auth/realms/master"
 
-  private val authorizationUri = Uri("https://localhost/auth")
-  private val tokenUri         = Uri("https://localhost/auth/token")
-  private val userInfoUri      = Uri("https://localhost/auth/userinfo")
-  private val revocationUri    = Uri("https://localhost/auth/revoke")
-  private val endSessionUri    = Uri("https://localhost/auth/logout")
+  private val authorizationUri = uri"https://localhost/auth"
+  private val tokenUri         = uri"https://localhost/auth/token"
+  private val userInfoUri      = uri"https://localhost/auth/userinfo"
+  private val revocationUri    = uri"https://localhost/auth/revoke"
+  private val endSessionUri    = uri"https://localhost/auth/logout"
 
   private val publicKey =
     new RSAKeyGenerator(2048)
@@ -37,6 +39,8 @@ class WellKnownResolverSuite extends NexusSuite with IOFromMap with CirceLiteral
 
   private val validJwks = json"""{ "keys": [ $publicKey ] }"""
 
+  private val emitError = (uri: Uri) => UnexpectedStatus(Status.InternalServerError, Method.GET, uri)
+
   private def resolveWellKnown(openIdConfig: Json, jwks: Json) =
     WellKnownResolver(
       ioFromMap(
@@ -44,7 +48,7 @@ class WellKnownResolverSuite extends NexusSuite with IOFromMap with CirceLiteral
           openIdUri -> openIdConfig,
           jwksUri   -> jwks
         ),
-        (_: Uri) => HttpUnexpectedError(HttpRequest(), "Failed")
+        emitError
       )
     )(openIdUri)
 
@@ -119,7 +123,7 @@ class WellKnownResolverSuite extends NexusSuite with IOFromMap with CirceLiteral
   }
 
   test("Fail if the client returns a bad response") {
-    val alwaysFail = WellKnownResolver(_ => IO.raiseError(HttpUnexpectedError(HttpRequest(), "Failed")))(openIdUri)
+    val alwaysFail = WellKnownResolver(uri => IO.raiseError(emitError(uri)))(openIdUri)
     alwaysFail.interceptEquals(UnsuccessfulOpenIdConfigResponse(openIdUri))
   }
 
@@ -177,7 +181,7 @@ class WellKnownResolverSuite extends NexusSuite with IOFromMap with CirceLiteral
   }
 
   test("Fail if there is a bad response for the jwks document") {
-    val invalidJwksUri = Uri("https://localhost/invalid")
+    val invalidJwksUri = uri"https://localhost/invalid"
     val invalidJwks    = defaultConfig deepMerge Json.obj("jwks_uri" := invalidJwksUri)
 
     resolveWellKnown(

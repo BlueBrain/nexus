@@ -82,7 +82,7 @@ object Optics {
     root.obj.modify(inner)
   }
 
-  private val realmKeysToIgnore     = Set("_createdAt", "_createdBy", "_updatedAt", "_updatedBy")
+  private val realmKeysToIgnore     = Set("_createdAt", "_createdBy", "_updatedAt", "_updatedBy", "_grantTypes")
   val filterRealmKeys: Json => Json = filterKeys(realmKeysToIgnore)
 
   private val metadataKeys             = Set("_uuid", "_createdAt", "_updatedAt", "_organizationUuid")

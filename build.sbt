@@ -37,6 +37,7 @@ val fs2AwsVersion              = "6.2.0"
 val glassFishJakartaVersion    = "2.0.1"
 val handleBarsVersion          = "4.4.0"
 val hikariVersion              = "6.3.0"
+val http4sVersion              = "0.23.30"
 val jenaVersion                = "5.2.0"
 val kamonVersion               = "2.7.6"
 val kanelaAgentVersion         = "1.0.18"
@@ -115,19 +116,25 @@ lazy val fs2Aws = Seq(
   )
 }
 
-lazy val glassFishJakarta = "org.glassfish"                 % "jakarta.json"      % glassFishJakartaVersion
-lazy val handleBars       = "com.github.jknack"             % "handlebars"        % handleBarsVersion
-lazy val jenaArq          = "org.apache.jena"               % "jena-arq"          % jenaVersion
-lazy val kamonAkkaHttp    = "io.kamon"                     %% "kamon-akka-http"   % kamonVersion
-lazy val kamonCore        = "io.kamon"                     %% "kamon-core"        % kamonVersion
-lazy val kanelaAgent      = "io.kamon"                      % "kanela-agent"      % kanelaAgentVersion
-lazy val kindProjector    = "org.typelevel"                %% "kind-projector"    % kindProjectorVersion cross CrossVersion.full
-lazy val log4cats         = "org.typelevel"                %% "log4cats-slf4j"    % log4catsVersion
-lazy val logback          = "ch.qos.logback"                % "logback-classic"   % logbackVersion
-lazy val magnolia         = "com.softwaremill.magnolia1_2" %% "magnolia"          % magnoliaVersion
-lazy val munit            = "org.scalameta"                %% "munit"             % munitVersion
-lazy val munitCatsEffect  = "org.typelevel"                %% "munit-cats-effect" % munitCatsEffectVersion
-lazy val nimbusJoseJwt    = "com.nimbusds"                  % "nimbus-jose-jwt"   % nimbusJoseJwtVersion
+lazy val glassFishJakarta = "org.glassfish"     % "jakarta.json" % glassFishJakartaVersion
+lazy val handleBars       = "com.github.jknack" % "handlebars"   % handleBarsVersion
+
+lazy val http4s = Seq(
+  "org.http4s" %% "http4s-ember-client" % http4sVersion,
+  "org.http4s" %% "http4s-circe"        % http4sVersion
+)
+
+lazy val jenaArq         = "org.apache.jena"               % "jena-arq"          % jenaVersion
+lazy val kamonAkkaHttp   = "io.kamon"                     %% "kamon-akka-http"   % kamonVersion
+lazy val kamonCore       = "io.kamon"                     %% "kamon-core"        % kamonVersion
+lazy val kanelaAgent     = "io.kamon"                      % "kanela-agent"      % kanelaAgentVersion
+lazy val kindProjector   = "org.typelevel"                %% "kind-projector"    % kindProjectorVersion cross CrossVersion.full
+lazy val log4cats        = "org.typelevel"                %% "log4cats-slf4j"    % log4catsVersion
+lazy val logback         = "ch.qos.logback"                % "logback-classic"   % logbackVersion
+lazy val magnolia        = "com.softwaremill.magnolia1_2" %% "magnolia"          % magnoliaVersion
+lazy val munit           = "org.scalameta"                %% "munit"             % munitVersion
+lazy val munitCatsEffect = "org.typelevel"                %% "munit-cats-effect" % munitCatsEffectVersion
+lazy val nimbusJoseJwt   = "com.nimbusds"                  % "nimbus-jose-jwt"   % nimbusJoseJwtVersion
 
 lazy val otel4s            = "org.typelevel"                   %% "otel4s-oteljava"                           % otel4sVersion
 lazy val otelAutoconfigure = "io.opentelemetry"                 % "opentelemetry-sdk-extension-autoconfigure" % otelVersion % Runtime
@@ -135,8 +142,12 @@ lazy val otelExporterOtlp  = "io.opentelemetry"                 % "opentelemetry
 lazy val otelLogback       = "io.opentelemetry.instrumentation" % "opentelemetry-logback-appender-1.0"        % otelLogbackVersion
 lazy val otelLogbackMdc    = "io.opentelemetry.instrumentation" % "opentelemetry-logback-mdc-1.0"             % otelLogbackVersion
 
-lazy val pureconfig                    = "com.github.pureconfig"  %% "pureconfig"                         % pureconfigVersion
-lazy val pureconfigCats                = "com.github.pureconfig"  %% "pureconfig-cats"                    % pureconfigVersion
+lazy val pureConfig = Seq(
+  "com.github.pureconfig" %% "pureconfig"        % pureconfigVersion,
+  "com.github.pureconfig" %% "pureconfig-cats"   % pureconfigVersion,
+  "com.github.pureconfig" %% "pureconfig-http4s" % pureconfigVersion
+)
+
 lazy val scalaReflect                  = "org.scala-lang"          % "scala-reflect"                      % scalaCompilerVersion
 lazy val scalaTest                     = "org.scalatest"          %% "scalatest"                          % scalaTestVersion
 lazy val scalaXml                      = "org.scala-lang.modules" %% "scala-xml"                          % scalaXmlVersion
@@ -232,24 +243,22 @@ lazy val kernel = project
       catsCore,
       catsRetry,
       catsEffect,
-      fs2,
-      fs2io,
       circeCore,
       circeParser,
       circeLiteral,
       circeGenericExtras,
+      fs2,
+      fs2io,
       handleBars,
       nimbusJoseJwt,
       kamonCore,
       log4cats,
-      pureconfig,
-      pureconfigCats,
       munit           % Test,
       munitCatsEffect % Test,
       scalaTest       % Test,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test
-    ),
+    ) ++ pureConfig ++ http4s,
     addCompilerPlugin(kindProjector),
     addCompilerPlugin(betterMonadicFor),
     coverageFailOnMinimum := false
@@ -285,9 +294,6 @@ lazy val sourcingPsql = project
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
-      circeCore,
-      circeGenericExtras,
-      circeParser,
       classgraph,
       distageCore
     ) ++ doobie,
@@ -306,9 +312,6 @@ lazy val rdf = project
   .settings(
     libraryDependencies ++= Seq(
       catsCore,
-      circeParser,
-      circeGeneric,
-      circeGenericExtras,
       glassFishJakarta,
       jenaArq,
       magnolia,

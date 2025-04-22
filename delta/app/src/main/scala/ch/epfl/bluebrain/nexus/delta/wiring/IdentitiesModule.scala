@@ -4,7 +4,6 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import izumi.distage.model.definition.{Id, ModuleDef}
+import org.http4s.client.Client
 
 /**
   * Identities module wiring config.
@@ -28,15 +28,12 @@ object IdentitiesModule extends ModuleDef {
 
   make[CacheConfig].from((cfg: AppConfig) => cfg.identities)
 
-  make[Identities].fromEffect { (realms: Realms, hc: HttpClient @Id("realm"), config: CacheConfig) =>
-    IdentitiesImpl(realms, hc, config)
+  make[Identities].fromEffect { (realms: Realms, client: Client[IO] @Id("realm"), config: CacheConfig) =>
+    IdentitiesImpl(realms, client, config)
   }
 
-  make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms) =>
-    new OpenIdAuthService(httpClient, realms)
-  }
-
-  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService, clock: Clock[IO]) =>
+  make[AuthTokenProvider].fromEffect { (client: Client[IO] @Id("realm"), realms: Realms, clock: Clock[IO]) =>
+    val authService = new OpenIdAuthService(client, realms)
     AuthTokenProvider(authService, clock)
   }
 
