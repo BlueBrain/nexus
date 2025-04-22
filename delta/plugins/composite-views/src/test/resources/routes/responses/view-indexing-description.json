@@ -7,7 +7,7 @@
   "offsets": [
     {
       "sourceId": "http://example.com/project-source",
-      "projectionId": "http://example.com/blazegraph-projection",
+      "projectionId": "http://example.com/es-projection",
       "offset": {
         "@type": "At",
         "value": 3
@@ -15,7 +15,7 @@
     },
     {
       "sourceId": "http://example.com/project-source",
-      "projectionId": "http://example.com/es-projection",
+      "projectionId": "http://example.com/blazegraph-projection",
       "offset": {
         "@type": "At",
         "value": 3
