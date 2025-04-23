@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FileResource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -10,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, Tags}
+import org.http4s.Uri
 
 import java.nio.file.Files as JavaFiles
 import java.time.Instant
@@ -70,7 +70,7 @@ object FileGen {
       updatedBy
     ).toResource
 
-  def mkTempDir(prefix: String) =
+  def mkTempDir(prefix: String): AbsolutePath =
     AbsolutePath(JavaFiles.createTempDirectory(prefix)).fold(e => throw new Exception(e), identity)
 
   private val digest =
@@ -89,8 +89,8 @@ object FileGen {
     val uuidPathSegment = id.toString.take(8).mkString("/")
     FileAttributes(
       id,
-      s"file://$path/${projRef.toString}/$uuidPathSegment/$filename",
-      Uri.Path(s"${projRef.toString}/$uuidPathSegment/$filename"),
+      Uri.unsafeFromString(s"file://$path/${projRef.toString}/$uuidPathSegment/$filename"),
+      Uri.Path.unsafeFromString(s"${projRef.toString}/$uuidPathSegment/$filename"),
       filename,
       Some(`text/plain(UTF-8)`),
       keywords,

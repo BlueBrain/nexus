@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
+import org.http4s.Uri
+import org.http4s.Uri.Path
 
 import java.util.UUID
 

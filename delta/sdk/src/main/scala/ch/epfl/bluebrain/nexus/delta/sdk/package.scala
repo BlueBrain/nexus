@@ -13,6 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.model.TypeHierarchy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import fs2.Stream
+
+import java.nio.ByteBuffer
 
 package object sdk {
 
@@ -66,4 +69,8 @@ package object sdk {
     */
   type Resolve[A] = (ResourceRef, ProjectRef, Caller) => IO[Either[ResourceResolutionReport, A]]
 
+  /**
+    * Type alias for file data
+    */
+  type FileData = Stream[IO, ByteBuffer]
 }

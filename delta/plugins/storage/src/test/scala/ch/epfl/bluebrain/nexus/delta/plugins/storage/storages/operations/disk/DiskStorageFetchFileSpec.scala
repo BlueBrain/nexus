@@ -1,20 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
-import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.UUIDFFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileDataHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.http4s.Uri
 
 import java.nio.file.Files
 
-class DiskStorageFetchFileSpec
-    extends TestKit(ActorSystem("DiskStorageFetchFileSpec"))
-    with CatsEffectSpec
-    with UUIDFFixtures.Random
-    with AkkaSourceHelpers {
+class DiskStorageFetchFileSpec extends CatsEffectSpec with FileDataHelpers with UUIDFFixtures.Random {
 
   private val fileOps = DiskFileOperations.mk
 
@@ -27,8 +21,8 @@ class DiskStorageFetchFileSpec
       Files.createFile(file)
       Files.writeString(file, "file content")
 
-      val source = fileOps.fetch(Uri.Path(file.toString)).accepted
-      consume(source) shouldEqual "file content"
+      val data = fileOps.fetch(Uri.Path.unsafeFromString(file.toString))
+      consume(data).accepted shouldEqual "file content"
       Files.delete(file)
     }
 
@@ -38,7 +32,8 @@ class DiskStorageFetchFileSpec
       Files.createDirectories(file.getParent)
       val fullFilePath = file.toString
 
-      fileOps.fetch(Uri.Path(fullFilePath)).rejected shouldEqual FetchFileRejection.FileNotFound(fullFilePath)
+      fileOps.fetch(Uri.Path.unsafeFromString(fullFilePath)).compile.lastOrError.rejected shouldEqual FetchFileRejection
+        .FileNotFound(fullFilePath)
     }
   }
 }

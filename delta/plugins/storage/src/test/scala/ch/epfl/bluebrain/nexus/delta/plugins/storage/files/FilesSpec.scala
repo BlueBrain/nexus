@@ -9,11 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, FileOperations, LinkFileAction}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -24,8 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.*
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -37,7 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.Assertion
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 
 import java.net.URLDecoder
 import java.util.UUID
@@ -48,8 +48,8 @@ class FilesSpec
     with DoobieScalaTestFixture
     with ConfigFixtures
     with StorageFixtures
-    with AkkaSourceHelpers
     with RemoteContextResolutionFixture
+    with ScalaFutures
     with FileFixtures
     with Eventually {
 
@@ -585,7 +585,7 @@ class FilesSpec
     }
 
     def consumeContent(response: FileResponse): String = {
-      consume(response.content.map(_.rightValue).accepted)
+      response.content.map(_.rightValue).accepted.runFold("")(_ ++ _.utf8String).futureValue
     }
 
     "fetching a file content" should {

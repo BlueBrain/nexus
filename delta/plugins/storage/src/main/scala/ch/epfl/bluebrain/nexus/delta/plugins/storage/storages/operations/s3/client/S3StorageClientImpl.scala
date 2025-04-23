@@ -6,6 +6,7 @@ import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{PutObjectRequest, *}
+import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import eu.timepit.refined.refineMV
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.Stream
@@ -31,7 +32,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
   override def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response] =
     client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
 
-  override def readFile(bucket: String, fileKey: String): Stream[IO, ByteBuffer] =
+  override def readFile(bucket: String, fileKey: String): FileData =
     Stream
       .eval(client.getObject(getObjectRequest(bucket, fileKey), new Fs2StreamAsyncResponseTransformer))
       .flatMap(_.toStreamBuffered[IO](2))
@@ -169,7 +170,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
 
   override def uploadFile(
       put: PutObjectRequest,
-      fileData: Stream[IO, ByteBuffer]
+      fileData: FileData
   ): IO[Unit] =
     Stream
       .resource(fileData.toUnicastPublisher)

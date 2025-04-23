@@ -1,10 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
-import akka.stream.IOOperationIncompleteException
-import akka.stream.scaladsl.{FileIO, Sink}
-import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -16,69 +11,54 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOpe
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.initLocation
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.SinkUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import fs2.hashing.Hashing
+import fs2.io.file.{Files, Flag, Flags, Path}
+import fs2.{Chunk, Stream}
+import org.http4s.Uri
 
-import java.nio.file.StandardOpenOption.*
-import java.nio.file.*
+import java.nio.file.FileAlreadyExistsException
 import java.util.UUID
-import scala.concurrent.Future
 
-final class DiskStorageSaveFile(implicit as: ActorSystem, uuidf: UUIDF) {
+final class DiskStorageSaveFile(implicit uuidf: UUIDF) {
 
-  import as.dispatcher
-
-  private val openOpts: Set[OpenOption] = Set(CREATE_NEW, WRITE)
+  private val flags: Flags = Flags(List(Flag.CreateNew, Flag.Write))
 
   def apply(uploading: DiskUploadingFile): IO[FileStorageMetadata] = {
     for {
       uuid                     <- uuidf()
       (fullPath, relativePath) <- initLocation(uploading, uuid)
-      (size, digest)           <- storeFile(uploading.entity, uploading.algorithm, fullPath)
+      (size, digest)           <- storeFile(uploading.data, uploading.algorithm, fullPath)
     } yield FileStorageMetadata(
       uuid = uuid,
       bytes = size,
       digest = digest,
       origin = Client,
-      location = Uri(fullPath.toUri.toString),
-      path = Uri.Path(relativePath.toString)
+      location = Uri.unsafeFromString(fullPath.toNioPath.toUri.toString),
+      path = Uri.Path.unsafeFromString(relativePath.toString)
     )
   }
 
-  @SuppressWarnings(Array("IsInstanceOf"))
-  private def storeFile(entity: BodyPartEntity, algorithm: DigestAlgorithm, fullPath: Path): IO[(Long, Digest)] = {
-    IO.fromFuture(
-      IO.delay(
-        entity.dataBytes.runWith(
-          SinkUtils.combineMat(digestSink(algorithm), FileIO.toPath(fullPath, openOpts)) {
-            case (digest, ioResult) if fullPath.toFile.exists() =>
-              Future.successful(ioResult.count -> digest)
-            case _                                              =>
-              Future.failed(new IllegalArgumentException("File was not written"))
-          }
-        )
-      )
-    ).adaptError {
-      case _: FileAlreadyExistsException                                                            => ResourceAlreadyExists(fullPath.toString)
-      case i: IOOperationIncompleteException if i.getCause.isInstanceOf[FileAlreadyExistsException] =>
-        ResourceAlreadyExists(fullPath.toString)
-      case err                                                                                      => UnexpectedSaveError(fullPath.toString, err.getMessage)
-    }
-  }
+  private def storeFile(data: FileData, algorithm: DigestAlgorithm, fullPath: Path): IO[(Long, Digest)] = {
+    for {
+      hasher <- Stream.resource(Hashing[IO].hasher(algorithm.asFs2))
+      cursor <- Stream.resource(Files[IO].writeCursor(fullPath, flags))
+      _      <- data
+                  .evalTap { buffer =>
+                    val chunk = Chunk.byteBuffer(buffer)
+                    cursor.write(Chunk.byteBuffer(buffer)) >> hasher.update(chunk)
+                  }
+      digest <- Stream.eval(hasher.hash).map { hash =>
+                  ComputedDigest(algorithm, Hex.valueOf(hash.bytes.toArray))
+                }
 
-  /**
-    * A sink that computes the digest of the input ByteString
-    *
-    * @param algorithm
-    *   the digest algorithm. E.g.: SHA-256
-    */
-  private def digestSink(algorithm: DigestAlgorithm): Sink[ByteString, Future[ComputedDigest]] =
-    Sink
-      .fold(algorithm.digest) { (digest, currentBytes: ByteString) =>
-        digest.update(currentBytes.asByteBuffer)
-        digest
-      }
-      .mapMaterializedValue(_.map(dig => ComputedDigest(algorithm, Hex.valueOf(dig.digest))))
+      fileSize <- Stream.eval(cursor.file.size)
+    } yield (fileSize, digest)
+  }.compile.lastOrError.adaptError {
+    case _: FileAlreadyExistsException => ResourceAlreadyExists(fullPath.toString)
+    case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
+  }
 }
 
 object DiskStorageSaveFile {
@@ -88,8 +68,8 @@ object DiskStorageSaveFile {
   ): IO[(Path, Path)] =
     for {
       (resolved, relative) <- computeLocation(upload.project, upload.volume, upload.filename, uuid)
-      dir                   = resolved.getParent
-      _                    <- IO.blocking(Files.createDirectories(dir)).adaptError(couldNotCreateDirectory(dir, _))
+      dir                  <- IO.fromOption(resolved.parent)(couldNotCreateDirectory(resolved, "No parent path is available"))
+      _                    <- Files[IO].createDirectories(dir).adaptError { e => couldNotCreateDirectory(dir, e.getMessage) }
     } yield resolved -> relative
 
   def computeLocation(
@@ -97,17 +77,13 @@ object DiskStorageSaveFile {
       volume: AbsolutePath,
       filename: String,
       uuid: UUID
-  ): IO[(Path, Path)] = {
-    val relativePath = intermediateFolders(project, uuid, filename)
-    for {
-      relative <- IO.delay(Paths.get(relativePath)).adaptError(wrongPath(relativePath, _))
-      resolved <- IO.delay(volume.value.resolve(relative)).adaptError(wrongPath(relativePath, _))
-    } yield resolved -> relative
+  ): IO[(Path, Path)] = IO.delay {
+    val intermediate = intermediateFolders(project, uuid, filename)
+    val relative     = Path(intermediate)
+    val resolved     = Path.fromNioPath(volume.value.resolve(relative.toNioPath))
+    (resolved, relative)
   }
 
-  private def wrongPath(path: String, err: Throwable) =
-    UnexpectedLocationFormat(path, err.getMessage)
-
-  private def couldNotCreateDirectory(directory: Path, err: Throwable) =
-    CouldNotCreateIntermediateDirectory(directory.toString, err.getMessage)
+  private def couldNotCreateDirectory(directory: Path, message: String) =
+    CouldNotCreateIntermediateDirectory(directory.toString, message)
 }

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDelegationRequest, FileStorageMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
@@ -10,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.{DiskUploadingFile, S3UploadingFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3FileOperations
+import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 import java.util.UUID
@@ -21,7 +21,7 @@ trait FileOperations {
       contentLength: Option[Long]
   ): IO[FileStorageMetadata]
 
-  def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource]
+  def fetch(storage: Storage, attributes: FileAttributes): FileData
 
   def delegate(storage: Storage, filename: String): IO[FileDelegationRequest.TargetLocation]
 }
@@ -42,7 +42,7 @@ object FileOperations {
         case s: S3UploadingFile   => s3FileOps.save(s)
       }
 
-    override def fetch(storage: Storage, attributes: FileAttributes): IO[AkkaSource] = storage match {
+    override def fetch(storage: Storage, attributes: FileAttributes): FileData = storage match {
       case _: DiskStorage => diskFileOps.fetch(attributes.location.path)
       case s: S3Storage   => s3FileOps.fetch(s.value.bucket, attributes.path)
     }

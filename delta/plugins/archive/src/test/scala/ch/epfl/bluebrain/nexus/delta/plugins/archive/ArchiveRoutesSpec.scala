@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/zip`
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -49,6 +49,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import io.circe.Json
 import io.circe.syntax.EncoderOps
+import org.http4s.Uri
 
 import java.util.UUID
 import scala.concurrent.duration.*
@@ -94,8 +95,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   private val fileContent           = "file content"
   private val fileAttributes        = FileAttributes(
     uuid,
-    "http://localhost/file.txt",
-    Uri.Path("file.txt"),
+    Uri.unsafeFromString("http://localhost/file.txt"),
+    Uri.Path.unsafeFromString("file.txt"),
     "myfile",
     Some(`text/plain(UTF-8)`),
     Map.empty,

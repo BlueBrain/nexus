@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.{ContentType, ContentTypes, Uri}
+import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, Tags}
 import io.circe.JsonObject
 import io.circe.syntax.KeyOps
+import org.http4s.Uri
 
 import java.time.Instant
 import java.util.UUID
@@ -43,8 +44,8 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val attributes  =
     FileAttributes(
       uuid,
-      "http://localhost/file.txt",
-      Uri.Path("file.txt"),
+      Uri.unsafeFromString("http://localhost/file.txt"),
+      Uri.Path.unsafeFromString("file.txt"),
       "file.txt",
       Some(`text/plain(UTF-8)`),
       Map.empty,

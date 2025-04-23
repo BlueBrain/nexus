@@ -1,35 +1,53 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
-import akka.stream.scaladsl.FileIO
 import cats.effect.IO
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedLocationFormat
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.FileData
+import fs2.Stream
+import fs2.io.file.{Files, Path}
+import org.http4s.Uri
+
+import java.net.URI
+import java.nio.ByteBuffer
+import java.nio.file.Paths
 
 trait DiskFileOperations {
-  def fetch(path: Uri.Path): IO[AkkaSource]
+  def fetch(path: Uri.Path): FileData
 
   def save(uploading: DiskUploadingFile): IO[FileStorageMetadata]
 }
 
 object DiskFileOperations {
-  def mk(implicit as: ActorSystem, uuidf: UUIDF): DiskFileOperations = new DiskFileOperations {
+
+  def mk(implicit uuidf: UUIDF): DiskFileOperations = new DiskFileOperations {
 
     private val saveFile = new DiskStorageSaveFile()
 
-    override def fetch(path: Uri.Path): IO[AkkaSource] = absoluteDiskPath(path).redeemWith(
-      e => IO.raiseError(UnexpectedLocationFormat(s"file://$path", e.getMessage)),
-      path =>
-        IO.blocking(path.toFile.exists()).flatMap { exists =>
-          if (exists) IO.blocking(FileIO.fromPath(path))
-          else IO.raiseError(FetchFileRejection.FileNotFound(path.toString))
+    private def absoluteDiskPath(relative: Uri.Path) = {
+      val location = s"file://$relative"
+      Stream
+        .eval(
+          IO.delay {
+            Path.fromNioPath(Paths.get(URI.create(location)))
+          }
+        )
+        .adaptError { case e =>
+          UnexpectedLocationFormat(location, e.getMessage)
         }
-    )
+    }
+
+    override def fetch(path: Uri.Path): FileData =
+      for {
+        path   <- absoluteDiskPath(path)
+        exists <- Stream.eval(Files[IO].exists(path))
+        data   <- if (exists) Files[IO].readAll(path).chunks.map { c => ByteBuffer.wrap(c.toArray) }
+                  else Stream.raiseError[IO](FetchFileRejection.FileNotFound(path.toString))
+      } yield data
 
     override def save(uploading: DiskUploadingFile): IO[FileStorageMetadata] = saveFile.apply(uploading)
   }

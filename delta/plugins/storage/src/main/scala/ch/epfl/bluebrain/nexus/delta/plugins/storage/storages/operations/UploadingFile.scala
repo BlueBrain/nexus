@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.{BodyPartEntity, ContentType}
+import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileContentLengthIsMissing
+import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
@@ -27,9 +28,9 @@ sealed trait UploadingFile extends Product with Serializable {
 
   /**
     * @return
-    *   the entity representing the file content (may be strict or streaming)
+    *   the file data
     */
-  def entity: BodyPartEntity
+  def data: FileData
 }
 
 object UploadingFile {
@@ -39,7 +40,7 @@ object UploadingFile {
       volume: AbsolutePath,
       algorithm: DigestAlgorithm,
       filename: String,
-      entity: BodyPartEntity
+      data: FileData
   ) extends UploadingFile
 
   final case class S3UploadingFile(
@@ -48,7 +49,7 @@ object UploadingFile {
       filename: String,
       contentType: Option[ContentType],
       contentLength: Long,
-      entity: BodyPartEntity
+      data: FileData
   ) extends UploadingFile
 
   def apply(

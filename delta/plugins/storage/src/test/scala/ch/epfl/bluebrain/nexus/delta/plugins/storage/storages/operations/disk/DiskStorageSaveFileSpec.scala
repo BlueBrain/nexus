@@ -1,27 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpEntity, Uri}
-import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.UUIDFFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileDataHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.http4s.Uri
 import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.{Files, Paths}
 import scala.reflect.io.Directory
 
 class DiskStorageSaveFileSpec
-    extends TestKit(ActorSystem("DiskStorageSaveFileSpec"))
-    with AkkaSourceHelpers
-    with CatsEffectSpec
+    extends CatsEffectSpec
+    with FileDataHelpers
     with UUIDFFixtures.Fixed
     with BeforeAndAfterAll {
 
@@ -33,9 +30,9 @@ class DiskStorageSaveFileSpec
     val project = ProjectRef.unsafe("org", "project")
     val content = "file content"
     val digest  = "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c"
-    val entity  = HttpEntity(content)
+    val data    = streamData(content)
 
-    val uploading = DiskUploadingFile(project, volume, DigestAlgorithm.default, "myfile.txt", entity)
+    val uploading = DiskUploadingFile(project, volume, DigestAlgorithm.default, "myfile.txt", data)
 
     "save a file to a volume" in {
 
@@ -49,12 +46,11 @@ class DiskStorageSaveFileSpec
           Files.size(file.value),
           ComputedDigest(DigestAlgorithm.default, digest),
           Client,
-          s"file://$file",
-          Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt")
+          Uri.unsafeFromString(s"file://$file"),
+          Uri.Path.unsafeFromString("org/project/8/0/4/9/b/a/9/0/myfile.txt")
         )
 
-      consume(fileOps.fetch(metadata.location.path).accepted) shouldEqual content
-
+      consume(fileOps.fetch(metadata.location.path)).accepted shouldEqual content
     }
 
     "fail attempting to save the same file again" in {

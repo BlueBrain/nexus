@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import akka.http.scaladsl.model.Uri
+import org.http4s.Uri
 
 import java.net.{URLDecoder, URLEncoder}
 import java.nio.charset.StandardCharsets

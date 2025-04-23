@@ -1,14 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.{ContentType, HttpHeader, StatusCode, StatusCodes}
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import cats.effect.IO
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse.{Content, Metadata}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import ch.epfl.bluebrain.nexus.delta.sdk.{FileData, JsonLdValue}
+
+import scala.reflect.ClassTag
 
 /**
   * A file response content
@@ -18,11 +22,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
   * @param content
   *   the file content
   */
-final case class FileResponse(metadata: Metadata, content: Content)
+final case class FileResponse private (metadata: Metadata, content: Content)
 
 object FileResponse {
 
-  type Content = IO[Either[Complete[JsonLdValue], AkkaSource]]
+  type AkkaSource = Source[ByteString, Any]
+  type Content    = IO[Either[Complete[JsonLdValue], AkkaSource]]
 
   /**
     * Metadata for the file response
@@ -51,32 +56,37 @@ object FileResponse {
       }
   }
 
-  def apply[E: JsonLdEncoder: HttpResponseFields](
+  def apply[E <: Throwable: ClassTag: JsonLdEncoder: HttpResponseFields](
       filename: String,
       contentType: ContentType,
       etag: Option[String],
       bytes: Option[Long],
-      io: IO[Either[E, AkkaSource]]
+      data: FileData
   ) =
     new FileResponse(
       Metadata(filename, contentType, etag, bytes),
-      io.map { r =>
+      convertStream(data).attemptNarrow[E].map { r =>
         r.leftMap { e =>
           Complete(e).map(JsonLdValue(_))
         }
       }
     )
 
-  def apply(
+  def unsafe(
       filename: String,
       contentType: ContentType,
       etag: Option[String],
       bytes: Option[Long],
-      source: AkkaSource
+      data: FileData
   ): FileResponse =
-    new FileResponse(Metadata(filename, contentType, etag, bytes), IO.pure(Right(source)))
+    new FileResponse(Metadata(filename, contentType, etag, bytes), convertStream(data).map(Right(_)))
 
   def noCache(filename: String, contentType: ContentType, bytes: Option[Long], source: AkkaSource): FileResponse =
     new FileResponse(Metadata(filename, contentType, None, bytes), IO.pure(Right(source)))
 
+  private def convertStream(data: FileData) =
+    IO.delay {
+      StreamConverter(data)
+        .map(bytes => ByteString(bytes))
+    }
 }

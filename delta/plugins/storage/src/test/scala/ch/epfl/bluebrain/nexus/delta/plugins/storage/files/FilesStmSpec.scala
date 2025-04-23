@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.{ContentTypes, Uri}
+import akka.http.scaladsl.model.ContentTypes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef, Tags}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.http4s.Uri
 
 import java.time.Instant
 
@@ -36,8 +37,8 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
   private val dig          = ComputedDigest(DigestAlgorithm.default, "something")
   private val attributes   = FileAttributes(
     uuid,
-    location = "http://localhost/my/file.txt",
-    path = Uri.Path("my/file.txt"),
+    location = Uri.unsafeFromString("http://localhost/my/file.txt"),
+    path = Uri.Path.unsafeFromString("my/file.txt"),
     filename = "myfile.txt",
     mediaType = mediaType,
     keywords = Map(Label.unsafe("key") -> "value"),

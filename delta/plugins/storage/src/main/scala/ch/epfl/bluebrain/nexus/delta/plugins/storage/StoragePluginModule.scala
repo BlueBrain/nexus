@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives.concat
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
@@ -45,6 +44,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEventLog, Transactors}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
+import org.http4s.Uri.Path
 
 /**
   * Storages and Files wiring
@@ -64,7 +64,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[S3LocationGenerator].from { (cfg: StoragePluginConfig) =>
-    val prefix: Path = cfg.storages.storageTypeConfig.amazon.flatMap(_.prefix).getOrElse(Path.Empty)
+    val prefix: Path = cfg.storages.storageTypeConfig.amazon.flatMap(_.prefix).getOrElse(Path.empty)
     new S3LocationGenerator(prefix)
   }
 
@@ -148,13 +148,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ScopedEventLog(Files.definition(clock), cfg.files.eventLog, xas)
   }
 
-  make[DiskFileOperations].from { (uuidF: UUIDF, as: ActorSystem) =>
-    DiskFileOperations.mk(as, uuidF)
-  }
+  make[DiskFileOperations].from { (uuidF: UUIDF) => DiskFileOperations.mk(uuidF) }
 
-  make[S3FileOperations].from {
-    (client: S3StorageClient, locationGenerator: S3LocationGenerator, uuidF: UUIDF, as: ActorSystem) =>
-      S3FileOperations.mk(client, locationGenerator)(as, uuidF)
+  make[S3FileOperations].from { (client: S3StorageClient, locationGenerator: S3LocationGenerator, uuidF: UUIDF) =>
+    S3FileOperations.mk(client, locationGenerator)(uuidF)
   }
 
   make[FileOperations].from { (disk: DiskFileOperations, s3: S3FileOperations) =>

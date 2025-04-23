@@ -1,24 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.Uri
 import cats.effect.{Clock, IO}
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDelegationRequest.{FileDelegationCreationRequest, FileDelegationUpdateRequest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.files as fileSchema
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{FetchStorage, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -28,13 +26,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
-import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef, SuccessElemStream, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import org.http4s.Uri
 
 import java.util.UUID
 
@@ -55,7 +54,7 @@ final class Files(
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, Map.empty, None, None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  private val testAttributes = FileAttributes(UUID.randomUUID(), Uri.unsafeFromString("http://localhost"), Uri.Path.empty, "", None, Map.empty, None, None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**
@@ -346,16 +345,16 @@ final class Files(
       storage   <- fetchStorage.onRead(file.value.storage, id.project)
       s          = fetchFile(storage, attributes, file.id)
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
-    } yield FileResponse(
+    } yield FileResponse[FileRejection](
       attributes.filename,
       mediaType,
       Some(ResourceF.etagValue(file)),
       Some(attributes.bytes),
-      s.attemptNarrow[FileRejection]
+      s
     )
   }.span("fetchFileContent")
 
-  private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
+  private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): FileData =
     fileOperations.fetch(storage, attr).adaptError { case e: FetchFileRejection =>
       FetchRejection(fileId, storage.id, e)
     }
@@ -390,8 +389,6 @@ final class Files(
     uuidF().map(uuid => pc.base.iri / uuid.toString)
 
   def states(offset: Offset): SuccessElemStream[FileState] = log.states(Scope.root, offset)
-
-  def cancelEvent(command: CancelEvent): IO[Unit] = log.evaluate(command.project, command.id, command).void
 
 }
 
