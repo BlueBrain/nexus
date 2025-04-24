@@ -10,13 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileOperations.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.initLocation
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.{fs2PathToUriPath, initLocation}
 import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.hashing.Hashing
 import fs2.io.file.{Files, Flag, Flags, Path}
 import fs2.{Chunk, Stream}
 import org.http4s.Uri
+import org.http4s.Uri.Path.Segment
 
 import java.nio.file.FileAlreadyExistsException
 import java.util.UUID
@@ -30,13 +31,14 @@ final class DiskStorageSaveFile(implicit uuidf: UUIDF) {
       uuid                     <- uuidf()
       (fullPath, relativePath) <- initLocation(uploading, uuid)
       (size, digest)           <- storeFile(uploading.data, uploading.algorithm, fullPath)
+      location                 <- IO.fromEither(Uri.fromString(fullPath.toNioPath.toUri.toString))
     } yield FileStorageMetadata(
       uuid = uuid,
       bytes = size,
       digest = digest,
       origin = Client,
-      location = Uri.unsafeFromString(fullPath.toNioPath.toUri.toString),
-      path = Uri.Path.unsafeFromString(relativePath.toString)
+      location = location,
+      path = fs2PathToUriPath(relativePath)
     )
   }
 
@@ -86,4 +88,11 @@ object DiskStorageSaveFile {
 
   private def couldNotCreateDirectory(directory: Path, message: String) =
     CouldNotCreateIntermediateDirectory(directory.toString, message)
+
+  private def fs2PathToUriPath(path: Path): Uri.Path = {
+    val segments = path.names.map { name =>
+      Segment.encoded(Uri.pathEncode(name.fileName.toString))
+    }
+    Uri.Path(segments.toVector)
+  }
 }

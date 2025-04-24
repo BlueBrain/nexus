@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.http4s.Uri
 import org.scalatest.Assertion
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 
@@ -192,10 +193,13 @@ class FilesSpec
         files.create(fileId("specialFile"), Some(defaultStorageId), request, None).accepted
         val fetched = files.fetch(fileId("specialFile")).accepted
 
-        val decodedFilenameFromLocation =
-          URLDecoder.decode(fetched.value.attributes.location.path.lastSegment.get, "UTF-8")
+        def decodeFilename(path: Uri.Path) = URLDecoder.decode(path.lastSegment.get, "UTF-8")
 
-        decodedFilenameFromLocation shouldEqual specialFileName
+        // Testing path
+        decodeFilename(fetched.value.attributes.path) shouldEqual specialFileName
+
+        // Testing location
+        decodeFilename(fetched.value.attributes.location.path) shouldEqual specialFileName
       }
 
       "succeed and tag with the id passed" in {
