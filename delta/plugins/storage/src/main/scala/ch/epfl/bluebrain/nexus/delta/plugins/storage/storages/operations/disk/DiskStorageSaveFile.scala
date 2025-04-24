@@ -13,12 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Uploadi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile.{fs2PathToUriPath, initLocation}
 import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import fs2.hashing.Hashing
-import fs2.io.file.{Files, Flag, Flags, Path}
-import fs2.{Chunk, Stream}
+import fs2.hashing.{Hasher, Hashing}
+import fs2.io.file.{Files, Flag, Flags, Path, WriteCursor}
+import fs2.{Chunk, Pipe, Pull, Stream}
 import org.http4s.Uri
 import org.http4s.Uri.Path.Segment
 
+import java.nio.ByteBuffer
 import java.nio.file.FileAlreadyExistsException
 import java.util.UUID
 
@@ -42,24 +43,37 @@ final class DiskStorageSaveFile(implicit uuidf: UUIDF) {
     )
   }
 
-  private def storeFile(data: FileData, algorithm: DigestAlgorithm, fullPath: Path): IO[(Long, Digest)] = {
-    for {
-      hasher <- Stream.resource(Hashing[IO].hasher(algorithm.asFs2))
-      cursor <- Stream.resource(Files[IO].writeCursor(fullPath, flags))
-      _      <- data
-                  .evalTap { buffer =>
-                    val chunk = Chunk.byteBuffer(buffer)
-                    cursor.write(Chunk.byteBuffer(buffer)) >> hasher.update(chunk)
-                  }
-      digest <- Stream.eval(hasher.hash).map { hash =>
-                  ComputedDigest(algorithm, Hex.valueOf(hash.bytes.toArray))
-                }
+  private def storeFile(data: FileData, algorithm: DigestAlgorithm, fullPath: Path): IO[(Long, Digest)] =
+    data.through(store(algorithm, fullPath)).compile.lastOrError.adaptError {
+      case _: FileAlreadyExistsException => ResourceAlreadyExists(fullPath.toString)
+      case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
+    }
 
-      fileSize <- Stream.eval(cursor.file.size)
-    } yield (fileSize, digest)
-  }.compile.lastOrError.adaptError {
-    case _: FileAlreadyExistsException => ResourceAlreadyExists(fullPath.toString)
-    case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
+  // Stores the file while computing the hash and the file size
+  private def store(algorithm: DigestAlgorithm, fullPath: Path): Pipe[IO, ByteBuffer, (Long, ComputedDigest)] = {
+    def go(hasher: Hasher[IO], cursor: WriteCursor[IO], stream: FileData): Pull[IO, (Long, ComputedDigest), Unit] = {
+      stream.pull.uncons1.flatMap {
+        case Some((buffer, tail)) =>
+          val chunk = Chunk.byteBuffer(buffer)
+          Pull.eval(hasher.update(chunk)) >>
+            Pull.eval(cursor.write(chunk)).flatMap { nc =>
+              go(hasher, nc, tail)
+            }
+        case None                 =>
+          Pull.eval(hasher.hash).flatMap { hash =>
+            val digest = ComputedDigest(algorithm, Hex.valueOf(hash.bytes.toArray))
+            Pull.eval(cursor.file.size).flatMap { size =>
+              Pull.output1((size, digest))
+            } >> Pull.done
+          }
+      }
+    }
+    data =>
+      for {
+        hasher <- Stream.resource(Hashing[IO].hasher(algorithm.asFs2))
+        cursor <- Stream.resource(Files[IO].writeCursor(fullPath, flags))
+        result <- go(hasher, cursor, data).stream
+      } yield result
   }
 }
 

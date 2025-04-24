@@ -25,6 +25,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
   private val fullId  = s"$orgId/$projId"
   private val fullId2 = s"$orgId/$projId2"
 
+  private val schemaId      = "test-schema"
   private val schemaPayload = SchemaPayload.loadSimple().accepted
 
   private val resource1Id = "https://dev.nexus.test.com/simplified-resource/1"
@@ -58,12 +59,8 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
     "create test schemas" in {
       for {
-        _ <- deltaClient.put[Json](s"/schemas/$fullId/test-schema", schemaPayload, Tweety) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
-             }
-        _ <- deltaClient.put[Json](s"/schemas/$fullId2/test-schema", schemaPayload, Tweety) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
-             }
+        _ <- deltaClient.put[Json](s"/schemas/$fullId/$schemaId", schemaPayload, Tweety) { expectCreated }
+        _ <- deltaClient.put[Json](s"/schemas/$fullId2/$schemaId", schemaPayload, Tweety) { expectCreated }
       } yield succeed
     }
 
@@ -75,17 +72,9 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
                MediaTypes.`image/png`,
                "nexus-logo.png",
                Tweety
-             ) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
-             }
-        _ <-
-          deltaClient.put[Json](s"/resources/$fullId/test-schema/test-resource:1", payload1, Tweety) { (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-          }
-        _ <-
-          deltaClient.put[Json](s"/resources/$fullId2/test-schema/test-resource:2", payload2, Tweety) { (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-          }
+             ) { expectCreated }
+        _ <- deltaClient.put[Json](s"/resources/$fullId/$schemaId/test-resource:1", payload1, Tweety) { expectCreated }
+        _ <- deltaClient.put[Json](s"/resources/$fullId2/$schemaId/test-resource:2", payload2, Tweety) { expectCreated }
       } yield succeed
     }
   }
@@ -93,7 +82,6 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
   "creating archives" should {
     "succeed" in {
       val payload = jsonContentOf("kg/archives/archive.json", "project2" -> fullId2)
-
       deltaClient.put[Json](s"/archives/$fullId/test-resource:archive", payload, Tweety) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
@@ -108,9 +96,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
                     response.status shouldEqual StatusCodes.OK
                   }
         payload = jsonContentOf("kg/archives/archive-with-file-self.json", "value" -> fileSelf)
-        _      <- deltaClient.put[Json](s"/archives/$fullId/$archiveId", payload, Tweety) { (_, response) =>
-                    response.status shouldEqual StatusCodes.Created
-                  }
+        _      <- deltaClient.put[Json](s"/archives/$fullId/$archiveId", payload, Tweety) { expectCreated }
         _      <- deltaClient.get[ByteString](s"/archives/$fullId/$archiveId", Tweety, acceptZip) { (byteString, response) =>
                     response.status shouldEqual StatusCodes.OK
                     contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
@@ -225,12 +211,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
     }
 
     "delete resources/read permissions for user on project 2" in
-      aclDsl.deletePermission(
-        s"/$fullId2",
-        Tweety,
-        1,
-        Resources.Read
-      )
+      aclDsl.deletePermission(s"/$fullId2", Tweety, 1, Resources.Read)
 
     "fail when a resource in the archive cannot be fetched due to missing permissions" in {
       deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) { expectForbidden }
@@ -248,8 +229,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
       for {
         _           <- deltaClient.put[ByteString](s"/archives/$fullId/test-resource:archive-not-found", payload, Tweety) {
-                         (_, response) =>
-                           response.status shouldEqual StatusCodes.Created
+                         expectCreated
                        }
         downloadLink = s"/archives/$fullId/test-resource:archive-not-found?ignoreNotFound=true"
         _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptZip) { (byteString, response) =>
