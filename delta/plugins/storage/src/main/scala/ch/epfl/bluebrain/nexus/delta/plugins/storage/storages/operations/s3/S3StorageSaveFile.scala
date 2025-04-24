@@ -1,11 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{StatusCodes, Uri}
-import akka.stream.scaladsl.Source
-import akka.stream.{Graph, SourceShape}
-import akka.util.ByteString
+import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -15,15 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
-import fs2.Stream
+import org.http4s.Uri
 import software.amazon.awssdk.services.s3.model.S3Exception
 
-import java.nio.ByteBuffer
 import java.util.UUID
 
 final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerator: S3LocationGenerator)(implicit
-    as: ActorSystem,
     uuidf: UUIDF
 ) {
 
@@ -42,8 +34,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
     val key    = put.key
     (for {
       _            <- validateObjectDoesNotExist(bucket, key)
-      fileData     <- convertStream(uploading.entity.dataBytes)
-      _            <- s3StorageClient.uploadFile(put, fileData)
+      _            <- s3StorageClient.uploadFile(put, uploading.data)
       headResponse <- s3StorageClient.headObject(bucket, key)
       attr          = fileMetadata(location, uuid, headResponse)
     } yield attr)
@@ -77,10 +68,4 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
         case true  => IO.raiseError(ResourceAlreadyExists(key))
         case false => IO.unit
       }
-
-  private def convertStream(source: Source[ByteString, Any]): IO[Stream[IO, ByteBuffer]] = IO.delay {
-    StreamConverter(source.asInstanceOf[Graph[SourceShape[ByteString], NotUsed]]).map { byteString =>
-      byteString.asByteBuffer
-    }
-  }
 }

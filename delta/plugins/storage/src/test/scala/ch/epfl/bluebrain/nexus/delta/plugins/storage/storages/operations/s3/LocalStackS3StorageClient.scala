@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
@@ -12,15 +11,16 @@ import fs2.io.file.Path
 import io.laserdisc.pure.s3.tagless.S3AsyncClientOp
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
+import org.http4s.Uri
 import org.testcontainers.containers.localstack.LocalStackContainer.Service
-import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, PutObjectRequest, PutObjectResponse}
+import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, CreateBucketResponse, PutObjectRequest, PutObjectResponse}
 
 import java.nio.file.Paths
 
 object LocalStackS3StorageClient {
   val ServiceType = Service.S3
 
-  def createBucket(s3Client: S3AsyncClientOp[IO], bucket: String) =
+  def createBucket(s3Client: S3AsyncClientOp[IO], bucket: String): IO[CreateBucketResponse] =
     s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build)
 
   def uploadFileToS3(s3Client: S3AsyncClientOp[IO], bucket: String, path: Path): IO[PutObjectResponse] = {
@@ -44,7 +44,7 @@ object LocalStackS3StorageClient {
         val creds                  = localstack.staticCredentialsProvider.resolveCredentials()
         val (accessKey, secretKey) = (creds.accessKeyId(), creds.secretAccessKey())
         val conf: S3StorageConfig  = S3StorageConfig(
-          defaultEndpoint = Uri(localstack.endpointOverride(LocalStackS3.ServiceType).toString),
+          defaultEndpoint = Uri.unsafeFromString(localstack.endpointOverride(LocalStackS3.ServiceType).toString),
           useDefaultCredentialProvider = false,
           defaultAccessKey = Secret(accessKey),
           defaultSecretKey = Secret(secretKey),
@@ -53,7 +53,7 @@ object LocalStackS3StorageClient {
           showLocation = false,
           defaultMaxFileSize = 1,
           defaultBucket = defaultBucket,
-          prefix = Some(Uri.Path(prefix))
+          prefix = Some(Uri.Path.unsafeFromString(prefix))
         )
         (S3StorageClient.unsafe(client), client, conf)
       }

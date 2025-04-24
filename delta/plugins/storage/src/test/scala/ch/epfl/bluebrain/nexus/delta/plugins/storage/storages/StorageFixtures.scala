@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
+import org.http4s.Uri
 
 import java.nio.file.{Files, Paths}
 
@@ -26,7 +27,7 @@ trait StorageFixtures extends CirceLiteral {
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
-    amazon = Some(S3StorageConfig("localhost", useDefaultCredentialProvider = false, Secret("my_key"), Secret("my_secret_key"),
+    amazon = Some(S3StorageConfig(Uri.unsafeFromString("localhost"), useDefaultCredentialProvider = false, Secret("my_key"), Secret("my_secret_key"),
       permissions.read, permissions.write, showLocation = false, 60, defaultBucket = "potato", prefix = None))
   )
   implicit val showLocation: StoragesConfig.ShowFileLocation = config.showFileLocation

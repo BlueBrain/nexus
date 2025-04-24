@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
 import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -9,10 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
-import pureconfig.ConvertHelpers.{catchReadError, optF}
+import org.http4s.Uri
+import org.http4s.Uri.Path
+import pureconfig.ConvertHelpers.optF
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto.*
 import pureconfig.{ConfigConvert, ConfigReader}
+import pureconfig.module.http4s.*
 
 /**
   * Configuration for the Storages module.
@@ -167,14 +168,8 @@ object StoragesConfig {
       defaultBucket: String,
       prefix: Option[Path]
   ) extends StorageTypeEntryConfig {
-    val prefixPath: Path = prefix.getOrElse(Path.Empty)
+    val prefixPath: Path = prefix.getOrElse(Path.empty)
   }
-
-  implicit private val uriConverter: ConfigConvert[Uri] =
-    ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)
-
-  implicit private val pathConverter: ConfigConvert[Path] =
-    ConfigConvert.viaString[Path](catchReadError(Path(_)), _.toString)
 
   implicit private val permissionConverter: ConfigConvert[Permission] =
     ConfigConvert.viaString[Permission](optF(Permission(_).toOption), _.toString)

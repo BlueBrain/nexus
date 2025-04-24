@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.ContentType
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest, S3OperationResult}
+import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import fs2.Stream
 import io.laserdisc.pure.s3.tagless.{Interpreter, S3AsyncClientOp}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, AwsCredentialsProvider, DefaultCredentialsProvider, StaticCredentialsProvider}
@@ -15,7 +16,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.*
 
 import java.net.URI
-import java.nio.ByteBuffer
 
 trait S3StorageClient {
 
@@ -23,7 +23,7 @@ trait S3StorageClient {
 
   def listObjectsV2(bucket: String, prefix: String): IO[ListObjectsV2Response]
 
-  def readFile(bucket: String, fileKey: String): Stream[IO, ByteBuffer]
+  def readFile(bucket: String, fileKey: String): FileData
 
   def readFileMultipart(bucket: String, fileKey: String): Stream[IO, Byte]
 
@@ -47,7 +47,7 @@ trait S3StorageClient {
 
   def uploadFile(
       put: PutObjectRequest,
-      fileData: Stream[IO, ByteBuffer]
+      fileData: FileData
   ): IO[Unit]
 
   def updateContentType(bucket: String, key: String, contentType: ContentType): IO[S3OperationResult]

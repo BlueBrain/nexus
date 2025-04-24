@@ -10,12 +10,11 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.StreamTcpException
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling.*
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.*
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOFuture.defaultCancelable
 import io.circe.{Decoder, Json}
 
 import java.net.{ConnectException, UnknownHostException}
@@ -52,11 +51,6 @@ trait HttpClient {
     * Execute the argument request and unmarshal the response into an A using an [[Unmarshaller]].
     */
   def fromEntityTo[A: FromEntityUnmarshaller: ClassTag](req: HttpRequest): IO[A]
-
-  /**
-    * Execute the argument request and return the stream of [[ByteString]].
-    */
-  def toDataBytes(req: HttpRequest): IO[AkkaSource]
 
   /**
     * Execute the argument request, consume the response and ignore, returning the passed ''returnValue'' when the
@@ -145,11 +139,6 @@ object HttpClient {
             IO
               .fromFuture(IO.delay(um(resp.entity)))
               .adaptError(err => HttpSerializationError(req, err.getMessage, A.simpleName))
-        }
-
-      override def toDataBytes(req: HttpRequest): IO[AkkaSource] =
-        apply(req) {
-          case resp if resp.status.isSuccess() => IO.delay(resp.entity.dataBytes)
         }
 
       override def discardBytes[A](req: HttpRequest, returnValue: => A): IO[A] =

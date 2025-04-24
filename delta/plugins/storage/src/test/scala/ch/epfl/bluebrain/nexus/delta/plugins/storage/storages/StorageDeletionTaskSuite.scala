@@ -1,37 +1,32 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpEntity
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileDataHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.DiskUploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskFileOperations
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.actor.ActorSystemSetup
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Stream
-import munit.AnyFixture
 
-class StorageDeletionTaskSuite extends NexusSuite with StorageFixtures with ActorSystemSetup.Fixture {
+class StorageDeletionTaskSuite extends NexusSuite with FileDataHelpers with StorageFixtures {
 
-  override def munitFixtures: Seq[AnyFixture[?]] = List(actorSystem)
-  implicit private lazy val as: ActorSystem      = actorSystem()
-  implicit private val uuidf: UUIDF              = UUIDF.random
+  implicit private val uuidf: UUIDF = UUIDF.random
 
   test("Delete content from local storage") {
     val diskOps                                 = DiskFileOperations.mk
     implicit val subject: Subject               = Anonymous
     val project                                 = ProjectRef.unsafe("org", "proj")
-    val content                                 = "file content"
-    val entity                                  = HttpEntity(content)
-    val uploading                               = DiskUploadingFile(project, diskVal.volume, DigestAlgorithm.default, "trace", entity)
+    val data                                    = streamData("file content")
+    val uploading                               = DiskUploadingFile(project, diskVal.volume, DigestAlgorithm.default, "trace", data)
     val storageStream: Stream[IO, StorageValue] = Stream(diskVal, s3Val)
     val storageDir                              = diskVal.rootDirectory(project)
 
-    def fileExists(metadata: FileStorageMetadata) = diskOps.fetch(metadata.location.path).redeem(_ => false, _ => true)
+    def fileExists(metadata: FileStorageMetadata) =
+      diskOps.fetch(metadata.location.path).compile.lastOrError.redeem(_ => false, _ => true)
 
     for {
       metadata    <- diskOps.save(uploading)

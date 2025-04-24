@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentTypes.*
 import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.ContentTypes.*
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FileDataHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.EncoderOps
@@ -15,7 +15,7 @@ import io.circe.{Json, JsonObject}
 class FormDataExtractorSpec
     extends TestKit(ActorSystem("FormDataExtractorSpec"))
     with CatsEffectSpec
-    with AkkaSourceHelpers {
+    with FileDataHelpers {
 
   "A Form Data HttpEntity" should {
 
@@ -72,7 +72,7 @@ class FormDataExtractorSpec
 
       filename shouldEqual "filename"
       contentType.value shouldEqual `application/octet-stream`
-      consume(contents.dataBytes) shouldEqual content
+      consume(contents).accepted shouldEqual content
     }
 
     "be extracted with the custom media type from the detector" in {
@@ -81,7 +81,7 @@ class FormDataExtractorSpec
 
       filename shouldEqual "file.custom"
       contentType.value shouldEqual customContentType
-      consume(contents.dataBytes) shouldEqual content
+      consume(contents).accepted shouldEqual content
     }
 
     "be extracted with the akka detection from the extension" in {
@@ -90,7 +90,7 @@ class FormDataExtractorSpec
       val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 250).accepted
       filename shouldEqual "file.txt"
       contentType.value shouldEqual `text/plain(UTF-8)`
-      consume(contents.dataBytes) shouldEqual content
+      consume(contents).accepted shouldEqual content
     }
 
     "be extracted with the default filename when none is provided" in {
@@ -112,7 +112,7 @@ class FormDataExtractorSpec
       val UploadedFileInformation(filename, contentType, contents) = extractor(entity, 2000).accepted
       filename shouldEqual "file.custom"
       contentType.value shouldEqual `text/plain(UTF-8)`
-      consume(contents.dataBytes) shouldEqual content
+      consume(contents).accepted shouldEqual content
     }
 
     "fail to be extracted if no file part exists found" in {

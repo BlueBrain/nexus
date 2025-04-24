@@ -7,3 +7,4 @@ package object syntax
     with IOSyntax
     with InstantSyntax
     with NonEmptySetSyntax
+    with UriPathSyntax

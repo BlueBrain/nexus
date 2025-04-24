@@ -6,7 +6,7 @@ import akka.util.ByteString
 import cats.effect.IO
 import cats.effect.unsafe.implicits.*
 import cats.implicits.*
-import ch.epfl.bluebrain.nexus.delta.kernel.{AkkaSource, Logger}
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.*
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed

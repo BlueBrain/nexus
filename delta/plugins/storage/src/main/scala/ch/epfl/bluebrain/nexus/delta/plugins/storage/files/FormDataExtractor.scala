@@ -1,17 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.MediaTypes.`multipart/form-data`
 import akka.http.scaladsl.model.Multipart.FormData
-import akka.http.scaladsl.model.*
 import akka.http.scaladsl.server.*
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, MultipartUnmarshallers, Unmarshaller}
-import akka.stream.scaladsl.{Keep, Sink}
+import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.{Graph, SourceShape}
+import akka.util.ByteString
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,7 +38,7 @@ trait FormDataExtractor {
 final case class UploadedFileInformation(
     filename: String,
     contentType: Option[ContentType],
-    contents: BodyPartEntity
+    contents: FileData
 )
 
 object FormDataExtractor {
@@ -118,11 +122,16 @@ object FormDataExtractor {
             UploadedFileInformation(
               filename,
               mediaTypeDetector(filename, suppliedContentType, Some(contentTypeFromRequest)),
-              part.entity
+              convertStream(part.entity.dataBytes)
             ).some
           )
         case part                               =>
           part.entity.discardBytes().future.as(None)
       }
+
+      private def convertStream(source: Source[ByteString, Any]) =
+        StreamConverter(source.asInstanceOf[Graph[SourceShape[ByteString], NotUsed]]).map { byteString =>
+          byteString.asByteBuffer
+        }
     }
 }

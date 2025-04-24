@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharsets, MediaType}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
+import org.http4s.Uri
 
 import java.util.UUID
 
@@ -64,7 +65,7 @@ class LinkFileActionSuite extends NexusSuite {
           fileSize,
           digest,
           FileAttributesOrigin.Link,
-          Uri(path.toString()),
+          Uri(path = path),
           path
         )
       )
@@ -74,15 +75,15 @@ class LinkFileActionSuite extends NexusSuite {
   private val linkAction = LinkFileAction(fetchStorage, mediaTypeDetector, s3FileLink)
 
   test("Fail for an unauthorized storage") {
-    val request = FileLinkRequest(Uri.Path("/path/file.json"), None, None)
+    val request = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.json"), None, None)
     linkAction(None, project, request).intercept[AuthorizationFailed]
   }
 
   test("Succeed for a file with media type detection") {
-    val request    = FileLinkRequest(Uri.Path("/path/file.json"), None, None)
+    val request    = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.json"), None, None)
     val attributes = FileAttributes(
       uuid,
-      Uri(request.path.toString()),
+      Uri(path = request.path),
       request.path,
       "file.json",
       Some(ContentTypes.`application/json`),
@@ -98,10 +99,10 @@ class LinkFileActionSuite extends NexusSuite {
   }
 
   test("Succeed for a file without media type detection") {
-    val request    = FileLinkRequest(Uri.Path("/path/file.obj"), None, None)
+    val request    = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.obj"), None, None)
     val attributes = FileAttributes(
       uuid,
-      Uri(request.path.toString()),
+      Uri(path = request.path),
       request.path,
       "file.obj",
       Some(contentTypeFromS3),
@@ -119,10 +120,10 @@ class LinkFileActionSuite extends NexusSuite {
   test("Succeed for a file with provided media type") {
     val customMediaType   = MediaType.custom("application/obj", binary = false)
     val customContentType = ContentType(customMediaType, () => HttpCharsets.`UTF-8`)
-    val request           = FileLinkRequest(Uri.Path("/path/file.obj"), Some(customContentType), None)
+    val request           = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.obj"), Some(customContentType), None)
     val attributes        = FileAttributes(
       uuid,
-      Uri(request.path.toString()),
+      Uri(path = request.path),
       request.path,
       "file.obj",
       Some(customContentType),

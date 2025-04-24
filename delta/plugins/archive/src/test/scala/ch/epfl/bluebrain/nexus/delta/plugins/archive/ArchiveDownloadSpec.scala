@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -24,10 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.{FileSelf, RemoteContextRes
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -43,6 +42,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.EncoderOps
+import org.http4s.Uri
 import org.scalactic.source.Position
 
 import java.util.UUID
@@ -80,8 +80,8 @@ class ArchiveDownloadSpec
     val storageRef                                    = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
     def fileAttributes(filename: String, bytes: Long) = FileAttributes(
       UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc"),
-      "http://localhost/file.txt",
-      Uri.Path("file.txt"),
+      Uri.unsafeFromString("http://localhost/file.txt"),
+      Uri.Path.unsafeFromString("file.txt"),
       filename,
       Some(`text/plain(UTF-8)`),
       Map.empty,

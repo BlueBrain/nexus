@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{permissions, ArchiveRejection, ArchiveResource, Zip}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.kernel.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -76,11 +76,6 @@ class ArchiveRoutes(
   private def emitMetadata(statusCode: StatusCode, io: IO[ArchiveResource]): Route =
     emit(statusCode, io.mapValue(_.metadata).attemptNarrow[ArchiveRejection])
 
-  private def emitArchiveFile(source: IO[AkkaSource]) = {
-    val response = source.map { s => FileResponse.noCache(s"archive.zip", Zip.contentType, None, s) }
-    emit(response.attemptNarrow[ArchiveRejection])
-  }
-
   private def emitCreatedArchive(io: IO[ArchiveResource]): Route =
     Zip.checkHeader {
       case true  => emitRedirect(SeeOther, io.map(_.access.uri).attemptNarrow[ArchiveRejection])
@@ -95,4 +90,9 @@ class ArchiveRoutes(
         }
       case false => emit(archives.fetch(id, project).attemptNarrow[ArchiveRejection])
     }
+
+  private def emitArchiveFile(source: IO[AkkaSource]) = {
+    val response = source.map { s => FileResponse.noCache(s"archive.zip", Zip.contentType, None, s) }
+    emit(response.attemptNarrow[ArchiveRejection])
+  }
 }
