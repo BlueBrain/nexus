@@ -1,15 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
-import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import cats.data.NonEmptyList
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.client.middleware.BasicAuth
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.{SparqlJsonLdResponse, SparqlNTriplesResponse, SparqlRdfXmlResponse, SparqlResultsResponse, SparqlXmlResultsResponse}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
@@ -17,6 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import io.circe.Json
 import io.circe.syntax.*
+import org.http4s.ember.client.EmberClientBuilder
+import org.http4s.headers.Accept
+import org.http4s.{BasicCredentials, EntityDecoder, Header, MediaType, QValue, Uri}
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
@@ -41,7 +40,7 @@ trait SparqlQueryClient {
       namespaces: Iterable[String],
       q: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R],
-      additionalHeaders: Seq[HttpHeader] = Seq.empty
+      additionalHeaders: Seq[Header.ToRaw] = Seq.empty
   ): IO[R]
 }
 
@@ -84,7 +83,7 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
       namespaces: Iterable[String],
       q: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R],
-      additionalHeaders: Seq[HttpHeader] = Seq.empty
+      additionalHeaders: Seq[Header.ToRaw] = Seq.empty
   ): IO[R] =
     responseType match {
       case SparqlResultsJson => sparqlResultsResponse(namespaces, q, additionalHeaders)
@@ -145,41 +144,43 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
   def drop(namespace: String, graph: Uri): IO[Unit] =
     bulk(namespace, Seq(SparqlWriteQuery.drop(graph)))
 
-  protected def queryRequest[A: FromEntityUnmarshaller: ClassTag](
+  protected def queryRequest[A](
       namespace: String,
       q: SparqlQuery,
       mediaTypes: NonEmptyList[MediaType],
-      additionalHeaders: Seq[HttpHeader]
-  ): IO[A]
+      additionalHeaders: Seq[Header.ToRaw]
+  )(implicit entityDecoder: EntityDecoder[IO, A], classTag: ClassTag[A]): IO[A]
 
   private def sparqlResultsResponse(
       namespace: Iterable[String],
       q: SparqlQuery,
-      additionalHeaders: Seq[HttpHeader]
-  ): IO[SparqlResultsResponse] =
+      additionalHeaders: Seq[Header.ToRaw]
+  ): IO[SparqlResultsResponse] = {
+    import org.http4s.circe.CirceEntityDecoder.*
     namespace.toList
       .foldLeftM(SparqlResults.empty) { (results, namespace) =>
         queryRequest[SparqlResults](namespace, q, SparqlResultsJson.mediaTypes, additionalHeaders)
           .map(results ++ _)
       }
       .map(SparqlResultsResponse)
+  }
 
   private def sparqlXmlResultsResponse(
       namespaces: Iterable[String],
       q: SparqlQuery,
-      additionalHeaders: Seq[HttpHeader]
+      additionalHeaders: Seq[Header.ToRaw]
   ): IO[SparqlXmlResultsResponse] =
     namespaces.toList
-      .foldLeftM(None: Option[Elem]) { case (elem, namespace) =>
-        queryRequest[NodeSeq](namespace, q, SparqlResultsXml.mediaTypes, additionalHeaders)
-          .map { nodeSeq =>
-            elem match {
+      .foldLeftM(None: Option[Elem]) { case (acc, namespace) =>
+        queryRequest[Elem](namespace, q, SparqlResultsXml.mediaTypes, additionalHeaders)
+          .map { result =>
+            acc match {
               case Some(root) =>
                 val results = (root \ "results").collect { case results: Elem =>
-                  results.copy(child = results.child ++ nodeSeq \\ "result")
+                  results.copy(child = results.child ++ result \\ "result")
                 }
                 Some(root.copy(child = root.child.filterNot(_.label == "results") ++ results))
-              case None       => nodeSeq.headOption.collect { case root: Elem => root }
+              case None       => result.headOption.collect { case root: Elem => root }
             }
           }
       }
@@ -191,9 +192,9 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
   private def sparqlJsonLdResponse(
       namespaces: Iterable[String],
       q: SparqlQuery,
-      additionalHeaders: Seq[HttpHeader]
+      additionalHeaders: Seq[Header.ToRaw]
   ): IO[SparqlJsonLdResponse] = {
-    import CirceUnmarshalling.*
+    import org.http4s.circe.CirceEntityDecoder.*
     namespaces.toList
       .foldLeftM(Vector.empty[Json]) { (results, namespace) =>
         queryRequest[Json](namespace, q, SparqlJsonLd.mediaTypes, additionalHeaders)
@@ -205,11 +206,11 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
   private def sparqlNTriplesResponse(
       namespaces: Iterable[String],
       q: SparqlQuery,
-      additionalHeaders: Seq[HttpHeader]
+      additionalHeaders: Seq[Header.ToRaw]
   ): IO[SparqlNTriplesResponse] =
     namespaces.toList
-      .foldLeftM(NTriples.empty) { (results, namspace) =>
-        queryRequest[String](namspace, q, SparqlNTriples.mediaTypes, additionalHeaders)
+      .foldLeftM(NTriples.empty) { (results, namespace) =>
+        queryRequest[String](namespace, q, SparqlNTriples.mediaTypes, additionalHeaders)
           .map(s => results ++ NTriples(s, BNode.random))
       }
       .map(SparqlNTriplesResponse)
@@ -217,15 +218,15 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
   private def sparqlRdfXmlResponse(
       namespaces: Iterable[String],
       q: SparqlQuery,
-      additionalHeaders: Seq[HttpHeader]
+      additionalHeaders: Seq[Header.ToRaw]
   ): IO[SparqlRdfXmlResponse] =
     namespaces.toList
-      .foldLeftM(None: Option[Elem]) { case (elem, namespace) =>
-        queryRequest[NodeSeq](namespace, q, SparqlRdfXml.mediaTypes, additionalHeaders)
-          .map { nodeSeq =>
-            elem match {
-              case Some(root) => Some(root.copy(child = root.child ++ nodeSeq \ "_"))
-              case None       => nodeSeq.headOption.collect { case root: Elem => root }
+      .foldLeftM(None: Option[Elem]) { case (acc, namespace) =>
+        queryRequest[Elem](namespace, q, SparqlRdfXml.mediaTypes, additionalHeaders)
+          .map { result =>
+            acc match {
+              case Some(root) => Some(root.copy(child = root.child ++ result \ "_"))
+              case None       => result.headOption.collect { case root: Elem => root }
             }
           }
       }
@@ -234,31 +235,32 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
         case None       => SparqlRdfXmlResponse(NodeSeq.Empty)
       }
 
-  protected def accept(mediaType: Seq[MediaType]): Accept =
-    Accept(mediaType.map(MediaRange.One(_, 1f)))
+  protected def accept(mediaTypes: NonEmptyList[MediaType]): Accept =
+    Accept(mediaTypes.map(_.withQValue(QValue.One)))
 }
 
 object SparqlClient {
 
-  def query(target: SparqlTarget, endpoint: Uri, queryTimeout: Duration)(implicit
-      credentials: Option[HttpCredentials],
-      as: ActorSystem
-  ): SparqlClient = {
-    val httpConfig = HttpClientConfig.noRetry(compression = false)
-    indexing(target, endpoint, httpConfig, queryTimeout)
-  }
+  private val logger = Logger[this.type]
 
-  def indexing(target: SparqlTarget, endpoint: Uri, httpConfig: HttpClientConfig, queryTimeout: Duration)(implicit
-      credentials: Option[HttpCredentials],
-      as: ActorSystem
-  ): SparqlClient = {
-    val client = HttpClient()(httpConfig, as)
-    target match {
-      case SparqlTarget.Blazegraph =>
-        // Blazegraph can't handle compressed requests
-        new BlazegraphClient(client, endpoint, queryTimeout)
-      case SparqlTarget.Rdf4j      =>
-        RDF4JClient.lmdb(client, endpoint)
-    }
-  }
+  def apply(
+      target: SparqlTarget,
+      endpoint: Uri,
+      queryTimeout: Duration,
+      credentials: Option[BasicCredentials]
+  ): Resource[IO, SparqlClient] =
+    EmberClientBuilder
+      .default[IO]
+      .withLogger(logger)
+      .build
+      .map { client =>
+        val authClient = BasicAuth(credentials)(client)
+        target match {
+          case SparqlTarget.Blazegraph =>
+            // Blazegraph can't handle compressed requests
+            new BlazegraphClient(authClient, endpoint, queryTimeout)
+          case SparqlTarget.Rdf4j      =>
+            RDF4JClient.lmdb(authClient, endpoint)
+        }
+      }
 }

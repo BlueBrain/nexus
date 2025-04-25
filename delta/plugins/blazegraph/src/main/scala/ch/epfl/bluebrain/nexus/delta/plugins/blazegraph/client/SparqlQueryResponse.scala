@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{SparqlJsonLd, SparqlResultsJson}
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.{`application/ld+json`, `application/sparql-results+json`}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -18,8 +18,7 @@ sealed trait SparqlQueryResponse extends Product with Serializable
 
 object SparqlQueryResponse {
 
-  private val jsonMediaTypes =
-    SparqlResultsJson.mediaTypes.toList ++ SparqlJsonLd.mediaTypes.toList
+  private val jsonMediaTypes = List(`application/sparql-results+json`, `application/ld+json`)
 
   /**
     * Sparql response returned when using application/sparql-results+json Accept header

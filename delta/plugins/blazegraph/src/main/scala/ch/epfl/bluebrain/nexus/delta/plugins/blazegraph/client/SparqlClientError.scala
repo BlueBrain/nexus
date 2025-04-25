@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
+import cats.effect.IO
+import org.http4s.{EntityDecoder, Response, Status}
 
 /**
   * Error that can occur when using an [[SparqlClient]]
@@ -11,22 +12,45 @@ sealed abstract class SparqlClientError(val reason: String, val details: Option[
     with Serializable {
   override def fillInStackTrace(): SparqlClientError = this
 
-  override def getMessage: String = toString()
+  override def getMessage: String = toString
 
-  override def toString(): String =
+  override def toString: String =
     s"An error occurred because '$reason'" ++ details.map(d => s"\ndetails '$d'").getOrElse("")
 
 }
 
 object SparqlClientError {
 
-  /**
-    * Error on the underlying [[HttpClient]]
-    */
-  final case class WrappedHttpClientError(http: HttpClientError) extends SparqlClientError(http.reason, http.details) {
-    override def getMessage: String = http.getMessage
+  final case class SparqlActionError(status: Status, action: String)
+      extends SparqlClientError(
+        s"The sparql $action failed with status $status",
+        None
+      )
 
-    def getOriginal: HttpClientError = http
+  final case class SparqlQueryError(status: Status, body: String)
+      extends SparqlClientError(
+        s"The sparql endpoint responded with a status: $status",
+        Some(body)
+      )
+
+  object SparqlQueryError {
+    def apply(response: Response[IO]): IO[SparqlQueryError] =
+      EntityDecoder.decodeText(response).map { body =>
+        SparqlQueryError(response.status, body)
+      }
+  }
+
+  final case class SparqlWriteError(status: Status, body: String)
+      extends SparqlClientError(
+        s"The sparql endpoint responded with a status: $status",
+        Some(body)
+      )
+
+  object SparqlWriteError {
+    def apply(response: Response[IO]): IO[SparqlQueryError] =
+      EntityDecoder.decodeText(response).map { body =>
+        SparqlQueryError(response.status, body)
+      }
   }
 
   /**

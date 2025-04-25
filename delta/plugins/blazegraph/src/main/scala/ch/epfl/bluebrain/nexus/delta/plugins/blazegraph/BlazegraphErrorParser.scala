@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.SparqlQueryError
 
 object BlazegraphErrorParser {
 
@@ -51,12 +50,8 @@ object BlazegraphErrorParser {
     */
   def details(error: SparqlClientError): String =
     error match {
-      case WrappedHttpClientError(httpError) =>
-        httpError match {
-          case HttpClientError.HttpClientStatusError(_, _, _, message) => parse(message)
-          case error                                                   => error.reason
-        }
-      case sparqlClientError                 => sparqlClientError.toString()
+      case SparqlQueryError(_, body) => parse(body)
+      case sparqlClientError         => sparqlClientError.toString()
     }
 
 }

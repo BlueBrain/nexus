@@ -14,8 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
 import org.http4s.Method.POST
 import org.http4s.client.Client
+import org.http4s.client.dsl.io.*
 import org.http4s.headers.Authorization
-import org.http4s.{BasicCredentials, Headers, Request, Uri, UrlForm}
+import org.http4s.{BasicCredentials, Uri, UrlForm}
 
 /**
   * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
@@ -46,18 +47,14 @@ class OpenIdAuthService(client: Client[IO], realms: Realms) {
     }
 
   private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]): IO[Json] = {
-    val request = Request[IO](
-      method = POST,
-      uri = tokenEndpoint,
-      headers = Headers(Authorization(BasicCredentials(user, password.value)))
-    ).withEntity(urlForm)
+    val request = POST(tokenEndpoint, Authorization(BasicCredentials(user, password.value)))
+      .withEntity(urlForm)
     client.expectOr[Json](request) { response =>
       response.bodyAsString.flatMap { body =>
+        val error = AuthTokenHttpError(response.status)
         logger
           .error(s"The token could not be retrieved. The service returned: ${response.status} => $body")
-          .as(
-            AuthTokenHttpError(response.status)
-          )
+          .as(error)
       }
     }
   }

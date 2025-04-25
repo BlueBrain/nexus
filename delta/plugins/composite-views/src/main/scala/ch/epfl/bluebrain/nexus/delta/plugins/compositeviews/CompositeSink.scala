@@ -2,9 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.implicits.*
+import ch.epfl.bluebrain.nexus.delta.kernel.error.HttpConnectivityError
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.SparqlQueryError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{GraphResourceToNTriples, SparqlSink}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
@@ -17,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -55,7 +58,8 @@ final class Single[SinkFormat](
     transform: GraphResource => IO[Option[SinkFormat]],
     sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
     override val chunkSize: Int,
-    override val maxWindow: FiniteDuration
+    override val maxWindow: FiniteDuration,
+    retryStrategy: RetryStrategy[Throwable]
 ) extends CompositeSink {
 
   override type In = GraphResource
@@ -63,7 +67,7 @@ final class Single[SinkFormat](
 
   private def queryTransform: GraphResource => IO[Option[SinkFormat]] = gr =>
     for {
-      graph       <- queryGraph(gr)
+      graph       <- queryGraph(gr).retry(retryStrategy)
       transformed <- graph.flatTraverse(transform)
     } yield transformed
 
@@ -99,7 +103,8 @@ final class Batch[SinkFormat](
     transform: GraphResource => IO[Option[SinkFormat]],
     sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
     override val chunkSize: Int,
-    override val maxWindow: FiniteDuration
+    override val maxWindow: FiniteDuration,
+    retryStrategy: RetryStrategy[Throwable]
 )(implicit rcr: RemoteContextResolution)
     extends CompositeSink {
 
@@ -113,7 +118,7 @@ final class Batch[SinkFormat](
   /** Performs the sparql query only using [[SuccessElem]]s from the chunk */
   private def query(elements: Chunk[Elem[GraphResource]]): IO[Option[Graph]] =
     elements.mapFilter(elem => elem.map(_.id).toOption) match {
-      case ids if ids.nonEmpty => queryGraph(ids)
+      case ids if ids.nonEmpty => queryGraph(ids).retry(retryStrategy)
       case _                   => IO.none
     }
 
@@ -146,6 +151,8 @@ final class Batch[SinkFormat](
 
 object CompositeSink {
 
+  private val logger = Logger[CompositeSink]
+
   /**
     * @param sparqlClient
     *   client used to connect to the SPARQL store
@@ -165,16 +172,18 @@ object CompositeSink {
       namespace: String,
       common: String,
       batchConfig: BatchConfig,
-      sinkConfig: SinkConfig
+      sinkConfig: SinkConfig,
+      retryStrategy: RetryStrategyConfig
   )(implicit baseUri: BaseUri, rcr: RemoteContextResolution): SparqlProjection => CompositeSink = { target =>
     compositeSink(
       sparqlClient,
       common,
       target.query,
       GraphResourceToNTriples.graphToNTriples,
-      SparqlSink(sparqlClient, batchConfig, namespace).apply,
+      SparqlSink(sparqlClient, retryStrategy, batchConfig, namespace).apply,
       batchConfig,
-      sinkConfig
+      sinkConfig,
+      retryStrategy
     )
   }
 
@@ -200,17 +209,14 @@ object CompositeSink {
       index: IndexLabel,
       common: String,
       batchConfig: BatchConfig,
-      sinkConfig: SinkConfig
+      sinkConfig: SinkConfig,
+      retryStrategyConfig: RetryStrategyConfig
   )(implicit rcr: RemoteContextResolution): ElasticSearchProjection => CompositeSink = { target =>
     implicit val jsonLdOptions: JsonLdOptions = JsonLdOptions.AlwaysEmbed
-    val esSink                                =
-      ElasticSearchSink.states(
-        esClient,
-        batchConfig.maxElements,
-        batchConfig.maxInterval,
-        index,
-        Refresh.False
-      )
+
+    val (maxElements, maxInterval) = (batchConfig.maxElements, batchConfig.maxInterval)
+    val esSink                     = ElasticSearchSink.states(esClient, maxElements, maxInterval, index, Refresh.False)
+
     compositeSink(
       sparqlClient,
       common,
@@ -218,7 +224,8 @@ object CompositeSink {
       new GraphResourceToDocument(target.context, target.includeContext).graphToDocument,
       esSink.apply,
       batchConfig,
-      sinkConfig
+      sinkConfig,
+      retryStrategyConfig
     )
   }
 
@@ -229,24 +236,25 @@ object CompositeSink {
       transform: GraphResource => IO[Option[SinkFormat]],
       sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
       batchConfig: BatchConfig,
-      sinkConfig: SinkConfig
-  )(implicit rcr: RemoteContextResolution): CompositeSink = sinkConfig match {
-    case SinkConfig.Single =>
-      new Single(
-        new SingleQueryGraph(sparqlClient, common, query),
-        transform,
-        sink,
-        batchConfig.maxElements,
-        batchConfig.maxInterval
-      )
-    case SinkConfig.Batch  =>
-      new Batch(
-        new BatchQueryGraph(sparqlClient, common, query),
-        transform,
-        sink,
-        batchConfig.maxElements,
-        batchConfig.maxInterval
-      )
+      sinkConfig: SinkConfig,
+      retryStrategyConfig: RetryStrategyConfig
+  )(implicit rcr: RemoteContextResolution): CompositeSink = {
+    val retryStrategy              = RetryStrategy[Throwable](
+      retryStrategyConfig,
+      {
+        case _: SparqlQueryError => true
+        case e                   => HttpConnectivityError.test(e)
+      },
+      RetryStrategy.logError(logger, "sinking")(_, _)
+    )
+    val (maxElements, maxInterval) = (batchConfig.maxElements, batchConfig.maxInterval)
+    sinkConfig match {
+      case SinkConfig.Single =>
+        val queryGraph = new SingleQueryGraph(sparqlClient, common, query)
+        new Single(queryGraph, transform, sink, maxElements, maxInterval, retryStrategy)
+      case SinkConfig.Batch  =>
+        val queryGraph = new BatchQueryGraph(sparqlClient, common, query)
+        new Batch(queryGraph, transform, sink, maxElements, maxInterval, retryStrategy)
+    }
   }
-
 }

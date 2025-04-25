@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
+import org.http4s.Uri
 
 /**
   * Enumeration type for all supported sparql write queries
@@ -37,11 +37,6 @@ object SparqlWriteQuery {
     * A Replace query (drop + insert)
     */
   final case class SparqlReplaceQuery private[SparqlWriteQuery] (value: String, graph: Uri) extends SparqlWriteQuery
-
-  /**
-    * A custom write query
-    */
-  final case class SparqlCustomQuery(value: String, graph: Uri) extends SparqlWriteQuery
 
   /**
     * Builds a query that drops the graph identified by the argument ''uri'' from the store.

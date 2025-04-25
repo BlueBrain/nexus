@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.SparqlClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClient, SparqlQueryResponseType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -9,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
@@ -27,9 +29,11 @@ abstract class SparqlSinkSuite extends NexusSuite with SparqlClientSetup.Fixture
 
   def client: SparqlClient
 
-  private val namespace = "test_sink"
+  private val namespace     = "test_sink"
+  private val batchConfig   = BatchConfig(2, 50.millis)
+  private val retryStrategy = RetryStrategyConfig.AlwaysGiveUp
 
-  def createSink(namespace: String) = new SparqlSink(client, 2, 50.millis, namespace)
+  private def createSink(namespace: String) = SparqlSink(client, retryStrategy, batchConfig, namespace)
 
   private lazy val sink = createSink(namespace)
 

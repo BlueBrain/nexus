@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlTarget
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SourcesConfig}
@@ -12,8 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
+import org.http4s.{BasicCredentials, Uri}
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto.*
+import pureconfig.module.http4s.*
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
@@ -56,11 +56,11 @@ final case class CompositeViewsConfig(
     maxProjections: Int,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
-    indexingClient: HttpClientConfig,
     remoteSourceClient: RemoteSourceClientConfig,
     minIntervalRebuild: FiniteDuration,
     blazegraphBatch: BatchConfig,
     elasticsearchBatch: BatchConfig,
+    retryStrategy: RetryStrategyConfig,
     restartCheckInterval: FiniteDuration,
     indexingEnabled: Boolean,
     sinkConfig: SinkConfig,
@@ -93,7 +93,7 @@ object CompositeViewsConfig {
   final case class BlazegraphAccess(
       base: Uri,
       sparqlTarget: SparqlTarget,
-      credentials: Option[BasicHttpCredentials],
+      credentials: Option[BasicCredentials],
       queryTimeout: Duration
   )
 

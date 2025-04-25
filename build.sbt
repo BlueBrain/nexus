@@ -38,6 +38,7 @@ val glassFishJakartaVersion    = "2.0.1"
 val handleBarsVersion          = "4.4.0"
 val hikariVersion              = "6.3.0"
 val http4sVersion              = "0.23.30"
+val http4sXMLVersion           = "0.23.14"
 val jenaVersion                = "5.2.0"
 val kamonVersion               = "2.7.6"
 val kanelaAgentVersion         = "1.0.18"
@@ -121,7 +122,10 @@ lazy val handleBars       = "com.github.jknack" % "handlebars"   % handleBarsVer
 
 lazy val http4s = Seq(
   "org.http4s" %% "http4s-ember-client" % http4sVersion,
-  "org.http4s" %% "http4s-circe"        % http4sVersion
+  "org.http4s" %% "http4s-circe"        % http4sVersion,
+  "org.http4s" %% "http4s-scala-xml"    % http4sXMLVersion,
+  "org.http4s" %% "http4s-ember-server" % http4sVersion % Test,
+  "org.http4s" %% "http4s-dsl"          % http4sVersion % Test
 )
 
 lazy val jenaArq         = "org.apache.jena"               % "jena-arq"          % jenaVersion

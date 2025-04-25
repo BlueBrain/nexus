@@ -6,8 +6,8 @@ import akka.http.scaladsl.server.{Directive0, Route}
 import cats.effect.IO
 import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{query as Query, read as Read, write as Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.query.IncomingOutgoingLinks
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}

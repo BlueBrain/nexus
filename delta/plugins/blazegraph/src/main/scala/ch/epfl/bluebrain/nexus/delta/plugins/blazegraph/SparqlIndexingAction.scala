@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
@@ -10,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, SuccessElemStream, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Stream
 
 import scala.concurrent.duration.FiniteDuration
@@ -63,11 +64,12 @@ object SparqlIndexingAction {
       client: SparqlClient,
       timeout: FiniteDuration
   )(implicit baseUri: BaseUri): SparqlIndexingAction = {
-    val batchConfig = BatchConfig.individual
+    val batchConfig   = BatchConfig.individual
+    val retryStrategy = RetryStrategyConfig.AlwaysGiveUp
     new SparqlIndexingAction(
       views.currentIndexingViews,
       PipeChain.compile(_, registry),
-      (v: ActiveViewDef) => new SparqlSink(client, batchConfig.maxElements, batchConfig.maxInterval, v.namespace),
+      (v: ActiveViewDef) => SparqlSink(client, retryStrategy, batchConfig, v.namespace),
       timeout
     )
   }

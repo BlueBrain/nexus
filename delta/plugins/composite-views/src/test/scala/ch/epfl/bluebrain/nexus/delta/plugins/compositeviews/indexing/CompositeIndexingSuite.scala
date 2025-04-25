@@ -6,6 +6,7 @@ import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.SparqlClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
@@ -67,7 +68,7 @@ import scala.concurrent.duration.DurationInt
 class SingleCompositeIndexingSuite extends CompositeIndexingSuite(SinkConfig.Single, singleQuery)
 class BatchCompositeIndexingSuite  extends CompositeIndexingSuite(SinkConfig.Batch, batchQuery)
 
-trait CompositeIndexingFixture { self: CatsEffectSuite with FixedClock =>
+trait CompositeIndexingFixture { self: CatsEffectSuite & FixedClock =>
 
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
@@ -76,6 +77,7 @@ trait CompositeIndexingFixture { self: CatsEffectSuite with FixedClock =>
 
   private val queryConfig      = QueryConfig(10, RefreshStrategy.Delay(10.millis))
   val batchConfig: BatchConfig = BatchConfig(2, 50.millis)
+  private val retryStrategy    = RetryStrategyConfig.AlwaysGiveUp
 
   private def resource(sinkConfig: SinkConfig): Resource[IO, Setup] = {
     (
@@ -88,7 +90,8 @@ trait CompositeIndexingFixture { self: CatsEffectSuite with FixedClock =>
         val projections           =
           CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 1.second, clock)
         val spaces                = CompositeSpaces(prefix, esClient, sparqlClient)
-        val sinks                 = CompositeSinks(prefix, esClient, batchConfig, sparqlClient, batchConfig, sinkConfig)
+        val sinks                 =
+          CompositeSinks(prefix, esClient, batchConfig, sparqlClient, batchConfig, sinkConfig, retryStrategy)
         Setup(esClient, sparqlClient, projections, spaces, sinks)
       }
   }
