@@ -59,23 +59,14 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[SparqlClient].named("sparql-composite-indexing-client").from { (cfg: CompositeViewsConfig, as: ActorSystem) =>
+  make[SparqlClient].named("sparql-composite-indexing-client").fromResource { (cfg: CompositeViewsConfig) =>
     val access = cfg.blazegraphAccess
-    SparqlClient.indexing(
-      access.sparqlTarget,
-      access.base,
-      cfg.indexingClient,
-      access.queryTimeout
-    )(cfg.blazegraphAccess.credentials, as)
+    SparqlClient(access.sparqlTarget, access.base, access.queryTimeout, cfg.blazegraphAccess.credentials)
   }
 
-  make[SparqlClient].named("sparql-composite-query-client").from { (cfg: CompositeViewsConfig, as: ActorSystem) =>
+  make[SparqlClient].named("sparql-composite-query-client").fromResource { (cfg: CompositeViewsConfig) =>
     val access = cfg.blazegraphAccess
-    SparqlClient.query(
-      access.sparqlTarget,
-      access.base,
-      access.queryTimeout
-    )(cfg.blazegraphAccess.credentials, as)
+    SparqlClient(access.sparqlTarget, access.base, access.queryTimeout, cfg.blazegraphAccess.credentials)
   }
 
   make[ValidateCompositeView].from {
@@ -164,10 +155,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      CompositeSinks(cfg.prefix, esClient, cfg.elasticsearchBatch, sparqlClient, cfg.blazegraphBatch, cfg.sinkConfig)(
-        baseUri,
-        cr
-      )
+      CompositeSinks(
+        cfg.prefix,
+        esClient,
+        cfg.elasticsearchBatch,
+        sparqlClient,
+        cfg.blazegraphBatch,
+        cfg.sinkConfig,
+        cfg.retryStrategy
+      )(baseUri, cr)
   }
 
   make[MetadataPredicates].fromEffect {

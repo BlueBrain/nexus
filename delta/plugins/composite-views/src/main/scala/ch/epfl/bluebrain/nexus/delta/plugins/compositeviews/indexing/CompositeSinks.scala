@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.SparqlSink
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeSink
@@ -37,7 +38,8 @@ object CompositeSinks {
       esBatch: BatchConfig,
       sparqlClient: SparqlClient,
       sparqlBatch: BatchConfig,
-      sinkConfig: SinkConfig
+      sinkConfig: SinkConfig,
+      retryStrategy: RetryStrategyConfig
   )(implicit base: BaseUri, rcr: RemoteContextResolution): CompositeSinks = new CompositeSinks {
 
     /**
@@ -45,7 +47,7 @@ object CompositeSinks {
       */
     override def commonSink(view: ActiveViewDef): Sink = {
       val common = commonNamespace(view.uuid, view.indexingRev, prefix)
-      SparqlSink(sparqlClient, sparqlBatch, common)
+      SparqlSink(sparqlClient, retryStrategy, sparqlBatch, common)
     }
 
     /**
@@ -56,10 +58,10 @@ object CompositeSinks {
       target match {
         case e: ElasticSearchProjection =>
           val index = projectionIndex(e, view.uuid, prefix)
-          CompositeSink.elasticSink(sparqlClient, esClient, index, common, esBatch, sinkConfig).apply(e)
+          CompositeSink.elasticSink(sparqlClient, esClient, index, common, esBatch, sinkConfig, retryStrategy).apply(e)
         case s: SparqlProjection        =>
           val namespace = projectionNamespace(s, view.uuid, prefix)
-          CompositeSink.sparqlSink(sparqlClient, namespace, common, sparqlBatch, sinkConfig).apply(s)
+          CompositeSink.sparqlSink(sparqlClient, namespace, common, sparqlBatch, sinkConfig, retryStrategy).apply(s)
       }
     }
   }

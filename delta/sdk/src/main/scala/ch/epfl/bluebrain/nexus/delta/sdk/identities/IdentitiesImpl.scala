@@ -19,10 +19,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import io.circe.{Decoder, HCursor, Json}
+import org.http4s.Method.GET
 import org.http4s.circe.*
+import org.http4s.client.dsl.io.*
 import org.http4s.client.{Client, UnexpectedStatus}
 import org.http4s.headers.Authorization
-import org.http4s.{AuthScheme, Credentials, Headers, Request, Status, Uri}
+import org.http4s.{AuthScheme, Credentials, Status, Uri}
 
 import scala.util.Try
 
@@ -134,10 +136,7 @@ object IdentitiesImpl {
       }
     }
     val getUserInfo: (Uri, Credentials.Token) => IO[Json] = { (uri: Uri, token: Credentials.Token) =>
-      val request = Request[IO](
-        uri = uri,
-        headers = Headers(Authorization(token))
-      )
+      val request = GET(uri, Authorization(token))
       client.expect[Json](request)
     }
 

@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlTarget
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
+import org.http4s.{BasicCredentials, Uri}
 import pureconfig.generic.auto.*
+import pureconfig.module.http4s.*
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
@@ -22,8 +22,6 @@ import scala.concurrent.duration.*
   *   the base uri to the Blazegraph HTTP endpoint
   * @param credentials
   *   the Blazegraph HTTP endpoint credentials
-  * @param indexingClient
-  *   configuration of the indexing Blazegraph client
   * @param queryTimeout
   *   the Blazegraph query timeout
   * @param slowQueries
@@ -46,13 +44,13 @@ import scala.concurrent.duration.*
 final case class BlazegraphViewsConfig(
     base: Uri,
     sparqlTarget: SparqlTarget,
-    credentials: Option[BasicHttpCredentials],
-    indexingClient: HttpClientConfig,
+    credentials: Option[BasicCredentials],
     queryTimeout: Duration,
     slowQueries: SlowQueriesConfig,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
     batch: BatchConfig,
+    retryStrategy: RetryStrategyConfig,
     prefix: String,
     maxViewRefs: Int,
     syncIndexingTimeout: FiniteDuration,

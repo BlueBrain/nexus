@@ -129,7 +129,7 @@ object BlazegraphCoordinator {
         graphStream,
         PipeChain.compile(_, registry),
         supervisor,
-        (v: ActiveViewDef) => new SparqlSink(client, config.batch.maxElements, config.batch.maxInterval, v.namespace),
+        (v: ActiveViewDef) => SparqlSink(client, config.retryStrategy, config.batch, v.namespace),
         (v: ActiveViewDef) =>
           client
             .createNamespace(v.namespace)

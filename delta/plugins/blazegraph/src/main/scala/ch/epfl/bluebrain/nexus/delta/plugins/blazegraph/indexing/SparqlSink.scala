@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.error.HttpConnectivityError
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.SparqlWriteError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.SparqlSink.{logger, SparqlBulk}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -16,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
+import org.http4s.Uri
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -35,7 +38,8 @@ final class SparqlSink(
     client: SparqlClient,
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration,
-    namespace: String
+    namespace: String,
+    retryStrategy: RetryStrategy[Throwable]
 )(implicit base: BaseUri)
     extends Sink {
 
@@ -60,6 +64,7 @@ final class SparqlSink(
     if (bulk.queries.nonEmpty)
       client
         .bulk(namespace, bulk.queries)
+        .retry(retryStrategy)
         .redeemWith(
           err =>
             logger
@@ -85,12 +90,26 @@ object SparqlSink {
 
   private val logger = Logger[SparqlSink]
 
-  def apply(client: SparqlClient, batchConfig: BatchConfig, namespace: String)(implicit base: BaseUri) =
-    new SparqlSink(client, batchConfig.maxElements, batchConfig.maxInterval, namespace = namespace)
+  def apply(
+      client: SparqlClient,
+      retryStrategyConfig: RetryStrategyConfig,
+      batchConfig: BatchConfig,
+      namespace: String
+  )(implicit base: BaseUri): SparqlSink = {
+    val retryStrategy = RetryStrategy[Throwable](
+      retryStrategyConfig,
+      {
+        case _: SparqlWriteError => true
+        case e                   => HttpConnectivityError.test(e)
+      },
+      RetryStrategy.logError(logger, "sinking")(_, _)
+    )
+    new SparqlSink(client, batchConfig.maxElements, batchConfig.maxInterval, namespace, retryStrategy)
+  }
 
   final case class SparqlBulk(invalidIds: Set[Iri], queries: Vector[SparqlWriteQuery], endpoint: Iri) {
 
-    private def parseUri(id: Iri) = id.resolvedAgainst(endpoint).toUri
+    private def parseUri(id: Iri) = Uri.fromString(id.resolvedAgainst(endpoint).toString)
 
     def replace(id: Iri, triples: NTriples): SparqlBulk =
       parseUri(id).fold(

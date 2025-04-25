@@ -1,25 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post}
-import akka.http.scaladsl.model.StatusCodes.*
-import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.{HttpCredentials, RawHeader}
-import akka.http.scaladsl.model.{FormData, HttpEntity, HttpHeader, MediaType, Uri}
-import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.ResolvedServiceDescription
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient.timeoutHeader
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidCountRequest, WrappedHttpClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidCountRequest, SparqlActionError, SparqlQueryError, SparqlWriteError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.NamespaceProperties
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import org.http4s.Method.{DELETE, GET, POST}
+import org.http4s.client.Client
+import org.http4s.client.dsl.io.*
+import org.http4s.{EntityDecoder, Header, MediaType, Status, Uri, UrlForm}
+import org.typelevel.ci.CIString
 
 import scala.concurrent.duration.*
 import scala.reflect.ClassTag
@@ -27,44 +22,34 @@ import scala.reflect.ClassTag
 /**
   * A client that exposes additional functions on top of [[SparqlClient]] that are specific to Blazegraph.
   */
-final class BlazegraphClient(
-    client: HttpClient,
-    endpoint: Uri,
-    queryTimeout: Duration
-)(implicit credentials: Option[HttpCredentials], as: ActorSystem)
-    extends SparqlClient {
+final class BlazegraphClient(client: Client[IO], endpoint: Uri, queryTimeout: Duration) extends SparqlClient {
 
   private val serviceVersion = """(buildVersion">)([^<]*)""".r
   private val serviceName    = "blazegraph"
-
-  import as.dispatcher
 
   private def queryEndpoint(namespace: String): Uri = endpoint / "namespace" / namespace / "sparql"
 
   private def updateEndpoint(namespace: String): Uri = queryEndpoint(namespace)
 
-  override protected def queryRequest[A: FromEntityUnmarshaller: ClassTag](
+  override protected def queryRequest[A](
       namespace: String,
       q: SparqlQuery,
       mediaTypes: NonEmptyList[MediaType],
-      additionalHeaders: Seq[HttpHeader]
-  ): IO[A] = {
-    val req = Post(queryEndpoint(namespace), FormData("query" -> q.value))
-      .withHeaders(accept(mediaTypes.toList), additionalHeaders*)
-      .withHttpCredentials
-    client.fromEntityTo[A](req).adaptError { case e: HttpClientError =>
-      WrappedHttpClientError(e)
-    }
+      additionalHeaders: Seq[Header.ToRaw]
+  )(implicit entityDecoder: EntityDecoder[IO, A], classTag: ClassTag[A]): IO[A] = {
+    val request = POST(queryEndpoint(namespace), accept(mediaTypes)).withEntity(UrlForm("query" -> q.value))
+    client.expectOr[A](request)(SparqlQueryError(_))
   }
 
   override def query[R <: SparqlQueryResponse](
       namespaces: Iterable[String],
       q: SparqlQuery,
       responseType: Aux[R],
-      additionalHeaders: Seq[HttpHeader]
+      additionalHeaders: Seq[Header.ToRaw]
   ): IO[R] = {
-    val timeout = Option.when(queryTimeout.isFinite)(RawHeader(timeoutHeader, queryTimeout.toMillis.toString))
-    val headers = additionalHeaders ++ timeout
+    val timeout: Option[Header.ToRaw] =
+      Option.when(queryTimeout.isFinite)(Header.Raw(timeoutHeader, queryTimeout.toMillis.toString))
+    val headers                       = additionalHeaders ++ timeout
     super.query(namespaces, q, responseType, headers)
   }
 
@@ -73,17 +58,16 @@ final class BlazegraphClient(
     */
   def serviceDescription: IO[ServiceDescription] =
     client
-      .fromEntityTo[ResolvedServiceDescription](Get(endpoint / "status"))
+      .expect[ResolvedServiceDescription](endpoint / "status")
       .timeout(1.second)
       .recover(_ => ServiceDescription.unresolved(serviceName))
 
   override def existsNamespace(namespace: String): IO[Boolean] =
-    client
-      .run(Get(endpoint / "namespace" / namespace)) {
-        case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).as(true)
-        case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).as(false)
-      }
-      .adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
+    client.statusFromUri(endpoint / "namespace" / namespace).flatMap {
+      case Status.Ok       => IO.pure(true)
+      case Status.NotFound => IO.pure(false)
+      case status          => IO.raiseError(SparqlActionError(status, "exists"))
+    }
 
   /**
     * Attempts to create a namespace (if it doesn't exist) recovering gracefully when the namespace already exists.
@@ -100,25 +84,25 @@ final class BlazegraphClient(
       case true  => IO.pure(false)
       case false =>
         val withNamespace = properties + ("com.bigdata.rdf.sail.namespace", namespace)
-        val req           = Post(endpoint / "namespace", HttpEntity(withNamespace.toString))
-        client
-          .run(req) {
-            case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).as(true)
-            case resp if resp.status == Conflict => IO.delay(resp.discardEntityBytes()).as(false)
-          }
-          .adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
+        val request       = POST(endpoint / "namespace").withEntity(withNamespace.toString)
+        client.status(request).flatMap {
+          case Status.Created  => IO.pure(true)
+          case Status.NotFound => IO.pure(false)
+          case status          => IO.raiseError(SparqlActionError(status, "create"))
+        }
     }
 
   override def createNamespace(namespace: String): IO[Boolean] =
     createNamespace(namespace, NamespaceProperties.defaultValue)
 
-  override def deleteNamespace(namespace: String): IO[Boolean] =
-    client
-      .run(Delete(endpoint / "namespace" / namespace)) {
-        case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).as(true)
-        case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).as(false)
-      }
-      .adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
+  override def deleteNamespace(namespace: String): IO[Boolean] = {
+    val request = DELETE(endpoint / "namespace" / namespace)
+    client.status(request).flatMap {
+      case Status.Ok       => IO.pure(true)
+      case Status.NotFound => IO.pure(false)
+      case status          => IO.raiseError(SparqlActionError(status, "delete"))
+    }
+  }
 
   def count(namespace: String): IO[Long] = {
     val sparqlQuery = SparqlConstructQuery.unsafe("SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }")
@@ -129,7 +113,6 @@ final class BlazegraphClient(
           countAsString <- head.get("count")
           count         <- countAsString.value.toLongOption
         } yield count
-
         IO.fromOption(count)(InvalidCountRequest(namespace, sparqlQuery.value))
       }
   }
@@ -139,9 +122,10 @@ final class BlazegraphClient(
     */
   def listNamespaces: IO[Vector[String]] = {
     val namespacePredicate = "http://www.bigdata.com/rdf#/features/KB/Namespace"
-    val describeEndpoint   = (endpoint / "namespace").withQuery(Query("describe-each-named-graph" -> "false"))
-    val request            = Get(describeEndpoint).withHeaders(accept(SparqlResultsJson.mediaTypes.toList))
-    client.fromJsonTo[SparqlResults](request).map { response =>
+    val describeEndpoint   = (endpoint / "namespace").withQueryParam("describe-each-named-graph", "false")
+    val request            = GET(describeEndpoint, accept(SparqlResultsJson.mediaTypes))
+    import org.http4s.circe.CirceEntityDecoder.*
+    client.expect[SparqlResults](request).map { response =>
       response.results.bindings.foldLeft(Vector.empty[String]) { case (acc, binding) =>
         val isNamespace   = binding.get("predicate").exists(_.value == namespacePredicate)
         val namespaceName = binding.get("object").map(_.value)
@@ -153,18 +137,16 @@ final class BlazegraphClient(
     }
   }
 
-  override def bulk(namespace: String, queries: Seq[SparqlWriteQuery]): IO[Unit] = {
-    for {
-      bulk       <- IO.fromEither(SparqlBulkUpdate(namespace, queries))
-      formData    = FormData("update" -> bulk.queryString)
-      reqEndpoint = updateEndpoint(namespace).withQuery(bulk.queryParams)
-      req         = Post(reqEndpoint, formData).withHttpCredentials
-      result     <- client.discardBytes(req, ()).adaptError { case e: HttpClientError => WrappedHttpClientError(e) }
-    } yield result
-  }
+  override def bulk(namespace: String, queries: Seq[SparqlWriteQuery]): IO[Unit] =
+    IO.fromEither(SparqlBulkUpdate(namespace, queries)).flatMap { bulk =>
+      val form     = UrlForm("update" -> bulk.queryString)
+      val endpoint = updateEndpoint(namespace).copy(query = bulk.queryParams)
+      val request  = POST(endpoint, accept(SparqlResultsJson.mediaTypes)).withEntity(form)
+      client.expectOr[Unit](request)(SparqlWriteError(_)).void
+    }
 
-  implicit private val resolvedServiceDescriptionDecoder: FromEntityUnmarshaller[ResolvedServiceDescription] =
-    stringUnmarshaller.map {
+  implicit private val resolvedServiceDescriptionDecoder: EntityDecoder[IO, ResolvedServiceDescription] =
+    EntityDecoder.text[IO].map {
       serviceVersion.findFirstMatchIn(_).map(_.group(2)) match {
         case None          => throw new IllegalArgumentException(s"'version' not found using regex $serviceVersion")
         case Some(version) => ServiceDescription(serviceName, version)
@@ -178,5 +160,5 @@ object BlazegraphClient {
   /**
     * Blazegraph timeout header.
     */
-  val timeoutHeader: String = "X-BIGDATA-MAX-QUERY-MILLIS"
+  val timeoutHeader: CIString = CIString("X-BIGDATA-MAX-QUERY-MILLIS")
 }

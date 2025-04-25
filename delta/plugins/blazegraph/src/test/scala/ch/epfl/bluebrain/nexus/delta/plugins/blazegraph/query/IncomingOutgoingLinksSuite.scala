@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 import munit.catseffect.IOFixture
+import org.http4s.Uri
 
 import java.time.Instant
 
@@ -77,7 +78,7 @@ class IncomingOutgoingLinksSuite extends NexusSuite with SparqlClientSetup.Fixtu
         resource3Id -> "sparql/resource3.ntriples"
       ).traverse { case (rootNode, path) =>
         for {
-          graphUri      <- IO.fromEither(rootNode.toUri.leftMap(new IllegalArgumentException(_)))
+          graphUri      <- IO.fromEither(Uri.fromString(rootNode.toString))
           ntriplesValue <- loader.contentOf(path)
           ntriples       = NTriples(ntriplesValue, rootNode)
           _             <- client.replace(incomingOutgoing, graphUri, ntriples)

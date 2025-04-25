@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
@@ -59,12 +58,12 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     SparqlSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold, clock)
   }
 
-  make[SparqlClient].named("sparql-indexing-client").from { (cfg: BlazegraphViewsConfig, as: ActorSystem) =>
-    SparqlClient.indexing(cfg.sparqlTarget, cfg.base, cfg.indexingClient, cfg.queryTimeout)(cfg.credentials, as)
+  make[SparqlClient].named("sparql-indexing-client").fromResource { (cfg: BlazegraphViewsConfig) =>
+    SparqlClient(cfg.sparqlTarget, cfg.base, cfg.queryTimeout, cfg.credentials)
   }
 
-  make[SparqlClient].named("sparql-query-client").from { (cfg: BlazegraphViewsConfig, as: ActorSystem) =>
-    SparqlClient.query(cfg.sparqlTarget, cfg.base, cfg.queryTimeout)(cfg.credentials, as)
+  make[SparqlClient].named("sparql-query-client").fromResource { (cfg: BlazegraphViewsConfig) =>
+    SparqlClient(cfg.sparqlTarget, cfg.base, cfg.queryTimeout, cfg.credentials)
   }
 
   make[ValidateBlazegraphView].from {

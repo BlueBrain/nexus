@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
-import akka.http.scaladsl.model.Uri
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.SparqlClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy.{keepPredicates, removePredicates}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.SparqlQueryError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.SparqlResultsResponse
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{SparqlJsonLd, SparqlNTriples, SparqlRdfXml, SparqlResultsJson, SparqlResultsXml}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Bindings
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery.replace
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -16,12 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.mu.{NexusSuite, StringAssertions}
 import io.circe.Json
 import org.apache.jena.graph.Graph
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.{Lang, RDFParser}
+import org.http4s.Uri
 
 import scala.xml.Elem
 
@@ -52,7 +51,9 @@ abstract class SparqlClientSuite extends NexusSuite with SparqlClientSetup.Fixtu
       (s"http://localhost/$id", "http://www.w3.org/2000/01/rdf-schema#label", label)
     )
 
-  private lazy val graphId = baseUri.base / "graphs" / "myid"
+  private val rootUri = Uri.unsafeFromString(baseUri.base.toString())
+
+  private lazy val graphId = rootUri / "graphs" / "myid"
 
   private val constructQuery = SparqlConstructQuery.unsafe("CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }")
 
@@ -159,7 +160,7 @@ abstract class SparqlClientSuite extends NexusSuite with SparqlClientSetup.Fixtu
     val namespaces = Set(namespace1, namespace2)
 
     def populateData = List(namespace1, namespace2).zipWithIndex.traverse { case (namespace, index) =>
-      val graphId = baseUri.base / "graphs" / s"myid-$index"
+      val graphId = rootUri / "graphs" / s"myid-$index"
       client.createNamespace(namespace) >>
         nTriples(id = s"myid-$index", s"a-$index", s"b-$index").flatMap { data =>
           client.replace(namespace, graphId, data)
@@ -187,8 +188,8 @@ abstract class SparqlClientSuite extends NexusSuite with SparqlClientSetup.Fixtu
   test("Run bulk operation") {
     val (id, label, value)    = (genString(), genString(), genString())
     val (id2, label2, value2) = (genString(), genString(), genString())
-    val graph: Uri            = baseUri.base / "graphs" / genString()
-    val graph2: Uri           = baseUri.base / "graphs" / genString()
+    val graph: Uri            = rootUri / "graphs" / genString()
+    val graph2: Uri           = rootUri / "graphs" / genString()
     val namespace             = genString()
     for {
       _          <- client.createNamespace(namespace)
@@ -208,7 +209,7 @@ abstract class SparqlClientSuite extends NexusSuite with SparqlClientSetup.Fixtu
     val namespace    = genString()
     val invalidQuery = SparqlQuery("SELECT somethingwrong")
     client.createNamespace(namespace) >>
-      client.query(Set(namespace), invalidQuery, SparqlResultsJson).intercept[WrappedHttpClientError]
+      client.query(Set(namespace), invalidQuery, SparqlResultsJson).intercept[SparqlQueryError]
   }
 
   test("Patch a named graph removing the matching predicates") {

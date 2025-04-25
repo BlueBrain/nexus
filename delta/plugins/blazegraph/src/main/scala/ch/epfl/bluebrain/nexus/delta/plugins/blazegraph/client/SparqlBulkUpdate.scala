@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import cats.syntax.all.*
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.InvalidUpdateRequest
 import org.apache.jena.query.ParameterizedSparqlString
+import org.http4s.{Query, Uri}
 
 import scala.util.Try
 
@@ -20,8 +19,8 @@ object SparqlBulkUpdate {
 
   def apply(namespace: String, queries: Seq[SparqlWriteQuery]): Either[InvalidUpdateRequest, SparqlBulkUpdate] = {
     val query = uniqueGraph(queries)
-      .map(graph => Query("using-named-graph-uri" -> graph.toString))
-      .getOrElse(Query.Empty)
+      .map(graph => Query.fromPairs("using-named-graph-uri" -> graph.toString))
+      .getOrElse(Query.empty)
 
     val queryString = queries.map(_.value).mkString("\n")
     val pss         = new ParameterizedSparqlString
