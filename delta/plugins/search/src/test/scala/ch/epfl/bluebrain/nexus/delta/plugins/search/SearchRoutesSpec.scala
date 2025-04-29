@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SuiteMatchers.*
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
+import org.http4s.Query
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 class SearchRoutesSpec extends BaseRouteSpec {
@@ -21,11 +22,11 @@ class SearchRoutesSpec extends BaseRouteSpec {
 
   // Dummy implementation of search which just returns the payload
   private val search = new Search {
-    override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] = {
+    override def query(payload: JsonObject, qp: Query)(implicit caller: Caller): IO[Json] = {
       IO.raiseWhen(payload.isEmpty)(unknownSuite).as(payload.asJson)
     }
 
-    override def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Uri.Query)(implicit
+    override def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Query)(implicit
         caller: Caller
     ): IO[Json] =
       IO.raiseWhen(payload.isEmpty)(unknownSuite)

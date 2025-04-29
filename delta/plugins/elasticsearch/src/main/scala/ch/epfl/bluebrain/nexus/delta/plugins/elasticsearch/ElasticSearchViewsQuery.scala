@@ -1,17 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, PointInTime}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Project as ProjectAcl
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
@@ -20,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{View, ViewRef, ViewsStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
+import org.http4s.Query
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -45,7 +45,7 @@ trait ElasticSearchViewsQuery {
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query
+      qp: Query
   )(implicit caller: Caller): IO[Json]
 
   /**
@@ -58,7 +58,7 @@ trait ElasticSearchViewsQuery {
     * @param qp
     *   the extra query parameters for the elasticsearch index
     */
-  def query(view: ViewRef, query: JsonObject, qp: Uri.Query)(implicit
+  def query(view: ViewRef, query: JsonObject, qp: Query)(implicit
       caller: Caller
   ): IO[Json] =
     this.query(view.viewId, view.project, query, qp)
@@ -114,14 +114,16 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query
+      qp: Query
   )(implicit caller: Caller): IO[Json] = {
     for {
       view    <- viewStore.fetch(id, project)
       indices <- extractIndices(view)
-      search  <- client.search(query, indices, qp)(SortList.empty).adaptError { case e: HttpClientError =>
-                   WrappedElasticSearchClientError(e)
-                 }
+      search  <- client
+                   .search(query, indices, qp)(SortList.empty)
+                   .adaptError { case e: ElasticSearchClientError =>
+                     WrappedElasticSearchClientError(e)
+                   }
     } yield search
   }
 
@@ -146,9 +148,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       _       <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
       view    <- viewStore.fetch(id, project)
       index   <- indexOrError(view, id)
-      mapping <- client.mapping(index).adaptError { case e: HttpClientError =>
-                   WrappedElasticSearchClientError(e)
-                 }
+      mapping <- client
+                   .mapping(index)
+                   .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchClientError(e) }
     } yield mapping
 
   override def createPointInTime(id: IdSegment, project: ProjectRef, keepAlive: FiniteDuration)(implicit
@@ -158,15 +160,15 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       _     <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
       view  <- viewStore.fetch(id, project)
       index <- indexOrError(view, id)
-      pit   <- client.createPointInTime(index, keepAlive).adaptError { case e: HttpClientError =>
-                 WrappedElasticSearchClientError(e)
-               }
+      pit   <- client
+                 .createPointInTime(index, keepAlive)
+                 .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchClientError(e) }
     } yield pit
 
   override def deletePointInTime(pointInTime: PointInTime)(implicit caller: Caller): IO[Unit] =
-    client.deletePointInTime(pointInTime).adaptError { case e: HttpClientError =>
-      WrappedElasticSearchClientError(e)
-    }
+    client
+      .deletePointInTime(pointInTime)
+      .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchClientError(e) }
 
   private def indexOrError(view: View, id: IdSegment): IO[IndexLabel] = view match {
     case IndexingView(_, index, _) => IO.fromEither(IndexLabel(index))

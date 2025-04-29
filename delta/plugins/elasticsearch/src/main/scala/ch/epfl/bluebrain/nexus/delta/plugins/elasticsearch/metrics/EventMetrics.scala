@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction.Index
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{BulkResponse, ElasticSearchClient, QueryBuilder, Refresh}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
@@ -12,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.JsonObject
 import io.circe.literal.JsonStringContext
 import io.circe.syntax.EncoderOps
+import org.http4s.Query
 
 trait FetchHistory {
   def history(project: ProjectRef, id: Iri): IO[SearchResults[JsonObject]]
@@ -94,7 +93,7 @@ object EventMetrics {
       for {
         jsonQuery   <- historyQuery(project, id)
         queryBuilder = QueryBuilder.unsafe(jsonQuery)
-        results     <- client.search(queryBuilder, Set(index.value), Uri.Query.Empty)
+        results     <- client.search(queryBuilder, Set(index.value), Query.empty)
       } yield results
     }
   }

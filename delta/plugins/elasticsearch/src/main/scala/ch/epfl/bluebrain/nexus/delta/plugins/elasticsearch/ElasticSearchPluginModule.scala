@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ServiceDependency
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -57,18 +55,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     MainIndexDef(cfg.mainIndex, loader)
   }
 
-  make[HttpClient].named("elasticsearch-client").from {
-    val httpConfig = HttpClientConfig.noRetry(true)
-    (as: ActorSystem) => HttpClient()(httpConfig, as)
-  }
-
-  make[ElasticSearchClient].from {
-    (
-        cfg: ElasticSearchViewsConfig,
-        client: HttpClient @Id("elasticsearch-client"),
-        as: ActorSystem
-    ) =>
-      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as)
+  make[ElasticSearchClient].fromResource { (cfg: ElasticSearchViewsConfig) =>
+    ElasticSearchClient(cfg.base, cfg.credentials, cfg.maxIndexPathLength)
   }
 
   make[ValidateElasticSearchView].from {

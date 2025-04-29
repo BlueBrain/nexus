@@ -1,16 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.http.HttpClientSetup
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
+import org.http4s.Uri
 
-object ElasticSearchClientSetup extends CirceLiteral with Fixtures {
+object ElasticSearchClientSetup extends CirceLiteral {
 
   private val template = jobj"""{
                                  "index_patterns" : ["*"],
@@ -24,19 +22,14 @@ object ElasticSearchClientSetup extends CirceLiteral with Fixtures {
                                  }
                                }"""
 
-  def resource(): Resource[IO, ElasticSearchClient] = {
-    for {
-      (httpClient, actorSystem) <- HttpClientSetup(compression = true)
-      container                 <- ElasticSearchContainer.resource()
-    } yield {
-      implicit val as: ActorSystem                           = actorSystem
-      implicit val credentials: Option[BasicHttpCredentials] = ElasticSearchContainer.credentials
-      val endpoint                                           = s"http://${container.getHost}:${container.getMappedPort(9200)}"
-      new ElasticSearchClient(httpClient, endpoint, 2000)
-    }
-  }.evalTap { client =>
-    client.createIndexTemplate("test_template", template)
-  }
+  def resource(): Resource[IO, ElasticSearchClient] =
+    ElasticSearchContainer
+      .resource()
+      .flatMap { container =>
+        val endpoint = Uri.unsafeFromString(s"http://${container.getHost}:${container.getMappedPort(9200)}")
+        ElasticSearchClient(endpoint, ElasticSearchContainer.credentials, 2000)
+      }
+      .evalTap(_.createIndexTemplate("test_template", template))
 
   trait Fixture {
     self: CatsEffectSuite =>

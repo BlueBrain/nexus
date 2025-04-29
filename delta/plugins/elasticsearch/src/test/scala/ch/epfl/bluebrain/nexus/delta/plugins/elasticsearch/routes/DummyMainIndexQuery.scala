@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
@@ -10,10 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, Search
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral.circeLiteralSyntax
 import io.circe.{Json, JsonObject}
+import org.http4s.Query
 
 class DummyMainIndexQuery extends MainIndexQuery {
 
-  override def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] =
+  override def search(project: ProjectRef, query: JsonObject, qp: Query): IO[Json] =
     IO.raiseError(AuthorizationFailed("Fail !!!!"))
 
   override def list(request: MainIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] =

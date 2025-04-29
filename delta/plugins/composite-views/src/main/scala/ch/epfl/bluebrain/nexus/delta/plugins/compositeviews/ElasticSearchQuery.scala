@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -16,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
+import org.http4s.Query
 
 trait ElasticSearchQuery {
 
@@ -39,7 +38,7 @@ trait ElasticSearchQuery {
       projectionId: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query
+      qp: Query
   )(implicit caller: Caller): IO[Json]
 
   /**
@@ -59,7 +58,7 @@ trait ElasticSearchQuery {
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query
+      qp: Query
   )(implicit caller: Caller): IO[Json]
 
 }
@@ -91,7 +90,7 @@ object ElasticSearchQuery {
           projectionId: IdSegment,
           project: ProjectRef,
           query: JsonObject,
-          qp: Uri.Query
+          qp: Query
       )(implicit caller: Caller): IO[Json] =
         for {
           view       <- fetchView(id, project)
@@ -99,7 +98,7 @@ object ElasticSearchQuery {
           _          <-
             aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed(project, projection.permission))
           index       = projectionIndex(projection, view.uuid, prefix).value
-          search     <- elasticSearchQuery(query, Set(index), qp).adaptError { case e: HttpClientError =>
+          search     <- elasticSearchQuery(query, Set(index), qp).adaptError { case e: ElasticSearchClientError =>
                           WrappedElasticSearchClientError(e)
                         }
         } yield search
@@ -108,12 +107,12 @@ object ElasticSearchQuery {
           id: IdSegment,
           project: ProjectRef,
           query: JsonObject,
-          qp: Uri.Query
+          qp: Query
       )(implicit caller: Caller): IO[Json] =
         for {
           view    <- fetchView(id, project)
           indices <- allowedProjections(view, project)
-          search  <- elasticSearchQuery(query, indices, qp).adaptError { case e: HttpClientError =>
+          search  <- elasticSearchQuery(query, indices, qp).adaptError { case e: ElasticSearchClientError =>
                        WrappedElasticSearchClientError(e)
                      }
         } yield search

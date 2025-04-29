@@ -1,23 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError.ElasticsearchCreateIndexError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpServerStatusError}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Stream
 
 sealed trait ElasticSearchCoordinator
@@ -89,17 +87,13 @@ object ElasticSearchCoordinator {
           .recoverWith {
             // If the current view does not translate to a projection or if there is a problem
             // with the mapping with the mapping / setting then we mark it as failed and move along
-            case p: ProjectionErr                                                   =>
+            case p: ProjectionErr                 =>
               val message = s"Projection for '${elem.project}/${elem.id}' failed for a compilation problem."
               logger.error(p)(message).as(elem.failed(p))
-            case http: HttpClientStatusError if http.code == StatusCodes.BadRequest =>
+            case e: ElasticsearchCreateIndexError =>
               val message =
                 s"Projection for '${elem.project}/${elem.id}' failed at index creation. Please check its mapping/settings."
-              logger.error(http)(message).as(elem.failed(http))
-            case http: HttpServerStatusError                                        =>
-              val message =
-                s"Projection for '${elem.project}/${elem.id}' failed at index creation. Please check its mapping/settings."
-              logger.error(http)(message).as(elem.failed(http))
+              logger.error(e)(message).as(elem.failed(e))
           }
           .map(_.void)
       }

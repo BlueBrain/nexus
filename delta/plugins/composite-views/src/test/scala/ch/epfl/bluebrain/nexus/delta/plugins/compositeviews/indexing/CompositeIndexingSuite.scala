@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Query
 import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.effect.{IO, Ref, Resource}
@@ -60,6 +59,7 @@ import io.circe.syntax.*
 import io.circe.{Encoder, Json}
 import munit.{AnyFixture, CatsEffectSuite}
 import munit.catseffect.IOFixture
+import org.http4s.Query
 
 import java.time.Instant
 import java.util.UUID
@@ -580,7 +580,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
                    .search(
                      QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
                      Set(index.value),
-                     Query.Empty
+                     Query.empty
                    )
       _        = assertEquals(results.sources.size, expected.size)
       _        = results.sources.zip(expected).foreach { case (obtained, expected) =>

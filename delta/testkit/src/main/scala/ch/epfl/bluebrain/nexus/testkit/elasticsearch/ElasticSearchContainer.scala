@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit.elasticsearch
 
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer.Version
+import org.http4s.BasicCredentials
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -29,8 +29,8 @@ object ElasticSearchContainer {
   private val ElasticSearchUser     = "elastic"
   private val ElasticSearchPassword = "password"
 
-  implicit lazy val credentials: Option[BasicHttpCredentials] = Some(
-    BasicHttpCredentials(ElasticSearchUser, ElasticSearchPassword)
+  implicit lazy val credentials: Option[BasicCredentials] = Some(
+    BasicCredentials(ElasticSearchUser, ElasticSearchPassword)
   )
 
   /**

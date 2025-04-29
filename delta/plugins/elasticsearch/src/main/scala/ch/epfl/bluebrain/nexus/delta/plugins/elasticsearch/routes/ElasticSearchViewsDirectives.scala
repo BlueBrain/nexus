@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.{Directive, Directive0, Directive1, MalformedQueryParamRejection}
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
@@ -15,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import io.circe.parser
+import org.http4s.Query
 
 trait ElasticSearchViewsDirectives extends UriDirectives {
 
@@ -192,11 +192,12 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     }
 
   /**
-    * Extract the elasticsearch query parameters from all the [[Uri]] query parameters
+    * Extract the elasticsearch query parameters from all the Uri query parameters
     */
-  def extractQueryParams: Directive1[Uri.Query] =
+  def extractQueryParams: Directive1[Query] =
     extractUri.map { uri =>
-      Uri.Query(uri.query().toMap -- searchParamsSortAndPaginationKeys)
+      val params = uri.query().toMultiMap -- searchParamsSortAndPaginationKeys
+      Query.fromMap(params)
     }
 
 }

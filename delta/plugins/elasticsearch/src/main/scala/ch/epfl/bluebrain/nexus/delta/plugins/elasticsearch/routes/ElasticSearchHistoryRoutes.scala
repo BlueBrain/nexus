@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.server.Route
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.FetchHistory
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -35,7 +35,7 @@ class ElasticSearchHistoryRoutes(identities: Identities, aclCheck: AclCheck, fet
           projectRef.apply { project =>
             authorizeFor(project, Read).apply {
               (get & iriSegment & pathEndOrSingleSlash) { id =>
-                emit(fetchHistory.history(project, id).map(_.asJson).attemptNarrow[ElasticSearchQueryError])
+                emit(fetchHistory.history(project, id).map(_.asJson).attemptNarrow[ElasticSearchClientError])
               }
             }
           }

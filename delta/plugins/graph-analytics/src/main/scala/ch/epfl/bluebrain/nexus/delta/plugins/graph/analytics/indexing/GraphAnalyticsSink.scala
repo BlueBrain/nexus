@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MarkElems
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.{Index, Noop, UpdateByQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
@@ -27,6 +26,7 @@ import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
+import org.http4s.Query
 
 import java.time.Instant
 import java.util.UUID
@@ -111,7 +111,7 @@ class SearchSpec extends CatsEffectSpec with CirceLiteral with ConfigFixtures wi
     lazy val search                  = Search(listViews, aclCheck, executeSearch, prefix, allSuites)
 
     val matchAll     = jobj"""{"size": 100}"""
-    val noParameters = Query.Empty
+    val noParameters = Query.empty
 
     "search all indices accordingly to Bob's full access" in {
       val results = search.query(matchAll, noParameters)(bob).accepted

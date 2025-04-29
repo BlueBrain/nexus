@@ -3,14 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{CrossProjectSourceForbidden, CrossProjectSourceProjectNotFound, DuplicateIds, InvalidElasticSearchProjectionPayload, InvalidRemoteProjectSource, PermissionIsNotDefined, TooManyProjections, TooManySources, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{CrossProjectSourceForbidden, CrossProjectSourceProjectNotFound, DuplicateIds, InvalidElasticSearchProjectionPayload, InvalidRemoteProjectSource, PermissionIsNotDefined, TooManyProjections, TooManySources}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewSource, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError.ElasticsearchCreateIndexError
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
@@ -54,10 +54,7 @@ object ValidateCompositeView {
     def validateIndex(es: ElasticSearchProjection, index: IndexLabel) =
       client
         .createIndex(index, Some(es.mapping), es.settings)
-        .adaptError {
-          case err: HttpClientStatusError => InvalidElasticSearchProjectionPayload(err.jsonBody)
-          case err: HttpClientError       => WrappedElasticSearchClientError(err)
-        }
+        .adaptError { case err: ElasticsearchCreateIndexError => InvalidElasticSearchProjectionPayload(err.body) }
         .void
 
     val checkRemoteEvent: RemoteProjectSource => IO[Unit] = deltaClient.checkElems(_)

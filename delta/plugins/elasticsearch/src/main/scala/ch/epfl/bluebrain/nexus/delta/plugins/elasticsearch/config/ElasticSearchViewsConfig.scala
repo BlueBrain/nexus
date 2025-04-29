@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig, QueryConfig}
 import com.typesafe.config.Config
+import org.http4s.{BasicCredentials, Uri}
+import pureconfig.module.http4s.*
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
@@ -43,7 +43,7 @@ import scala.concurrent.duration.*
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
-    credentials: Option[BasicHttpCredentials],
+    credentials: Option[BasicCredentials],
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
     batch: BatchConfig,

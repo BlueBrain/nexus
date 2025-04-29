@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.*
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -261,7 +262,7 @@ object CompositeViewRejection {
   /**
     * Signals a rejection caused when interacting with the elasticserch client
     */
-  final case class WrappedElasticSearchClientError(error: HttpClientError)
+  final case class WrappedElasticSearchClientError(error: ElasticSearchClientError)
       extends CompositeViewProjectionRejection("Error while interacting with the underlying ElasticSearch index")
 
   implicit private[plugins] val compositeViewRejectionEncoder: Encoder.AsObject[CompositeViewRejection] =
@@ -271,8 +272,8 @@ object CompositeViewRejection {
       r match {
         case WrappedBlazegraphClientError(rejection)        =>
           obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
-        case WrappedElasticSearchClientError(rejection)     =>
-          rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
+        case WrappedElasticSearchClientError(error)         =>
+          error.body.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case IncorrectRev(provided, expected)               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case CompositeVieDecodingRejection(error)           => error.asJsonObject
         case InvalidElasticSearchProjectionPayload(details) => obj.addIfExists("details", details)
@@ -295,7 +296,7 @@ object CompositeViewRejection {
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case CompositeVieDecodingRejection(error)   => error.status
-      case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
+      case WrappedElasticSearchClientError(error) => error.status
       case _                                      => StatusCodes.BadRequest
     }
 }

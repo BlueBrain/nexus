@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.BulkResponse
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.BulkResponse.{MixedOutcomes, Success}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, FailureReason}
@@ -22,15 +22,15 @@ object MarkElems {
     */
   def apply[A](response: BulkResponse, elements: Chunk[Elem[A]], documentId: Elem[A] => String): Chunk[Elem[Unit]] =
     response match {
-      case Success                           => elements.map(_.void)
-      case BulkResponse.MixedOutcomes(items) =>
+      case Success              => elements.map(_.void)
+      case MixedOutcomes(items) =>
         elements.map {
           case element: FailedElem => element
           case element             =>
             items.get(documentId(element)) match {
-              case None                                    => element.failed(onMissingInResponse(element.id))
-              case Some(MixedOutcomes.Outcome.Success)     => element.void
-              case Some(MixedOutcomes.Outcome.Error(json)) => element.failed(onIndexingFailure(json))
+              case None                                       => element.failed(onMissingInResponse(element.id))
+              case Some(MixedOutcomes.Outcome.Success(_))     => element.void
+              case Some(MixedOutcomes.Outcome.Error(_, json)) => element.failed(onIndexingFailure(json))
             }
         }
     }

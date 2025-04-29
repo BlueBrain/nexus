@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
-import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySeq
 import cats.effect.IO
 import cats.implicits.*
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{propertiesAggQuery, relationshipsAggQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.{InvalidPropertyType, WrappedElasticSearchRejection}
@@ -19,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Decoder, JsonObject}
+import org.http4s.Query
 
 trait GraphAnalytics {
 
@@ -55,10 +54,8 @@ object GraphAnalytics {
           query     <- relationshipsAggQuery(config)
           indexValue = index(prefix, projectRef).value
           stats     <- client
-                         .searchAs[AnalyticsGraph](QueryBuilder.unsafe(query), indexValue, Query.Empty)
-                         .adaptError { case e: HttpClientError =>
-                           WrappedElasticSearchRejection(WrappedElasticSearchClientError(e))
-                         }
+                         .searchAs[AnalyticsGraph](QueryBuilder.unsafe(query), indexValue, Query.empty)
+                         .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchRejection(e) }
         } yield stats
 
       override def properties(
@@ -70,8 +67,8 @@ object GraphAnalytics {
           implicit val d: Decoder[PropertiesStatistics] = propertiesDecoderFromEsAggregations(tpe)
           val queryBuilder                              = QueryBuilder.unsafe(query).withTotalHits(true)
           client
-            .searchAs[PropertiesStatistics](queryBuilder, idx.value, Query.Empty)
-            .adaptError { case e: HttpClientError => WrappedElasticSearchRejection(WrappedElasticSearchClientError(e)) }
+            .searchAs[PropertiesStatistics](queryBuilder, idx.value, Query.empty)
+            .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchRejection(e) }
         }
 
         for {
