@@ -1,18 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.*
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/sparql-results+json`
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling.decoderUnmarshaller
-import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.*
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import io.circe.generic.auto.*
 import io.circe.generic.semiauto.*
-import io.circe.{Decoder, Encoder}
 import io.circe.syntax.*
+import io.circe.{Decoder, Encoder}
+import org.http4s.Uri
 
 /**
   * Sparql query results representation.
@@ -114,7 +112,5 @@ object SparqlResults {
 
   implicit def sparqlResultsMarshaller(implicit ordering: JsonKeyOrdering): ToEntityMarshaller[SparqlResults] =
     RdfMarshalling.customContentTypeJsonMarshaller(`application/sparql-results+json`).compose(_.asJson)
-
-  implicit val sparqlResultsUnmarshaller: FromEntityUnmarshaller[SparqlResults] = decoderUnmarshaller[SparqlResults]
 
 }

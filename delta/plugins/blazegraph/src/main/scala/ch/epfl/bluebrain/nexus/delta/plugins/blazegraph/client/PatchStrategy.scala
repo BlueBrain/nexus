@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
-import akka.http.scaladsl.model.Uri
+import org.http4s.Uri
 
 /**
   * A description of a graph patch operation.

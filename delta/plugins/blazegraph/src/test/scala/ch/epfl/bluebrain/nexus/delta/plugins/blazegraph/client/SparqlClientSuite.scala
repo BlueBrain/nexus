@@ -21,6 +21,7 @@ import org.apache.jena.graph.Graph
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.{Lang, RDFParser}
 import org.http4s.Uri
+import org.http4s.implicits.http4sLiteralsSyntax
 
 import scala.xml.Elem
 
@@ -214,7 +215,8 @@ abstract class SparqlClientSuite extends NexusSuite with SparqlClientSetup.Fixtu
 
   test("Patch a named graph removing the matching predicates") {
     val namespace     = genString()
-    val patchStrategy = removePredicates(Set("http://schema.org/value", "http://www.w3.org/2000/01/rdf-schema#label"))
+    val patchStrategy =
+      removePredicates(Set(uri"http://schema.org/value", uri"http://www.w3.org/2000/01/rdf-schema#label"))
     for {
       _            <- client.createNamespace(namespace)
       originalData <- nTriples(id = "myid", "a", "b")
@@ -235,7 +237,7 @@ abstract class SparqlClientSuite extends NexusSuite with SparqlClientSetup.Fixtu
 
   test("Patch a named graph keeping the matching predicates") {
     val namespace     = genString()
-    val patchStrategy = keepPredicates(Set("http://schema.org/value"))
+    val patchStrategy = keepPredicates(Set(uri"http://schema.org/value"))
     for {
       _            <- client.createNamespace(namespace)
       originalData <- nTriples(id = "myid", "lb-a", "value")
