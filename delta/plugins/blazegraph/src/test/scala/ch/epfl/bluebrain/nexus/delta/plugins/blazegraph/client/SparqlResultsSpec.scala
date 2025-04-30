@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.*
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.*
+import org.http4s.implicits.http4sLiteralsSyntax
 
 class SparqlResultsSpec extends CatsEffectSpec with CirceEq {
 
@@ -38,7 +39,7 @@ class SparqlResultsSpec extends CatsEffectSpec with CirceEq {
 
     val head = Head(
       List("x", "hpage", "name", "mbox", "age", "blurb", "friend"),
-      Some(List("http://www.w3.org/TR/rdf-sparql-XMLres/example.rq"))
+      Some(List(uri"http://www.w3.org/TR/rdf-sparql-XMLres/example.rq"))
     )
 
     val qr    = SparqlResults(head, Bindings(map1, map2))
@@ -58,14 +59,14 @@ class SparqlResultsSpec extends CatsEffectSpec with CirceEq {
     "add head" in {
       head ++ Head(List("v", "hpage", "name")) shouldEqual Head(
         List("x", "hpage", "name", "mbox", "age", "blurb", "friend", "v"),
-        Some(List("http://www.w3.org/TR/rdf-sparql-XMLres/example.rq"))
+        Some(List(uri"http://www.w3.org/TR/rdf-sparql-XMLres/example.rq"))
       )
 
-      (Head(List("v", "hpage", "name"), Some(List("http://example.com/b"))) ++ Head(
+      (Head(List("v", "hpage", "name"), Some(List(uri"http://example.com/b"))) ++ Head(
         List("x", "hpage", "name"),
-        Some(List("http://example.com/a"))
+        Some(List(uri"http://example.com/a"))
       )) shouldEqual
-        Head(List("v", "hpage", "name", "x"), Some(List("http://example.com/b", "http://example.com/a")))
+        Head(List("v", "hpage", "name", "x"), Some(List(uri"http://example.com/b", uri"http://example.com/a")))
     }
 
     "add binding" in {

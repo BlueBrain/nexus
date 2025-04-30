@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
+import akka.http.scaladsl.model.MediaType
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.{`application/ld+json`, `application/sparql-results+json`}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -45,6 +48,12 @@ object SparqlQueryResponse {
     */
   final case class SparqlRdfXmlResponse(value: NodeSeq) extends SparqlQueryResponse
 
+  private val xmlMediaTypes: Seq[MediaType.NonBinary] =
+    List(RdfMediaTypes.`application/rdf+xml`, RdfMediaTypes.`application/sparql-results+xml`)
+
+  implicit val nodeSeqMarshaller: ToEntityMarshaller[NodeSeq] =
+    Marshaller.oneOf(xmlMediaTypes.map(ScalaXmlSupport.nodeSeqMarshaller)*)
+
   /**
     * SparqlQueryResponse -> HttpEntity
     */
@@ -52,10 +61,10 @@ object SparqlQueryResponse {
     Marshaller { implicit ec =>
       {
         case SparqlResultsResponse(value)    => jsonMarshaller.apply(value.asJson)
-        case SparqlXmlResultsResponse(value) => XmlSupport.nodeSeqMarshaller.apply(value)
+        case SparqlXmlResultsResponse(value) => nodeSeqMarshaller.apply(value)
         case SparqlJsonLdResponse(value)     => jsonMarshaller.apply(value)
         case SparqlNTriplesResponse(value)   => RdfMarshalling.nTriplesMarshaller.apply(value)
-        case SparqlRdfXmlResponse(value)     => XmlSupport.nodeSeqMarshaller.apply(value)
+        case SparqlRdfXmlResponse(value)     => nodeSeqMarshaller.apply(value)
       }
     }
 
