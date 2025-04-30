@@ -4,7 +4,6 @@ import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 import org.http4s.Uri
 
@@ -32,7 +31,7 @@ object ElasticSearchClientSetup extends CirceLiteral {
       .evalTap(_.createIndexTemplate("test_template", template))
 
   trait Fixture {
-    self: CatsEffectSuite =>
+    self: NexusElasticsearchSuite =>
     val esClient: IOFixture[ElasticSearchClient] = ResourceSuiteLocalFixture("esclient", resource())
   }
 }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 import akka.http.scaladsl.model.{StatusCode as AkkaStatusCode, StatusCodes}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
+import ch.epfl.bluebrain.nexus.delta.kernel.http.client.ResponseUtils.decodeBodyAsJson
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -11,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe.syntax.KeyOps
 import io.circe.{Encoder, Json, JsonObject}
-import org.http4s.circe.*
-import org.http4s.{EntityDecoder, Response, Status}
+import org.http4s.{Response, Status}
 
 /**
   * Enumeration of errors raised while querying the Elasticsearch indices
@@ -35,7 +35,7 @@ object ElasticSearchClientError {
 
   object ElasticsearchCreateIndexError {
     def apply(response: Response[IO]): IO[ElasticsearchCreateIndexError] =
-      decodeBody(response).map { body =>
+      decodeBodyAsJson(response).map { body =>
         ElasticsearchCreateIndexError(response.status, Some(body))
       }
   }
@@ -48,7 +48,7 @@ object ElasticSearchClientError {
 
   object ElasticsearchQueryError {
     def apply(response: Response[IO]): IO[ElasticsearchQueryError] =
-      decodeBody(response).map { body =>
+      decodeBodyAsJson(response).map { body =>
         ElasticsearchQueryError(response.status, Some(body))
       }
   }
@@ -61,7 +61,7 @@ object ElasticSearchClientError {
 
   object ElasticsearchWriteError {
     def apply(response: Response[IO]): IO[ElasticsearchWriteError] =
-      decodeBody(response).map { body =>
+      decodeBodyAsJson(response).map { body =>
         ElasticsearchWriteError(response.status, Some(body))
       }
   }
@@ -74,7 +74,7 @@ object ElasticSearchClientError {
 
   object ScriptCreationDismissed {
     def apply(response: Response[IO]): IO[ScriptCreationDismissed] =
-      decodeBody(response).map { body =>
+      decodeBodyAsJson(response).map { body =>
         ScriptCreationDismissed(response.status, Some(body))
       }
   }
@@ -87,11 +87,6 @@ object ElasticSearchClientError {
     */
   final case class InvalidResourceId(id: String)
       extends ElasticSearchClientError(s"Resource identifier '$id' cannot be expanded to an Iri.", None)
-
-  private def decodeBody(response: Response[IO]): IO[Json] =
-    EntityDecoder[IO, Json]
-      .decode(response, strict = false)
-      .rethrowT
 
   implicit val elasticSearchQueryErrorEncoder: Encoder.AsObject[ElasticSearchClientError] =
     Encoder.AsObject.instance { r =>

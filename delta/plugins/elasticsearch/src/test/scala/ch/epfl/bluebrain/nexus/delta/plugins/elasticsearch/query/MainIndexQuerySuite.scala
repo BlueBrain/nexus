@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.{And, Or}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuerySuite.*
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
@@ -34,7 +33,7 @@ import org.http4s.Query
 
 import java.time.Instant
 
-class MainIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fixture with Fixtures {
+class MainIndexQuerySuite extends NexusElasticsearchSuite with ElasticSearchClientSetup.Fixture with Fixtures {
   override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 
   private lazy val client = esClient()

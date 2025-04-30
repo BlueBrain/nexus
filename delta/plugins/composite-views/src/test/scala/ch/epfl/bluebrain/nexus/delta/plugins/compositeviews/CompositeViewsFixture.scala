@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -19,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, IriFilter, Label, ProjectRef}
 import io.circe.{Json, JsonObject}
+import org.http4s.Uri
 
 import java.time.Instant
 import java.util.UUID
@@ -63,7 +63,7 @@ trait CompositeViewsFixture extends ConfigFixtures {
   val remoteProjectFields = RemoteProjectSourceFields(
     Some(iri"http://example.com/remote-project-source"),
     ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
-    Uri("http://example.com/remote-endpoint")
+    Uri.unsafeFromString("http://example.com/remote-endpoint")
   )
 
   val esProjectionFields         = ElasticSearchProjectionFields(
@@ -117,7 +117,7 @@ trait CompositeViewsFixture extends ConfigFixtures {
     None,
     false,
     ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
-    Uri("http://example.com/remote-endpoint")
+    Uri.unsafeFromString("http://example.com/remote-endpoint")
   )
 
   val esProjection         = ElasticSearchProjection(

@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient.RemoteCheckError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{CrossProjectSourceForbidden, CrossProjectSourceProjectNotFound, DuplicateIds, InvalidElasticSearchProjectionPayload, InvalidRemoteProjectSource, PermissionIsNotDefined, TooManyProjections, TooManySources}
@@ -63,9 +63,7 @@ object ValidateCompositeView {
       case _: ProjectSource             => IO.unit
       case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
       case rs: RemoteProjectSource      =>
-        checkRemoteEvent(rs).adaptError { case http: HttpClientError =>
-          InvalidRemoteProjectSource(rs, http)
-        }
+        checkRemoteEvent(rs).adaptError { case e: RemoteCheckError => InvalidRemoteProjectSource(rs, e) }
     }
 
     val validateProjection: CompositeViewProjection => IO[Unit] = {

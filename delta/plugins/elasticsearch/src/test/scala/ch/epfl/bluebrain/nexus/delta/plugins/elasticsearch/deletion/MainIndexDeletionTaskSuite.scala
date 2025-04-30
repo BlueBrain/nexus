@@ -1,19 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingAlias
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 import org.http4s.Query
 
 class MainIndexDeletionTaskSuite
-    extends NexusSuite
+    extends NexusElasticsearchSuite
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
     with Fixtures {

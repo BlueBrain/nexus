@@ -142,7 +142,7 @@ object RealmState {
 
   val serializer: Serializer[Label, RealmState] = {
     import GrantType.Camel.*
-    import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
+    import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*
     implicit val configuration: Configuration      = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[RealmState] = deriveConfiguredCodec[RealmState]

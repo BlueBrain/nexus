@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient.RemoteCheckError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -206,10 +206,8 @@ object CompositeViewRejection {
   /**
     * Rejection returned when [[RemoteProjectSource]] is invalid.
     */
-  final case class InvalidRemoteProjectSource(
-      remoteProjectSource: RemoteProjectSource,
-      httpClientError: HttpClientError
-  ) extends CompositeViewSourceRejection(
+  final case class InvalidRemoteProjectSource(remoteProjectSource: RemoteProjectSource, error: RemoteCheckError)
+      extends CompositeViewSourceRejection(
         s"RemoteProjectSource ${remoteProjectSource.tpe} is invalid: either provided endpoint '${remoteProjectSource.endpoint}' is invalid or there are insufficient permissions to access this endpoint. "
       )
 
@@ -277,7 +275,8 @@ object CompositeViewRejection {
         case IncorrectRev(provided, expected)               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case CompositeVieDecodingRejection(error)           => error.asJsonObject
         case InvalidElasticSearchProjectionPayload(details) => obj.addIfExists("details", details)
-        case InvalidRemoteProjectSource(_, httpError)       => obj.add("details", httpError.reason.asJson)
+        case InvalidRemoteProjectSource(_, error)           =>
+          obj.add("details", error.reason.asJson).add("responseBody", error.body.getOrElse(Json.Null))
         case _: ViewNotFound                                => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                              => obj
       }

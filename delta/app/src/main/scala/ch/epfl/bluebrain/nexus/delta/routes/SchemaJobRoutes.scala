@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.SchemaValidationCoordinator
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -78,7 +79,7 @@ class SchemaJobRoutes(
                   },
                   (pathPrefix("errors") & get & pathEndOrSingleSlash) {
                     emit(
-                      projectExists(project) >> streamValidationErrors(project).attemptNarrow[Nothing]
+                      projectExists(project) >> streamValidationErrors(project).attemptNarrow[ResourceRejection]
                     )
                   }
                 )

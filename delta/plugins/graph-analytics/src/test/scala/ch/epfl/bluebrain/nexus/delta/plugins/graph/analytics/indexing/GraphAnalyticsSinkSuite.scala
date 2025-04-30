@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -23,7 +22,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration.*
 
-class GraphAnalyticsSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fixture {
+class GraphAnalyticsSinkSuite extends NexusElasticsearchSuite with ElasticSearchClientSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 

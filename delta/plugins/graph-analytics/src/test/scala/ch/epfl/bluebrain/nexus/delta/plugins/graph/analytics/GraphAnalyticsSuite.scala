@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.Refresh.WaitFor
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
@@ -13,12 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 
 import java.util.UUID
 
-class GraphAnalyticsSuite extends NexusSuite with ElasticSearchClientSetup.Fixture {
+class GraphAnalyticsSuite extends NexusElasticsearchSuite with ElasticSearchClientSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 

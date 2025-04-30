@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.Refresh.WaitFor
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError.{ElasticsearchActionError, ElasticsearchCreateIndexError}
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, Sort
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
@@ -22,7 +21,7 @@ import org.http4s.Query
 
 import scala.concurrent.duration.*
 
-class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
+class ElasticSearchClientSuite extends NexusElasticsearchSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 

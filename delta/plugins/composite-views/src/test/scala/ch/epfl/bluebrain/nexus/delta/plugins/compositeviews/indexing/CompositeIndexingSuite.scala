@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import akka.http.scaladsl.model.Uri
 import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.effect.{IO, Ref, Resource}
@@ -59,7 +58,7 @@ import io.circe.syntax.*
 import io.circe.{Encoder, Json}
 import munit.{AnyFixture, CatsEffectSuite}
 import munit.catseffect.IOFixture
-import org.http4s.Query
+import org.http4s.{Query, Uri}
 
 import java.time.Instant
 import java.util.UUID
@@ -282,7 +281,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     None,
     includeDeprecated = false,
     project3,
-    Uri("https://bbp.epfl.ch/nexus")
+    Uri.unsafeFromString("https://bbp.epfl.ch/nexus")
   )
 
   private val contextJson             = jsonContentOf("indexing/music-context.json")

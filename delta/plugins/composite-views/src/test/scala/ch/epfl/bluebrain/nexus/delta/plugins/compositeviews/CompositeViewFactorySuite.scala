@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, IriFilter, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Json, JsonObject}
+import org.http4s.Uri
 
 import java.util.UUID
 
@@ -57,7 +57,7 @@ class CompositeViewFactorySuite extends NexusSuite {
   private val remoteSourceFields = RemoteProjectSourceFields(
     Some(remoteSourceId),
     ProjectRef.unsafe("org", "remoteproject"),
-    Uri("http://example.com/remote-endpoint"),
+    Uri.unsafeFromString("http://example.com/remote-endpoint"),
     schemas,
     types,
     tag,
