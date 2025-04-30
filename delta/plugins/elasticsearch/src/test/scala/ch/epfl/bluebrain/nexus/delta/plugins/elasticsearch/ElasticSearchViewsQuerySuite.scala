@@ -30,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
 import org.http4s.Query
@@ -39,7 +38,7 @@ import java.time.Instant
 import scala.concurrent.duration.*
 
 class ElasticSearchViewsQuerySuite
-    extends NexusSuite
+    extends NexusElasticsearchSuite
     with Doobie.Fixture
     with ElasticSearchClientSetup.Fixture
     with Fixtures

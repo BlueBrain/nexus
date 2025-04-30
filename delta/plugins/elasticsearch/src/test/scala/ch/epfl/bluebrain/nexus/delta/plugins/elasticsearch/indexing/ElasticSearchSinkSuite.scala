@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder, Refresh}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailureReason
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -18,7 +17,7 @@ import org.http4s.Query
 import java.time.Instant
 import scala.concurrent.duration.*
 
-class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
+class ElasticSearchSinkSuite extends NexusElasticsearchSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
 
   override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 

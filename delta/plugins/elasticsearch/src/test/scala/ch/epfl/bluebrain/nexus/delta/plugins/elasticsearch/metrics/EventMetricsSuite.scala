@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.BulkResponse
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 import munit.AnyFixture
@@ -16,7 +15,7 @@ import munit.AnyFixture
 import java.time.Instant
 
 class EventMetricsSuite
-    extends NexusSuite
+    extends NexusElasticsearchSuite
     with ElasticSearchClientSetup.Fixture
     with EventMetricsIndex.Fixture
     with Fixtures {

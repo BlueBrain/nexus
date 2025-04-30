@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.{EventMetrics, EventMetricsIndex}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures, NexusElasticsearchSuite}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics.StoragesStatisticsSuite.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesStatistics
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.{Created, Deprecated, ProjectScopedMetric, TagDeleted, Tagged, Updated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.JsonObject
 import io.circe.syntax.KeyOps
 import munit.AnyFixture
@@ -21,7 +20,7 @@ import munit.AnyFixture
 import java.time.Instant
 
 class StoragesStatisticsSuite
-    extends NexusSuite
+    extends NexusElasticsearchSuite
     with ElasticSearchClientSetup.Fixture
     with EventMetricsIndex.Fixture
     with Fixtures {
