@@ -232,7 +232,7 @@ object RealmEvent {
   ) extends RealmEvent
 
   import GrantType.Camel.*
-  import ch.epfl.bluebrain.nexus.delta.rdf.instances.*
+  import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 
   val serializer: Serializer[Label, RealmEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database.*

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
@@ -21,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.http4s.Uri
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
@@ -99,7 +99,7 @@ class CompositeViewDecodingSpec extends CatsEffectSpec with CirceLiteral with Fi
       RemoteProjectSourceFields(
         Some(iri"http://music.com/sources/songs"),
         ProjectGen.project("remote_demo", "songs").ref,
-        Uri("https://example2.nexus.com")
+        Uri.unsafeFromString("https://example2.nexus.com")
       )
     ),
     NonEmptyList.of(
@@ -132,7 +132,7 @@ class CompositeViewDecodingSpec extends CatsEffectSpec with CirceLiteral with Fi
       RemoteProjectSourceFields(
         None,
         ProjectGen.project("remote_demo", "songs").ref,
-        Uri("https://example2.nexus.com")
+        Uri.unsafeFromString("https://example2.nexus.com")
       )
     ),
     NonEmptyList.of(

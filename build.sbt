@@ -120,13 +120,17 @@ lazy val fs2Aws = Seq(
 lazy val glassFishJakarta = "org.glassfish"     % "jakarta.json" % glassFishJakartaVersion
 lazy val handleBars       = "com.github.jknack" % "handlebars"   % handleBarsVersion
 
+// Used only for tests for now
+lazy val http4sServerTest = Seq(
+  "org.http4s" %% "http4s-ember-server" % http4sVersion % Test,
+  "org.http4s" %% "http4s-dsl"          % http4sVersion % Test
+)
+
 lazy val http4s = Seq(
   "org.http4s" %% "http4s-ember-client" % http4sVersion,
   "org.http4s" %% "http4s-circe"        % http4sVersion,
   "org.http4s" %% "http4s-scala-xml"    % http4sXMLVersion,
-  "org.http4s" %% "http4s-ember-server" % http4sVersion % Test,
-  "org.http4s" %% "http4s-dsl"          % http4sVersion % Test
-)
+) ++ http4sServerTest
 
 lazy val jenaArq         = "org.apache.jena"               % "jena-arq"          % jenaVersion
 lazy val kamonAkkaHttp   = "io.kamon"                     %% "kamon-akka-http"   % kamonVersion
@@ -502,10 +506,7 @@ lazy val compositeViewsPlugin = project
   .settings(
     name                       := "delta-composite-views-plugin",
     moduleName                 := "delta-composite-views-plugin",
-    libraryDependencies       ++= Seq(
-      alpakkaSse,
-      kamonAkkaHttp % Provided
-    ),
+    libraryDependencies       ++= Seq(kamonAkkaHttp % Provided) ++ http4sServerTest,
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
     addCompilerPlugin(betterMonadicFor),

@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import akka.actor.ActorSystem
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceLoader, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
@@ -46,17 +44,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[CompositeViewsConfig].fromEffect { cfg => CompositeViewsConfig.load(cfg) }
 
-  make[DeltaClient].from {
-    (
-        cfg: CompositeViewsConfig,
-        as: ActorSystem,
-        authTokenProvider: AuthTokenProvider
-    ) =>
-      val httpConfig = HttpClientConfig.noRetry(true)
-      val httpClient = HttpClient()(httpConfig, as)
-      DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
-        as
-      )
+  make[DeltaClient].fromResource { (cfg: CompositeViewsConfig, authTokenProvider: AuthTokenProvider) =>
+    DeltaClient(authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)
   }
 
   make[SparqlClient].named("sparql-composite-indexing-client").fromResource { (cfg: CompositeViewsConfig) =>

@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 
 import java.time.Instant
 
@@ -42,7 +41,6 @@ class ElemRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
-  import baseUri.prefixSegment
   import schemeDirectives.*
 
   def routes: Route =
@@ -55,27 +53,21 @@ class ElemRoutes(
                 (parameter("tag".as[UserTag].?) & types(project)) { (tag, types) =>
                   concat(
                     (get & pathPrefix("continuous")) {
-                      operationName(s"$prefixSegment/$project/elems/continuous") {
-                        emit(
-                          sseElemStream.continuous(project, SelectFilter(types, tag.getOrElse(Latest)), offset)
-                        )
-                      }
+                      emit(
+                        sseElemStream.continuous(project, SelectFilter(types, tag.getOrElse(Latest)), offset)
+                      )
                     },
                     (get & pathPrefix("currents")) {
-                      operationName(s"$prefixSegment/$project/elems/currents") {
-                        emit(sseElemStream.currents(project, SelectFilter(types, tag.getOrElse(Latest)), offset))
-                      }
+                      emit(sseElemStream.currents(project, SelectFilter(types, tag.getOrElse(Latest)), offset))
                     },
                     (get & pathPrefix("remaining")) {
-                      operationName(s"$prefixSegment/$project/elems/remaining") {
-                        emit(
-                          sseElemStream
-                            .remaining(project, SelectFilter(types, tag.getOrElse(Latest)), offset)
-                            .map { r =>
-                              r.getOrElse(RemainingElems(0L, Instant.EPOCH))
-                            }
-                        )
-                      }
+                      emit(
+                        sseElemStream
+                          .remaining(project, SelectFilter(types, tag.getOrElse(Latest)), offset)
+                          .map { r =>
+                            r.getOrElse(RemainingElems(0L, Instant.EPOCH))
+                          }
+                      )
                     },
                     head {
                       complete(OK)

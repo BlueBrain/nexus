@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -14,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.Encoder
+import org.http4s.Uri
 
 import java.util.UUID
 
@@ -189,8 +189,6 @@ object CompositeViewSource {
     *   whether to consider deprecated resources for indexing
     * @param endpoint
     *   the endpoint used to access the source
-    * @param token
-    *   the optional access token used to connect to the endpoint
     */
   final case class RemoteProjectSource(
       id: Iri,
