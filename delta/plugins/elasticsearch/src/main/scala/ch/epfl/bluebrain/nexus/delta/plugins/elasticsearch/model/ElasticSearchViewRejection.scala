@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -176,7 +176,7 @@ object ElasticSearchViewRejection {
   /**
     * Signals a rejection caused when interacting with the elasticserch client
     */
-  final case class WrappedElasticSearchClientError(error: HttpClientError)
+  final case class WrappedElasticSearchClientError(error: ElasticSearchClientError)
       extends ElasticSearchViewRejection("Error while interacting with the underlying ElasticSearch index")
 
   /**
@@ -204,15 +204,15 @@ object ElasticSearchViewRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedElasticSearchClientError(rejection) =>
-          rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
-        case ElasticSearchDecodingRejection(error)      => error.asJsonObject
-        case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidElasticSearchIndexPayload(details)  => obj.addIfExists("details", details)
-        case InvalidViewReferences(views)               => obj.add("views", views.asJson)
-        case InvalidPipeline(error)                     => obj.add("details", error.reason.asJson)
-        case _: ViewNotFound                            => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                          => obj
+        case WrappedElasticSearchClientError(error)    =>
+          error.body.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
+        case ElasticSearchDecodingRejection(error)     => error.asJsonObject
+        case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidElasticSearchIndexPayload(details) => obj.addIfExists("details", details)
+        case InvalidViewReferences(views)              => obj.add("views", views.asJson)
+        case InvalidPipeline(error)                    => obj.add("details", error.reason.asJson)
+        case _: ViewNotFound                           => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                         => obj
       }
     }
 
@@ -226,7 +226,7 @@ object ElasticSearchViewRejection {
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ViewIsDefaultView                      => StatusCodes.Forbidden
-      case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
+      case WrappedElasticSearchClientError(error) => error.status
       case ElasticSearchDecodingRejection(error)  => error.status
       case _                                      => StatusCodes.BadRequest
     }

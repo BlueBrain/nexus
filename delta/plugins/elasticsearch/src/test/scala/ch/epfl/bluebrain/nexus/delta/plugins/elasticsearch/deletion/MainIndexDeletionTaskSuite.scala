@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
-import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingAlias
@@ -11,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
+import org.http4s.Query
 
 class MainIndexDeletionTaskSuite
     extends NexusSuite
@@ -47,7 +47,7 @@ class MainIndexDeletionTaskSuite
     def countInIndex(project: ProjectRef) =
       for {
         query  <- task.searchByProject(project)
-        result <- client.search(QueryBuilder.unsafe(query), Set(index.value), Query.Empty)
+        result <- client.search(QueryBuilder.unsafe(query), Set(index.value), Query.empty)
       } yield result.total
 
     for {

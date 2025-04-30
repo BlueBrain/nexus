@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
@@ -10,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.literal.*
 import io.circe.{DecodingFailure, JsonObject}
+import org.http4s.Query
 
 trait StoragesStatistics {
 
@@ -37,7 +37,7 @@ object StoragesStatistics {
       fetchStorageId: (IdSegment, ProjectRef) => IO[Iri],
       index: IndexLabel
   ): StoragesStatistics = {
-    val search = (jsonObject: JsonObject) => client.search(jsonObject, Set(index.value), Query.Empty)()
+    val search = (jsonObject: JsonObject) => client.search(jsonObject, Set(index.value), Query.empty)()
 
     (idSegment: IdSegment, project: ProjectRef) => {
       for {

@@ -1,11 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.Uri.Query
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder, Refresh}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -17,6 +13,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
+import org.http4s.Query
 
 import java.time.Instant
 import scala.concurrent.duration.*
@@ -63,7 +60,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
     for {
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
-             .search(QueryBuilder.empty, Set(index.value), Query.Empty)
+             .search(QueryBuilder.empty, Set(index.value), Query.empty)
              .map(_.sources.toSet)
              .assertEquals(members.flatMap(_._2.asObject))
     } yield ()
@@ -75,7 +72,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
     for {
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
-             .search(QueryBuilder.empty, Set(index.value), Query.Empty)
+             .search(QueryBuilder.empty, Set(index.value), Query.empty)
              .map(_.sources.toSet)
              .assertEquals(Set(bob, judy).flatMap(_._2.asObject))
     } yield ()
@@ -102,29 +99,30 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
     )
 
     for {
-      result <- sink.apply(chunk).map(_.toList)
-      _       =
+      result  <- sink.apply(chunk).map(_.toList)
+      _        =
         assertEquals(result.size, 3, "3 elements were submitted to the sink, we expect 3 elements in the result chunk.")
       // The failed elem should be return intact
-      _       = assertEquals(Some(failed), result.headOption)
+      _        = assertEquals(Some(failed), result.headOption)
       // The invalid one should hold the Elasticsearch error
-      _       = result.lift(1) match {
-                  case Some(f: FailedElem) =>
-                    f.throwable match {
-                      case reason: FailureReason =>
-                        assertEquals(reason.`type`, "IndexingFailure")
-                        val detailKeys = reason.value.asObject.map(_.keys.toSet)
-                        assertEquals(detailKeys, Some(Set("type", "reason", "caused_by")))
-                      case t                     => fail(s"An indexing failure was expected, got '$t'", t)
-                    }
-                  case other               => fail(s"A failed elem was expected, got '$other'")
-                }
+      _        = result.lift(1) match {
+                   case Some(f: FailedElem) =>
+                     f.throwable match {
+                       case reason: FailureReason =>
+                         assertEquals(reason.`type`, "IndexingFailure")
+                         val detailKeys = reason.value.asObject.map(_.keys.toSet)
+                         assertEquals(detailKeys, Some(Set("type", "reason", "caused_by")))
+                       case t                     => fail(s"An indexing failure was expected, got '$t'", t)
+                     }
+                   case other               => fail(s"A failed elem was expected, got '$other'")
+                 }
       // The valid one should remain a success and hold a Unit value
-      _       = assert(result.lift(2).flatMap(_.toOption).contains(()))
-      _      <- client
-                  .search(QueryBuilder.empty, Set(index.value), Query.Empty)
-                  .map(_.sources.toSet)
-                  .assertEquals(Set(bob, judy, alice).flatMap(_._2.asObject))
+      _        = assert(result.lift(2).flatMap(_.toOption).contains(()))
+      expected = Set(bob, judy, alice).flatMap(_._2.asObject)
+      _       <- client
+                   .search(QueryBuilder.empty, Set(index.value), Query.empty)
+                   .map(_.sources.toSet)
+                   .assertEquals(expected)
     } yield ()
   }
 
@@ -140,7 +138,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
     for {
       _ <- client.createIndex(index, None, None).assertEquals(true)
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
-      _ <- client.getSource[Json](index, charlie_2._1.toString).assertEquals(charlie_2._2)
+      _ <- client.getSource[Json](index, charlie_2._1.toString).assertEquals(Some(charlie_2._2))
     } yield ()
   }
 
@@ -159,10 +157,7 @@ class ElasticSearchSinkSuite extends NexusSuite with ElasticSearchClientSetup.Fi
     for {
       _ <- client.createIndex(index, None, None).assertEquals(true)
       _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
-      _ <- client
-             .getSource[Json](index, charlie._1.toString)
-             .intercept[HttpClientError]
-             .assert(_.errorCode.contains(StatusCodes.NotFound))
+      _ <- client.getSource[Json](index, charlie._1.toString).assertEquals(None)
     } yield ()
   }
 

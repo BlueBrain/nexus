@@ -1,23 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.client.RequestBuilding.*
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, NotFound, OK}
-import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling.*
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription.ResolvedServiceDescription
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.{HttpClientStatusError, HttpUnexpectedError}
-import ch.epfl.bluebrain.nexus.delta.kernel.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.kernel.http.client.middleware.BasicAuth
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.*
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError.{ElasticsearchActionError, ElasticsearchCreateIndexError, ElasticsearchQueryError, ElasticsearchWriteError, ScriptCreationDismissed}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{ResultEntry, SearchResults, SortList}
@@ -25,63 +16,57 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import io.circe.*
 import io.circe.literal.*
 import io.circe.syntax.*
+import org.http4s.Method.*
+import org.http4s.circe.*
+import org.http4s.circe.CirceEntityEncoder.*
+import org.http4s.circe.CirceEntityDecoder.*
+import org.http4s.client.Client
+import org.http4s.client.dsl.io.*
+import org.http4s.client.middleware.GZip
+import org.http4s.ember.client.EmberClientBuilder
+import org.http4s.headers.`Content-Type`
+import org.http4s.{BasicCredentials, EntityEncoder, MediaType, Query, Status, Uri}
 
 import scala.concurrent.duration.*
-import scala.reflect.ClassTag
 
 /**
   * A client that provides some of the functionality of the elasticsearch API.
   */
-class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int)(implicit
-    credentials: Option[BasicHttpCredentials],
-    as: ActorSystem
-) {
-  import as.dispatcher
-  private val logger                                                = Logger[ElasticSearchClient]
-  private val serviceName                                           = "elasticsearch"
-  private val scriptPath                                            = "_scripts"
-  private val docPath                                               = "_doc"
-  private val allIndexPath                                          = "_all"
-  private val aliasPath                                             = "_aliases"
-  private val bulkPath                                              = "_bulk"
-  private val refreshPath                                           = "_refresh"
-  private val indexTemplate                                         = "_index_template"
-  private val mget                                                  = "_mget"
-  private val tasksPath                                             = "_tasks"
-  private val waitForCompletion                                     = "wait_for_completion"
-  private val refreshParam                                          = "refresh"
-  private val ignoreUnavailable                                     = "ignore_unavailable"
-  private val allowNoIndices                                        = "allow_no_indices"
-  private val deleteByQueryPath                                     = "_delete_by_query"
-  private val updateByQueryPath                                     = "_update_by_query"
-  private val countPath                                             = "_count"
-  private val searchPath                                            = "_search"
-  private val source                                                = "_source"
-  private val mapping                                               = "_mapping"
-  private val pit                                                   = "_pit"
-  private val newLine                                               = System.lineSeparator()
-  private val `application/x-ndjson`: MediaType.WithFixedCharset    =
-    MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
-  private val defaultQuery                                          = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
-  private val defaultUpdateByQuery                                  = defaultQuery + (waitForCompletion -> "false")
-  private val defaultDeleteByQuery                                  = defaultQuery + (waitForCompletion -> "true")
-  private val updateByQueryStrategy: RetryStrategy[HttpClientError] =
-    RetryStrategy.constant(
-      1.second,
-      Int.MaxValue,
-      {
-        case err: HttpClientStatusError if err.code == StatusCodes.NotFound => false
-        case _                                                              => true
-      },
-      logError(logger, "updateByQuery")
-    )
+final class ElasticSearchClient(client: Client[IO], endpoint: Uri, maxIndexPathLength: Int) {
+
+  private val serviceName            = "elasticsearch"
+  private val scriptPath             = "_scripts"
+  private val docPath                = "_doc"
+  private val allIndexPath           = "_all"
+  private val aliasPath              = "_aliases"
+  private val bulkPath               = "_bulk"
+  private val refreshPath            = "_refresh"
+  private val indexTemplate          = "_index_template"
+  private val tasksPath              = "_tasks"
+  private val waitForCompletion      = "wait_for_completion"
+  private val refreshParam           = "refresh"
+  private val ignoreUnavailable      = "ignore_unavailable"
+  private val allowNoIndices         = "allow_no_indices"
+  private val deleteByQueryPath      = "_delete_by_query"
+  private val updateByQueryPath      = "_update_by_query"
+  private val countPath              = "_count"
+  private val searchPath             = "_search"
+  private val source                 = "_source"
+  private val mapping                = "_mapping"
+  private val pit                    = "_pit"
+  private val newLine                = System.lineSeparator()
+  private val `application/x-ndjson` =
+    new MediaType("application", "x-ndjson", compressible = true, fileExtensions = List("json"))
+  private val defaultQuery           = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
+  private val defaultUpdateByQuery   = defaultQuery + (waitForCompletion -> "false")
+  private val defaultDeleteByQuery   = defaultQuery + (waitForCompletion -> "true")
 
   /**
     * Fetches the service description information (name and version)
     */
   def serviceDescription: IO[ServiceDescription] =
     client
-      .fromJsonTo[ResolvedServiceDescription](Get(endpoint).withHttpCredentials)
+      .expect[ResolvedServiceDescription](endpoint)
       .timeout(1.second)
       .recover(_ => ServiceDescription.unresolved(serviceName))
 
@@ -94,9 +79,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *   ''true'' when the index exists and ''false'' when it doesn't, wrapped in an IO
     */
   def existsIndex(index: IndexLabel): IO[Boolean] =
-    client.run(Head(endpoint / index.value).withHttpCredentials) {
-      case resp if resp.status == OK       => IO.pure(true)
-      case resp if resp.status == NotFound => IO.pure(false)
+    client.status(HEAD(endpoint / index.value)).flatMap {
+      case Status.Ok       => IO.pure(true)
+      case Status.NotFound => IO.pure(false)
+      case status          => IO.raiseError(ElasticsearchActionError(status, "exists"))
     }
 
   /**
@@ -112,11 +98,9 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   def createIndex(index: IndexLabel, payload: JsonObject = JsonObject.empty): IO[Boolean] = {
     existsIndex(index).flatMap {
       case false =>
-        client.run(Put(endpoint / index.value, payload).withHttpCredentials) {
-          case resp if resp.status.isSuccess() => discardEntity(resp).as(true)
-        }
-      case true  =>
-        IO.pure(false)
+        val request = PUT(payload, endpoint / index.value)
+        client.expectOr[Json](request)(ElasticsearchCreateIndexError(_)).as(true)
+      case true  => IO.pure(false)
     }
   }
 
@@ -146,8 +130,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *   ''true'' when the index template has been created
     */
   def createIndexTemplate(name: String, template: JsonObject): IO[Boolean] =
-    client.run(Put(endpoint / indexTemplate / name, template).withHttpCredentials) {
-      case resp if resp.status.isSuccess() => discardEntity(resp).as(true)
+    client.status(PUT(template, endpoint / indexTemplate / name)).flatMap {
+      case Status.Ok       => IO.pure(true)
+      case Status.NotFound => IO.pure(false)
+      case status          => IO.raiseError(ElasticsearchActionError(status, "createTemplate"))
     }
 
   /**
@@ -159,9 +145,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *   ''true'' when the index has been deleted and ''false'' when it didn't exist, wrapped in an IO
     */
   def deleteIndex(index: IndexLabel): IO[Boolean] =
-    client.run(Delete(endpoint / index.value).withHttpCredentials) {
-      case resp if resp.status == OK       => discardEntity(resp).as(true)
-      case resp if resp.status == NotFound => discardEntity(resp).as(false)
+    client.status(DELETE(endpoint / index.value)).flatMap {
+      case Status.Ok       => IO.pure(true)
+      case Status.NotFound => IO.pure(false)
+      case status          => IO.raiseError(ElasticsearchActionError(status, "deleteIndex"))
     }
 
   /**
@@ -179,49 +166,23 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       id: String,
       payload: JsonObject
   ): IO[Unit] =
-    client.run(Put(endpoint / index.value / docPath / UrlUtils.encode(id), payload).withHttpCredentials) {
-      case resp if resp.status == Created || resp.status == OK => discardEntity(resp)
-    }
-
-  /**
-    * Deletes the document with the provided ''id''
-    *
-    * @param index
-    *   the index to use
-    * @param id
-    *   the id to delete
-    * @return
-    *   ''true'' when the document has been deleted and ''false'' when it didn't exist, wrapped in an IO
-    */
-  def delete(index: IndexLabel, id: String): IO[Boolean] =
-    client.run(Delete(endpoint / index.value / docPath / UrlUtils.encode(id)).withHttpCredentials) {
-      case resp if resp.status == OK       => discardEntity(resp).as(true)
-      case resp if resp.status == NotFound => discardEntity(resp).as(false)
-    }
+    client.successful(PUT(payload, endpoint / index.value / docPath / UrlUtils.encode(id))).void
 
   /**
     * Creates a bulk update with the operations defined on the provided ''ops'' argument.
     *
-    * @param ops
+    * @param actions
     *   the list of operations to be included in the bulk update
     * @param refresh
     *   the value for the `refresh` Elasticsearch parameter
     */
-  def bulk(ops: Seq[ElasticSearchAction], refresh: Refresh = Refresh.False): IO[BulkResponse] = {
-    if (ops.isEmpty) IO.pure(BulkResponse.Success)
+  def bulk(actions: Seq[ElasticSearchAction], refresh: Refresh = Refresh.False): IO[BulkResponse] = {
+    if (actions.isEmpty) IO.pure(BulkResponse.Success)
     else {
-      val bulkEndpoint = (endpoint / bulkPath).withQuery(Query(refreshParam -> refresh.value))
-      val entity       = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
-      val req          = Post(bulkEndpoint, entity).withHttpCredentials
-
-      client
-        .toJson(req)
-        .attemptNarrow[HttpClientError]
-        .flatMap {
-          case Left(e)     => IO.fromEither(BulkResponse(e)).orRaise(e)
-          case Right(json) =>
-            IO.fromEither(BulkResponse(json)).adaptError { e => HttpUnexpectedError(req, e.getMessage) }
-        }
+      val payload      = actions.map(_.payload).mkString("", newLine, newLine)
+      val bulkEndpoint = (endpoint / bulkPath).withQueryParam(refreshParam, refresh.value)
+      val request      = POST(payload, bulkEndpoint, `Content-Type`(`application/x-ndjson`))(EntityEncoder.stringEncoder)
+      client.expectOr[BulkResponse](request)(ElasticsearchWriteError(_))
     }
   }
 
@@ -230,12 +191,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     */
   def createScript(id: String, content: String): IO[Unit] = {
     val payload = Json.obj("script" -> Json.obj("lang" -> "painless".asJson, "source" -> content.asJson))
-    val req     = Put(endpoint / scriptPath / UrlUtils.encode(id), payload).withHttpCredentials
-    client.toJson(req).flatMap { json =>
-      IO.raiseWhen(!json.hcursor.get[Boolean]("acknowledged").contains(true))(
-        HttpClientStatusError(req, BadRequest, json.noSpaces)
-      )
-    }
+    val request = PUT(payload, endpoint / scriptPath / UrlUtils.encode(id))
+    client.expectOr[Json](request)(ScriptCreationDismissed(_)).void
   }
 
   /**
@@ -249,14 +206,12 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     */
   def updateByQuery(query: JsonObject, indices: Set[String]): IO[Unit] = {
     val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
-    val updateEndpoint = (endpoint / indexPath / updateByQueryPath).withQuery(Uri.Query(defaultUpdateByQuery))
-    val req            = Post(updateEndpoint, q.build).withHttpCredentials
+    val updateEndpoint = (endpoint / indexPath / updateByQueryPath).withQueryParams(defaultUpdateByQuery)
+    val request        = POST(q.build, updateEndpoint)
     for {
-      json   <- client.toJson(req)
-      taskId <-
-        IO.fromEither(json.hcursor.get[String]("task")).orRaise(HttpClientStatusError(req, BadRequest, json.noSpaces))
-      taskReq = Get((endpoint / tasksPath / taskId).withQuery(Query(waitForCompletion -> "true"))).withHttpCredentials
-      _      <- client.toJson(taskReq).retry(updateByQueryStrategy)
+      response <- client.expect[UpdateByQueryResponse](request)
+      taskReq   = GET((endpoint / tasksPath / response.task).withQueryParam(waitForCompletion, "true"))
+      _        <- client.expect[Json](taskReq)
     } yield ()
   }
 
@@ -270,9 +225,9 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *   the index targeted by the delete query
     */
   def deleteByQuery(query: JsonObject, index: IndexLabel): IO[Unit] = {
-    val deleteEndpoint = (endpoint / index.value / deleteByQueryPath).withQuery(Uri.Query(defaultDeleteByQuery))
-    val req            = Post(deleteEndpoint, query).withHttpCredentials
-    client.toJson(req).void
+    val deleteEndpoint = (endpoint / index.value / deleteByQueryPath).withQueryParams(defaultDeleteByQuery)
+    val req            = POST(query, deleteEndpoint)
+    client.expect[Json](req).void
   }
 
   /**
@@ -282,44 +237,9 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param id
     *   the identifier of the document
     */
-  def getSource[R: Decoder: ClassTag](index: IndexLabel, id: String): IO[R] = {
+  def getSource[R: Decoder](index: IndexLabel, id: String): IO[Option[R]] = {
     val sourceEndpoint = endpoint / index.value / source / id
-    val req            = Get(sourceEndpoint).withHttpCredentials
-    client.fromJsonTo[R](req)
-  }
-
-  /**
-    * Perform a multi-get from the given index and attempts to extract the provided field from the document
-    * @param index
-    *   the index to use
-    * @param ids
-    *   the ids to
-    * @param field
-    *   the field to extract
-    */
-  def multiGet[R: Decoder](index: IndexLabel, ids: Set[String], field: String): IO[Map[String, Option[R]]] = {
-    if (ids.isEmpty) IO.pure(Map.empty)
-    else {
-      val multiGetEndpoint = (endpoint / index.value / mget).withQuery(Uri.Query(Map("_source" -> field)))
-      val req              = Get(multiGetEndpoint, Json.obj("ids" -> ids.asJson)).withHttpCredentials
-
-      client
-        .toJson(req)
-        .flatMap { json =>
-          IO.fromOption(json.hcursor.downField("docs").focus.flatMap(_.asArray).map {
-            _.mapFilter { r =>
-              if (r.hcursor.get[Boolean]("found").contains(true))
-                r.hcursor
-                  .get[String]("_id")
-                  .map { id =>
-                    id -> r.hcursor.downField("_source").get[R](field).toOption
-                  }
-                  .toOption
-              else None
-            }.toMap
-          })(HttpClientStatusError(req, BadRequest, json.noSpaces))
-        }
-    }
+    client.expectOption[R](GET(sourceEndpoint))
   }
 
   /**
@@ -327,15 +247,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param index
     *   the index to use
     */
-  def count(index: String): IO[Long] = {
-    val req = Get(endpoint / index / countPath).withHttpCredentials
-    client.toJson(req).flatMap { json =>
-      val count = json.hcursor.downField("count").focus.flatMap(_.asNumber.flatMap(_.toLong))
-      IO.fromOption(count)(
-        HttpClientStatusError(req, BadRequest, json.noSpaces)
-      )
-    }
-  }
+  def count(index: String): IO[Long] =
+    client.expect[Count](GET(endpoint / index / countPath)).map(_.value)
 
   /**
     * Search for the provided ''query'' inside the ''index'' returning a parsed result as a [[SearchResults]].
@@ -376,9 +289,9 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     if (indices.isEmpty) IO.pure(emptyResults)
     else {
       val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
-      val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+      val searchEndpoint = (endpoint / indexPath / searchPath).withQueryParams(defaultQuery ++ qp.params)
       val payload        = q.withSort(sort).withTotalHits(true).build
-      client.toJson(Post(searchEndpoint, payload).withHttpCredentials)
+      client.expectOr[Json](POST(payload, searchEndpoint))(ElasticsearchQueryError(_))
     }
 
   /**
@@ -391,7 +304,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param qp
     *   the optional query parameters
     */
-  def searchAs[T: Decoder: ClassTag](
+  def searchAs[T: Decoder](
       query: QueryBuilder,
       indices: Set[String],
       qp: Query
@@ -400,8 +313,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       IO.pure(onEmpty)
     else {
       val (indexPath, q) = indexPathAndQuery(indices, query)
-      val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-      client.fromJsonTo[T](Post(searchEndpoint, q.build).withHttpCredentials)
+      val searchEndpoint = (endpoint / indexPath / searchPath).withQueryParams(defaultQuery ++ qp.params)
+      client.expect[T](POST(q.build, searchEndpoint))
     }
 
   /**
@@ -414,28 +327,24 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param qp
     *   the optional query parameters
     */
-  def searchAs[T: Decoder: ClassTag](
+  def searchAs[T: Decoder](
       query: QueryBuilder,
       index: String,
       qp: Query
   ): IO[T] = {
-    val searchEndpoint = (endpoint / index / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-    client.fromJsonTo[T](Post(searchEndpoint, query.build).withHttpCredentials)
+    val searchEndpoint = (endpoint / index / searchPath).withQueryParams(defaultQuery ++ qp.params)
+    client.expect[T](POST(query.build, searchEndpoint))
   }
 
   /**
     * Refresh the given index
     */
-  def refresh(index: IndexLabel): IO[Boolean] =
-    client.run(Post(endpoint / index.value / refreshPath).withHttpCredentials) {
-      case resp if resp.status.isSuccess() => discardEntity(resp).as(true)
-    }
+  def refresh(index: IndexLabel): IO[Boolean] = client.successful(POST(endpoint / index.value / refreshPath))
 
   /**
     * Obtain the mapping of the given index
     */
-  def mapping(index: IndexLabel): IO[Json] =
-    client.toJson(Get(endpoint / index.value / mapping).withHttpCredentials)
+  def mapping(index: IndexLabel): IO[Json] = client.expect[Json](GET(endpoint / index.value / mapping))
 
   /**
     * Creates a point-in-time to be used in further searches
@@ -448,8 +357,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *   extends the time to live of the corresponding point in time
     */
   def createPointInTime(index: IndexLabel, keepAlive: FiniteDuration): IO[PointInTime] = {
-    val pitEndpoint = (endpoint / index.value / pit).withQuery(Uri.Query("keep_alive" -> s"${keepAlive.toSeconds}s"))
-    client.fromJsonTo[PointInTime](Post(pitEndpoint).withHttpCredentials)
+    val pitEndpoint = (endpoint / index.value / pit).withQueryParam("keep_alive", s"${keepAlive.toSeconds}s")
+    client.expect[PointInTime](POST(pitEndpoint))
   }
 
   /**
@@ -459,9 +368,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *   https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html
     */
   def deletePointInTime(pointInTime: PointInTime): IO[Unit] =
-    client.run(Delete(endpoint / pit, pointInTime.asJson).withHttpCredentials) {
-      case resp if resp.status.isSuccess() => discardEntity(resp)
-    }
+    client.successful(DELETE(pointInTime, endpoint / pit)).void
 
   def createAlias(indexAlias: IndexAlias): IO[Unit] = {
     val aliasPayload = Json.obj(
@@ -483,13 +390,12 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 
   private def aliasAction(aliasAction: Json) = {
     val aliasWrap = Json.obj("actions" := Json.arr(aliasAction))
-    client.run(Post(endpoint / aliasPath, aliasWrap).withHttpCredentials) {
-      case resp if resp.status.isSuccess() => discardEntity(resp)
-    }
+    client
+      .expectOr[Json](POST(aliasWrap, endpoint / aliasPath)) { r =>
+        IO.pure(ElasticsearchActionError(r.status, "createAlias"))
+      }
+      .void
   }
-
-  private def discardEntity(resp: HttpResponse) =
-    IO.delay(resp.discardEntityBytes()) >> IO.unit
 
   private def indexPathAndQuery(indices: Set[String], query: QueryBuilder): (String, QueryBuilder) = {
     val indexPath = indices.mkString(",")
@@ -506,6 +412,22 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 
 object ElasticSearchClient {
 
+  private val logger = Logger[this.type]
+
+  def apply(
+      endpoint: Uri,
+      credentials: Option[BasicCredentials],
+      maxIndexPathLength: Int
+  ): Resource[IO, ElasticSearchClient] =
+    EmberClientBuilder
+      .default[IO]
+      .withLogger(logger)
+      .build
+      .map { client =>
+        val authGzipClient = GZip()(BasicAuth(credentials)(client))
+        new ElasticSearchClient(authGzipClient, endpoint, maxIndexPathLength)
+      }
+
   private val emptyResults = json"""{
                                      "hits": {
                                         "hits": [],
@@ -515,24 +437,6 @@ object ElasticSearchClient {
                                         }
                                      }
                                    }"""
-
-  sealed trait Refresh {
-    def value: String
-  }
-
-  object Refresh {
-    case object True extends Refresh {
-      override def value: String = "true"
-    }
-
-    case object False extends Refresh {
-      override def value: String = "false"
-    }
-
-    case object WaitFor extends Refresh {
-      override def value: String = "wait_for"
-    }
-  }
 
   private def queryResults(json: JsonObject, scored: Boolean): Either[JsonObject, Vector[ResultEntry[JsonObject]]] = {
 
@@ -586,85 +490,5 @@ object ElasticSearchClient {
   private[client] object Count {
     implicit val decodeCount: Decoder[Count] =
       Decoder.instance(_.get[Long]("count").map(Count(_)))
-  }
-
-  /**
-    * Elasticsearch response after a bulk request
-    */
-  sealed trait BulkResponse extends Product with Serializable
-
-  object BulkResponse {
-
-    /**
-      * No indexing error were returned by elasticsearch
-      */
-    final case object Success extends BulkResponse
-
-    /**
-      * At least one indexing error has been returned by elasticsearch
-      * @param items
-      *   the different outcomes indexed by document id (So we only keep the last outcome if a document id is repeated
-      *   in a query but this is ok in the Delta context)
-      */
-    final case class MixedOutcomes(items: Map[String, Outcome]) extends BulkResponse
-
-    object MixedOutcomes {
-
-      /**
-        * Outcome returned by Elasticsearch for a single document
-        */
-      sealed trait Outcome extends Product with Serializable
-
-      object Outcome {
-
-        /**
-          * The document has been properly indexed
-          */
-        final case object Success extends Outcome
-
-        /**
-          * The document could not be indexed
-          * @param json
-          *   the reason returned by the Elasticsearch API
-          */
-        final case class Error(json: JsonObject) extends Outcome
-
-        private val success: Outcome = Success
-        private val Operations       = List("index", "delete", "update", "create")
-
-        private[client] def from(hcursor: HCursor): Decoder.Result[(String, Outcome)] =
-          Operations
-            .collectFirstSome(hcursor.downField(_).success)
-            .toRight(DecodingFailure(s"Operation type was not one of ${Operations.mkString(", ")}.", hcursor.history))
-            .flatMap { c =>
-              c.get[String]("_id").map {
-                _ -> c.get[JsonObject]("error").fold(_ => Outcome.success, Outcome.Error)
-              }
-            }
-      }
-    }
-
-    private val invalidResponse                                                   = Left(DecodingFailure(s"Bulk result did not provide a json response.", List.empty))
-    private[client] def apply(err: HttpClientError): Decoder.Result[BulkResponse] =
-      err.jsonBody.map(apply).getOrElse(invalidResponse)
-
-    private[client] def apply(json: Json): Decoder.Result[BulkResponse] = {
-      json.hcursor.get[Boolean]("errors").flatMap { hasErrors =>
-        if (hasErrors) {
-          val cursor = json.hcursor.downField("items")
-          cursor.focus
-            .flatMap(_.asArray)
-            .map {
-              _.foldLeftM(Map.empty[String, Outcome]) { case (acc, item) =>
-                Outcome.from(item.hcursor).map { res =>
-                  acc + res
-                }
-              }.map(MixedOutcomes(_))
-            }
-            .getOrElse(Left(DecodingFailure(s"Bulk result does not contain a `items` array property.", cursor.history)))
-        } else
-          Right(Success)
-      }
-    }
   }
 }

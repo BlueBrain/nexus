@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.{UnknownSuite, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.*
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.{UnknownSuite, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Project as ProjectAcl
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.{Json, JsonObject}
+import org.http4s.Query
 
 trait Search {
 
@@ -25,7 +25,7 @@ trait Search {
     * @param payload
     *   the query payload
     */
-  def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json]
+  def query(payload: JsonObject, qp: Query)(implicit caller: Caller): IO[Json]
 
   /**
     * Queries the underlying search indices for the provided suite that the ''caller'' has access to
@@ -35,7 +35,7 @@ trait Search {
     * @param payload
     *   the query payload
     */
-  def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Uri.Query)(implicit
+  def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Query)(implicit
       caller: Caller
   ): IO[Json]
 }
@@ -45,7 +45,7 @@ object Search {
   final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView)
 
   private[search] type ListProjections = () => IO[Seq[TargetProjection]]
-  private[search] type ExecuteSearch   = (JsonObject, Set[String], Uri.Query) => IO[Json]
+  private[search] type ExecuteSearch   = (JsonObject, Set[String], Query) => IO[Json]
 
   /**
     * Constructs a new [[Search]] instance.
@@ -91,7 +91,7 @@ object Search {
   ): Search =
     new Search {
 
-      private def query(projectionPredicate: TargetProjection => Boolean, payload: JsonObject, qp: Uri.Query)(implicit
+      private def query(projectionPredicate: TargetProjection => Boolean, payload: JsonObject, qp: Query)(implicit
           caller: Caller
       ) =
         for {
@@ -101,15 +101,15 @@ object Search {
                                  p => ProjectAcl(p.view.project) -> p.projection.permission,
                                  p => projectionIndex(p.projection, p.view.uuid, prefix).value
                                )
-          results           <- executeSearch(payload, accessibleIndices, qp).adaptError { case e: HttpClientError =>
+          results           <- executeSearch(payload, accessibleIndices, qp).adaptError { case e: ElasticSearchClientError =>
                                  WrappedElasticSearchClientError(e)
                                }
         } yield results
 
-      override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] =
+      override def query(payload: JsonObject, qp: Query)(implicit caller: Caller): IO[Json] =
         query(_ => true, payload, qp)
 
-      override def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Uri.Query)(implicit
+      override def query(suite: Label, additionalProjects: Set[ProjectRef], payload: JsonObject, qp: Query)(implicit
           caller: Caller
       ): IO[Json] = {
         IO.fromOption(suites.get(suite))(UnknownSuite(suite)).flatMap { suiteProjects =>

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.server.*
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.*
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{ElasticSearchQueryError, MainIndexQuery, MainIndexRequest}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{ElasticSearchClientError, MainIndexQuery, MainIndexRequest}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -158,7 +158,7 @@ class ListingRoutes(
         searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
       emit {
         projectScopeResolver(scope, resources.read).flatMap { projects =>
-          defaultIndexQuery.list(request, projects).attemptNarrow[ElasticSearchQueryError]
+          defaultIndexQuery.list(request, projects).attemptNarrow[ElasticSearchClientError]
         }
       }
     }
@@ -168,7 +168,7 @@ class ListingRoutes(
 
       emit {
         projectScopeResolver(scope, resources.read).flatMap { projects =>
-          defaultIndexQuery.aggregate(request, projects).map(_.asJson).attemptNarrow[ElasticSearchQueryError]
+          defaultIndexQuery.aggregate(request, projects).map(_.asJson).attemptNarrow[ElasticSearchClientError]
         }
       }
 

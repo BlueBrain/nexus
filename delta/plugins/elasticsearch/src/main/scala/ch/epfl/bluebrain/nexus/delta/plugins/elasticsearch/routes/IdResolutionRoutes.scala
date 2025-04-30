@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -33,7 +33,7 @@ class IdResolutionRoutes(
       extractCaller { implicit caller =>
         (get & iriSegment & pathEndOrSingleSlash) { iri =>
           val resolved = idResolution.apply(iri)
-          emit(resolved.attemptNarrow[ElasticSearchQueryError])
+          emit(resolved.attemptNarrow[ElasticSearchClientError])
         }
       }
     }

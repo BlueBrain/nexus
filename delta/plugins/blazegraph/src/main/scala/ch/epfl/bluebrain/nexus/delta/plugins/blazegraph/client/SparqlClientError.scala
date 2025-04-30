@@ -47,9 +47,9 @@ object SparqlClientError {
       )
 
   object SparqlWriteError {
-    def apply(response: Response[IO]): IO[SparqlQueryError] =
+    def apply(response: Response[IO]): IO[SparqlWriteError] =
       EntityDecoder.decodeText(response).map { body =>
-        SparqlQueryError(response.status, body)
+        SparqlWriteError(response.status, body)
       }
   }
 

@@ -1,10 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
@@ -14,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.ElasticSearchProjectionType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.test.{expandOnlyIris, expectIndexingView}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError.ElasticsearchQueryError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -32,6 +30,7 @@ import ch.epfl.bluebrain.nexus.testkit.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
+import org.http4s.{Query, Status}
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
@@ -129,7 +128,7 @@ class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with Cance
   ): IO[Json] =
     if (q == query)
       IO.pure(Json.arr(indices.foldLeft(Seq.empty[Json])((acc, idx) => acc :+ indexResults(idx).asJson)*))
-    else IO.raiseError(HttpUnexpectedError(HttpRequest(), ""))
+    else IO.raiseError(ElasticsearchQueryError(Status.BadRequest, None))
 
   private val viewsQuery = ElasticSearchQuery(acls, expectIndexingView(indexingView), expandOnlyIris, esQuery, prefix)
 
@@ -139,22 +138,22 @@ class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with Cance
       forAll(
         List(alice -> Set(indexResults(esP1Idx)), bob -> Set(indexResults(esP1Idx), indexResults(esP2Idx)))
       ) { case (caller, expected) =>
-        val json = viewsQuery.queryProjections(id, project.ref, query, Query.Empty)(caller).accepted
+        val json = viewsQuery.queryProjections(id, project.ref, query, Query.empty)(caller).accepted
         json.asArray.value.toSet shouldEqual expected.map(_.asJson)
       }
       viewsQuery
-        .queryProjections(id, project.ref, query, Query.Empty)(anon)
+        .queryProjections(id, project.ref, query, Query.empty)(anon)
         .rejectedWith[AuthorizationFailed]
     }
 
     "query a ElasticSearch projections' index" in {
       val blaze = nxv + "blaze1"
       val es1   = nxv + "es1"
-      val json  = viewsQuery.query(id, es1, project.ref, query, Query.Empty)(bob).accepted
+      val json  = viewsQuery.query(id, es1, project.ref, query, Query.empty)(bob).accepted
       json.asArray.value.toSet shouldEqual Set(indexResults(esP1Idx).asJson)
 
-      viewsQuery.query(id, es1, project.ref, query, Query.Empty)(anon).rejectedWith[AuthorizationFailed]
-      viewsQuery.query(id, blaze, project.ref, query, Query.Empty)(bob).rejected shouldEqual
+      viewsQuery.query(id, es1, project.ref, query, Query.empty)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery.query(id, blaze, project.ref, query, Query.empty)(bob).rejected shouldEqual
         ProjectionNotFound(id, blaze, project.ref, ElasticSearchProjectionType)
     }
   }

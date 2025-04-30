@@ -1,16 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.ServiceDescription
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh.WaitFor
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.BulkResponse.MixedOutcomes.Outcome
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.Refresh.WaitFor
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError.{ElasticsearchActionError, ElasticsearchCreateIndexError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
@@ -22,6 +18,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{Json, JsonObject}
 import munit.AnyFixture
+import org.http4s.Query
 
 import scala.concurrent.duration.*
 
@@ -36,7 +33,7 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
   private lazy val client = esClient()
 
   private def searchAllIn(index: IndexLabel): IO[Seq[JsonObject]] =
-    client.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).map(_.sources)
+    client.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.empty).map(_.sources)
 
   private def replaceAndRefresh(index: IndexLabel, id: String, document: JsonObject) =
     client.replace(index, id, document) >> client.refresh(index)
@@ -59,7 +56,7 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
 
   test("Fail to create an index with wrong payload") {
     val index = generateIndexLabel
-    client.createIndex(index, jobj"""{"key": "value"}""").intercept[HttpClientStatusError]
+    client.createIndex(index, jobj"""{"key": "value"}""").intercept[ElasticsearchCreateIndexError]
   }
 
   test("Delete an index") {
@@ -88,15 +85,6 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
       _ <- replaceAndRefresh(index, "1", documentUpdated)
       _ <- searchAllIn(index).assertEquals(Vector(documentUpdated))
     } yield ()
-  }
-
-  test("Delete a document") {
-    val index    = generateIndexLabel
-    val document = jobj"""{"key": "value"}"""
-    client.createIndex(index) >>
-      replaceAndRefresh(index, "1", document) >>
-      client.delete(index, "1").assertEquals(true) >>
-      client.delete(index, "1").assertEquals(false)
   }
 
   test("Run bulk operations") {
@@ -131,7 +119,7 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
       case BulkResponse.Success              => fail("errors expected")
       case BulkResponse.MixedOutcomes(items) =>
         val (failures, successes) = items.partitionMap { case (key, outcome) =>
-          Either.cond(outcome == Outcome.Success, key, key)
+          Either.cond(outcome == Outcome.Success(key), key, key)
         }
         assertEquals(successes, List("1", "2", "3"))
         assertEquals(failures, List("5"))
@@ -143,21 +131,8 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
     val doc   = jobj"""{ "field1" : 1 }"""
 
     replaceAndRefresh(index, "1", doc) >>
-      client.getSource[Json](index, "1").assertEquals(doc.asJson) >>
-      client.getSource[Json](index, "x").intercept[HttpClientStatusError]
-  }
-
-  test("Perform the multi-get query") {
-    val index      = generateIndexLabel
-    val operations = List(
-      ElasticSearchAction.Index(index, "1", None, json"""{ "field1" : 1 }"""),
-      ElasticSearchAction.Index(index, "2", None, json"""{ "field1" : 2 }"""),
-      ElasticSearchAction.Index(index, "3", None, json"""{ "doc" : {"field2" : 4} }""")
-    )
-
-    val expected = Map("1" -> Some(1), "2" -> Some(2), "3" -> None)
-    client.bulk(operations, Refresh.WaitFor) >>
-      client.multiGet[Int](index, Set("1", "2", "3", "4"), "field1").assertEquals(expected)
+      client.getSource[Json](index, "1").assertEquals(Some(doc.asJson)) >>
+      client.getSource[Json](index, "x").assertEquals(None)
   }
 
   test("Count") {
@@ -186,10 +161,10 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
                     .withSort(SortList(List(Sort("-field1"))))
       expected  = SearchResults(2, Vector(jobj"""{ "field1" : 3 }""", jobj"""{ "field1" : 1, "field2" : "value2"}"""))
                     .copy(token = Some("[1]"))
-      _        <- client.search(query, Set(index.value), Query.Empty).assertEquals(expected)
+      _        <- client.search(query, Set(index.value), Query.empty).assertEquals(expected)
       query2    = QueryBuilder(jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }""").withPage(page)
       expected2 = ScoredSearchResults(1, 1f, Vector(ScoredResultEntry(1f, jobj"""{ "field1" : 3 }""")))
-      _        <- client.search(query2, Set(index.value), Query.Empty).assertEquals(expected2)
+      _        <- client.search(query2, Set(index.value), Query.empty).assertEquals(expected2)
     } yield ()
   }
 
@@ -207,7 +182,7 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
       expectedResults <- loader
                            .jsonContentOf("elasticsearch-results.json", "index" -> index)
       _               <- client
-                           .search(query, Set(index.value), Query.Empty)(SortList.empty)
+                           .search(query, Set(index.value), Query.empty)(SortList.empty)
                            .map(_.removeKeys("took"))
                            .assertEquals(expectedResults)
     } yield ()
@@ -229,11 +204,7 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
       _    <- client.deleteByQuery(query, index)
       _    <- client.count(index.value).assertEquals(1L).eventually
       _    <- client.getSource[Json](index, "1")
-      _    <- client
-                .getSource[Json](index, "2")
-                .intercept[HttpClientError]
-                .map(_.errorCode)
-                .assertEquals(Some(StatusCodes.NotFound))
+      _    <- client.getSource[Json](index, "2").assertEquals(None)
     } yield ()
   }
 
@@ -264,7 +235,7 @@ class ElasticSearchClientSuite extends NexusSuite with ElasticSearchClientSetup.
     val index      = generateIndexLabel
     val alias      = generateIndexLabel
     val indexAlias = IndexAlias(index, alias, Some("routing"), Some(JsonObject("match_all" := Json.obj())))
-    client.createAlias(indexAlias).intercept[HttpClientStatusError]
+    client.createAlias(indexAlias).intercept[ElasticsearchActionError]
   }
 
 }

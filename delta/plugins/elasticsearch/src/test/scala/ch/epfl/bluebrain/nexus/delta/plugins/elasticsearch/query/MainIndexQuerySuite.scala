@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
-import akka.http.scaladsl.model.Uri.Query
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
@@ -31,6 +30,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
+import org.http4s.Query
 
 import java.time.Instant
 
@@ -278,14 +278,14 @@ class MainIndexQuerySuite extends NexusSuite with ElasticSearchClientSetup.Fixtu
 
   test(s"Search only among $project1") {
     mainIndexQuery
-      .search(project1, matchAllSorted, Query.Empty)
+      .search(project1, matchAllSorted, Query.empty)
       .map(Ids.extractAll)
       .assertEquals(orgs.map(_.id))
   }
 
   test(s"Search only among $project2") {
     mainIndexQuery
-      .search(project2, matchAllSorted, Query.Empty)
+      .search(project2, matchAllSorted, Query.empty)
       .map(Ids.extractAll)
       .assertEquals(List(trace.id, cell.id))
   }

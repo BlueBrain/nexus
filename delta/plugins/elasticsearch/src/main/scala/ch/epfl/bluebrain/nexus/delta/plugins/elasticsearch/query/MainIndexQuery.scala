@@ -1,17 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, Hits, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainProjectTargetAlias
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.ElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
+import org.http4s.Query
 
 /**
   * Allow to list resources from the main Elasticsearch index
@@ -27,7 +26,7 @@ trait MainIndexQuery {
     * @param qp
     *   the extra query parameters for the elasticsearch index
     */
-  def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json]
+  def search(project: ProjectRef, query: JsonObject, qp: Query): IO[Json]
 
   /**
     * Retrieves a list of resources from the provided search request on the set of projects
@@ -49,26 +48,26 @@ object MainIndexQuery {
       config: MainIndexConfig
   )(implicit baseUri: BaseUri): MainIndexQuery = new MainIndexQuery {
 
-    override def search(project: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] = {
+    override def search(project: ProjectRef, query: JsonObject, qp: Query): IO[Json] = {
       val index = mainProjectTargetAlias(config.index, project)
       client
         .search(query, Set(index.value), qp)(SortList.empty)
-        .adaptError { case e: HttpClientError => ElasticSearchClientError(e) }
+        .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchClientError(e) }
     }
 
     override def list(request: MainIndexRequest, projects: Set[ProjectRef]): IO[SearchResults[JsonObject]] = {
       val query =
         QueryBuilder(request.params, projects).withPage(request.pagination).withTotalHits(true).withSort(request.sort)
       client
-        .search(query, Set(config.index.value), Uri.Query(excludeOriginalSource))
-        .adaptError { case e: HttpClientError => ElasticSearchClientError(e) }
+        .search(query, Set(config.index.value), Query.fromPairs(excludeOriginalSource))
+        .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchClientError(e) }
     }
 
     override def aggregate(request: MainIndexRequest, projects: Set[ProjectRef]): IO[AggregationResult] = {
       val query = QueryBuilder(request.params, projects).aggregation(config.bucketSize)
       client
-        .searchAs[AggregationResult](query, config.index.value, Uri.Query.Empty)
-        .adaptError { case e: HttpClientError => ElasticSearchClientError(e) }
+        .searchAs[AggregationResult](query, config.index.value, Query.empty)
+        .adaptError { case e: ElasticSearchClientError => WrappedElasticSearchClientError(e) }
     }
   }
 

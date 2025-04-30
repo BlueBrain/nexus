@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.effect.IO
 import cats.syntax.all.*
@@ -34,6 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, Fil
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.{Decoder, Json, JsonObject}
 import munit.{AnyFixture, Location}
+import org.http4s.Query
 
 import java.time.Instant
 import scala.concurrent.duration.*
@@ -226,7 +226,7 @@ class ElasticSearchViewsQuerySuite
 
   }
 
-  private val noParameters = Query.Empty
+  private val noParameters = Query.empty
 
   // Match all resources and sort them by created date and date
   private val matchAllSorted                               = jobj"""{ "size": 100, "sort": [{ "_createdAt": "asc" }, { "@id": "asc" }] }"""
@@ -294,7 +294,7 @@ class ElasticSearchViewsQuerySuite
 
   test("Query a view without permissions") {
     implicit val caller: Caller = anon
-    viewsQuery.query(view1Proj1, JsonObject.empty, Query.Empty).intercept[AuthorizationFailed]
+    viewsQuery.query(view1Proj1, JsonObject.empty, Query.empty).intercept[AuthorizationFailed]
   }
 
   test("Query the deprecated view should raise an deprecation error") {

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -26,8 +26,8 @@ object GraphAnalyticsRejection {
   /**
     * Rejection returned when interacting with the elasticsearch views API.
     */
-  final case class WrappedElasticSearchRejection(rejection: ElasticSearchViewRejection)
-      extends GraphAnalyticsRejection(rejection.reason)
+  final case class WrappedElasticSearchRejection(error: ElasticSearchClientError)
+      extends GraphAnalyticsRejection(error.reason)
 
   /**
     * Rejection returned when attempting to interact with graph analytics while providing a property type that cannot be
@@ -54,7 +54,7 @@ object GraphAnalyticsRejection {
 
   implicit val graphAnalyticsRejectionHttpResponseFields: HttpResponseFields[GraphAnalyticsRejection] =
     HttpResponseFields {
-      case WrappedElasticSearchRejection(rej) => rej.status
-      case _                                  => StatusCodes.BadRequest
+      case WrappedElasticSearchRejection(error) => error.status
+      case _                                    => StatusCodes.BadRequest
     }
 }
