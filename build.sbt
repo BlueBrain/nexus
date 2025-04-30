@@ -129,7 +129,7 @@ lazy val http4sServerTest = Seq(
 lazy val http4s = Seq(
   "org.http4s" %% "http4s-ember-client" % http4sVersion,
   "org.http4s" %% "http4s-circe"        % http4sVersion,
-  "org.http4s" %% "http4s-scala-xml"    % http4sXMLVersion,
+  "org.http4s" %% "http4s-scala-xml"    % http4sXMLVersion
 ) ++ http4sServerTest
 
 lazy val jenaArq         = "org.apache.jena"               % "jena-arq"          % jenaVersion
