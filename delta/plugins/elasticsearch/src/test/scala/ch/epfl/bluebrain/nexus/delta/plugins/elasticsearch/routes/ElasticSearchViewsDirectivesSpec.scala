@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -24,7 +24,7 @@ import java.time.Instant
 
 class ElasticSearchViewsDirectivesSpec extends CatsEffectSpec with RouteHelpers with ElasticSearchViewsDirectives {
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   private val mappings                    = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
   private val base                        = iri"http://localhost/base/"
@@ -62,14 +62,14 @@ class ElasticSearchViewsDirectivesSpec extends CatsEffectSpec with RouteHelpers 
 
     "return the search parameters" in {
       val alicia   = User("alicia", Label.unsafe("myrealm"))
-      val aliciaId = UrlUtils.encode(alicia.asIri.toString)
+      val aliciaId = encodeUriQuery(alicia.asIri.toString)
       val bob      = User("bob", Label.unsafe("myrealm"))
-      val bobId    = UrlUtils.encode(bob.asIri.toString)
+      val bobId    = encodeUriQuery(bob.asIri.toString)
 
       val createdAt        = TimeRange.Before(Instant.EPOCH)
-      val createdAtEncoded = UrlUtils.encode(s"*..${createdAt.value}")
+      val createdAtEncoded = encodeUriQuery(s"*..${createdAt.value}")
       val updatedAt        = TimeRange.Between.unsafe(Instant.EPOCH, Instant.EPOCH.plusSeconds(5L))
-      val updatedAtEncoded = UrlUtils.encode(s"${updatedAt.start}..${updatedAt.end}")
+      val updatedAtEncoded = encodeUriQuery(s"${updatedAt.start}..${updatedAt.end}")
       val tag              = UserTag.unsafe("mytag")
 
       val query = List(

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.{encodeUri, encodeUriPath, encodeUriQuery}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.*
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
@@ -15,7 +15,6 @@ import io.circe.optics.JsonPath.root
 import org.scalatest.Assertion
 import org.scalatest.LoneElement.*
 
-import java.net.URLEncoder
 import java.util.UUID
 
 final class ListingsSpec extends BaseIntegrationSpec {
@@ -152,7 +151,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
     }
 
     "get the resource via locate with an id and id parameters" in {
-      val encodedId = UrlUtils.encode(resource11WithSchemaId)
+      val encodedId = encodeUriPath(resource11WithSchemaId)
       deltaClient.get[Json](s"/resources?id=$encodedId", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
@@ -165,7 +164,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
     }
 
     "get the resource via locate with a self " in {
-      val encodedSelf = UrlUtils.encode(resource11WithSchemaSelf)
+      val encodedSelf = encodeUri(resource11WithSchemaSelf)
 
       deltaClient.get[Json](s"/resources?locate=$encodedSelf", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
@@ -270,7 +269,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
   }
 
   "Listing resources within all accessible projects in the system" should {
-    val testResourceType = URLEncoder.encode(resourceType, "UTF-8")
+    val testResourceType = encodeUriQuery(resourceType)
 
     "get resources from all projects for user with appropriate acls" in {
       val expected = jsonContentOf(
@@ -361,7 +360,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
       postResource(resource(id2), project).accepted
 
       eventually {
-        fulltextListing(q = UrlUtils.encode(id), project) { json =>
+        fulltextListing(q = encodeUri(id), project) { json =>
           val results = listing._results.getOption(json).value
           results.loneElement should have(`@id`(id))
         }
@@ -380,7 +379,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
       postResource(resRef2, project).accepted
 
       eventually {
-        fulltextListing(q = UrlUtils.encode(id), project) { json =>
+        fulltextListing(q = encodeUriQuery(id), project) { json =>
           val results = listing._results.getOption(json).value
           results.head should have(`@id`(id))
         }
@@ -393,7 +392,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
       postResource(resource, project).accepted
 
-      val query = UrlUtils.encode("lor ip dol")
+      val query = encodeUriQuery("lor ip dol")
 
       eventually {
         fulltextListing(q = query, project) { json =>
@@ -410,7 +409,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
 
       postResource(resource, project).accepted
 
-      val query = UrlUtils.encode("cere nort")
+      val query = encodeUriQuery("cere nort")
 
       eventually {
         fulltextListing(q = query, project) { json =>

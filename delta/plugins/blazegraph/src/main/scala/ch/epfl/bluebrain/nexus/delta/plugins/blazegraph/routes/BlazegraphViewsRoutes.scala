@@ -196,14 +196,14 @@ class BlazegraphViewsRoutes(
     val authorizeQuery  = authorizeFor(project, Query)
     val metadataContext = ContextValue(Vocabulary.contexts.metadata)
     concat(
-      (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & get & extractUri) { (pagination, uri) =>
+      (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & get & extractHttp4sUri) { (pagination, uri) =>
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(metadataContext, pagination, uri)
         authorizeQuery {
           emit(incomingOutgoingLinks.incoming(id, project, pagination).attemptNarrow[BlazegraphViewRejection])
         }
       },
-      (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & get & extractUri & parameter(
+      (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & get & extractHttp4sUri & parameter(
         "includeExternalLinks".as[Boolean] ? true
       )) { (pagination, uri, includeExternal) =>
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =

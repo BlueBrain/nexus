@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.resources
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.Bob
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
@@ -34,7 +34,7 @@ class ResourceDeletionSpec extends BaseIntegrationSpec {
   private def createResource(payload: Json) = {
     val resourceId = s"http://localhost/$project/${genString()}"
     deltaClient
-      .put[Json](s"/resources/$project/_/${UrlUtils.encode(resourceId)}", payload, Bob) { expectCreated }
+      .put[Json](s"/resources/$project/_/${encodeUriPath(resourceId)}", payload, Bob) { expectCreated }
       .as(resourceId)
   }
 
@@ -89,7 +89,7 @@ class ResourceDeletionSpec extends BaseIntegrationSpec {
       for {
         payload    <- SimpleResource.sourcePayload(42)
         resourceId <- createResource(payload)
-        encodedId   = UrlUtils.encode(resourceId)
+        encodedId   = encodeUriPath(resourceId)
         _          <- deltaClient.delete[Json](s"/resources/$project/_/$encodedId?prune=true", Bob) {
                         expectForbidden
                       }
@@ -102,7 +102,7 @@ class ResourceDeletionSpec extends BaseIntegrationSpec {
         _          <- aclDsl.addPermission("/", Bob, Permission.Resources.Delete)
         payload    <- SimpleResource.sourcePayload(42)
         resourceId <- createResource(payload)
-        encodedId   = UrlUtils.encode(resourceId)
+        encodedId   = encodeUriPath(resourceId)
         // Checking that the resource is indexed before deleting it
         _          <- assertListing(encodedId, exists = true)
         _          <- assertGraph(resourceId, exists = true)

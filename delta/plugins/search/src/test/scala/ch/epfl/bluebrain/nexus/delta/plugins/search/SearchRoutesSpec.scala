@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SuiteMatchers.*
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -75,7 +75,7 @@ class SearchRoutesSpec extends BaseRouteSpec {
       val project2        = ProjectRef.unsafe("org", "proj2")
       val projects        = Set(project1, project2)
       val queryParams     =
-        s"?addProject=${UrlUtils.encode(project1.toString)}&addProject=${UrlUtils.encode(project2.toString)}"
+        s"?addProject=${encodeUriQuery(project1.toString)}&addProject=${encodeUriQuery(project2.toString)}"
 
       Post(s"/v1/search/query/suite/$searchSuiteName$queryParams", payload.toEntity) ~> routes ~> check {
         val expectedResponse = Json.obj(searchSuiteName -> payload, "addProjects" -> projects.asJson)

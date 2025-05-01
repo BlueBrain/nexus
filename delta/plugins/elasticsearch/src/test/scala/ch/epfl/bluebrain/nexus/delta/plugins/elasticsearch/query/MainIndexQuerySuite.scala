@@ -38,7 +38,7 @@ class MainIndexQuerySuite extends NexusElasticsearchSuite with ElasticSearchClie
 
   private lazy val client = esClient()
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   private def epochPlus(plus: Long) = Instant.EPOCH.plusSeconds(plus)
   private val realm                 = Label.unsafe("myrealm")

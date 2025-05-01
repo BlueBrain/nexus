@@ -75,7 +75,7 @@ final class ProjectsRoutes(
         extractCaller { implicit caller =>
           concat(
             // List projects
-            (get & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams &
+            (get & pathEndOrSingleSlash & extractHttp4sUri & fromPaginated & projectsSearchParams &
               sort[Project]) { (uri, pagination, params, order) =>
               implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
                 searchResultsJsonLdEncoder(Project.context, pagination, uri)
@@ -157,7 +157,7 @@ final class ProjectsRoutes(
               )
             },
             // list projects for an organization
-            (get & label & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams &
+            (get & label & pathEndOrSingleSlash & extractHttp4sUri & fromPaginated & projectsSearchParams &
               sort[Project]) { (organization, uri, pagination, params, order) =>
               implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
                 searchResultsJsonLdEncoder(Project.context, pagination, uri)

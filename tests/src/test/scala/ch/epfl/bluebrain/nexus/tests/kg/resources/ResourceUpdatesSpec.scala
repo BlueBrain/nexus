@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg.resources
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.Bob
 import ch.epfl.bluebrain.nexus.tests.Optics._rev
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
@@ -31,12 +31,12 @@ class ResourceUpdatesSpec extends BaseIntegrationSpec {
   private def createResource(schema: String, payload: Json) = {
     val resourceId = genString()
     deltaClient
-      .put[Json](s"/resources/$project/${UrlUtils.encode(schema)}/$resourceId", payload, Bob) { expectCreated }
+      .put[Json](s"/resources/$project/${encodeUriPath(schema)}/$resourceId", payload, Bob) { expectCreated }
       .as(resourceId)
   }
 
   private def updateResource(resourceId: String, rev: Int, schema: String, payload: Json) =
-    deltaClient.put[Json](s"/resources/$project/${UrlUtils.encode(schema)}/$resourceId?rev=$rev", payload, Bob) {
+    deltaClient.put[Json](s"/resources/$project/${encodeUriPath(schema)}/$resourceId?rev=$rev", payload, Bob) {
       expectOk
     }
 

@@ -69,7 +69,7 @@ class BatchCompositeIndexingSuite  extends CompositeIndexingSuite(SinkConfig.Bat
 
 trait CompositeIndexingFixture { self: CatsEffectSuite & FixedClock =>
 
-  implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri             = BaseUri.unsafe("http://localhost", "v1")
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   val prefix: String = "delta"

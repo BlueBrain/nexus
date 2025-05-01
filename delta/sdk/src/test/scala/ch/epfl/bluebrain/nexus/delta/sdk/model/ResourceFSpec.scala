@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 class ResourceFSpec extends CatsEffectSpec with Fixtures {
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   "A ResourceF of a permission" should {
     val updatedBy = User("maria", Label.unsafe("bbp"))

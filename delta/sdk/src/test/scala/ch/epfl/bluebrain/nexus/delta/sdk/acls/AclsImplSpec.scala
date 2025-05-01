@@ -26,7 +26,7 @@ class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with Cance
   val realm2: Label             = Label.unsafe("myrealm2")
   implicit val subject: Subject = Identity.User("user", realm)
   implicit val caller: Caller   = Caller(subject)
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   val user: Identity  = subject
   val group: Identity = Group("mygroup", realm2)

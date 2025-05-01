@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
@@ -35,13 +35,13 @@ class SchemasSpec extends BaseIntegrationSpec {
         _ <-
           deltaClient
             .putIO[Json](
-              s"/schemas/$project/${UrlUtils.encode(schemaId)}?rev=1",
+              s"/schemas/$project/${encodeUriPath(schemaId)}?rev=1",
               withMinCount(schemaId, minCount = 2),
               Rick
             ) {
               expectOk
             }
-        _ <- deltaClient.get[Json](s"/schemas/$project/${UrlUtils.encode(schemaId)}", Rick) { (json, response) =>
+        _ <- deltaClient.get[Json](s"/schemas/$project/${encodeUriPath(schemaId)}", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                expectMinCount(json, 2)
              }
@@ -63,7 +63,7 @@ class SchemasSpec extends BaseIntegrationSpec {
 
       for {
         _ <- deltaClient.post[Json](s"/schemas/$project", baseSchemaPayload, Rick) { expectCreated }
-        _ <- deltaClient.delete[Json](s"/schemas/$project/${UrlUtils.encode(baseSchemaId)}?rev=1", Rick) { expectOk }
+        _ <- deltaClient.delete[Json](s"/schemas/$project/${encodeUriPath(baseSchemaId)}?rev=1", Rick) { expectOk }
         _ <- deltaClient.post[Json](s"/schemas/$project", importingSchemaPayload, Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.BadRequest
                json should have(`@type`("InvalidSchemaResolution"))
@@ -97,21 +97,21 @@ class SchemasSpec extends BaseIntegrationSpec {
                ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
+                 s"/resources/$project/${encodeUriPath(schemaId)}",
                  resourceWithPowerLevel(genId(), 9001),
                  Rick
                ) { expectCreated }
         _ <- deltaClient
                .putIO[Json](
-                 s"/schemas/$project/${UrlUtils.encode(powerLevelSchemaId)}?rev=1",
+                 s"/schemas/$project/${encodeUriPath(powerLevelSchemaId)}?rev=1",
                  withPowerLevelShape(id = powerLevelSchemaId, maxPowerLevel = 9000),
                  Rick
                ) { expectOk }
         _ <- deltaClient
-               .put[Json](s"/schemas/$project/${UrlUtils.encode(schemaId)}/refresh", Json.Null, Rick) { expectOk }
+               .put[Json](s"/schemas/$project/${encodeUriPath(schemaId)}/refresh", Json.Null, Rick) { expectOk }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
+                 s"/resources/$project/${encodeUriPath(schemaId)}",
                  resourceWithPowerLevel(genId(), 9001),
                  Rick
                ) { expectBadRequest }
@@ -130,13 +130,13 @@ class SchemasSpec extends BaseIntegrationSpec {
                ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
+                 s"/resources/$project/${encodeUriPath(schemaId)}",
                  jsonContentOf("kg/resources/bicycle.json", "id" -> genId(), "gears" -> 13),
                  Rick
                ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
+                 s"/resources/$project/${encodeUriPath(schemaId)}",
                  jsonContentOf("kg/resources/bicycle.json", "id" -> genId(), "gears" -> 14),
                  Rick
                ) { expectBadRequest }
@@ -218,7 +218,7 @@ class SchemasSpec extends BaseIntegrationSpec {
 
     "create a schema against the resource endpoint" in {
       val id            = genId()
-      val schemaSegment = UrlUtils.encode("https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl")
+      val schemaSegment = encodeUriPath("https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl")
 
       for {
         payload <- SchemaPayloads.simple(id)

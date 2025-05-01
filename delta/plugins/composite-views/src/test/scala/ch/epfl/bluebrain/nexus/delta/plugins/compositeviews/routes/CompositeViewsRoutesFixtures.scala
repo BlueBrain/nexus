@@ -39,7 +39,7 @@ trait CompositeViewsRoutesFixtures
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
 
-  implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri                   = BaseUri.unsafe("http://localhost", "v1")
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, IOSyntax, InstantSyntax, KamonSyntax, UriPathSyntax}
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, IOSyntax, InstantSyntax, KamonSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
 
 /**
@@ -11,7 +11,6 @@ package object syntax
     with IriSyntax
     with IriEncodingSyntax
     with JsonLdEncoderSyntax
-    with UriSyntax
     with PathSyntax
     with IterableSyntax
     with KamonSyntax
@@ -22,4 +21,4 @@ package object syntax
     with IOSyntax
     with InstantSyntax
     with ProjectionErrorsSyntax
-    with UriPathSyntax
+    with UriSyntax

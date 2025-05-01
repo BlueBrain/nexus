@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{_uuid, admin, listing, supervision}
@@ -24,7 +24,7 @@ final class ProjectsDeletionSpec extends BaseIntegrationSpec {
   private val ref2  = s"$org/$proj2"
 
   private val elasticId        = "http://localhost/nexus/custom-view"
-  private val encodedElasticId = UrlUtils.encode(elasticId)
+  private val encodedElasticId = encodeUriPath(elasticId)
 
   private var elasticsearchViewToDeleteUuid: Option[String] = None
   private var blazegraphViewToDeleteUuid: Option[String]    = None

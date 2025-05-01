@@ -4,7 +4,8 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart}
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileCustomMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
@@ -33,8 +34,8 @@ trait FileFixtures extends Generators {
   val file2                 = nxv + "file2"
   val fileTagged            = nxv + "fileTagged"
   val fileTagged2           = nxv + "fileTagged2"
-  val file1Encoded          = UrlUtils.encode(file1.toString)
-  val encodeId              = (id: String) => UrlUtils.encode((nxv + id).toString)
+  val file1Encoded          = encodeUriPath(file1.toString)
+  val encodeId              = (id: String) => encodeUriPath((nxv + id).toString)
   val generatedId           = project.base.iri / uuid.toString
   val generatedId2          = project.base.iri / uuid2.toString
 

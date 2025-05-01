@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import org.http4s.Uri
 
 /**
   * Holds information about resources depending on their access
@@ -22,7 +22,7 @@ sealed trait ResourceAccess extends Product with Serializable {
     *   the access [[Uri]]
     */
   def uri(implicit base: BaseUri): Uri =
-    relativeUri.resolvedAgainst(base.endpoint.finalSlash())
+    base.endpoint.finalSlash.resolve(relativeUri)
 }
 
 object ResourceAccess {
@@ -48,14 +48,14 @@ object ResourceAccess {
     *
     * @param resourceTypeSegment
     *   the resource type segment: resolvers, schemas, resources, etc
-    * @param projectRef
+    * @param project
     *   the project reference
     * @param id
     *   the id that can be compacted
     */
-  final def apply(resourceTypeSegment: String, projectRef: ProjectRef, id: Iri): ResourceAccess = {
-    val relative = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
-    InProjectAccess(projectRef, relative / id.toString)
+  final def apply(resourceTypeSegment: String, project: ProjectRef, id: Iri): ResourceAccess = {
+    val relative = Uri.unsafeFromString(resourceTypeSegment) / project.organization.value / project.project.value
+    InProjectAccess(project, relative / id.toString)
   }
 
   /**
@@ -67,46 +67,49 @@ object ResourceAccess {
   final def apply(relative: Uri): ResourceAccess =
     RootAccess(relative, relative)
 
+  final def unsafe(relative: String): ResourceAccess =
+    apply(Uri.unsafeFromString(relative))
+
   /**
     * Resource access for permissions
     */
   val permissions: ResourceAccess =
-    apply("permissions")
+    unsafe("permissions")
 
   /**
     * Resource access for an acl
     */
   def acl(address: AclAddress): ResourceAccess =
     address match {
-      case AclAddress.Root                  => apply("acls")
-      case AclAddress.Organization(org)     => apply(s"acls/$org")
-      case AclAddress.Project(org, project) => apply(s"acls/$org/$project")
+      case AclAddress.Root                  => unsafe("acls")
+      case AclAddress.Organization(org)     => unsafe(s"acls/$org")
+      case AclAddress.Project(org, project) => unsafe(s"acls/$org/$project")
     }
 
   /**
     * Resource access for a realm
     */
   def realm(label: Label): ResourceAccess =
-    apply(s"realms/$label")
+    unsafe(s"realms/$label")
 
   /**
     * Resource access for an organization
     */
   def organization(label: Label): ResourceAccess =
-    apply(s"orgs/$label")
+    unsafe(s"orgs/$label")
 
   /**
     * Resource access for a project
     */
-  def project(ref: ProjectRef): ResourceAccess =
-    apply(s"projects/$ref")
+  def project(project: ProjectRef): ResourceAccess =
+    unsafe(s"projects/$project")
 
   /**
     * Resource access for a resource
     */
-  def resource(projectRef: ProjectRef, id: Iri): ResourceAccess = {
-    val relative = Uri("resources") / projectRef.organization.value / projectRef.project.value
-    InProjectAccess(projectRef, relative / "_" / id.toString)
+  def resource(project: ProjectRef, id: Iri): ResourceAccess = {
+    val relative = Uri.unsafeFromString("resources") / project.organization.value / project.project.value
+    InProjectAccess(project, relative / "_" / id.toString)
   }
 
   /**
@@ -122,7 +125,7 @@ object ResourceAccess {
     apply("resolvers", ref, id)
 
   def typeHierarchy: ResourceAccess =
-    apply("type-hierarchy")
+    unsafe("type-hierarchy")
 
   /**
     * Resource access for ephemeral resources that are scoped to a project.
@@ -132,7 +135,7 @@ object ResourceAccess {
       ref: ProjectRef,
       id: Iri
   ): ResourceAccess = {
-    val relative       = Uri(resourceTypeSegment) / ref.organization.value / ref.project.value
+    val relative       = Uri.unsafeFromString(resourceTypeSegment) / ref.organization.value / ref.project.value
     val relativeAccess = relative / id.toString
     EphemeralAccess(ref, relativeAccess)
   }

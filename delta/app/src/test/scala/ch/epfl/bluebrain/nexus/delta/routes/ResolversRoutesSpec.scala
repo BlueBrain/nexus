@@ -5,7 +5,8 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -577,9 +578,9 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    val idResourceEncoded      = UrlUtils.encode(resourceId.toString)
-    val idSchemaEncoded        = UrlUtils.encode(schemaId.toString)
-    val unknownResourceEncoded = UrlUtils.encode((nxv + "xxx").toString)
+    val idResourceEncoded      = encodeUriPath(resourceId.toString)
+    val idSchemaEncoded        = encodeUriPath(schemaId.toString)
+    val unknownResourceEncoded = encodeUriPath((nxv + "xxx").toString)
 
     val resourceResolved = jsonContentOf(
       "resolvers/resource-resolved.json",

@@ -141,7 +141,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
       forAll(list) { case (mediaType, query, expected) =>
         val queryEntity = HttpEntity(`application/sparql-query`, ByteString(query.value))
-        val encodedQ    = UrlUtils.encode(query.value)
+        val encodedQ    = UrlUtils.encodeUriQuery(query.value)
         val postRequest = Post("/v1/views/org/proj/indexing-view/sparql", queryEntity).withHeaders(Accept(mediaType))
         val getRequest  = Get(s"/v1/views/org/proj/indexing-view/sparql?query=$encodedQ").withHeaders(Accept(mediaType))
         forAll(List(postRequest, getRequest)) { req =>

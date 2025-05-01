@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsGen
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
@@ -103,7 +103,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     aclCheck.append(AclAddress.Root, writer -> Set(permissions.write)).accepted
   }
 
-  private val bgProjectionEncodedId = UrlUtils.encode(blazegraphProjection.id.toString)
+  private val bgProjectionEncodedId = encodeUriPath(blazegraphProjection.id.toString)
 
   private val viewEndpoint = "/views/myorg/myproj/myid"
 
@@ -143,7 +143,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "fetch statistics" in {
-      val encodedSource   = UrlUtils.encode(projectSource.id.toString)
+      val encodedSource   = encodeUriPath(projectSource.id.toString)
       val viewStats       = jsonContentOf(
         "routes/responses/view-statistics.json",
         "last"                  -> nowPlus5,

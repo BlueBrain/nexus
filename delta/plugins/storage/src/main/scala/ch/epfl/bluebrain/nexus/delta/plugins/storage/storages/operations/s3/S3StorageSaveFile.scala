@@ -29,7 +29,12 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
 
   private def storeFile(uploading: S3UploadingFile, location: Uri, uuid: UUID): IO[FileStorageMetadata] = {
     val put    =
-      PutObjectRequest(uploading.bucket, UrlUtils.decode(location.path), uploading.contentType, uploading.contentLength)
+      PutObjectRequest(
+        uploading.bucket,
+        UrlUtils.decodeUriPath(location.path),
+        uploading.contentType,
+        uploading.contentLength
+      )
     val bucket = put.bucket
     val key    = put.key
     (for {

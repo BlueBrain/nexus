@@ -11,7 +11,7 @@ import munit.FunSuite
 class ResourceRefSuite extends FunSuite with EitherAssertions {
 
   // format: off
-  val list = List(
+  private val list = List(
     iri"https://bbp.epfl.ch?rev=1&other=value"          -> Revision(iri"https://bbp.epfl.ch?rev=1&other=value", iri"https://bbp.epfl.ch?other=value", 1),
     iri"https://bbp.epfl.ch?rev=1"                      -> Revision(iri"https://bbp.epfl.ch?rev=1", iri"https://bbp.epfl.ch", 1),
     iri"https://bbp.epfl.ch?tag=this&other=value"       -> Tag(iri"https://bbp.epfl.ch?tag=this&other=value", iri"https://bbp.epfl.ch?other=value", UserTag.unsafe("this")),

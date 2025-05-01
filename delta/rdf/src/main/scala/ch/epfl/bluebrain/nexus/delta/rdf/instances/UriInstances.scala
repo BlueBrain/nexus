@@ -1,40 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.instances
 
-import akka.http.scaladsl.model.Uri
-import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import io.circe.{Decoder, Encoder}
-import pureconfig.ConfigReader
-import pureconfig.error.CannotConvert
-
-import scala.util.Try
+import org.http4s.Uri
 
 trait UriInstances {
-  implicit final val uriDecoder: Decoder[Uri]             = Decoder.decodeString.emapTry(s => Try(Uri(s)))
-  implicit final val uriEncoder: Encoder[Uri]             = Encoder.encodeString.contramap(_.toString())
-  implicit final val uriJsonLdEncoder: JsonLdEncoder[Uri] =
-    JsonLdEncoder.computeFromCirce(ContextValue.empty)
+
+  implicit val uriEncoder: Encoder[Uri] = org.http4s.circe.encodeUri
+  implicit val uriDecoder: Decoder[Uri] = org.http4s.circe.decodeUri
+
+  implicit final val uriJsonLdEncoder: JsonLdEncoder[Uri] = JsonLdEncoder.computeFromCirce(ContextValue.empty)
   implicit final val uriJsonLdDecoder: JsonLdDecoder[Uri] =
-    _.getValue(str => Try(Uri(str)).toOption.filter(_.isAbsolute))
+    _.getValue(str => Uri.fromString(str).toOption.filter { u => u.path.isEmpty || u.path.absolute })
 
-  implicit final val uriPathDecoder: Decoder[Uri.Path]             = Decoder.decodeString.emapTry(s => Try(Uri.Path(s)))
-  implicit final val uriPathEncoder: Encoder[Uri.Path]             = Encoder.encodeString.contramap(_.toString())
-  implicit final val uriPathJsonLdDecoder: JsonLdDecoder[Uri.Path] =
-    _.getValue(str => Try(Uri.Path(str)).toOption)
-
-  implicit val uriConfigReader: ConfigReader[Uri] = ConfigReader.fromString(str =>
-    Try(Uri(str))
-      .filter(_.isAbsolute)
-      .toEither
-      .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
-  )
-
-  implicit val pathConfigReader: ConfigReader[Uri.Path] = ConfigReader.fromString(str =>
-    Try(Uri.Path(str)).toEither
-      .leftMap(err => CannotConvert(str, classOf[Uri.Path].getSimpleName, err.getMessage))
-  )
+  implicit final val uriPathDecoder: Decoder[Uri.Path] =
+    Decoder.decodeString.map(s => Uri.Path.unsafeFromString(s))
+  implicit final val uriPathEncoder: Encoder[Uri.Path] = Encoder.encodeString.contramap(_.toString())
 }
 
 object UriInstances extends UriInstances

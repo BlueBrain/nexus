@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -11,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import org.http4s.Uri
 
 /**
   * Attempts to parse an incoming iri/uri as in order to extract file identifiers if it is a valid file "_self".
@@ -101,7 +101,7 @@ object FileSelf {
             for {
               project        <- IO.fromEither(ProjectRef.parse(org, project).leftMap(_ => InvalidProject(self)))
               projectContext <- fetchContext.onRead(project).adaptError { _ => InvalidProjectContext(self, project) }
-              decodedId       = UrlUtils.decode(id)
+              decodedId       = UrlUtils.decodeUri(id)
               iriOption       =
                 IdSegment(decodedId).toIri(projectContext.apiMappings, projectContext.base).map(ResourceRef(_))
               resourceRef    <- IO.fromOption(iriOption)(InvalidFileId(self))

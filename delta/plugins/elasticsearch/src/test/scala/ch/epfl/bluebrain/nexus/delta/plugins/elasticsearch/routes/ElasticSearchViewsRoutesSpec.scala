@@ -5,7 +5,8 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions as esPermissions
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.views.DefaultIndexDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
@@ -34,9 +35,9 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   implicit private val f: FusionConfig = fusionConfig
 
   private val myId         = nxv + "myid"
-  private val myIdEncoded  = UrlUtils.encode(myId.toString)
+  private val myIdEncoded  = encodeUriPath(myId.toString)
   private val myId2        = nxv + "myid2"
-  private val myId2Encoded = UrlUtils.encode(myId2.toString)
+  private val myId2Encoded = encodeUriPath(myId2.toString)
   private val myId3        = nxv + "myid3"
 
   private val mapping  = json"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""

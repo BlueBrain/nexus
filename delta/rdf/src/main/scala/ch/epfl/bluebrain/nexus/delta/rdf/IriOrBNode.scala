@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Query
 import cats.Order
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import io.circe.*
 import org.apache.jena.iri.{IRI, IRIFactory}
+import org.http4s.{Query, Uri}
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 
@@ -64,7 +62,7 @@ object IriOrBNode {
       * Extract the query parameters as key and values
       */
     def query(): Query =
-      Query(Option(value.getRawQuery))
+      Query.unsafeFromString(rawQuery())
 
     /**
       * Extract the query parameters as String
@@ -79,7 +77,13 @@ object IriOrBNode {
       */
     def removeQueryParams(keys: String*): Iri =
       if (rawQuery().isEmpty) this
-      else queryParams(Query(query().toMap -- keys))
+      else {
+        queryParams {
+          keys.foldLeft(query()) { case (acc, key) =>
+            acc.removeQueryParam(key)
+          }
+        }
+      }
 
     /**
       * Override the current query parameters with the passed ones
@@ -188,7 +192,7 @@ object IriOrBNode {
     /**
       * Constructs a [[Uri]] from the current [[Iri]]
       */
-    def toUri: Either[String, Uri] = UriUtils.uri(toString)
+    def toUri: Either[String, Uri] = Uri.fromString(toString).leftMap(_.sanitized)
 
     /**
       * @return

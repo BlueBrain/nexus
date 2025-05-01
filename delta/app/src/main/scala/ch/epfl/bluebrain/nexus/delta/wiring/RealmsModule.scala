@@ -12,13 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmProvisioning, Realms, RealmsConfig, RealmsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import io.circe.Json
 import izumi.distage.model.definition.{Id, ModuleDef}
-import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 
@@ -39,7 +36,7 @@ object RealmsModule extends ModuleDef {
         client: Client[IO] @Id("realm"),
         xas: Transactors
     ) =>
-      val wellKnownResolver = realms.WellKnownResolver((uri: Uri) => client.expect[Json](uri)) _
+      val wellKnownResolver = WellKnownResolver(client) _
       RealmsImpl(cfg, wellKnownResolver, xas, clock)
   }
 

@@ -49,7 +49,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
         extractCaller { implicit caller =>
           concat(
             // List realms
-            (get & extractUri & fromPaginated & realmsSearchParams & sort[Realm] & pathEndOrSingleSlash) {
+            (get & extractHttp4sUri & fromPaginated & realmsSearchParams & sort[Realm] & pathEndOrSingleSlash) {
               (uri, pagination, params, order) =>
                 authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
                   implicit val encoder: JsonLdEncoder[SearchResults[RealmResource]] =

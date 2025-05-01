@@ -12,12 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import munit.AnyFixture
 import munit.catseffect.IOFixture
@@ -31,7 +31,7 @@ class IncomingOutgoingLinksSuite extends NexusSuite with SparqlClientSetup.Fixtu
 
   override def munitFixtures: Seq[AnyFixture[?]] = List(blazegraphClient, queries)
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   private val project          = ProjectRef.unsafe("org", "proj")
   private val incomingOutgoing = "incoming-outgoing"

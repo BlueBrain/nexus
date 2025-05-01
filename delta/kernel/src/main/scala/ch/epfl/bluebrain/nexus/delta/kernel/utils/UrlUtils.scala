@@ -2,25 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import org.http4s.Uri
 
-import java.net.{URLDecoder, URLEncoder}
-import java.nio.charset.StandardCharsets
-
 trait UrlUtils
 
 object UrlUtils extends UrlUtils {
 
+  def encodeUri(url: String): String = Uri.encode(url)
+
   /**
     * Encodes the passed ''url''.
     */
-  def encode(url: String): String =
-    URLEncoder.encode(url, StandardCharsets.UTF_8.name()).replace("+", "%20")
+  def encodeUriPath(url: String): String = Uri.pathEncode(url)
 
-  def decode(url: String): String =
-    URLDecoder.decode(url, StandardCharsets.UTF_8.name())
+  def encodeUriQuery(url: String): String = Uri.encode(url)
 
-  def decode(uri: Uri): String =
-    URLDecoder.decode(uri.toString(), StandardCharsets.UTF_8.name())
+  def decodeUri(value: String): String = Uri.decode(value)
 
-  def decode(path: Uri.Path): String =
-    URLDecoder.decode(path.toString(), StandardCharsets.UTF_8.name())
+  def decodeUriPath(path: Uri.Path): String = Uri.decode(path.toString())
 }

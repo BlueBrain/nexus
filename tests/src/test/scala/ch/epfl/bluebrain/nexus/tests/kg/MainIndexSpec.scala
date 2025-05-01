@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterNestedKeys, hitProjects}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
@@ -37,7 +37,7 @@ class MainIndexSpec extends BaseIntegrationSpec {
     setup.accepted
   }
 
-  val defaultViewsId = UrlUtils.encode("https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex")
+  val defaultViewsId = encodeUriPath("https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex")
 
   "Getting default indexing statistics" should {
 

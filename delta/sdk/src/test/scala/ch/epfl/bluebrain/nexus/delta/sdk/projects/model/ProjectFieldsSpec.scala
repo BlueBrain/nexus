@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
 class ProjectFieldsSpec extends BaseSpec {
 
-  implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080", Label.unsafe("v1"))
+  implicit lazy val baseUri: BaseUri = BaseUri.unsafe("http://localhost:8080", "v1")
 
   "Generating default" should {
 

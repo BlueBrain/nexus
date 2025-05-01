@@ -33,12 +33,10 @@ final case class ProjectFields(
     * @return
     *   the current base or a generated one based on the ''baseUri'' and the project ref
     */
-  def baseOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
+  def baseOrGenerated(project: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
     base.getOrElse(
       PrefixIri.unsafe(
-        (baseUri.endpoint / "resources" / projectRef.organization.value / projectRef.project.value / "_")
-          .finalSlash()
-          .toIri
+        (baseUri.endpoint / "resources" / project.organization.value / project.project.value / "_").finalSlash.toIri
       )
     )
 
@@ -46,10 +44,10 @@ final case class ProjectFields(
     * @return
     *   the current vocab or a generated one based on the ''baseUri'' and the project ref
     */
-  def vocabOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
+  def vocabOrGenerated(project: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
     vocab.getOrElse(
       PrefixIri.unsafe(
-        (baseUri.endpoint / "vocabs" / projectRef.organization.value / projectRef.project.value).finalSlash().toIri
+        (baseUri.endpoint / "vocabs" / project.organization.value / project.project.value).finalSlash.toIri
       )
     )
 

@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextRemoteIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceAccess, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -17,7 +17,7 @@ import java.time.Instant
 
 class OriginalSourceSuite extends NexusSuite with CirceLiteral {
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   private val id       = nxv + "id"
   private val project  = ProjectRef.unsafe("org", "proj")

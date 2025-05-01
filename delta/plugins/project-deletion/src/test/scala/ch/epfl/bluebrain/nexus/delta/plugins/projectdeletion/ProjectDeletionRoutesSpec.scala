@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import scala.concurrent.duration.DurationInt
@@ -15,7 +14,7 @@ import scala.concurrent.duration.DurationInt
 class ProjectDeletionRoutesSpec extends CatsEffectSpec with RouteHelpers {
 
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering.default()
-  implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri             = BaseUri.unsafe("http://localhost", "v1")
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
     contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json")
   )

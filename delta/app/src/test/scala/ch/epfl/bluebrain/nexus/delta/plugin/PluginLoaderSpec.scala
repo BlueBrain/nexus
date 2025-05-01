@@ -5,13 +5,14 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
 
 class PluginLoaderSpec extends CatsEffectSpec with ScalatestRouteTest {
 
-  private val baseUri       = BaseUri.withoutPrefix("http://localhost")
+  private val baseUri       = BaseUri.withoutPrefix(uri"http://localhost")
   private val serviceModule = new ModuleDef {
     make[BaseUri].fromValue(baseUri)
   }

@@ -79,7 +79,7 @@ class S3FileOperationsSuite
       for {
         storageMetadata <- fileOps.save(uploading)
         _                = assertEquals(storageMetadata, expectedMetadata)
-        headObject      <- s3StorageClient.headObject(bucket, UrlUtils.decode(storageMetadata.path))
+        headObject      <- s3StorageClient.headObject(bucket, UrlUtils.decodeUriPath(storageMetadata.path))
         _                = assertEquals(headObject.digest, digest)
         _                = assertEquals(headObject.contentType, Some(contentType))
         _               <- fetchFileContent(bucket, storageMetadata.path).assertEquals(content)

@@ -44,7 +44,7 @@ class ProjectDeletionCoordinatorSuite extends NexusSuite with ConfigFixtures {
   private val org     = Label.unsafe("org")
   private val orgUuid = UUID.randomUUID()
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
   implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())
 
   private def fetchOrg: FetchActiveOrganization = {

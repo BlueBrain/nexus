@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.GenerateSchema
@@ -191,7 +191,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
     }
 
     s"successfully validate $myId for a user with access against the unconstrained schema" in {
-      val unconstrained = UrlUtils.encode(schemas.resources.toString)
+      val unconstrained = encodeUriPath(schemas.resources.toString)
       Get(s"/v1/resources/$projectRef/$unconstrained/myId/validate") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
@@ -225,7 +225,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fail to validate an unknown resource" in {
       val unknownResource = nxv + "unknown"
-      val unknownEncoded  = UrlUtils.encode(unknownResource.toString)
+      val unknownEncoded  = encodeUriPath(unknownResource.toString)
       Get(s"/v1/resources/$projectRef/_/$unknownEncoded/validate") ~> as(alice) ~> routes ~> check {
         response.status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(

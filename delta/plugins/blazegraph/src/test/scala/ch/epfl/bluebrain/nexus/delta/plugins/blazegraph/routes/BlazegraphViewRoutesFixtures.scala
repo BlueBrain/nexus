@@ -40,7 +40,7 @@ trait BlazegraphViewRoutesFixtures
     with BeforeAndAfterAll
     with Fixtures {
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   implicit val ordering: JsonKeyOrdering          =
     JsonKeyOrdering.default(topKeys =

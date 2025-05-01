@@ -5,7 +5,8 @@ import akka.http.scaladsl.model.headers.{Accept, Location, RawHeader}
 import akka.http.scaladsl.model.{RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema as schemaOrg, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -59,7 +60,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
   private val tag        = UserTag.unsafe("mytag")
 
   private val myId                            = nxv + "myid" // Resource created against no schema with id present on the payload
-  private def encodeWithBase(id: String)      = UrlUtils.encode((nxv + id).toString)
+  private def encodeWithBase(id: String)      = encodeUriPath((nxv + id).toString)
   private val payload                         = jsonContentOf("resources/resource.json", "id" -> myId)
   private def simplePayload(id: String)       = jsonContentOf("resources/resource.json", "id" -> (nxv + id))
   private val payloadWithoutId                = payload.removeKeys(keywords.id)
@@ -563,7 +564,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
     }
 
     "fetch a resource original payload with metadata using tags and revisions" in {
-      val mySchema = UrlUtils.encode(schemas.resources.toString)
+      val mySchema = encodeUriPath(schemas.resources.toString)
       val myTag    = "myTag"
       givenAResourceWithTag(myTag) { id =>
         val endpoints = List(
@@ -704,7 +705,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with ValidateResourceFixture wit
       val methods = List(Get, Put, Post, Delete)
       givenAResource { id =>
         forAll(methods) { method =>
-          method(s"/v1/resources/myorg/myproject/myschema/${UrlUtils.encode(id)}/xxx") ~> as(
+          method(s"/v1/resources/myorg/myproject/myschema/${encodeUriPath(id)}/xxx") ~> as(
             reader
           ) ~> routes ~> check {
             status shouldEqual StatusCodes.NotFound

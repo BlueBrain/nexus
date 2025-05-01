@@ -9,6 +9,7 @@ import com.nimbusds.jose.jwk.{JWK, KeyType}
 import io.circe.generic.semiauto.*
 import io.circe.{CursorOp, Decoder, Json}
 import org.http4s.Uri
+import org.http4s.client.Client
 
 import scala.util.Try
 
@@ -24,6 +25,11 @@ object WellKnownResolver {
   private object Endpoints {
     implicit val endpointsDecoder: Decoder[Endpoints] =
       deriveDecoder[Endpoints]
+  }
+
+  def apply(client: Client[IO])(configUri: Uri): IO[WellKnown] = {
+    import org.http4s.circe.*
+    apply(uri => client.expect[Json](uri))(configUri)
   }
 
   /**

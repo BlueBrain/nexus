@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts as fileContexts
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageStatEntry, StorageType}
@@ -59,7 +59,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
     ProjectGen.project("myorg", "myproject", uuid = randomUuid, orgUuid = randomUuid, base = projBase, mappings = am)
   private val projectRef = project.ref
 
-  private val s3IdEncoded = UrlUtils.encode(s3Id.toString)
+  private val s3IdEncoded = encodeUriPath(s3Id.toString)
 
   private val diskRead  = Permission.unsafe("disk/read")
   private val diskWrite = Permission.unsafe("disk/write")
@@ -399,5 +399,5 @@ class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with UUIDFFi
       "self"       -> self(id)
     )
 
-  def self(id: Iri): Uri = ResourceAccess("storages", projectRef, id).uri
+  def self(id: Iri): org.http4s.Uri = ResourceAccess("storages", projectRef, id).uri
 }

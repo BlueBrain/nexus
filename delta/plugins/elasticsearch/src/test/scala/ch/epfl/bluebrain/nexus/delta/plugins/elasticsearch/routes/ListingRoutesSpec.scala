@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions as esPermissions, schema as elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyMainIndexQuery.*
@@ -25,7 +25,7 @@ import io.circe.{Json, JsonObject}
 class ListingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val myId2        = nxv + "myid2"
-  private val myId2Encoded = UrlUtils.encode(myId2.toString)
+  private val myId2Encoded = encodeUriPath(myId2.toString)
 
   implicit private val fetchContext: FetchContext = FetchContextDummy(Map(project.value.ref -> project.value.context))
 

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriQuery
 import ch.epfl.bluebrain.nexus.tests.Identity.userPermissions.{UserWithNoPermissions, UserWithPermissions}
 import ch.epfl.bluebrain.nexus.tests.admin.ProjectPayload
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
@@ -12,10 +12,10 @@ import org.scalactic.source.Position
 
 class UserPermissionsSpec extends BaseIntegrationSpec {
 
-  val org, project           = genId()
-  val StorageId              = "https://bluebrain.github.io/nexus/vocabulary/storage1"
-  val StorageReadPermission  = Permission("s3-storage", "read")
-  val StorageWritePermission = Permission("s3-storage", "write")
+  private val org, project           = genId()
+  private val StorageId              = "https://bluebrain.github.io/nexus/vocabulary/storage1"
+  private val StorageReadPermission  = Permission("s3-storage", "read")
+  private val StorageWritePermission = Permission("s3-storage", "write")
 
   override def beforeAll(): Unit                          = {
     super.beforeAll()
@@ -30,7 +30,7 @@ class UserPermissionsSpec extends BaseIntegrationSpec {
     ()
   }
   private def urlFor(permission: String, project: String) =
-    s"/user/permissions/$project?permission=${encode(permission)}"
+    s"/user/permissions/$project?permission=${encodeUriQuery(permission)}"
 
   "if a user does not have a permission, 403 should be returned" in {
     deltaClient.head(urlFor("resources/read", s"$org/$project"), UserWithNoPermissions) { response =>
@@ -48,7 +48,7 @@ class UserPermissionsSpec extends BaseIntegrationSpec {
   }
 
   private def storageUrlFor(project: String, storageId: String, typ: String): String = {
-    s"/user/permissions/$project?storage=${encode(storageId)}&type=$typ"
+    s"/user/permissions/$project?storage=${encodeUriQuery(storageId)}&type=$typ"
   }
 
   "if a user does not have read permission for a storage, 403 should be returned" in {

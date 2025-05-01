@@ -5,13 +5,13 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -26,7 +26,7 @@ class DeltaSchemeDirectivesSpec
     with TestMatchers
     with Inspectors {
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost/base//", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost/base//", "v1")
   private val schemaView                = nxv + "schema"
 
   private val mappings = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base, "view" -> schemaView)
@@ -81,7 +81,7 @@ class DeltaSchemeDirectivesSpec
     }
 
     "return a project and id when redirecting through the schema id" in {
-      val encoded   = UrlUtils.encode(schemaView.toString)
+      val encoded   = encodeUriPath(schemaView.toString)
       val endpoints =
         List("/base/v1/resources/org/proj/view/myid/other", s"/base/v1/resources/org/proj/$encoded/myid/other")
       forAll(endpoints) { endpoint =>

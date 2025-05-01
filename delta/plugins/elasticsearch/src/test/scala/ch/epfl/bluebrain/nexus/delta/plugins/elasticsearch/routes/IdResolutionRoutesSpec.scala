@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution.ResolutionResult.SingleResult
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -17,7 +17,7 @@ import io.circe.Decoder
 
 class IdResolutionRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
-  private val encodedIri = UrlUtils.encode("https://bbp.epfl.ch/data/resource")
+  private val encodedIri = encodeUriPath("https://bbp.epfl.ch/data/resource")
 
   private val successId      = nxv + "success"
   private val jsonResource   = jsonContentOf("resources/resource.json", "id" -> successId)
@@ -46,7 +46,7 @@ class IdResolutionRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     "redirect the proxy call to the resolve endpoint" in {
       val segment             = s"neurosciencegraph/data/$uuid"
       val fullId              = s"https://bbp.epfl.ch/$segment"
-      val expectedRedirection = s"$baseUri/resolve/${UrlUtils.encode(fullId)}".replace("%3A", ":")
+      val expectedRedirection = s"$baseUri/resolve/${encodeUriPath(fullId)}"
 
       Get(s"/resolve-proxy-pass/$segment") ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther

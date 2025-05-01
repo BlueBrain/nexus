@@ -307,6 +307,13 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   def uriPrefix(uri: Uri): Directive0 =
     rawPathPrefix(PathMatcher(stripTrailingSlashes(uri.path), ()))
+
+  def uriPrefix(uri: org.http4s.Uri): Directive0 =
+    uriPrefix(Uri(uri.toString()))
+
+  def extractHttp4sUri: Directive1[org.http4s.Uri] = extractUri.map { akkaUri =>
+    org.http4s.Uri.unsafeFromString(akkaUri.toString())
+  }
 }
 
 object UriDirectives extends UriDirectives

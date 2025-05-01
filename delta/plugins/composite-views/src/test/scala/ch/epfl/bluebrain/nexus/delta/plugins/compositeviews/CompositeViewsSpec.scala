@@ -33,7 +33,7 @@ class CompositeViewsSpec
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   "CompositeViews" should {
     val apiMappings       = ApiMappings("nxv" -> nxv.base)

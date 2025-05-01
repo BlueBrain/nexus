@@ -4,7 +4,8 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -51,9 +52,9 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
   private val projectRef = project.value.ref
 
   private val myId           = nxv + "myid"
-  private val myIdEncoded    = UrlUtils.encode(myId.toString)
+  private val myIdEncoded    = encodeUriPath(myId.toString)
   private val myId2          = nxv + "myid2"
-  private val myId2Encoded   = UrlUtils.encode(myId2.toString)
+  private val myId2Encoded   = encodeUriPath(myId2.toString)
   private val payload        = jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$myId"}"""
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId.replace("datatype" -> "xsd:integer", "xsd:double")

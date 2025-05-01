@@ -14,7 +14,7 @@ trait AclFixtures {
 
   self: Suite =>
 
-  implicit val base: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val base: BaseUri                  = BaseUri.unsafe("http://localhost", "v1")
   val realm: Label                            = Label.unsafe("myrealm")
   val realm2: Label                           = Label.unsafe("myrealm2")
   val subject: User                           = User("myuser", realm)

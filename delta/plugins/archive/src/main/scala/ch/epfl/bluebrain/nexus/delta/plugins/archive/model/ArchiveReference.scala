@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
-import akka.http.scaladsl.model.Uri
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, SourceJson}
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revisio
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Encoder
+import org.http4s.Uri
 
 /**
   * Enumeration of archive references.
@@ -72,7 +72,7 @@ object ArchiveReference {
 
     def representationOrDefault: ResourceRepresentation = representation.getOrElse(CompactedJsonLd)
 
-    def defaultFileName = s"${UrlUtils.encode(ref.original.toString)}${representationOrDefault.extension}"
+    def defaultFileName = s"${UrlUtils.encodeUri(ref.original.toString)}${representationOrDefault.extension}"
   }
 
   object ResourceReference {

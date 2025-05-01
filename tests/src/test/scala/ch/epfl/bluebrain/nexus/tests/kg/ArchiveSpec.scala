@@ -102,10 +102,9 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
                     contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
                     val result = fromZip(byteString)
 
-                    val resource1Id       = "https://dev.nexus.test.com/simplified-resource/1"
-                    val resource1FileName = s"$resource1Id?rev=1"
+                    val resource1FileName = UrlUtils.encodeUri(s"$resource1Id?rev=1")
 
-                    val actualContent1 = result.entryAsJson(s"$fullId/compacted/${UrlUtils.encode(resource1FileName)}.json")
+                    val actualContent1 = result.entryAsJson(s"$fullId/compacted/${resource1FileName}.json")
                     val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
 
                     filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
@@ -118,6 +117,9 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
     "succeed and redirect" in {
       val payload = jsonContentOf("kg/archives/archive.json", "project2" -> fullId2)
 
+      val archiveId       = "https://dev.nexus.test.com/simplified-resource/archiveRedirect"
+      val archiveLocation = s"${config.deltaUri}/archives/$fullId/${UrlUtils.encodeUriPath(archiveId)}"
+
       deltaClient.put[String](
         s"/archives/$fullId/test-resource:archiveRedirect",
         payload,
@@ -126,11 +128,8 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
       )({ (string, response) =>
         string should startWith("The response to the request can be found under")
         response.status shouldEqual StatusCodes.SeeOther
-        response
-          .header[Location]
-          .value
-          .uri
-          .toString() shouldEqual s"${config.deltaUri}/archives/$fullId/https:%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2FarchiveRedirect"
+        val locationHeaderValue = response.header[Location].value.uri.toString()
+        locationHeaderValue shouldEqual archiveLocation
       })(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
     }
 
@@ -192,7 +191,6 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
     }
 
     "succeed returning zip" in {
-      val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
       deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptZip) {
         (byteString, response) =>
           contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
@@ -200,9 +198,11 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
           val result = fromZip(byteString)
 
-          val actualContent1 = result.entryAsJson(s"$fullId/compacted/${prefix}1%3Frev%3D1.json")
-          val actualContent2 = result.entryAsJson(s"$fullId2/compacted/${prefix}2.json")
-          val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
+          val resource1FileName = UrlUtils.encodeUri(s"$resource1Id?rev=1")
+          val actualContent1    = result.entryAsJson(s"$fullId/compacted/$resource1FileName.json")
+          val resource2FileName = UrlUtils.encodeUri(resource2Id)
+          val actualContent2    = result.entryAsJson(s"$fullId2/compacted/$resource2FileName.json")
+          val actualDigest3     = result.entryDigest("/some/other/nexus-logo.png")
 
           filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
           filterMetadataKeys(actualContent2) should equalIgnoreArrayOrder(payloadResponse2)
@@ -221,9 +221,8 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
       val payload = jsonContentOf("kg/archives/archive-not-found.json")
 
       def assertContent(archive: Map[String, ByteString]) = {
-        val actualContent1 = archive.entryAsJson(
-          s"$fullId/compacted/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1%3Frev%3D1.json"
-        )
+        val resource1FileName = UrlUtils.encodeUri(s"$resource1Id?rev=1")
+        val actualContent1    = archive.entryAsJson(s"$fullId/compacted/$resource1FileName.json")
         filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
       }
 

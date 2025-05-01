@@ -1,18 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.MediaRange.*
 import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, `text/*`}
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`, `text/plain`}
 import akka.http.scaladsl.model.StatusCodes.*
-import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.headers.HttpEncodings.gzip
 import akka.http.scaladsl.model.headers.*
+import akka.http.scaladsl.model.headers.HttpEncodings.gzip
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection.*
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.rawHeader
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleResource2
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -30,8 +30,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
@@ -55,9 +55,9 @@ class DeltaDirectivesSpec
     )
 
   implicit private val f: FusionConfig =
-    FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true, Uri("https://bbp.epfl.ch"))
+    FusionConfig(uri"https://bbp.epfl.ch/nexus/web/", enableRedirects = true, uri"https://bbp.epfl.ch")
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   private val id                = nxv + "myresource"
   private val resource          = SimpleResource(id, 1, Instant.EPOCH, "Maria", 20)
@@ -80,13 +80,13 @@ class DeltaDirectivesSpec
   val ioBadRequest: IO[Either[SimpleRejection, SimpleResource]] = IO.pure(Left(badRequestRejection))
   val ioConflict: IO[Either[SimpleRejection, SimpleResource]]   = IO.pure(Left(conflictRejection))
 
-  val redirectTarget: Uri                                   = s"http://localhost/${genString()}"
-  val ioRedirect: IO[Uri]                                   = IO.pure(redirectTarget)
-  val ioRedirectRejection: IO[Either[SimpleRejection, Uri]] = IO.pure(Left(badRequestRejection))
+  private val redirectTarget      = uri"http://localhost/test"
+  private val ioRedirect          = IO.pure(redirectTarget)
+  private val ioRedirectRejection = IO.pure(Left(badRequestRejection))
 
   private val ref: ProjectRef  = ProjectRef.unsafe("org", "proj")
   private val ioProject        = IO.pure(ref.asJson)
-  private val projectFusionUri = Uri("https://bbp.epfl.ch/nexus/web/admin/org/proj")
+  private val projectFusionUri = uri"https://bbp.epfl.ch/nexus/web/admin/org/proj"
 
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
@@ -468,7 +468,8 @@ class DeltaDirectivesSpec
     "redirect a successful io" in {
       Get("/redirectIO") ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual redirectTarget
+        val expected = Uri(redirectTarget.toString())
+        response.header[Location].value.uri shouldEqual expected
       }
     }
 
@@ -496,7 +497,8 @@ class DeltaDirectivesSpec
     "redirect to the resource fusion page with the latest version if the Accept header is set to text/html" in {
       Get("/resources/redirectFusionLatest") ~> Accept(`text/html`) ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual resourceFusionUri
+        val expected = Uri(resourceFusionUri.toString())
+        response.header[Location].value.uri shouldEqual expected
       }
     }
 
@@ -528,7 +530,8 @@ class DeltaDirectivesSpec
     "redirect to the project fusion page with the latest version if the Accept header is set to text/html" in
       Get("/projects/redirectFusion") ~> Accept(`text/html`) ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual projectFusionUri
+        val expected = Uri(projectFusionUri.toString())
+        response.header[Location].value.uri shouldEqual expected
       }
 
   }

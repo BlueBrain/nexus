@@ -3,14 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/zip`
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location}
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.{encodeUri, encodeUriPath}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError.InvalidPath
@@ -90,8 +90,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
 
   private val fileId                = iri"http://localhost/${genString()}"
-  private val encodedFileId         = encode(fileId.toString)
-  private val fileSelf              = uri"http://delta:8080/files/$encodedFileId"
+  private val encodedFileId         = encodeUriPath(fileId.toString)
+  private val fileSelf              = Uri.unsafeFromString(s"http://delta:8080/files/$encodedFileId")
   private val fileContent           = "file content"
   private val fileAttributes        = FileAttributes(
     uuid,
@@ -109,8 +109,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   private val file: ResourceF[File] =
     FileGen.resourceFor(fileId, projectRef, storageRef, fileAttributes, createdBy = readAll, updatedBy = readAll)
 
-  private val notFoundId   = uri"http://localhost/${genString()}"
-  private val notFoundSelf = uri"http://delta:8080/files/${encode(notFoundId.toString)}"
+  private val notFoundId   = Uri.unsafeFromString(s"http://localhost/${genString()}")
+  private val notFoundSelf = Uri.unsafeFromString(s"http://delta:8080/files/${encodeUriPath(notFoundId.toString)}")
 
   private val generatedId = project.base.iri / uuid.toString
 
@@ -147,8 +147,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
                           (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c),
                           (input: Iri) =>
                             input.toUri match {
-                              case `fileSelf` => IO.pure((projectRef, Latest(fileId)))
-                              case _          => IO.raiseError(InvalidPath(input))
+                              case Right(`fileSelf`) => IO.pure((projectRef, Latest(fileId)))
+                              case _                 => IO.raiseError(InvalidPath(input))
                             }
                         )
       archives        = Archives(fetchContext, archiveDownload, archivesConfig, xas, clock)
@@ -244,7 +244,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
     "create an archive with a specific id" in {
       val id        = iri"http://localhost/${genString()}"
-      val encodedId = encode(id.toString).replaceAll("%3A", ":")
+      val encodedId = encodeUriPath(id.toString)
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> as(readAll) ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(id, project.ref)
@@ -253,7 +253,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
     "create an archive with file self" in {
       val id        = iri"http://localhost/${genString()}"
-      val encodedId = encode(id.toString).replaceAll("%3A", ":")
+      val encodedId = encodeUriPath(id.toString)
 
       Put(s"/v1/archives/$projectRef/$encodedId", archiveWithFileSelf.toEntity) ~> as(
         readAll
@@ -265,7 +265,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
     "create an archive with a specific id and redirect" in {
       val id        = iri"http://localhost/${genString()}"
-      val encodedId = encode(id.toString).replaceAll("%3A", ":")
+      val encodedId = encodeUriPath(id.toString)
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> as(readAll) ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.SeeOther
         header[Location].value.uri.toString() shouldEqual s"${baseUri.endpoint}/archives/$projectRef/$encodedId"
@@ -291,7 +291,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
         result.keySet shouldEqual Set(
           s"${project.ref}/file/file.txt",
-          s"${project.ref}/compacted/${encode(fileId.toString)}.json"
+          s"${project.ref}/compacted/${encodeUri(fileId.toString)}.json"
         )
 
         val expectedContent = fileContent
@@ -307,7 +307,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
             createdBy = readAll,
             updatedBy = readAll
           )
-        val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
+        val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encodeUri(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata
       }
     }
