@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -207,7 +207,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
     }
 
     "list realms created by alice" in {
-      Get(s"/v1/realms?createdBy=${UrlUtils.encode(alice.asIri.toString)}") ~> routes ~> check {
+      Get(s"/v1/realms?createdBy=${encodeUriQuery(alice.asIri.toString)}") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(

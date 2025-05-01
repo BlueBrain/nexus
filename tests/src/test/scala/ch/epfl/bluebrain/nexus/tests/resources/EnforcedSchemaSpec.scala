@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.resources
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._rev
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
@@ -73,10 +73,10 @@ class EnforcedSchemaSpec extends BaseIntegrationSpec {
   }
 
   private def updateResource(id: String, schema: String, payload: Json, rev: Int = 1) =
-    deltaClient.put[Json](s"/resources/$project/${UrlUtils.encode(schema)}/$id?rev=$rev", payload, Rick)(_)
+    deltaClient.put[Json](s"/resources/$project/${encodeUriPath(schema)}/$id?rev=$rev", payload, Rick)(_)
 
   private def updateResourceSchema(id: String, schema: String) =
-    deltaClient.put[Json](s"/resources/$project/${UrlUtils.encode(schema)}/$id/update-schema", Json.Null, Rick)(_)
+    deltaClient.put[Json](s"/resources/$project/${encodeUriPath(schema)}/$id/update-schema", Json.Null, Rick)(_)
 
   private val contextPayload = json"""{ "@context": { "@base": "http://example.com/base/" } }"""
 

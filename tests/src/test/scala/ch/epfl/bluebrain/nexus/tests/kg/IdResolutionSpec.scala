@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
@@ -30,16 +30,16 @@ class IdResolutionSpec extends BaseIntegrationSpec {
       }
         """
   private val uniqueId              = "https://bbp.epfl.ch/neuron"
-  private val encodedUniqueId       = UrlUtils.encode(uniqueId)
+  private val encodedUniqueId       = encodeUriPath(uniqueId)
   private val reusedId              = "https://bbp.epfl.ch/synapse"
-  private val encodedReusedId       = UrlUtils.encode(reusedId)
+  private val encodedReusedId       = encodeUriPath(reusedId)
   private val uniqueResourcePayload = resource(uniqueId)
   private val reusedResourcePayload = resource(reusedId)
 
   private val neurosciencegraphSegment   = "neurosciencegraph/data/segment"
   private val proxyIdBase                = "http://localhost:8081"
   private val neurosciencegraphId        = s"$proxyIdBase/$neurosciencegraphSegment"
-  private val encodedNeurosciencegraphId = UrlUtils.encode(neurosciencegraphId)
+  private val encodedNeurosciencegraphId = encodeUriPath(neurosciencegraphId)
 
   override def beforeAll(): Unit = {
     super.beforeAll()

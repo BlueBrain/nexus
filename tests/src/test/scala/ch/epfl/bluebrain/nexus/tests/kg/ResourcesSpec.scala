@@ -7,7 +7,7 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
 import cats.effect.IO
 import cats.implicits.*
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.deprecated
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
 import ch.epfl.bluebrain.nexus.tests.HttpClient.jsonHeaders
@@ -24,8 +24,6 @@ import io.circe.{Json, JsonObject}
 import org.scalatest.Assertion
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 import org.testcontainers.utility.Base58.randomString
-
-import java.net.URLEncoder
 
 class ResourcesSpec extends BaseIntegrationSpec {
 
@@ -153,7 +151,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
         _                  <- deltaClient.put[Json](s"/resources/$project1/test-schema/test-resource:1", payload, Rick) {
                                 expectCreated
                               }
-        schemaWithImportsId = URLEncoder.encode("https://dev.nexus.test.com/test-schema-imports", "UTF-8")
+        schemaWithImportsId = encodeUriPath("https://dev.nexus.test.com/test-schema-imports")
         payload2           <- SimpleResource.sourcePayload("https://dev.nexus.test.com/simplified-resource/a", 5)
         _                  <- deltaClient
                                 .put[Json](s"/resources/$project1/$schemaWithImportsId/test-resource:a", payload2, Rick) {
@@ -289,7 +287,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
              }
         _ <- deltaClient
                .get[Json](
-                 s"/resources/$project2/_/${UrlUtils.encode(generatedId)}/source?annotate=true",
+                 s"/resources/$project2/_/${encodeUriPath(generatedId)}/source?annotate=true",
                  Rick
                ) { (json, response) =>
                  response.status shouldEqual StatusCodes.OK
@@ -751,10 +749,10 @@ class ResourcesSpec extends BaseIntegrationSpec {
     val vocab        = s"${config.deltaUri}/vocabs/$project3/"
 
     val noContextId        = s"${originalBase}no-context"
-    val noContextIdEncoded = UrlUtils.encode(noContextId)
+    val noContextIdEncoded = encodeUriPath(noContextId)
 
     val noBaseId        = s"${originalBase}no-base"
-    val noBaseIdEncoded = UrlUtils.encode(noBaseId)
+    val noBaseIdEncoded = encodeUriPath(noBaseId)
 
     val tpe             = "my-type"
     val expandedType    = s"$originalBase$tpe"

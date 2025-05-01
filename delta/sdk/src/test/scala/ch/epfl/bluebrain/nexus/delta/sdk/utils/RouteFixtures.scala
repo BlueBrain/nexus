@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
@@ -13,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ClasspathResources
+import org.http4s.implicits.http4sLiteralsSyntax
 
 trait RouteFixtures {
   self: ClasspathResources =>
@@ -55,10 +55,10 @@ trait RouteFixtures {
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
 
-  implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri                   = BaseUri.unsafe("http://localhost", "v1")
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
   implicit val f: FusionConfig                    =
-    FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true, Uri("https://bbp.epfl.ch"))
+    FusionConfig(uri"https://bbp.epfl.ch/nexus/web/", enableRedirects = true, uri"https://bbp.epfl.ch")
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 

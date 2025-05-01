@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
 import org.http4s.Method.POST
 import org.http4s.client.Client
+import org.http4s.circe.*
 import org.http4s.client.dsl.io.*
 import org.http4s.headers.Authorization
 import org.http4s.{BasicCredentials, Uri, UrlForm}

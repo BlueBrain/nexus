@@ -6,11 +6,10 @@ import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -42,7 +41,8 @@ class IdResolutionRoutes(
     pathPrefix("resolve-proxy-pass") {
       extractUnmatchedPath { path =>
         get {
-          val resourceId = fusionConfig.resolveBase / path
+          val htt4sPath  = org.http4s.Uri.unsafeFromString(path.toString())
+          val resourceId = fusionConfig.resolveBase.resolve(htt4sPath)
           emitOrFusionRedirect(
             fusionResolveUri(resourceId),
             redirect(deltaResolveEndpoint(resourceId), StatusCodes.SeeOther)
@@ -51,7 +51,7 @@ class IdResolutionRoutes(
       }
     }
 
-  private def deltaResolveEndpoint(id: Uri): Uri =
-    baseUri.endpoint / "resolve" / id.toString
+  private def deltaResolveEndpoint(id: org.http4s.Uri): Uri =
+    Uri((baseUri.endpoint / "resolve" / id.toString).toString())
 
 }

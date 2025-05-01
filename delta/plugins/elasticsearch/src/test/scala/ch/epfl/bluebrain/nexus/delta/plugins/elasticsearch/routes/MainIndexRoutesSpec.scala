@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingProjectionMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions as esPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{MainIndexQuery, MainIndexRequest}
@@ -44,7 +44,7 @@ class MainIndexRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val searchResult = json"""{ "success":  true }"""
 
-  private val encodedDefaultViewId = UrlUtils.encode(defaultViewId.toString)
+  private val encodedDefaultViewId = encodeUriPath(defaultViewId.toString)
 
   private val mainIndexQuery = new MainIndexQuery {
     override def search(project: ProjectRef, query: JsonObject, qp: Query): IO[Json] =

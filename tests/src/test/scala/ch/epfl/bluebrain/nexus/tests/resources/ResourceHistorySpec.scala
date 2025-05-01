@@ -18,7 +18,7 @@ class ResourceHistorySpec extends BaseIntegrationSpec {
   private val project = s"$orgId/$projId"
 
   private val resourceId        = "https://bbp.epfl.ch/data/my-resource"
-  private val encodedResourceId = UrlUtils.encode(resourceId)
+  private val encodedResourceId = UrlUtils.encodeUriPath(resourceId)
 
   private val fileInput     = FileInput(
     "https://bbp.epfl.ch/data/my-file",
@@ -27,7 +27,7 @@ class ResourceHistorySpec extends BaseIntegrationSpec {
     """{ "content: "Some content" }""",
     CustomMetadata("Crb 2", "A cerebellum file", Map("brainRegion" -> "cerebellum"))
   )
-  private val encodedFileId = UrlUtils.encode(fileInput.fileId)
+  private val encodedFileId = UrlUtils.encodeUriPath(fileInput.fileId)
 
   private val mapping = replacements(
     Rick,

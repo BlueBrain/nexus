@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
 class IdentityIriEncodingSpec extends BaseSpec {
 
-  implicit private val base: BaseUri                = BaseUri("http://localhost:8080", Label.unsafe("v1"))
+  implicit private val base: BaseUri                = BaseUri.unsafe("http://localhost:8080", "v1")
   private val realm                                 = Label.unsafe("myrealm")
   private val list: Seq[(IriOrBNode.Iri, Identity)] = List(
     iri"http://localhost:8080/v1/anonymous"                    -> Anonymous,

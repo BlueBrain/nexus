@@ -12,16 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.mu.{NexusSuite, StringAssertions}
 import io.circe.Json
 import org.apache.jena.graph.Graph
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.{Lang, RDFParser}
 import org.http4s.Uri
-import org.http4s.implicits.http4sLiteralsSyntax
 
 import scala.xml.Elem
 
@@ -29,7 +28,7 @@ abstract class SparqlClientSuite extends NexusSuite with SparqlClientSetup.Fixtu
 
   def client: SparqlClient
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   implicit private val api: JsonLdApi               = TitaniumJsonLdApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never

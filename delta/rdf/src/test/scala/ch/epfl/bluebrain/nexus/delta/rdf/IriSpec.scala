@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import akka.http.scaladsl.model.Uri.Query
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{owl, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
@@ -9,6 +7,7 @@ import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
 import cats.implicits.*
 import io.circe.syntax.*
+import org.http4s.Query
 
 class IriSpec extends BaseSpec {
 
@@ -63,9 +62,9 @@ class IriSpec extends BaseSpec {
 
     "extract its query parameters" in {
       val list = List(
-        iri"http://example.com?"            -> Query.Empty,
-        iri"http://example.com?a=1&b=2&b=3" -> Query.Empty.+:("b" -> "3").+:("b" -> "2").+:("a" -> "1"),
-        iri"http://example.com?a"           -> Query.Empty.+:("a" -> "")
+        iri"http://example.com?"            -> Query.blank,
+        iri"http://example.com?a=1&b=2&b=3" -> Query.fromPairs("a" -> "1", "b" -> "2", "b" -> "3"),
+        iri"http://example.com?a"           -> Query("a" -> None)
       )
       forAll(list) { case (iri, qp) => iri.query() shouldEqual qp }
     }

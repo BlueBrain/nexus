@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.*
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax.*
-import org.http4s.implicits.http4sLiteralsSyntax
 
 class SparqlResultsSpec extends CatsEffectSpec with CirceEq {
 

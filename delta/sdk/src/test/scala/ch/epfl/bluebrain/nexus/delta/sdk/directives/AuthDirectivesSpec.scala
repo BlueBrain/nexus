@@ -28,7 +28,7 @@ import org.scalatest.matchers.should.Matchers
 
 class AuthDirectivesSpec extends BaseSpec with RouteHelpers with CatsEffectSpec with Matchers with CatsIOValues {
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.error -> ContextValue.fromFile("contexts/error.json").accepted)

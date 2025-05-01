@@ -6,17 +6,17 @@ import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/sparql-query`
+import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.{encodeUriPath, encodeUriQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
@@ -184,7 +184,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "query blazegraph common namespace and projection(s)" in {
-      val encodedId = UrlUtils.encode(blazeId.toString)
+      val encodedId = encodeUriPath(blazeId.toString)
       val mediaType = RdfMediaTypes.`application/n-triples`
 
       val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
@@ -197,7 +197,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
       forAll(list) { case (endpoint, expected) =>
         val postRequest = Post(endpoint, queryEntity).withHeaders(accept)
-        val getRequest  = Get(s"$endpoint?query=${UrlUtils.encode(selectQuery.value)}").withHeaders(accept)
+        val getRequest  = Get(s"$endpoint?query=${encodeUriQuery(selectQuery.value)}").withHeaders(accept)
         forAll(List(postRequest, getRequest)) { req =>
           req ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
@@ -209,7 +209,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "query elasticsearch projection(s)" in {
-      val encodedId = UrlUtils.encode(esId.toString)
+      val encodedId = encodeUriPath(esId.toString)
 
       val endpoints = List(
         s"/v1/views/myorg/myproj/$uuid/projections/_/_search",
@@ -280,7 +280,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "reject querying blazegraph common namespace and projection(s) for a deprecated view" in {
-      val encodedId = UrlUtils.encode(blazeId.toString)
+      val encodedId = encodeUriPath(blazeId.toString)
       val mediaType = RdfMediaTypes.`application/n-triples`
 
       val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
@@ -293,7 +293,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
       forAll(list) { endpoint =>
         val postRequest = Post(endpoint, queryEntity).withHeaders(accept)
-        val getRequest  = Get(s"$endpoint?query=${UrlUtils.encode(selectQuery.value)}").withHeaders(accept)
+        val getRequest  = Get(s"$endpoint?query=${encodeUriQuery(selectQuery.value)}").withHeaders(accept)
         forAll(List(postRequest, getRequest)) { req =>
           req ~> routes ~> check {
             response.status shouldEqual StatusCodes.BadRequest
@@ -304,7 +304,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     }
 
     "reject querying elasticsearch projection(s) for a deprecated view" in {
-      val encodedId = UrlUtils.encode(esId.toString)
+      val encodedId = encodeUriPath(esId.toString)
 
       val endpoints = List(
         s"/v1/views/myorg/myproj/$uuid/projections/_/_search",

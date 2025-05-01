@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
-import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -14,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{Pro
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.CrossProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.*
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{IdentityResolution, Priority, Resolver, ResourceResolutionReport}
@@ -48,7 +48,7 @@ class ResolverResolutionSuite extends NexusSuite {
 
   private val resource = ResourceF(
     id = nxv + "example1",
-    access = ResourceAccess(Uri("/example1")),
+    access = ResourceAccess(uri"/example1"),
     rev = 5,
     types = Set(nxv + "ResourceExample", nxv + "ResourceExample2"),
     deprecated = true,

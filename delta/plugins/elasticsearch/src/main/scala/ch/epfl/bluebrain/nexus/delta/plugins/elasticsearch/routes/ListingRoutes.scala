@@ -153,7 +153,7 @@ class ListingRoutes(
     }.toSeq*)
 
   private def list(request: MainIndexRequest, scope: Scope)(implicit caller: Caller): Route =
-    (get & paginated & extractUri) { (page, uri) =>
+    (get & paginated & extractHttp4sUri) { (page, uri) =>
       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
         searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
       emit {

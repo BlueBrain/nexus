@@ -21,7 +21,7 @@ import java.time.Instant
 
 class ProjectsSpec extends CatsEffectSpec {
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   "The Projects state machine" when {
     val epoch                         = Instant.EPOCH

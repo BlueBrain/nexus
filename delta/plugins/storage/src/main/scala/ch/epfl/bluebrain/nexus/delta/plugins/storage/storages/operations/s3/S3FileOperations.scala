@@ -46,7 +46,7 @@ object S3FileOperations {
 
       override def fetch(bucket: String, path: Uri.Path): FileData =
         client
-          .readFile(bucket, UrlUtils.decode(path))
+          .readFile(bucket, UrlUtils.decodeUriPath(path))
           .adaptError {
             case _: NoSuchKeyException => FetchFileRejection.FileNotFound(path.toString)
             case err                   => UnexpectedFetchError(path.toString, err.getMessage)
@@ -68,7 +68,7 @@ object S3FileOperations {
   ): IO[S3FileMetadata] = {
     for {
       _        <- log.debug(s"Fetching attributes for S3 file. Bucket $bucket at path $path")
-      resp     <- client.headObject(bucket, UrlUtils.decode(path))
+      resp     <- client.headObject(bucket, UrlUtils.decodeUriPath(path))
       metadata <- mkS3Metadata(path, resp)
     } yield metadata
   }.onError { case e =>

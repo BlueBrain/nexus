@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.instances
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.*
 import org.apache.jena.graph.Node
+import org.http4s.Uri
 
 import java.time.Instant
 

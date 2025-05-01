@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.{decodeUri, encodeUriPath}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest as digestField, filename as filenameField, mediaType as mediaTypeField}
 import ch.epfl.bluebrain.nexus.tests.HttpClient.acceptAll
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
@@ -144,8 +144,8 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
         response.status shouldEqual StatusCodes.Created
         json should have(filenameField(name))
         val locationValue  = location.getOption(json).value
-        locationValue should endWith(UrlUtils.encode(name))
-        val decodeLocation = UrlUtils.decode(locationValue)
+        locationValue should endWith(encodeUriPath(name))
+        val decodeLocation = decodeUri(locationValue)
         assertThereIsAFileInS3WithAtLocation(decodeLocation)
       }
     }
@@ -184,7 +184,7 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
         _         <- uploadLogoFileToS3(bucket, path)
         json      <- createFileLinkNoId(storageId, payload)
         id         = Optics.`@id`.getOption(json).value
-        encodedId  = UrlUtils.encode(id)
+        encodedId  = encodeUriPath(id)
         assertion <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
                        response.status shouldEqual StatusCodes.OK
                        filterMetadataKeys(json) shouldEqual linkedFileResponse(

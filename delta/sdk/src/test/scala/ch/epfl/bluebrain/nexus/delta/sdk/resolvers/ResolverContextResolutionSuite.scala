@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
-import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -42,7 +41,7 @@ class ResolverContextResolutionSuite extends NexusSuite {
 
   private val resource = ResourceF(
     id = resourceId,
-    access = ResourceAccess(Uri("/id")),
+    access = ResourceAccess(uri"/id"),
     rev = 5,
     types = Set(nxv + "Resource"),
     deprecated = false,

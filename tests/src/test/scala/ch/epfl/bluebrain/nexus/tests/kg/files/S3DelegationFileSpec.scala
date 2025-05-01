@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{digest as digestField, filename as filenameField}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
@@ -54,10 +54,10 @@ class S3DelegationFileSpec extends BaseIntegrationSpec with S3ClientFixtures {
 
   s"Delegate S3 file upload" should {
 
-    val delegateUrl = s"/delegate/files/generate/$projectRef/?storage=${UrlUtils.encode(storageId)}"
+    val delegateUrl = s"/delegate/files/generate/$projectRef/?storage=${encodeUriPath(storageId)}"
 
     def delegateUriWithId(id: String) =
-      s"/delegate/files/generate/$projectRef/${UrlUtils.encode(id)}?storage=${UrlUtils.encode(storageId)}"
+      s"/delegate/files/generate/$projectRef/${encodeUriPath(id)}?storage=${encodeUriPath(storageId)}"
 
     "fail to generate a delegation token without id without the appropriate permissions" in {
       val payload = json"""{ "filename":  "my-file.jpg"}"""
@@ -103,7 +103,7 @@ class S3DelegationFileSpec extends BaseIntegrationSpec with S3ClientFixtures {
         _                = delegateResponse.project shouldEqual projectRef
         _               <- uploadLogoFileToS3(bucket, delegateResponse.targetLocation.path)
         _               <- deltaClient.put[Json](s"/delegate/files/submit", jwsPayload, Coyote) { expectCreated }
-        encodedId        = UrlUtils.encode(delegateResponse.id)
+        encodedId        = encodeUriPath(delegateResponse.id)
         filename         = delegateResponse.targetLocation.path.split("/").last
         expectedMetadata = Json.obj("name" := name, "description" := desc, "_keywords" := keywords)
         assertion       <- deltaClient.get[Json](s"/files/$projectRef/$encodedId", Coyote) { (json, response) =>
@@ -129,13 +129,13 @@ class S3DelegationFileSpec extends BaseIntegrationSpec with S3ClientFixtures {
         delegateResponse = parseDelegationResponse(jwsPayload)
         _               <- uploadLogoFileToS3(bucket, delegateResponse.targetLocation.path)
         _               <- deltaClient.put[Json](s"/delegate/files/submit", jwsPayload, Coyote) { expectCreated }
-        _               <- deltaClient.get[Json](s"/files/$projectRef/${UrlUtils.encode(fileId)}", Coyote) { (json, response) =>
+        _               <- deltaClient.get[Json](s"/files/$projectRef/${encodeUriPath(fileId)}", Coyote) { (json, response) =>
                              response.status shouldEqual StatusCodes.OK
                              Optics._rev.getOption(json).value shouldEqual 2
                              json should have(filenameField(updatedFilename))
                              json should have(digestField("SHA-256", logoSha256HexDigest))
                            }
-        _               <- deltaClient.get[Json](s"/files/$projectRef/${UrlUtils.encode(fileId)}?tag=delegated", Coyote) { expectOk }
+        _               <- deltaClient.get[Json](s"/files/$projectRef/${encodeUriPath(fileId)}?tag=delegated", Coyote) { expectOk }
       } yield (succeed)
     }
   }

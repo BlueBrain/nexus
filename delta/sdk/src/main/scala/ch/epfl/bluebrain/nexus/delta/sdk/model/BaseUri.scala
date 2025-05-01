@@ -1,21 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.instances.UriInstances
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalAbsoluteIRIFormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalLabelFormat
 import io.circe.{Decoder, Encoder}
+import org.http4s.{Query, Uri}
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
-
-import scala.annotation.tailrec
-import scala.util.Try
+import pureconfig.module.http4s.uriReader
 
 /**
   * The BaseUri holds information about the platform endpoint.
@@ -45,12 +43,12 @@ final case class BaseUri private (base: Uri, prefix: Option[Label]) {
   /**
     * Scheme of the underlying uri
     */
-  def scheme: String = base.scheme
+  def scheme: Option[Uri.Scheme] = base.scheme
 
   /**
     * Authority of the underlying uri
     */
-  def authority: Uri.Authority = base.authority
+  def authority: Option[Uri.Authority] = base.authority
 
   override def toString: String = endpoint.toString
 }
@@ -65,21 +63,24 @@ object BaseUri {
   /**
     * Construct a [[BaseUri]] from an [[Uri]]
     */
-  def apply(base: Uri): Either[FormatError, BaseUri] = {
-    @tailrec
-    def rec(uri: Uri, consumed: Path, remaining: Path): Either[FormatError, BaseUri] = remaining match {
-      case Path.Empty                                              => Right(BaseUri.withoutPrefix(uri.withPath(consumed)))
-      case Path.Slash(tail)                                        => rec(uri, consumed, tail)
-      case Path.Segment(head, Path.Slash(Path.Empty) | Path.Empty) =>
-        Label(head)
-          .map(label => BaseUri(uri.withPath(consumed).withoutFragment.copy(rawQueryString = None), Some(label)))
-      case Path.Segment(head, Path.Slash(Path.Slash(other)))       =>
-        rec(uri, consumed, Path.Segment(head, Path.Slash(other)))
-      case Path.Segment(head, Path.Slash(other))                   =>
-        rec(uri, consumed ?/ head, other)
-    }
-    if (base.isAbsolute) rec(base, Path.Empty, base.path)
-    else Left(IllegalAbsoluteIRIFormatError(base.toString))
+  def apply(uri: Uri): Either[FormatError, BaseUri] = {
+    if (uri.path.isEmpty || uri.path.absolute) {
+      val normalized = uri.path.normalize
+      normalized.segments.lastOption match {
+        case Some(segment) =>
+          val base = uri.withoutFragment.copy(
+            path = Uri.Path.Root.concat(Uri.Path(normalized.segments.dropRight(1))),
+            query = Query.empty
+          )
+          Label(segment.toString).map(BaseUri(base, _))
+        case None          =>
+          val base = uri.withoutFragment.copy(
+            path = Uri.Path.empty,
+            query = Query.empty
+          )
+          Right(BaseUri.withoutPrefix(base))
+      }
+    } else Left(IllegalAbsoluteIRIFormatError(uri.toString))
   }
 
   /**
@@ -87,23 +88,23 @@ object BaseUri {
     */
   def apply(base: Uri, prefix: Label): BaseUri = new BaseUri(base, Some(prefix))
 
-  implicit final val baseUriConfigReader: ConfigReader[BaseUri] = {
+  def unsafe(base: String, prefix: String): BaseUri = BaseUri(Uri.unsafeFromString(base), Label.unsafe(prefix))
 
-    ConfigReader.fromString(str =>
-      Try(Uri(str)).toEither
-        .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
-        .flatMap(BaseUri(_).leftMap {
-          case IllegalAbsoluteIRIFormatError(iri) =>
-            CannotConvert(iri, classOf[Uri].getSimpleName, "The value must be an absolute Uri.")
-          case IllegalLabelFormat(label, err)     =>
-            CannotConvert(label, classOf[Label].getSimpleName, err.getOrElse(""))
-          case _                                  =>
-            CannotConvert(str, classOf[Uri].getSimpleName, "Unexpected error")
-        })
-    )
-  }
+  implicit final val baseUriConfigReader: ConfigReader[BaseUri] =
+    uriReader.emap { uri =>
+      BaseUri(uri).leftMap {
+        case IllegalAbsoluteIRIFormatError(iri) =>
+          CannotConvert(iri, classOf[Uri].getSimpleName, "The value must be an absolute Uri.")
+        case IllegalLabelFormat(label, err)     =>
+          CannotConvert(label, classOf[Label].getSimpleName, err.getOrElse(""))
+        case _                                  =>
+          CannotConvert(uri.toString(), classOf[Uri].getSimpleName, "Unexpected error")
+      }
+    }
 
   implicit val baseUriEncoder: Encoder[BaseUri]                   = Encoder.encodeString.contramap(_.toString)
-  implicit val baseUriDecoder: Decoder[BaseUri]                   = Decoder.decodeString.emap(apply(_).leftMap(_.toString))
-  implicit final val baseUriJsonLdDecoder: JsonLdDecoder[BaseUri] = _.getValue(apply(_).toOption)
+  implicit val baseUriDecoder: Decoder[BaseUri]                   = UriInstances.uriDecoder.emap(apply(_).leftMap(_.toString))
+  implicit final val baseUriJsonLdDecoder: JsonLdDecoder[BaseUri] = _.getValue { s =>
+    Uri.fromString(s).flatMap(apply).toOption
+  }
 }

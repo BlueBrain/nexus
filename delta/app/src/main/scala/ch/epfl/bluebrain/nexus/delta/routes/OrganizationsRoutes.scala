@@ -78,7 +78,7 @@ final class OrganizationsRoutes(
         extractCaller { implicit caller =>
           concat(
             // List organizations
-            (get & extractUri & fromPaginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
+            (get & extractHttp4sUri & fromPaginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
               (uri, pagination, params, order) =>
                 implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[OrganizationResource]] =
                   searchResultsJsonLdEncoder(Organization.context, pagination, uri)

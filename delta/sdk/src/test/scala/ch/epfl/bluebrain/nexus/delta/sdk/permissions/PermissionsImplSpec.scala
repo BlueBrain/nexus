@@ -19,7 +19,7 @@ class PermissionsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   private val eventLogConfig = EventLogConfig(QueryConfig(5, RefreshStrategy.Delay(100.millis)), 100.millis)
 

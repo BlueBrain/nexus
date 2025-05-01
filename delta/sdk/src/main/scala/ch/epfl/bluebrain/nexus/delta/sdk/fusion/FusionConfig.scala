@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.fusion
 
-import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
+import org.http4s.Uri
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
+import pureconfig.module.http4s.*
 
 /**
   * Fusion configuration

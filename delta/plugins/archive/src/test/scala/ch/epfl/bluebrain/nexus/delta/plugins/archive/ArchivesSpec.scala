@@ -4,6 +4,7 @@ import akka.stream.scaladsl.Source
 import cats.data.NonEmptySet
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
@@ -22,9 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal.*
+import org.http4s.Uri
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration.*
@@ -94,10 +94,10 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       resource.rev shouldEqual 1L
 
       val id        = resource.id
-      val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
+      val encodedId = encodeUriPath(id.toString)
       resource.access shouldEqual EphemeralAccess(
         project.ref,
-        s"archives/${project.ref}/$encodedId"
+        Uri.unsafeFromString(s"archives/${project.ref}/$encodedId")
       )
     }
 
@@ -193,11 +193,11 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       archives.create(id, project.ref, value).accepted
 
       val resource  = archives.fetch(id, project.ref).accepted
-      val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
+      val encodedId = encodeUriPath(id.toString)
       resource.id shouldEqual id
       resource.access shouldEqual EphemeralAccess(
         project.ref,
-        s"archives/${project.ref}/$encodedId"
+        Uri.unsafeFromString(s"archives/${project.ref}/$encodedId")
       )
       resource.createdBy shouldEqual bob
       resource.updatedBy shouldEqual bob

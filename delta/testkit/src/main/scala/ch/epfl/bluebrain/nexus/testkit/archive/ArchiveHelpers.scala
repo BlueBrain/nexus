@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers.ArchiveContent
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import io.circe.Json
 import io.circe.parser.parse
+import org.scalactic.source.Position
 import org.scalatest.{OptionValues, Suite}
 import org.scalatest.concurrent.ScalaFutures
 
@@ -23,7 +24,7 @@ trait ArchiveHelpers extends ScalaFutures with EitherValues with OptionValues {
 
   self: Suite =>
 
-  implicit class ByteStringMapOps(value: ArchiveContent) {
+  implicit class ByteStringMapOps(value: ArchiveContent)(implicit position: Position) {
     def entryAsJson(path: String): Json = parse(entryAsString(path)).rightValue
 
     def entryAsString(path: String): String = value.get(path).value.utf8String

@@ -46,7 +46,7 @@ class ElasticSearchViewsQuerySuite
 
   override def munitFixtures: Seq[AnyFixture[?]] = List(esClient, doobie)
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
   implicit private val uuidF: UUIDF     = UUIDF.random
 
   private val prefix = "prefix"

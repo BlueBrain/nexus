@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg.resources
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.Bob
 import io.circe.Json
@@ -23,7 +23,7 @@ class NeuroMorphologySampleSpec extends BaseIntegrationSpec {
 
   private val noSchema                      = "_"
   private val neuronMorphologySchema        = "https://neuroshapes.org/dash/neuronmorphology"
-  private val encodedNeuronMorphologySchema = UrlUtils.encode(neuronMorphologySchema)
+  private val encodedNeuronMorphologySchema = encodeUriPath(neuronMorphologySchema)
 
   override def beforeAll(): Unit = {
     super.beforeAll()

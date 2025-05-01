@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
@@ -25,7 +26,7 @@ class SearchScopeInitializationSpec
     with CompositeViewsFixture
     with Fixtures {
 
-  implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
+  implicit val baseUri: BaseUri = BaseUri.withoutPrefix(uri"http://localhost")
 
   private val saRealm: Label              = Label.unsafe("service-accounts")
   private val usersRealm: Label           = Label.unsafe("users")

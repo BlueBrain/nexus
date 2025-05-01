@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import org.apache.jena.datatypes.TypeMapper
 import org.apache.jena.datatypes.xsd.XSDDatatype
 import org.apache.jena.graph.{Node, NodeFactory}
 import org.apache.jena.sparql.core.Quad
+import org.http4s.Uri
 
 import java.text.{DecimalFormat, DecimalFormatSymbols}
 import java.time.format.DateTimeFormatter

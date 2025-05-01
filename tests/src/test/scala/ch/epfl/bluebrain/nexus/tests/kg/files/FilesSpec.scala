@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.tests.kg.files
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriQuery
 import ch.epfl.bluebrain.nexus.testkit.scalatest.FileMatchers.{description as descriptionField, keywords, name as nameField}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ResourceMatchers.`@id`
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.files.Writer
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput.CustomMetadata
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
 import io.circe.syntax.*
 import org.scalatest.Assertion
@@ -190,7 +190,7 @@ class FilesSpec extends BaseIntegrationSpec {
   }
 
   private def queryForFilesWithKeywords(keywords: (String, String)*): IO[List[Json]] = {
-    val encodedKeywords = UrlUtils.encode(keywords.toMap.asJson.noSpaces)
+    val encodedKeywords = encodeUriQuery(keywords.toMap.asJson.noSpaces)
     deltaClient
       .getJson[Json](s"/files/$projectRef?keywords=$encodedKeywords", Writer)
       .map { json =>

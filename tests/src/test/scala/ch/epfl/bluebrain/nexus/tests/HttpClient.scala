@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.HttpMethods.*
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
-import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.{Http, HttpExt}
@@ -15,7 +15,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.HttpClient.{jsonHeaders, tokensMap}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.kg.files.model.FileInput
@@ -132,7 +132,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
     val storageParam                               = storage.map { s => s"storage=nxv:$s" }
     val revParam                                   = rev.map { r => s"&rev=$r" }
     val params                                     = (storageParam ++ revParam).mkString("?", "&", "")
-    val requestPath                                = s"/files/$project/${UrlUtils.encode(file.fileId)}$params"
+    val requestPath                                = s"/files/$project/${encodeUriPath(file.fileId)}$params"
     def buildClue(a: Json, response: HttpResponse) =
       s"""
          |Endpoint: PUT $requestPath

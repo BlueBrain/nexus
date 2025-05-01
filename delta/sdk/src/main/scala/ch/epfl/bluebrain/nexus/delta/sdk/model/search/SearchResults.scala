@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Query
 import cats.Functor
 import cats.effect.IO
 import cats.syntax.functor.*
@@ -17,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import fs2.Stream
 import io.circe.syntax.*
 import io.circe.{Encoder, Json, JsonObject}
+import org.http4s.Uri
 
 /**
   * Defines the signature for a collection of search results with their metadata including pagination
@@ -186,18 +185,19 @@ object SearchResults {
   private def next(
       current: Uri,
       nextToken: String
-  )(implicit baseUri: BaseUri): Uri = {
-    val params = current.query().toMap + (after -> nextToken) - from
-    toPublic(current).withQuery(Query(params))
-  }
+  )(implicit baseUri: BaseUri): Uri =
+    toPublic(current)
+      .removeQueryParam(from)
+      .withQueryParam(after, nextToken)
 
   private def next(
       current: Uri,
       pagination: FromPagination
   )(implicit baseUri: BaseUri): Uri = {
     val nextFrom = pagination.from + pagination.size
-    val params   = current.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
-    toPublic(current).withQuery(Query(params))
+    toPublic(current)
+      .withQueryParam(from, nextFrom.toString)
+      .withQueryParam(size, pagination.size.toString)
   }
 
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =

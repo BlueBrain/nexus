@@ -166,7 +166,7 @@ final class ElasticSearchClient(client: Client[IO], endpoint: Uri, maxIndexPathL
       id: String,
       payload: JsonObject
   ): IO[Unit] =
-    client.successful(PUT(payload, endpoint / index.value / docPath / UrlUtils.encode(id))).void
+    client.successful(PUT(payload, endpoint / index.value / docPath / UrlUtils.encodeUri(id))).void
 
   /**
     * Creates a bulk update with the operations defined on the provided ''ops'' argument.
@@ -191,7 +191,7 @@ final class ElasticSearchClient(client: Client[IO], endpoint: Uri, maxIndexPathL
     */
   def createScript(id: String, content: String): IO[Unit] = {
     val payload = Json.obj("script" -> Json.obj("lang" -> "painless".asJson, "source" -> content.asJson))
-    val request = PUT(payload, endpoint / scriptPath / UrlUtils.encode(id))
+    val request = PUT(payload, endpoint / scriptPath / UrlUtils.encodeUri(id))
     client.expectOr[Json](request)(ScriptCreationDismissed(_)).void
   }
 

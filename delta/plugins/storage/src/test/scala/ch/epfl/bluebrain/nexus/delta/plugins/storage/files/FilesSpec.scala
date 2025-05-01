@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.decodeUri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
@@ -40,7 +41,6 @@ import org.http4s.Uri
 import org.scalatest.Assertion
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 
-import java.net.URLDecoder
 import java.util.UUID
 
 class FilesSpec
@@ -193,7 +193,7 @@ class FilesSpec
         files.create(fileId("specialFile"), Some(defaultStorageId), request, None).accepted
         val fetched = files.fetch(fileId("specialFile")).accepted
 
-        def decodeFilename(path: Uri.Path) = URLDecoder.decode(path.lastSegment.get, "UTF-8")
+        def decodeFilename(path: Uri.Path) = decodeUri(path.lastSegment.get)
 
         // Testing path
         decodeFilename(fetched.value.attributes.path) shouldEqual specialFileName

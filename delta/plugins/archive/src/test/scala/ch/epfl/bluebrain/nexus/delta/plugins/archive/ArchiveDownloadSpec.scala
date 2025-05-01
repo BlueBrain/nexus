@@ -7,7 +7,7 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.data.NonEmptySet
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUri
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{InvalidFileSelf, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveRejection, ArchiveValue}
@@ -60,7 +60,7 @@ class ArchiveDownloadSpec
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller(subject)
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   implicit private val jsonKeyOrdering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =
@@ -97,7 +97,7 @@ class ArchiveDownloadSpec
     val file1Size            = 12L
     val file1                = FileGen.resourceFor(id1, projectRef, storageRef, fileAttributes(file1Name, file1Size))
     val file1Content: String = "file content"
-    val file1Self            = uri"http://delta:8080/files/${encode(id1.toString)}"
+    val file1Self            = uri"http://delta:8080/files" / id1.toString
 
     val id2                  = iri"http://localhost/${genString()}"
     val file2Name            = genString(100)
@@ -165,8 +165,8 @@ class ArchiveDownloadSpec
       )
       val result   = downloadAndExtract(value, ignoreNotFound = false)
       val expected = Map(
-        s"${project.ref.toString}/compacted/${encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
-        s"${project.ref.toString}/file/${file1.value.attributes.filename}"     -> file1Content
+        s"${project.ref.toString}/compacted/${encodeUri(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
+        s"${project.ref.toString}/file/${file1.value.attributes.filename}"        -> file1Content
       )
       result shouldEqual expected
     }
@@ -185,7 +185,7 @@ class ArchiveDownloadSpec
     }
 
     s"fail to provide a zip for file selfs which do not resolve" in {
-      val value = ArchiveValue.unsafe(NonEmptySet.of(FileSelfReference("http://wrong.file/self", None)))
+      val value = ArchiveValue.unsafe(NonEmptySet.of(FileSelfReference(uri"http://wrong.file/self", None)))
       failToDownload[InvalidFileSelf](value, ignoreNotFound = false)
     }
 
@@ -275,7 +275,7 @@ class ArchiveDownloadSpec
       )
       val result   = downloadAndExtract(value, ignoreNotFound = true)
       val expected = Map(
-        s"${project.ref.toString}/compacted/${encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
+        s"${project.ref.toString}/compacted/${encodeUri(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
       )
       result shouldEqual expected
     }

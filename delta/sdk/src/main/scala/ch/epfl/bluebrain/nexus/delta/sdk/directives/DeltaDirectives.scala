@@ -3,18 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
-import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.*
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.server.*
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives.*
-import akka.http.scaladsl.server.*
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, JsonLdFormat}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
@@ -22,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Encoder
+import org.http4s.Uri
 
 import scala.reflect.ClassTag
 
@@ -39,7 +39,7 @@ trait DeltaDirectives extends UriDirectives {
       `text/vnd.graphviz`
     )
 
-  val fusionRange: MediaRange.One = MediaRange.One(`text/html`, 1f)
+  private val fusionRange: MediaRange.One = MediaRange.One(`text/html`, 1f)
 
   /**
     * Completes the current Route with the provided conversion to any available entity marshaller
@@ -162,16 +162,16 @@ trait DeltaDirectives extends UriDirectives {
     * If the `Accept` header is set to `text/html`, redirect to the matching resource page in fusion if the feature is
     * enabled
     */
-  def emitOrFusionRedirect(projectRef: ProjectRef, id: IdSegmentRef, emitDelta: Route)(implicit
+  def emitOrFusionRedirect(project: ProjectRef, id: IdSegmentRef, emitDelta: Route)(implicit
       config: FusionConfig
   ): Route = {
     val resourceBase =
-      config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
+      config.base / project.organization.value / project.project.value / "resources" / id.value.asString
     emitOrFusionRedirect(
       id match {
         case _: Latest        => resourceBase
-        case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
-        case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
+        case Revision(_, rev) => resourceBase.withQueryParam("rev", rev.toString)
+        case Tag(_, tag)      => resourceBase.withQueryParam("tag", tag.value)
       },
       emitDelta
     )
@@ -181,15 +181,15 @@ trait DeltaDirectives extends UriDirectives {
     * If the `Accept` header is set to `text/html`, redirect to the matching project page in fusion if the feature is
     * enabled
     */
-  def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit
+  def emitOrFusionRedirect(project: ProjectRef, emitDelta: Route)(implicit
       config: FusionConfig
   ): Route =
     emitOrFusionRedirect(
-      config.base / "admin" / projectRef.organization.value / projectRef.project.value,
+      config.base / "admin" / project.organization.value / project.project.value,
       emitDelta
     )
 
-  def emitOrFusionRedirect(fusionUri: Uri, emitDelta: Route)(implicit config: FusionConfig): Route =
+  def emitOrFusionRedirect(fusionUri: org.http4s.Uri, emitDelta: Route)(implicit config: FusionConfig): Route =
     extractRequest { req =>
       if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
         emitRedirect(SeeOther, IO.pure(fusionUri))

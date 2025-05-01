@@ -74,7 +74,7 @@ class BlazegraphViewsIndexingRoutes(
               // Fetch blazegraph view indexing failures
               (pathPrefix("failures") & get) {
                 authorizeFor(project, Write).apply {
-                  (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
+                  (fromPaginated & timeRange("instant") & extractHttp4sUri & pathEndOrSingleSlash) {
                     (pagination, timeRange, uri) =>
                       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[FailedElemData]] =
                         searchResultsJsonLdEncoder(FailedElemLogRow.context, pagination, uri)

@@ -35,7 +35,7 @@ import java.util.UUID
 
 class BlazegraphQuerySpec extends CatsEffectSpec with CancelAfterFailure {
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri.unsafe("http://localhost", "v1")
 
   private val realm                = Label.unsafe("myrealm")
   private val alice: Caller        = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

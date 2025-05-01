@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import akka.http.scaladsl.model.Uri.Query
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Decoder, Encoder}
+import org.http4s.Query
 
 /**
   * A resource reference.
@@ -74,7 +74,7 @@ object ResourceRef {
     implicit val resRefRevDecoder: Decoder[ResourceRef.Revision] = Decoder.decodeString.emap { str =>
       val original = iri"$str"
       val iriNoRev = original.removeQueryParams("rev")
-      val optRev   = original.query().get("rev").flatMap(_.toIntOption)
+      val optRev   = original.query().params.get("rev").flatMap(_.toIntOption)
       optRev.map(ResourceRef.Revision(original, iriNoRev, _)).toRight("Expected Int value 'rev' query parameter")
     }
 
@@ -114,7 +114,8 @@ object ResourceRef {
     */
   final def apply(iri: Iri): ResourceRef = {
 
-    def extractTagRev(map: Query): Option[Either[UserTag, Int]] = {
+    def extractTagRev(query: Query): Option[Either[UserTag, Int]] = {
+      val map = query.params
       def rev = map.get("rev").flatMap(s => s.toIntOption.filter(_ > 0))
       def tag = map.get("tag").flatMap(s => Option.when(s.nonEmpty)(s)).flatMap(UserTag(_).toOption)
       rev.map(Right.apply) orElse tag.map(Left.apply)
@@ -126,7 +127,7 @@ object ResourceRef {
     }
   }
 
-  implicit val resourceRefEncoder: Encoder[ResourceRef]  = Encoder.encodeString.contramap(_.toString)
+  implicit val resourceRefEncoder: Encoder[ResourceRef]  = Iri.iriEncoder.contramap(_.original)
   implicit val resourceRefDecoder: Decoder[ResourceRef]  = Iri.iriDecoder.map(apply)
   implicit val jsonLdDecoder: JsonLdDecoder[ResourceRef] = JsonLdDecoder.iriJsonLdDecoder.map(apply)
 
