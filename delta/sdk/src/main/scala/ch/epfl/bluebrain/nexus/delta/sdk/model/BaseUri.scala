@@ -69,7 +69,7 @@ object BaseUri {
       normalized.segments.lastOption match {
         case Some(segment) =>
           val base = uri.withoutFragment.copy(
-            path = Uri.Path.Root.concat(Uri.Path(normalized.segments.init)),
+            path = Uri.Path.Root.concat(Uri.Path(normalized.segments.dropRight(1))),
             query = Query.empty
           )
           Label(segment.toString).map(BaseUri(base, _))

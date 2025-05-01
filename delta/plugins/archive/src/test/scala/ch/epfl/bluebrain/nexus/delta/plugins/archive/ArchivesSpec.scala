@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.stream.scaladsl.Source
 import cats.data.NonEmptySet
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
@@ -93,7 +94,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       resource.rev shouldEqual 1L
 
       val id        = resource.id
-      val encodedId = UrlUtils.encodeUriPath(id.toString)
+      val encodedId = encodeUriPath(id.toString)
       resource.access shouldEqual EphemeralAccess(
         project.ref,
         Uri.unsafeFromString(s"archives/${project.ref}/$encodedId")
@@ -192,7 +193,7 @@ class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with Remot
       archives.create(id, project.ref, value).accepted
 
       val resource  = archives.fetch(id, project.ref).accepted
-      val encodedId = UrlUtils.encodeUriPath(id.toString)
+      val encodedId = encodeUriPath(id.toString)
       resource.id shouldEqual id
       resource.access shouldEqual EphemeralAccess(
         project.ref,

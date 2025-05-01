@@ -90,8 +90,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
 
   private val fileId                = iri"http://localhost/${genString()}"
-  private val encodedFileId         = encodeUriPath(fileId.toString)
-  private val fileSelf              = Uri.unsafeFromString(s"http://delta:8080/files/$encodedFileId")
+  private val fileSelf              = uri"http://delta:8080/files" / fileId.toString
   private val fileContent           = "file content"
   private val fileAttributes        = FileAttributes(
     uuid,
@@ -109,8 +108,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
   private val file: ResourceF[File] =
     FileGen.resourceFor(fileId, projectRef, storageRef, fileAttributes, createdBy = readAll, updatedBy = readAll)
 
-  private val notFoundId   = Uri.unsafeFromString(s"http://localhost/${genString()}")
-  private val notFoundSelf = Uri.unsafeFromString(s"http://delta:8080/files/${encodeUriPath(notFoundId.toString)}")
+  private val notFoundId   = uri"http://localhost" / genString()
+  private val notFoundSelf = uri"http://delta:8080/files" / notFoundId.toString
 
   private val generatedId = project.base.iri / uuid.toString
 

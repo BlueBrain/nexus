@@ -7,7 +7,7 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.data.NonEmptySet
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.{encodeUri, encodeUriPath}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUri
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{InvalidFileSelf, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveRejection, ArchiveValue}
@@ -97,7 +97,7 @@ class ArchiveDownloadSpec
     val file1Size            = 12L
     val file1                = FileGen.resourceFor(id1, projectRef, storageRef, fileAttributes(file1Name, file1Size))
     val file1Content: String = "file content"
-    val file1Self            = Uri.unsafeFromString(s"http://delta:8080/files/${encodeUriPath(id1.toString)}")
+    val file1Self            = uri"http://delta:8080/files" / id1.toString
 
     val id2                  = iri"http://localhost/${genString()}"
     val file2Name            = genString(100)

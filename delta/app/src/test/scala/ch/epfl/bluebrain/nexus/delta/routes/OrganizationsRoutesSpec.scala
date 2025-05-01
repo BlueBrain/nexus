@@ -173,9 +173,8 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     }
 
     "list organizations created by a user" in {
-      Get(s"/v1/orgs?createdBy=${UrlUtils.encodeUriQuery(creatorOrg2.asIri.toString)}") ~> as(
-        reader
-      ) ~> routes ~> check {
+      val createdBy = UrlUtils.encodeUriQuery(creatorOrg2.asIri.toString)
+      Get(s"/v1/orgs?createdBy=$createdBy") ~> as(reader) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expectedResults(org2Created.removeKeys("@context")))
       }

@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.CompositeViewErrors.{viewIsDeprec
 import io.circe.syntax.*
 import org.scalatest.Assertion
 
-import scala.concurrent.duration.*
+import concurrent.duration.*
 
 class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
