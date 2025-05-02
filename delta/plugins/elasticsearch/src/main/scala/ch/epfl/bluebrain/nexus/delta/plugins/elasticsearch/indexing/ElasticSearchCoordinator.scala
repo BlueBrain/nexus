@@ -12,11 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchCl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import fs2.Stream
 
 sealed trait ElasticSearchCoordinator
 
@@ -54,7 +52,7 @@ object ElasticSearchCoordinator {
   )(implicit cr: RemoteContextResolution)
       extends ElasticSearchCoordinator {
 
-    def run(offset: Offset): Stream[IO, Elem[Unit]] = {
+    def run(offset: Offset): ElemStream[Unit] = {
       fetchViews(offset).evalMap { elem =>
         elem
           .traverse { v =>

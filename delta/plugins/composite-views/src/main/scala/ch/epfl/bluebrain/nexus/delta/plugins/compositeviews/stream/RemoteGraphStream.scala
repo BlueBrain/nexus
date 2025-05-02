@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.MissingPredicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems, Source}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemStream, RemainingElems, Source}
 import fs2.Stream
 import io.circe.Json
 

@@ -6,9 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchAction.{Delete, Index}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel, Refresh}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import fs2.Chunk
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import io.circe.Json
 import shapeless.Typeable
 
@@ -49,7 +48,7 @@ final class ElasticSearchSink private (
   implicit private val kamonComponent: KamonMetricComponent =
     KamonMetricComponent(ElasticSearchViews.entityType.value)
 
-  override def apply(elements: Chunk[Elem[Json]]): IO[Chunk[Elem[Unit]]] = {
+  override def apply(elements: ElemChunk[Json]): IO[ElemChunk[Unit]] = {
     val actions = elements.foldLeft(Vector.empty[ElasticSearchAction]) {
       case (actions, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
         if (json.isEmpty()) {

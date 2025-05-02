@@ -7,10 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.EventMetricsS
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import fs2.Chunk
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -23,7 +22,7 @@ final class EventMetricsSink(
 
   private def documentId(elem: Elem[ProjectScopedMetric]) = s"${elem.project}/${elem.id}:${elem.rev}"
 
-  override def apply(elements: Chunk[Elem[ProjectScopedMetric]]): IO[Chunk[Elem[Unit]]] = {
+  override def apply(elements: ElemChunk[ProjectScopedMetric]): IO[ElemChunk[Unit]] = {
     val result = elements.foldLeft(empty) {
       case (acc, success: SuccessElem[ProjectScopedMetric]) =>
         acc.copy(bulk = acc.bulk :+ success.value)

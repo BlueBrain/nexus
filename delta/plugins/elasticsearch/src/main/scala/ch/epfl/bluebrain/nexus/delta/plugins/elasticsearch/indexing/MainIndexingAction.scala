@@ -8,12 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MainIndexing
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, ExecutionStrategy, Source}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, ElemStream, ExecutionStrategy, Source}
 import fs2.Stream
 
 import java.time.Instant

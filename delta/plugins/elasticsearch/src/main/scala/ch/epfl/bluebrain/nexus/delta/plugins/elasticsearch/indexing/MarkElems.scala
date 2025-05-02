@@ -4,8 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.BulkResponse
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.BulkResponse.{MixedOutcomes, Success}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, FailureReason}
-import fs2.Chunk
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk, FailureReason}
 import io.circe.syntax.KeyOps
 import io.circe.{Json, JsonObject}
 
@@ -20,7 +19,7 @@ object MarkElems {
     * @param documentId
     *   how to extract the document id from an element
     */
-  def apply[A](response: BulkResponse, elements: Chunk[Elem[A]], documentId: Elem[A] => String): Chunk[Elem[Unit]] =
+  def apply[A](response: BulkResponse, elements: ElemChunk[A], documentId: Elem[A] => String): ElemChunk[Unit] =
     response match {
       case Success              => elements.map(_.void)
       case MixedOutcomes(items) =>

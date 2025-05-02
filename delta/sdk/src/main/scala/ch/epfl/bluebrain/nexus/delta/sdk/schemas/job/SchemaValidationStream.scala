@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.FetchSchema
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, SuccessElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailureReason
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemStream, FailureReason, SuccessElemStream}
 import fs2.Stream
 
 /**

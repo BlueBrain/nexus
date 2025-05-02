@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.effect.kernel.Resource.ExitCase
 import cats.effect.*
+import cats.effect.kernel.Resource.ExitCase
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Projection.logger
 import fs2.concurrent.SignallingRef

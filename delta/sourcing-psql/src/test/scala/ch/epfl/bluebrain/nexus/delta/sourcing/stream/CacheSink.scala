@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import fs2.Chunk
 import shapeless.Typeable
 
 import scala.collection.concurrent.TrieMap
@@ -23,7 +22,7 @@ final class CacheSink[A: Typeable] private (documentId: Elem[A] => Iri) extends 
 
   override def inType: Typeable[A] = Typeable[A]
 
-  override def apply(elements: Chunk[Elem[A]]): IO[Chunk[Elem[Unit]]] = IO.delay {
+  override def apply(elements: ElemChunk[A]): IO[ElemChunk[Unit]] = IO.delay {
     elements.map {
       case s: SuccessElem[A] =>
         successes.put(documentId(s), s.value)

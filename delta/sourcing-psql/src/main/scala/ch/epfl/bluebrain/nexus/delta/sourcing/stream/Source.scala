@@ -1,15 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
-import cats.effect.IO
-
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
+import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{SourceOutMatchErr, SourceOutPipeInMatchErr}
-import fs2.Stream
 import shapeless.Typeable
-import cats.implicits.*
 
 /**
   * Sources emit Stream elements of type [[Source#Out]] from a predefined
@@ -47,7 +43,7 @@ trait Source { self =>
     * @return
     *   an [[fs2.Stream]] of elements of this Source's Out type
     */
-  def apply(offset: Offset): Stream[IO, Elem[Out]]
+  def apply(offset: Offset): ElemStream[Out]
 
   def through(
       operation: Operation
@@ -58,7 +54,7 @@ trait Source { self =>
         override type Out = operation.Out
         override def outType: Typeable[operation.Out] = operation.outType
 
-        override def apply(offset: Offset): Stream[IO, Elem[operation.Out]] =
+        override def apply(offset: Offset): ElemStream[operation.Out] =
           self
             .apply(offset)
             .map {
@@ -81,7 +77,7 @@ trait Source { self =>
         override type Out = self.Out
         override def outType: Typeable[self.Out] = self.outType
 
-        override def apply(offset: Offset): Stream[IO, Elem[Out]] =
+        override def apply(offset: Offset): ElemStream[Out] =
           self
             .apply(offset)
             .merge(that.apply(offset).map {
@@ -112,7 +108,7 @@ trait Source { self =>
           override type Out = Unit
           override def outType: Typeable[Unit] = Typeable[Unit]
 
-          override def apply(offset: Offset): Stream[IO, Elem[Unit]] =
+          override def apply(offset: Offset): ElemStream[Unit] =
             self
               .apply(offset)
               .broadcastThrough(verified.toList.map { _.asFs2 }*)
@@ -133,6 +129,6 @@ object Source {
 
       override def outType: Typeable[A] = Typeable[A]
 
-      override def apply(offset: Offset): Stream[IO, Elem[A]] = stream(offset)
+      override def apply(offset: Offset): ElemStream[A] = stream(offset)
     }
 }

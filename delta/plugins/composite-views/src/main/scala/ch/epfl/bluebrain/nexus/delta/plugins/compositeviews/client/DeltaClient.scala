@@ -13,9 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, IriFilter, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{IriFilter, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemStream, RemainingElems}
 import io.circe.Json
 import io.circe.parser.decode
 import org.http4s.Method.{GET, HEAD}

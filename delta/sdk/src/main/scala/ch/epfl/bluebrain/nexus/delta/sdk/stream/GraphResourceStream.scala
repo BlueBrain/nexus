@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.stream
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{ElemStreaming, SelectFilter}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemStream, RemainingElems}
 import fs2.Stream
 
 trait GraphResourceStream {
@@ -72,7 +72,7 @@ object GraphResourceStream {
   def apply(elemStreaming: ElemStreaming, shifts: ResourceShifts): GraphResourceStream =
     new GraphResourceStream {
 
-      val stopping = elemStreaming.stopping
+      val stopping: ElemStreaming = elemStreaming.stopping
 
       override def continuous(
           project: ProjectRef,
