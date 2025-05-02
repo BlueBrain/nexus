@@ -10,7 +10,7 @@
     "location" : "http://localhost/file.txt",
     "path" : "file.txt",
     "filename" : "file.txt",
-    "mediaType" : "text/plain; charset=UTF-8",
+    "mediaType" : "text/plain",
     "bytes" : 12,
     "digest" : {
       "@type" : "NotComputedDigest"

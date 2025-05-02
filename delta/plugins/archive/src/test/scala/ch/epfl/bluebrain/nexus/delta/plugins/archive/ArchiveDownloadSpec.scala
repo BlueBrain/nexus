@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, MediaType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
@@ -83,7 +83,7 @@ class ArchiveDownloadSpec
       Uri.unsafeFromString("http://localhost/file.txt"),
       Uri.Path.unsafeFromString("file.txt"),
       filename,
-      Some(`text/plain(UTF-8)`),
+      Some(MediaType.`text/plain`),
       Map.empty,
       None,
       None,

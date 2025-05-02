@@ -47,6 +47,8 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
   private[tests] val fileSelfPrefix = fileSelf(projectRef, attachmentPrefix)
 
+  private val textPlain = MediaTypes.`text/plain`.withMissingCharset
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     createProjects(Coyote, orgId, projId).accepted
@@ -67,7 +69,7 @@ abstract class StorageSpec extends BaseIntegrationSpec {
 
     "be downloaded" in {
       deltaClient.get[ByteString](s"/files/$projectRef/attachment:empty", Coyote, acceptAll) {
-        expectFileContent("empty", ContentTypes.`text/plain(UTF-8)`, emptyFileContent, cacheable = true)
+        expectFileContent("empty", textPlain, emptyFileContent, cacheable = true)
       }
     }
   }

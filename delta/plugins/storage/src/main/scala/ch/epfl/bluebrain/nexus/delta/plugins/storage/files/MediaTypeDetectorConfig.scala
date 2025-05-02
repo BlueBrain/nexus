@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.http
+package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.MediaType
 import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import pureconfig.ConfigReader
 import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert
@@ -25,7 +25,7 @@ object MediaTypeDetectorConfig {
       ConfigReader.fromString(str =>
         MediaType
           .parse(str)
-          .leftMap(_ => CannotConvert(str, classOf[MediaType].getSimpleName, s"'$str' is not a valid content type."))
+          .leftMap(_ => CannotConvert(str, classOf[MediaType].getSimpleName, s"'$str' is not a valid media type."))
       )
     implicit val mapReader: ConfigReader[Map[String, MediaType]] = genericMapReader(Right(_))
 

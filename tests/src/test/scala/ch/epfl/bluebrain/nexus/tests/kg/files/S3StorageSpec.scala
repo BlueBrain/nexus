@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests.kg.files
 
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, MediaTypes, StatusCodes}
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.{decodeUri, encodeUriPath}
@@ -271,7 +271,7 @@ class S3StorageSpec extends StorageSpec with S3ClientFixtures {
         _             <- deltaClient.get[ByteString](s"/files/$projectRef/$id", Coyote, acceptAll) {
                            expectFileContent(
                              filename,
-                             ContentTypes.`text/plain(UTF-8)`,
+                             MediaTypes.`text/plain`.withMissingCharset,
                              fileContent,
                              cacheable = true
                            )

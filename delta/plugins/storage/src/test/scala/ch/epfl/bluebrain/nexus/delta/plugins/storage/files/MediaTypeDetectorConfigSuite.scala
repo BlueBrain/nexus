@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.http
+package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.ContentTypes
-import munit.FunSuite
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import pureconfig.ConfigSource
 
-class MediaTypeDetectorConfigSuite extends FunSuite {
+class MediaTypeDetectorConfigSuite extends NexusSuite {
 
   private def parseConfig(value: String) =
     ConfigSource.string(value).at("media-type-detector").load[MediaTypeDetectorConfig]
@@ -34,7 +34,7 @@ class MediaTypeDetectorConfigSuite extends FunSuite {
         |""".stripMargin
     )
 
-    val expected = MediaTypeDetectorConfig("json" -> ContentTypes.`application/json`.mediaType)
+    val expected = MediaTypeDetectorConfig("json" -> MediaType.`application/json`)
     assertEquals(config, Right(expected))
   }
 

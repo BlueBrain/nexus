@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
-import akka.http.scaladsl.model.ContentTypes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileStorageMetadata, MediaType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
@@ -59,11 +58,11 @@ class S3FileOperationsSuite
 
       val filename      = "myfile.txt"
       val content       = genString()
-      val contentType   = ContentTypes.`text/plain(UTF-8)`
+      val mediaType     = MediaType.`text/plain`
       val contentLength = content.length.toLong
       val digest        = makeDigest(content)
       val data          = streamData(content)
-      val uploading     = S3UploadingFile(project, bucket, filename, Some(contentType), contentLength, data)
+      val uploading     = S3UploadingFile(project, bucket, filename, Some(mediaType), contentLength, data)
 
       val location         = expectedLocation(project, filename)
       val expectedMetadata =
@@ -81,7 +80,7 @@ class S3FileOperationsSuite
         _                = assertEquals(storageMetadata, expectedMetadata)
         headObject      <- s3StorageClient.headObject(bucket, UrlUtils.decodeUriPath(storageMetadata.path))
         _                = assertEquals(headObject.digest, digest)
-        _                = assertEquals(headObject.contentType, Some(contentType))
+        _                = assertEquals(headObject.mediaType, Some(mediaType))
         _               <- fetchFileContent(bucket, storageMetadata.path).assertEquals(content)
       } yield ()
     }

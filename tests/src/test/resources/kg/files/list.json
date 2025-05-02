@@ -41,7 +41,7 @@
         "_value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "_filename": "empty",
-      "_mediaType": "text/plain; charset=UTF-8",
+      "_mediaType": "text/plain",
       "_origin" : "Client",
       "_project": "{{project}}",
       "_rev": 1,

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import cats.syntax.all.*
-import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
@@ -194,7 +193,7 @@ object FileEvent {
       project: ProjectRef,
       storage: ResourceRef.Revision,
       storageType: StorageType,
-      mediaType: Option[ContentType],
+      mediaType: Option[MediaType],
       bytes: Long,
       digest: Digest,
       rev: Int,
@@ -477,7 +476,7 @@ object FileEvent {
       storageType: StorageType,
       newFileWritten: Option[Int],
       bytes: Option[Long],
-      mediaType: Option[ContentType],
+      mediaType: Option[MediaType],
       extension: Option[String],
       origin: Option[FileAttributesOrigin]
   )

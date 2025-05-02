@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
-import com.typesafe.config.ConfigFactory
 import pureconfig.ConfigSource
 
 class BaseUriSpec extends BaseSpec {
@@ -31,11 +30,9 @@ class BaseUriSpec extends BaseSpec {
     }
   }
 
-  private def source(input: String): ConfigSource = {
-    val configString =
-      s"""base-uri = "$input"
-         |""".stripMargin
-    ConfigSource.fromConfig(ConfigFactory.parseString(configString)).at("base-uri")
-  }
+  private def source(input: String): ConfigSource =
+    ConfigSource
+      .string(s"""base-uri = "$input"""")
+      .at("base-uri")
 
 }

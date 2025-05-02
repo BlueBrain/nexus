@@ -1,37 +1,31 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.{ContentType, HttpCharsets, MediaType, MediaTypes}
-import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.FileUtils
-
-import scala.util.Try
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 
 /**
-  * Allows to detect a content type from incoming files from their extensions when the client has not provided one
+  * Allows to detect a media type from incoming files from their extensions when the client has not provided one
   *
   * @param config
-  *   the config with a mapping from the extension to the content type
+  *   the config with a mapping from the extension to the media type
   */
 final class MediaTypeDetector(config: MediaTypeDetectorConfig) {
 
-  def apply(filename: String, provided: Option[ContentType], fallback: Option[ContentType]): Option[ContentType] = {
+  def apply(filename: String, provided: Option[MediaType], fallback: Option[MediaType]): Option[MediaType] = {
     val extensionOpt = FileUtils.extension(filename)
 
     def detectFromConfig = for {
       extension       <- extensionOpt
       customMediaType <- config.find(extension)
-    } yield contentType(customMediaType)
+    } yield customMediaType
 
-    def detectAkkaFromExtension = extensionOpt.flatMap { e =>
-      Try(MediaTypes.forExtension(e)).map(contentType).toOption
+    def detectHttp4sFromExtension = extensionOpt.flatMap { e =>
+      org.http4s.MediaType.extensionMap.get(e).map(MediaType(_))
     }
 
     provided
       .orElse(detectFromConfig)
-      .orElse(detectAkkaFromExtension)
+      .orElse(detectHttp4sFromExtension)
       .orElse(fallback)
   }
-
-  private def contentType(mediaType: MediaType) = ContentType(mediaType, () => HttpCharsets.`UTF-8`)
-
 }

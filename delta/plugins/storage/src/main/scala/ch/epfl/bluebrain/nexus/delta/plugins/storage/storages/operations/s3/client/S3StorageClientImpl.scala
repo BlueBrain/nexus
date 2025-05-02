@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
 import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{PutObjectRequest, *}
 import ch.epfl.bluebrain.nexus.delta.sdk.FileData
@@ -73,9 +73,9 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
           .destinationBucket(destinationBucket)
           .destinationKey(destinationKey)
           .checksumAlgorithm(checksumAlgorithm)
-        val requestWithOptions = options.newContentType.fold(requestBuilder) { contentType =>
+        val requestWithOptions = options.mediaType.fold(requestBuilder) { mediaType =>
           requestBuilder
-            .contentType(contentType.value)
+            .contentType(mediaType.tree)
             .metadataDirective(MetadataDirective.REPLACE)
         }
         client.copyObject(requestWithOptions.build()).as(S3OperationResult.Success)
@@ -91,7 +91,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
   ): IO[S3OperationResult] =
     approveCopy(destinationBucket, destinationKey, options.overwriteTarget).flatMap { approved =>
       if (approved) {
-        copyObjectMultiPart(sourceBucket, sourceKey, destinationBucket, destinationKey, options.newContentType).as(
+        copyObjectMultiPart(sourceBucket, sourceKey, destinationBucket, destinationKey, options.mediaType).as(
           S3OperationResult.Success
         )
       } else IO.pure(S3OperationResult.AlreadyExists)
@@ -102,13 +102,13 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       sourceKey: String,
       destinationBucket: String,
       destinationKey: String,
-      newContentType: Option[ContentType]
+      newMediaType: Option[MediaType]
   ): IO[Unit] = {
     val partSize = 5_000_000_000L // 5GB
     for {
       // Initiate the multipart upload
       createMultipartUploadResponse <-
-        client.createMultipartUpload(createMultipartUploadRequest(destinationBucket, destinationKey, newContentType))
+        client.createMultipartUpload(createMultipartUploadRequest(destinationBucket, destinationKey, newMediaType))
       // Get the object size
       objectSize                    <- headObject(sourceBucket, sourceKey).map(_.fileSize)
       // Copy the object using 5 MB parts
@@ -184,10 +184,10 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       .compile
       .drain
 
-  override def updateContentType(bucket: String, key: String, contentType: ContentType): IO[S3OperationResult] =
+  override def updateContentType(bucket: String, key: String, mediaType: MediaType): IO[S3OperationResult] =
     headObject(bucket, key).flatMap {
-      case head if head.contentType.contains(contentType) => IO.pure(S3OperationResult.AlreadyExists)
-      case _                                              =>
+      case head if head.mediaType.contains(mediaType) => IO.pure(S3OperationResult.AlreadyExists)
+      case _                                          =>
         val requestBuilder = CopyObjectRequest
           .builder()
           .sourceBucket(bucket)
@@ -195,7 +195,7 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
           .destinationBucket(bucket)
           .destinationKey(key)
           .checksumAlgorithm(checksumAlgorithm)
-          .contentType(contentType.value)
+          .contentType(mediaType.tree)
           .metadataDirective(MetadataDirective.REPLACE)
         client.copyObject(requestBuilder.build()).as(S3OperationResult.Success)
     }
@@ -220,11 +220,11 @@ final private[client] class S3StorageClientImpl(client: S3AsyncClientOp[IO]) ext
       .build()
   }
 
-  private def createMultipartUploadRequest(bucket: String, fileKey: String, newContentType: Option[ContentType]) = {
+  private def createMultipartUploadRequest(bucket: String, fileKey: String, newMediaType: Option[MediaType]) = {
     val requestBuilder     =
       CreateMultipartUploadRequest.builder.bucket(bucket).key(fileKey).checksumAlgorithm(checksumAlgorithm)
-    val requestWithOptions = newContentType.fold(requestBuilder) { contentType =>
-      requestBuilder.contentType(contentType.value)
+    val requestWithOptions = newMediaType.fold(requestBuilder) { newMediaType =>
+      requestBuilder.contentType(newMediaType.tree)
     }
     requestWithOptions.build
   }

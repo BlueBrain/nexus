@@ -44,7 +44,7 @@ object LinkFileAction {
       fetchStorage.onWrite(storageIri, project).flatMap {
         case (storageRef, storage: S3Storage) =>
           s3FileLink(storage.value.bucket, request.path).map { s3Metadata =>
-            val contentType = mediaTypeDetector(s3Metadata.filename, request.mediaType, s3Metadata.contentType)
+            val contentType = mediaTypeDetector(s3Metadata.filename, request.mediaType, s3Metadata.mediaType)
             val attributes  =
               FileAttributes.from(s3Metadata.filename, contentType, request.metadata, s3Metadata.metadata)
             StorageWrite(storageRef, storage.tpe, attributes)

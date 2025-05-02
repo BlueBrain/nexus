@@ -1,11 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentType
-import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.testkit.TestKit
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.decodeUri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
@@ -62,8 +59,8 @@ class FilesSpec
     FileDescription(filename, None, Some(FileCustomMetadata.empty))
   }
 
-  def description(filename: String, contentType: ContentType): FileDescription = {
-    FileDescription(filename, Some(contentType), Some(FileCustomMetadata.empty))
+  def description(filename: String, mediaType: MediaType): FileDescription = {
+    FileDescription(filename, Some(mediaType), Some(FileCustomMetadata.empty))
   }
 
   def descriptionWithName(filename: String, name: String): FileDescription =
@@ -594,25 +591,27 @@ class FilesSpec
 
     "fetching a file content" should {
 
+      val expectedContentType = MediaType.toAkkaContentType(MediaType.`text/plain`)
+
       "succeed" in {
         val response = files.fetchContent(fileIdIri(file1)).accepted
         consumeContent(response) shouldEqual content
         response.metadata.filename shouldEqual "file.txt"
-        response.metadata.contentType shouldEqual `text/plain(UTF-8)`
+        response.metadata.contentType shouldEqual expectedContentType
       }
 
       "succeed by tag" in {
         val response = files.fetchContent(FileId(file1, tag, projectRef)).accepted
         consumeContent(response) shouldEqual content
         response.metadata.filename shouldEqual "file.txt"
-        response.metadata.contentType shouldEqual `text/plain(UTF-8)`
+        response.metadata.contentType shouldEqual expectedContentType
       }
 
       "succeed by rev" in {
         val response = files.fetchContent(FileId(file1, 1, projectRef)).accepted
         consumeContent(response) shouldEqual content
         response.metadata.filename shouldEqual "myfile.txt"
-        response.metadata.contentType shouldEqual `text/plain(UTF-8)`
+        response.metadata.contentType shouldEqual expectedContentType
       }
 
       "reject if tag does not exist" in {

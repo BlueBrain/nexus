@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators
 
-import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FileResource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileState}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileState, MediaType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
@@ -92,7 +91,7 @@ object FileGen {
       Uri.unsafeFromString(s"file://$path/${projRef.toString}/$uuidPathSegment/$filename"),
       Uri.Path.unsafeFromString(s"${projRef.toString}/$uuidPathSegment/$filename"),
       filename,
-      Some(`text/plain(UTF-8)`),
+      Some(MediaType.`text/plain`),
       keywords,
       description,
       name,

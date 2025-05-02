@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpCharsets, MediaType}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.InvalidFilePath
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileLinkRequest, FileStorageMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, MediaTypeDetector}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileLinkRequest, FileStorageMetadata, MediaType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, MediaTypeDetector, MediaTypeDetectorConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.FetchStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
@@ -50,16 +48,16 @@ class LinkFileActionSuite extends NexusSuite {
 
   private val mediaTypeDetector = new MediaTypeDetector(MediaTypeDetectorConfig.Empty)
 
-  private val uuid              = UUID.randomUUID()
-  private val contentTypeFromS3 = ContentTypes.`application/octet-stream`
-  private val fileSize          = 100L
-  private val digest            = Digest.NoDigest
+  private val uuid            = UUID.randomUUID()
+  private val mediaTypeFromS3 = MediaType.`application/octet-stream`
+  private val fileSize        = 100L
+  private val digest          = Digest.NoDigest
 
   private val s3FileLink: S3FileLink = (_: String, path: Uri.Path) => {
     IO.fromOption(path.lastSegment)(InvalidFilePath).map { filename =>
       S3FileMetadata(
         filename,
-        Some(contentTypeFromS3),
+        Some(mediaTypeFromS3),
         FileStorageMetadata(
           uuid,
           fileSize,
@@ -86,7 +84,7 @@ class LinkFileActionSuite extends NexusSuite {
       Uri(path = request.path),
       request.path,
       "file.json",
-      Some(ContentTypes.`application/json`),
+      Some(MediaType.`application/json`),
       Map.empty,
       None,
       None,
@@ -99,13 +97,13 @@ class LinkFileActionSuite extends NexusSuite {
   }
 
   test("Succeed for a file without media type detection") {
-    val request    = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.obj"), None, None)
+    val request    = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.unknown"), None, None)
     val attributes = FileAttributes(
       uuid,
       Uri(path = request.path),
       request.path,
-      "file.obj",
-      Some(contentTypeFromS3),
+      "file.unknown",
+      Some(mediaTypeFromS3),
       Map.empty,
       None,
       None,
@@ -118,15 +116,14 @@ class LinkFileActionSuite extends NexusSuite {
   }
 
   test("Succeed for a file with provided media type") {
-    val customMediaType   = MediaType.custom("application/obj", binary = false)
-    val customContentType = ContentType(customMediaType, () => HttpCharsets.`UTF-8`)
-    val request           = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.obj"), Some(customContentType), None)
-    val attributes        = FileAttributes(
+    val customMediaType = MediaType("application", "obj")
+    val request         = FileLinkRequest(Uri.Path.unsafeFromString("/path/file.obj"), Some(customMediaType), None)
+    val attributes      = FileAttributes(
       uuid,
       Uri(path = request.path),
       request.path,
       "file.obj",
-      Some(customContentType),
+      Some(customMediaType),
       Map.empty,
       None,
       None,
@@ -134,7 +131,7 @@ class LinkFileActionSuite extends NexusSuite {
       digest,
       FileAttributesOrigin.Link
     )
-    val expected          = StorageWrite(storageRef, StorageType.S3Storage, attributes)
+    val expected        = StorageWrite(storageRef, StorageType.S3Storage, attributes)
     linkAction(Some(storageIri), project, request).assertEquals(expected)
   }
 

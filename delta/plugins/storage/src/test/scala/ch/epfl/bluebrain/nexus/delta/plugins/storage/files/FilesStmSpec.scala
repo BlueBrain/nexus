@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.ContentTypes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, MediaType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.*
@@ -33,7 +32,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
   private val myTag        = UserTag.unsafe("myTag")
   private val storageRef   = ResourceRef.Revision(nxv + "disk", 1)
   private val s3StorageRef = ResourceRef.Revision(nxv + "s3", 1)
-  private val mediaType    = Some(ContentTypes.`text/plain(UTF-8)`)
+  private val mediaType    = Some(MediaType.`text/plain`)
   private val dig          = ComputedDigest(DigestAlgorithm.default, "something")
   private val attributes   = FileAttributes(
     uuid,

@@ -268,7 +268,7 @@ The media type resolution process follow this order stopping at the first succes
 
 * Select the `Content-Type` header from the file creation/update request
 * Compare the extension to the custom list provided in the configuratio
-* Fallback on akka automatic detection
+* Fallback on http4s automatic detection
 * Fallback to the default value `application/octet-stream`
 
 #### S3 storage configuration

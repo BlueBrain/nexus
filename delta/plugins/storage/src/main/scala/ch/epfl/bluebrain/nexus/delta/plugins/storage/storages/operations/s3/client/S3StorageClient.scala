@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import akka.http.scaladsl.model.ContentType
 import cats.effect.{IO, Resource}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest, S3OperationResult}
 import ch.epfl.bluebrain.nexus.delta.sdk.FileData
@@ -50,7 +50,7 @@ trait S3StorageClient {
       fileData: FileData
   ): IO[Unit]
 
-  def updateContentType(bucket: String, key: String, contentType: ContentType): IO[S3OperationResult]
+  def updateContentType(bucket: String, key: String, media: MediaType): IO[S3OperationResult]
 
   def objectExists(bucket: String, key: String): IO[Boolean]
   def bucketExists(bucket: String): IO[Boolean]

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import akka.http.scaladsl.model.ContentTypes
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.S3StorageConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, LocalStackS3StorageClient, S3Helpers, S3OperationResult}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
@@ -19,8 +19,8 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
   private val anotherContent       = "Another content"
   private val anotherContentLength = anotherContent.length.toLong
 
-  private val expectedContentType = ContentTypes.`text/plain(UTF-8)`
-  private val contentType         = ContentTypes.`application/json`
+  private val textPlain       = MediaType.`text/plain`
+  private val applicationJson = MediaType.`application/json`
 
   override def munitFixtures: Seq[AnyFixture[?]] = List(localStackS3Client)
 
@@ -36,7 +36,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           } yield {
             assertEquals(result, S3OperationResult.Success)
             assertEquals(head.fileSize, contentLength)
-            assertEquals(head.contentType, Some(expectedContentType))
+            assertEquals(head.mediaType, Some(textPlain))
           }
         }
       }
@@ -54,7 +54,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
         } yield {
           assertEquals(result, S3OperationResult.Success)
           assertEquals(head.fileSize, contentLength)
-          assertEquals(head.contentType, Some(expectedContentType))
+          assertEquals(head.mediaType, Some(textPlain))
         }
       }
     }
@@ -62,7 +62,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
 
   test("Copy the file to its new location if none is already there setting a content type") {
     givenAnS3Bucket { bucket =>
-      val options = CopyOptions(overwriteTarget = false, Some(contentType))
+      val options = CopyOptions(overwriteTarget = false, Some(applicationJson))
       givenAFileInABucket(bucket, fileContents) { key =>
         val newKey = genString()
         for {
@@ -71,7 +71,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
         } yield {
           assertEquals(result, S3OperationResult.Success)
           assertEquals(head.fileSize, contentLength)
-          assertEquals(head.contentType, Some(contentType))
+          assertEquals(head.mediaType, Some(applicationJson))
         }
       }
     }
@@ -79,7 +79,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
 
   test("Do not overwrite an existing object") {
     givenAnS3Bucket { bucket =>
-      val options = CopyOptions(overwriteTarget = false, Some(contentType))
+      val options = CopyOptions(overwriteTarget = false, Some(applicationJson))
       givenFilesInABucket(bucket, fileContents, anotherContent) { case (sourceKey, existingTargetKey) =>
         for {
           result <- s3StorageClient.copyObject(bucket, sourceKey, bucket, existingTargetKey, options)
@@ -88,7 +88,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           val clue = "The file should not have been overwritten"
           assertEquals(result, S3OperationResult.AlreadyExists)
           assertEquals(head.fileSize, anotherContentLength, clue)
-          assertEquals(head.contentType, Some(expectedContentType), clue)
+          assertEquals(head.mediaType, Some(textPlain), clue)
         }
       }
     }
@@ -96,7 +96,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
 
   test("Overwrite an existing object") {
     givenAnS3Bucket { bucket =>
-      val options = CopyOptions(overwriteTarget = true, Some(contentType))
+      val options = CopyOptions(overwriteTarget = true, Some(applicationJson))
       givenFilesInABucket(bucket, fileContents, anotherContent) { case (sourceKey, existingTargetKey) =>
         for {
           result <- s3StorageClient.copyObject(bucket, sourceKey, bucket, existingTargetKey, options)
@@ -105,7 +105,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           val clue = "The file should have been overwritten"
           assertEquals(result, S3OperationResult.Success)
           assertEquals(head.fileSize, contentLength, clue)
-          assertEquals(head.contentType, Some(contentType), clue)
+          assertEquals(head.mediaType, Some(applicationJson), clue)
         }
       }
     }
@@ -115,18 +115,18 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
     givenAnS3Bucket { bucket =>
       givenAFileInABucket(bucket, fileContents) { key =>
         for {
-          result <- s3StorageClient.updateContentType(bucket, key, contentType)
+          result <- s3StorageClient.updateContentType(bucket, key, applicationJson)
           head   <- s3StorageClient.headObject(bucket, key)
         } yield {
           assertEquals(result, S3OperationResult.Success)
-          assertEquals(head.contentType, Some(contentType))
+          assertEquals(head.mediaType, Some(applicationJson))
         }
       }
     }
   }
 
   test("Do not update the content type of an existing object if it is already set to this value") {
-    val originalContentType = ContentTypes.`text/plain(UTF-8)`
+    val originalContentType = textPlain
     givenAnS3Bucket { bucket =>
       givenAFileInABucket(bucket, fileContents) { key =>
         for {
@@ -134,7 +134,7 @@ class S3StorageClientSuite extends NexusSuite with LocalStackS3StorageClient.Fix
           head   <- s3StorageClient.headObject(bucket, key)
         } yield {
           assertEquals(result, S3OperationResult.AlreadyExists)
-          assertEquals(head.contentType, Some(originalContentType))
+          assertEquals(head.mediaType, Some(originalContentType))
         }
       }
     }
