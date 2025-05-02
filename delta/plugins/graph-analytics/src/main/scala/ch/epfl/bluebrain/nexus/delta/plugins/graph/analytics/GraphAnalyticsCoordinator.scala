@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyti
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 
 sealed trait GraphAnalyticsCoordinator
 

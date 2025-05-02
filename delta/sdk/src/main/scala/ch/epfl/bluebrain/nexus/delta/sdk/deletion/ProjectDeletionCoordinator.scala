@@ -11,12 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
-import fs2.Stream
 
 /**
   * Stream to delete project from the system after those are marked as deleted
@@ -47,7 +46,7 @@ object ProjectDeletionCoordinator {
 
     implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
-    def run(offset: Offset): Stream[IO, Elem[Unit]] =
+    def run(offset: Offset): ElemStream[Unit] =
       fetchProjects(offset).evalMap {
         _.traverse {
           case project if project.markedForDeletion =>

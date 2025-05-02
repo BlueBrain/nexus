@@ -4,10 +4,10 @@ import cats.data.NonEmptyChain
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemChunk, ElemPipe, ElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
-import fs2.{Chunk, Pipe, Pull, Stream}
+import fs2.{Pull, Stream}
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -47,7 +47,7 @@ sealed trait Operation { self =>
     */
   def outType: Typeable[Out]
 
-  protected[stream] def asFs2: fs2.Pipe[IO, Elem[In], Elem[Out]]
+  protected[stream] def asFs2: ElemPipe[In, Out]
 
   private[stream] def andThen(that: Operation): Either[OperationInOutMatchErr, Operation] =
     Either.cond(
@@ -58,7 +58,7 @@ sealed trait Operation { self =>
         override def inType: Typeable[self.In]   = self.inType
         override def outType: Typeable[that.Out] = that.outType
 
-        override protected[stream] def asFs2: Pipe[IO, Elem[Operation.this.In], Elem[that.Out]] = { stream =>
+        override protected[stream] def asFs2: ElemPipe[Operation.this.In, that.Out] = { stream =>
           stream
             .through(self.asFs2)
             .map {
@@ -81,7 +81,7 @@ sealed trait Operation { self =>
 
     override def outType: Typeable[Out] = self.inType
 
-    override protected[stream] def asFs2: Pipe[IO, Elem[Operation.this.In], Elem[this.Out]] =
+    override protected[stream] def asFs2: ElemPipe[Operation.this.In, this.Out] =
       _.chunks
         .evalTap { chunk =>
           Stream.chunk(chunk).through(self.asFs2).compile.drain
@@ -105,7 +105,7 @@ sealed trait Operation { self =>
 
     override def outType: Typeable[Out] = self.outType
 
-    override protected[stream] def asFs2: Pipe[IO, Elem[Operation.this.In], Elem[this.Out]] =
+    override protected[stream] def asFs2: ElemPipe[Operation.this.In, this.Out] =
       _.through(self.asFs2).debug(formatter, logger)
 
   }
@@ -124,7 +124,7 @@ object Operation {
     override def inType: Typeable[In]   = Typeable[In]
     override def outType: Typeable[Out] = Typeable[Out]
 
-    override protected[stream] def asFs2: fs2.Pipe[IO, Elem[In], Elem[Out]] = elemPipe
+    override protected[stream] def asFs2: ElemPipe[In, Out] = elemPipe
   }
 
   def merge(first: Operation, others: Operation*): Either[ProjectionErr, Operation] =
@@ -178,8 +178,8 @@ object Operation {
         case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
       }
 
-    override protected[stream] def asFs2: fs2.Pipe[IO, Elem[In], Elem[Out]] = {
-      def go(s: fs2.Stream[IO, Elem[In]]): Pull[IO, Elem[Out], Unit] = {
+    override protected[stream] def asFs2: ElemPipe[In, Out] = {
+      def go(s: ElemStream[In]): Pull[IO, Elem[Out], Unit] = {
         s.pull.uncons1.flatMap {
           case Some((head, tail)) =>
             partitionSuccess(head) match {
@@ -232,9 +232,9 @@ object Operation {
 
     def maxWindow: FiniteDuration
 
-    def apply(elements: Chunk[Elem[In]]): IO[Chunk[Elem[Unit]]]
+    def apply(elements: ElemChunk[In]): IO[ElemChunk[Unit]]
 
-    override protected[stream] def asFs2: fs2.Pipe[IO, Elem[In], Elem[Unit]] =
+    override protected[stream] def asFs2: ElemPipe[In, Unit] =
       _.groupWithin(chunkSize, maxWindow)
         .evalMap { chunk =>
           apply(chunk)

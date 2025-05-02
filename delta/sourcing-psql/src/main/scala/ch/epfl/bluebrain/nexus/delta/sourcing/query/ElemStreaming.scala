@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming.{logger, newState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery.{entityTypeFilter, logQuery, stateFilter, typesSqlArray}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ProjectActivitySignals, RemainingElems}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk, ElemStream, ProjectActivitySignals, RemainingElems}
 import doobie.syntax.all.*
 import doobie.postgres.implicits.*
 import doobie.util.query.Query0
@@ -72,7 +72,7 @@ final class ElemStreaming(
       scope: Scope,
       start: Offset,
       selectFilter: SelectFilter
-  ): Stream[IO, Elem[Unit]] = {
+  ): ElemStream[Unit] = {
     val refresh: RefreshOrStop                    = RefreshOrStop(scope, queryConfig, activitySignals)
     def query(offset: Offset): Query0[Elem[Unit]] = {
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
@@ -122,7 +122,7 @@ final class ElemStreaming(
       start: Offset,
       selectFilter: SelectFilter,
       decodeValue: (EntityType, Json) => IO[A]
-  ): Stream[IO, Elem[A]] = {
+  ): ElemStream[A] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
@@ -174,8 +174,8 @@ final class ElemStreaming(
       start: Offset,
       query: Offset => Query0[Elem[A]],
       refresh: RefreshOrStop
-  ): Stream[IO, Elem[A]] = {
-    def onRefresh(offset: Offset): IO[Option[(Chunk[Elem[A]], Offset)]] = refresh.run.map { result =>
+  ): ElemStream[A] = {
+    def onRefresh(offset: Offset): IO[Option[(ElemChunk[A], Offset)]] = refresh.run.map { result =>
       Option.when(result != RefreshOrStop.Outcome.Stopped)(Chunk.empty[Elem[A]] -> offset)
     }
     Stream
@@ -190,7 +190,7 @@ final class ElemStreaming(
   }
 
   // Looks for duplicates and keep the last occurrence
-  private def dropDuplicates[A](elems: List[Elem[A]]): Chunk[Elem[A]] = {
+  private def dropDuplicates[A](elems: List[Elem[A]]): ElemChunk[A] = {
     val (_, buffer) = elems.foldRight((Set.empty[(ProjectRef, Iri)], new ListBuffer[Elem[A]])) {
       case (elem, (seen, buffer)) =>
         val key = (elem.project, elem.id)

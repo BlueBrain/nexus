@@ -8,10 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
-import fs2.Stream
 
 sealed trait CompositeViewsCoordinator
 
@@ -41,7 +39,7 @@ object CompositeViewsCoordinator {
       lifecycle: CompositeProjectionLifeCycle
   ) extends CompositeViewsCoordinator {
 
-    def run(offset: Offset): Stream[IO, Elem[Unit]] = {
+    def run(offset: Offset): ElemStream[Unit] = {
       fetchViews(offset).evalMap {
         _.traverse {
           case active: ActiveViewDef =>

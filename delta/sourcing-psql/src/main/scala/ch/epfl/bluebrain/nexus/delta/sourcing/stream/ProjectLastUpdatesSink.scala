@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectLastUpdatesSink.logger
-import fs2.Chunk
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -33,7 +32,7 @@ final class ProjectLastUpdatesSink(
 
   override def inType: Typeable[Unit] = Typeable[Unit]
 
-  override def apply(elements: Chunk[Elem[Unit]]): IO[Chunk[Elem[Unit]]] = {
+  override def apply(elements: ElemChunk[Unit]): IO[ElemChunk[Unit]] = {
     val updates = computeUpdates(elements)
     for {
       _ <- store.save(updates.values.toList)
@@ -42,7 +41,7 @@ final class ProjectLastUpdatesSink(
   }
 
   private def computeUpdates(
-      elements: Chunk[Elem[Unit]]
+      elements: ElemChunk[Unit]
   ): Map[ProjectRef, ProjectLastUpdate] =
     elements.foldLeft(Map.empty[ProjectRef, ProjectLastUpdate]) { case (acc, elem) =>
       val newValue = ProjectLastUpdate(elem.project, elem.instant, elem.offset)

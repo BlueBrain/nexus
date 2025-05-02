@@ -15,9 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import fs2.Chunk
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import org.http4s.Uri
 import shapeless.Typeable
 
@@ -52,7 +51,7 @@ final class SparqlSink(
   implicit private val kamonComponent: KamonMetricComponent =
     KamonMetricComponent(BlazegraphViews.entityType.value)
 
-  override def apply(elements: Chunk[Elem[NTriples]]): IO[Chunk[Elem[Unit]]] = {
+  override def apply(elements: ElemChunk[NTriples]): IO[ElemChunk[Unit]] = {
     val bulk = elements.foldLeft(SparqlBulk.empty(endpoint)) {
       case (acc, Elem.SuccessElem(_, id, _, _, _, triples, _)) =>
         acc.replace(id, triples)
@@ -76,7 +75,7 @@ final class SparqlSink(
       IO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
   }.span("sparqlSink")
 
-  private def markInvalidIdsAsFailed(elements: Chunk[Elem[NTriples]], invalidIds: Set[Iri]) =
+  private def markInvalidIdsAsFailed(elements: ElemChunk[NTriples], invalidIds: Set[Iri]) =
     elements.map { e =>
       if (invalidIds.contains(e.id))
         e.failed(InvalidIri)

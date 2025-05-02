@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
@@ -55,7 +55,7 @@ trait CompositeSink extends Sink
 final class Single[SinkFormat](
     queryGraph: SingleQueryGraph,
     transform: GraphResource => IO[Option[SinkFormat]],
-    sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
+    sink: ElemChunk[SinkFormat] => IO[ElemChunk[Unit]],
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration,
     retryStrategy: RetryStrategy[Throwable]
@@ -70,7 +70,7 @@ final class Single[SinkFormat](
       transformed <- graph.flatTraverse(transform)
     } yield transformed
 
-  override def apply(elements: Chunk[Elem[GraphResource]]): IO[Chunk[Elem[Unit]]] =
+  override def apply(elements: ElemChunk[GraphResource]): IO[ElemChunk[Unit]] =
     elements
       .traverse {
         case e: SuccessElem[GraphResource] => e.evalMapFilter(queryTransform)
@@ -100,7 +100,7 @@ final class Single[SinkFormat](
 final class Batch[SinkFormat](
     queryGraph: BatchQueryGraph,
     transform: GraphResource => IO[Option[SinkFormat]],
-    sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
+    sink: ElemChunk[SinkFormat] => IO[ElemChunk[Unit]],
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration,
     retryStrategy: RetryStrategy[Throwable]
@@ -115,7 +115,7 @@ final class Batch[SinkFormat](
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
 
   /** Performs the sparql query only using [[SuccessElem]]s from the chunk */
-  private def query(elements: Chunk[Elem[GraphResource]]): IO[Option[Graph]] =
+  private def query(elements: ElemChunk[GraphResource]): IO[Option[Graph]] =
     elements.mapFilter(elem => elem.map(_.id).toOption) match {
       case ids if ids.nonEmpty => queryGraph(ids).retry(retryStrategy)
       case _                   => IO.none
@@ -233,7 +233,7 @@ object CompositeSink {
       common: String,
       query: SparqlConstructQuery,
       transform: GraphResource => IO[Option[SinkFormat]],
-      sink: Chunk[Elem[SinkFormat]] => IO[Chunk[Elem[Unit]]],
+      sink: ElemChunk[SinkFormat] => IO[ElemChunk[Unit]],
       batchConfig: BatchConfig,
       sinkConfig: SinkConfig,
       retryStrategyConfig: RetryStrategyConfig

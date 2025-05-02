@@ -18,7 +18,7 @@ import fs2.concurrent.SignallingRef
 final case class CompiledProjection private (
     metadata: ProjectionMetadata,
     executionStrategy: ExecutionStrategy,
-    streamF: Offset => Ref[IO, ExecutionStatus] => SignallingRef[IO, Boolean] => Stream[IO, Elem[Unit]]
+    streamF: Offset => Ref[IO, ExecutionStatus] => SignallingRef[IO, Boolean] => ElemStream[Unit]
 )
 
 object CompiledProjection {
@@ -39,7 +39,7 @@ object CompiledProjection {
   def fromStream(
       metadata: ProjectionMetadata,
       executionStrategy: ExecutionStrategy,
-      stream: Offset => Stream[IO, Elem[Unit]]
+      stream: Offset => ElemStream[Unit]
   ): CompiledProjection =
     CompiledProjection(metadata, executionStrategy, offset => _ => _ => stream(offset))
 

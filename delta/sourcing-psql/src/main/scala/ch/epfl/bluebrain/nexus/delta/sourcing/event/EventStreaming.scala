@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 import doobie.Fragments

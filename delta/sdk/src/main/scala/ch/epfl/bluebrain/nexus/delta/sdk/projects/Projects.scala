@@ -15,8 +15,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{Incorr
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, SuccessElemStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, ScopedEntityDefinition, StateMachine}
 import fs2.Stream
 

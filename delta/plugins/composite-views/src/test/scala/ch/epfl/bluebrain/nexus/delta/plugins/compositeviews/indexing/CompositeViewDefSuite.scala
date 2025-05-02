@@ -1,24 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import cats.effect.IO
+import cats.effect.{IO, Ref}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterDeprecated
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, RemainingElems, Source}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemStream, NoopSink, RemainingElems, Source}
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.Stream
 import shapeless.Typeable
 
 import scala.concurrent.duration.*
-import cats.effect.Ref
-import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class CompositeViewDefSuite extends NexusSuite with CompositeViewsFixture {
 

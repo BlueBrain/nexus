@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SuccessElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.{EventTombstoneStore, StateTombstoneStore}
 import doobie.*
 import doobie.syntax.all.*
@@ -245,9 +246,7 @@ object ScopedEventLog {
         stateStore.currentStates(scope, offset)
 
       override def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[IO, T] =
-        currentStates(scope, offset).map { s =>
-          f(s.value)
-        }
+        currentStates(scope, offset).map { s => f(s.value) }
 
       override def states(scope: Scope, offset: Offset): SuccessElemStream[S] =
         stateStore.states(scope, offset)

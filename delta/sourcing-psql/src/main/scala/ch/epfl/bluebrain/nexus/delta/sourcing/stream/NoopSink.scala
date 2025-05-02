@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import fs2.Chunk
 import shapeless.Typeable
 
-import scala.concurrent.duration.{FiniteDuration, *}
+import scala.concurrent.duration.*
 
 final class NoopSink[A: Typeable] extends Sink {
 
@@ -17,6 +16,6 @@ final class NoopSink[A: Typeable] extends Sink {
 
   override def maxWindow: FiniteDuration = 10.millis
 
-  override def apply(elements: Chunk[Elem[A]]): IO[Chunk[Elem[Unit]]] =
+  override def apply(elements: ElemChunk[A]): IO[ElemChunk[Unit]] =
     IO.pure(elements.map(_.void))
 }
