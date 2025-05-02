@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
-import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -10,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client.S3StorageClient
-import org.http4s.Uri
+import org.http4s.{Status, Uri}
 import software.amazon.awssdk.services.s3.model.S3Exception
 
 import java.util.UUID
@@ -32,7 +31,7 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
       PutObjectRequest(
         uploading.bucket,
         UrlUtils.decodeUriPath(location.path),
-        uploading.contentType,
+        uploading.mediaType,
         uploading.contentLength
       )
     val bucket = put.bucket
@@ -45,10 +44,10 @@ final class S3StorageSaveFile(s3StorageClient: S3StorageClient, locationGenerato
     } yield attr)
       .onError { case e => logger.error(e)("Unexpected error when storing file") }
       .adaptError {
-        case e: SaveFileRejection                                               => e
-        case e: S3Exception if e.statusCode() == StatusCodes.Forbidden.intValue =>
+        case e: SaveFileRejection                                      => e
+        case e: S3Exception if e.statusCode() == Status.Forbidden.code =>
           BucketAccessDenied(bucket, key, e.getMessage)
-        case e                                                                  => UnexpectedSaveError(key, e.getMessage)
+        case e                                                         => UnexpectedSaveError(key, e.getMessage)
       }
   }
 

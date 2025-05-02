@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.client
 
-import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{CopyOptions, HeadObject, PutObjectRequest, S3OperationResult}
 import ch.epfl.bluebrain.nexus.delta.sdk.FileData
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FeatureDisabled
@@ -35,7 +35,7 @@ private[client] object S3StorageClientDisabled extends S3StorageClient {
       data: FileData
   ): IO[Unit] = raiseDisabledErr
 
-  override def updateContentType(bucket: String, key: String, contentType: ContentType): IO[S3OperationResult] =
+  override def updateContentType(bucket: String, key: String, mediaType: MediaType): IO[S3OperationResult] =
     raiseDisabledErr
 
   override def bucketExists(bucket: String): IO[Boolean] = raiseDisabledErr

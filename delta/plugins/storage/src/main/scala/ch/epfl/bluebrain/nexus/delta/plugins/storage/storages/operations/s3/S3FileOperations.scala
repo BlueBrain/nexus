@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
-import akka.http.scaladsl.model.ContentType
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.InvalidFilePath
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileStorageMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileStorageMetadata, MediaType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.UploadingFile.S3UploadingFile
@@ -34,7 +33,7 @@ object S3FileOperations {
 
   type S3FileLink = (String, Uri.Path) => IO[S3FileMetadata]
 
-  final case class S3FileMetadata(filename: String, contentType: Option[ContentType], metadata: FileStorageMetadata)
+  final case class S3FileMetadata(filename: String, mediaType: Option[MediaType], metadata: FileStorageMetadata)
   final case class S3DelegationMetadata(bucket: String, path: Uri)
 
   private val log = Logger[S3FileOperations]
@@ -81,7 +80,7 @@ object S3FileOperations {
       filename <- IO.fromOption(path.lastSegment)(InvalidFilePath)
     } yield S3FileMetadata(
       filename,
-      resp.contentType,
+      resp.mediaType,
       FileStorageMetadata(
         uuid,
         resp.fileSize,

@@ -1,18 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UTF-8)`}
+import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.MediaRanges.*
 import akka.http.scaladsl.model.MediaTypes.{`multipart/form-data`, `text/html`}
 import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
-import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts as fileContexts, permissions, FileFixtures, Files, FormDataExtractor, MediaTypeDetector}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts as fileContexts, permissions, FileFixtures, Files, FormDataExtractor, MediaTypeDetector, MediaTypeDetectorConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FileOperations, LinkFileAction}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts as storageContexts, permissions as storagesPermissions, FetchStorage, StorageFixtures, Storages, StoragesConfig}
@@ -606,7 +605,7 @@ class FilesRoutesSpec
           ) { endpoint =>
             Get(endpoint) ~> accept ~> as(reader) ~> routes ~> check {
               status shouldEqual StatusCodes.OK
-              contentType.value shouldEqual `text/plain(UTF-8)`.value
+              contentType.value shouldEqual "text/plain"
               header("Content-Disposition").value.value() shouldEqual
                 s"""attachment; filename="=?UTF-8?B?${base64encode(id)}?=""""
               response.asString shouldEqual content
@@ -632,7 +631,7 @@ class FilesRoutesSpec
           forAll(List("rev=1", s"tag=$tag")) { param =>
             Get(s"$endpoint?$param") ~> Accept(`*/*`) ~> as(reader) ~> routes ~> check {
               status shouldEqual StatusCodes.OK
-              contentType.value shouldEqual `text/plain(UTF-8)`.value
+              contentType.value shouldEqual "text/plain"
               header("Content-Disposition").value.value() shouldEqual
                 s"""attachment; filename="=?UTF-8?B?${base64encode(id)}?=""""
               response.asString shouldEqual content
@@ -871,7 +870,7 @@ object FilesRoutesSpec extends CirceLiteral {
         },
         "_filename": "${attributes.filename}",
         "_origin": "${attributes.origin}",
-        "_mediaType": "${attributes.mediaType.fold("")(_.value)}",
+        "_mediaType": "${attributes.mediaType.fold("")(_.tree)}",
         "_deprecated" : $deprecated,
         "_project" : "$project",
         "_rev" : $rev,

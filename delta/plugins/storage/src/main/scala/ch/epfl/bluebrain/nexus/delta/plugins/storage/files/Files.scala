@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import cats.effect.{Clock, IO}
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -344,10 +343,10 @@ final class Files(
       attributes = file.value.attributes
       storage   <- fetchStorage.onRead(file.value.storage, id.project)
       s          = fetchFile(storage, attributes, file.id)
-      mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
+      mediaType  = attributes.mediaType.getOrElse(MediaType.`application/octet-stream`)
     } yield FileResponse[FileRejection](
       attributes.filename,
-      mediaType,
+      MediaType.toAkkaContentType(mediaType),
       Some(ResourceF.etagValue(file)),
       Some(attributes.bytes),
       s
@@ -382,7 +381,7 @@ final class Files(
     for {
       info            <- formDataExtractor(uploadRequest.entity, storage.storageValue.maxFileSize)
       storageMetadata <- fileOperations.save(storage, info, uploadRequest.contentLength)
-    } yield FileAttributes.from(info.filename, info.contentType, uploadRequest.metadata, storageMetadata)
+    } yield FileAttributes.from(info.filename, info.mediaType, uploadRequest.metadata, storageMetadata)
   }.adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
 
   private def generateId(pc: ProjectContext): IO[Iri] =

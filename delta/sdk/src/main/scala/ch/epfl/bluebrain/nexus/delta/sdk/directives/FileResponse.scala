@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.scaladsl.model.{ContentType, HttpHeader, StatusCode, StatusCodes}
+import akka.http.scaladsl.model.MediaType.NotCompressible
+import akka.http.scaladsl.model.{ContentType, HttpHeader, MediaType, MediaTypes, StatusCode, StatusCodes}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.effect.IO
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{FileData, JsonLdValue}
 
+import java.util.Locale
 import scala.reflect.ClassTag
 
 /**
@@ -62,15 +64,37 @@ object FileResponse {
       etag: Option[String],
       bytes: Option[Long],
       data: FileData
-  ) =
+  ) = {
     new FileResponse(
-      Metadata(filename, contentType, etag, bytes),
+      Metadata(
+        filename,
+        markBinaryAsNonCompressible(contentType),
+        etag,
+        bytes
+      ),
       convertStream(data).attemptNarrow[E].map { r =>
         r.leftMap { e =>
           Complete(e).map(JsonLdValue(_))
         }
       }
     )
+  }
+
+  /**
+    * When parsing a custom binary media type, akka assumes that it is compressible which is traduced by a performance
+    * hit when we compress responses so we revert this
+    */
+  private[directives] def markBinaryAsNonCompressible(contentType: ContentType) =
+    contentType match {
+      case b: ContentType.Binary if isCustomMediaType(b.mediaType) =>
+        ContentType.Binary(b.mediaType.withComp(NotCompressible))
+      case other                                                   => other
+    }
+
+  private def isCustomMediaType(mediaType: MediaType) =
+    MediaTypes
+      .getForKey(mediaType.mainType.toLowerCase(Locale.ROOT) -> mediaType.subType.toLowerCase(Locale.ROOT))
+      .isEmpty
 
   def unsafe(
       filename: String,

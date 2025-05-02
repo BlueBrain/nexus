@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -37,7 +36,7 @@ final case class FileAttributes(
     location: Uri,
     path: Path,
     filename: String,
-    mediaType: Option[ContentType],
+    mediaType: Option[MediaType],
     // TODO: Remove default after ??? migration
     keywords: Map[Label, String] = Map.empty,
     description: Option[String] = None,
@@ -51,7 +50,7 @@ object FileAttributes {
 
   def from(
       filename: String,
-      contentType: Option[ContentType],
+      mediaType: Option[MediaType],
       metadata: Option[FileCustomMetadata],
       storageMetadata: FileStorageMetadata
   ): FileAttributes = {
@@ -61,7 +60,7 @@ object FileAttributes {
       storageMetadata.location,
       storageMetadata.path,
       filename,
-      contentType,
+      mediaType,
       customMetadata.keywords.getOrElse(Map.empty),
       customMetadata.description,
       customMetadata.name,

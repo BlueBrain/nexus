@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
-import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.UploadedFileInformation
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
@@ -47,7 +47,7 @@ object UploadingFile {
       project: ProjectRef,
       bucket: String,
       filename: String,
-      contentType: Option[ContentType],
+      mediaType: Option[MediaType],
       contentLength: Long,
       data: FileData
   ) extends UploadingFile
@@ -66,7 +66,7 @@ object UploadingFile {
             s.project,
             s.value.bucket,
             info.filename,
-            info.contentType,
+            info.mediaType,
             contentLength,
             info.contents
           )

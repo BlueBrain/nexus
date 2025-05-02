@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
-import akka.http.scaladsl.model.ContentType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import software.amazon.awssdk.services.s3.model.PutObjectRequest as AwsPutObjectRequest
 
-final case class PutObjectRequest(bucket: String, key: String, contentType: Option[ContentType], contentLength: Long) {
+final case class PutObjectRequest(bucket: String, key: String, mediaType: Option[MediaType], contentLength: Long) {
 
   def asAws: AwsPutObjectRequest = {
     val request = AwsPutObjectRequest
@@ -13,10 +13,8 @@ final case class PutObjectRequest(bucket: String, key: String, contentType: Opti
       .contentLength(contentLength)
       .key(key)
 
-    contentType
-      .fold(request) { ct =>
-        request.contentType(ct.value)
-      }
+    mediaType
+      .fold(request) { mt => request.contentType(mt.tree) }
       .build()
   }
 

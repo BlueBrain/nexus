@@ -15,7 +15,7 @@
     },
     "description" : "A description",
     "name" : "A name",
-    "_mediaType": "text/plain; charset=UTF-8",
+    "_mediaType": "text/plain",
     "_origin": "Client",
     "_uuid": "8049ba90-7cc6-4de5-93a1-802c04200dcc"
   },

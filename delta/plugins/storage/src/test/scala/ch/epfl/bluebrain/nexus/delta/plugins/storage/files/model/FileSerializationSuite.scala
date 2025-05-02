@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -13,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.DiskStorage as DiskStorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.*
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
@@ -47,7 +44,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       Uri.unsafeFromString("http://localhost/file.txt"),
       Uri.Path.unsafeFromString("file.txt"),
       "file.txt",
-      Some(`text/plain(UTF-8)`),
+      Some(MediaType.`text/plain`),
       Map.empty,
       None,
       None,
@@ -67,7 +64,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
   private val createdTagged = created.copy(tag = Some(tag))
   private val createdTaggedWithMetadata = createdWithMetadata.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject, Some(tag))
-  private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
+  private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(MediaType.`text/plain`), 12, digest, 3, instant, subject)
   private val updatedMetadata = FileCustomMetadataUpdated(fileId, projectRef, storageRef, DiskStorageType, customMetadata, 3, instant, subject, Some(tag))
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
   private val tagDeleted = FileTagDeleted(fileId, projectRef, storageRef, DiskStorageType, tag, 4, instant, subject)
@@ -77,13 +74,13 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
 
   private val clientOrigin  = Some(FileAttributesOrigin.Client)
   private val storageOrigin = Some(FileAttributesOrigin.Storage)
-  private val textContent   = Some(ContentTypes.`text/plain(UTF-8)`)
+  private val textMediaType = Some(MediaType.`text/plain`)
 
   private def expectedExtraFields(
       event: FileEvent,
       newFileWritten: Option[Int],
       bytes: Option[Long],
-      mediaType: Option[ContentType],
+      mediaType: Option[MediaType],
       extension: Option[String],
       origin: Option[FileAttributesOrigin]
   )        =
@@ -131,14 +128,14 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       updated,
       loadEvents("files", "file-updated.json"),
       Set(Updated, Tagged),
-      expectedExtraFields(updated, Some(1), Some(12), textContent, Some("txt"), clientOrigin)
+      expectedExtraFields(updated, Some(1), Some(12), textMediaType, Some("txt"), clientOrigin)
     ),
     (
       "FileAttributesUpdated",
       updatedAttr,
       loadEvents("files", "file-attributes-created-updated.json"),
       Set(Updated),
-      expectedExtraFields(updatedAttr, None, Some(12), textContent, None, storageOrigin)
+      expectedExtraFields(updatedAttr, None, Some(12), textMediaType, None, storageOrigin)
     ),
     (
       "FileCustomMetadataUpdated",

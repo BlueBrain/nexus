@@ -15,7 +15,7 @@
     },
     "filename": "file.txt",
     "location": "http://localhost/file.txt",
-    "mediaType": "text/plain; charset=UTF-8",
+    "mediaType": "text/plain",
     "keywords": {
       "key": "value"
     },

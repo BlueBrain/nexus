@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.generators.FileGen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes, MediaType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -97,7 +97,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
     Uri.unsafeFromString("http://localhost/file.txt"),
     Uri.Path.unsafeFromString("file.txt"),
     "myfile",
-    Some(`text/plain(UTF-8)`),
+    Some(MediaType.`text/plain`),
     Map.empty,
     None,
     None,

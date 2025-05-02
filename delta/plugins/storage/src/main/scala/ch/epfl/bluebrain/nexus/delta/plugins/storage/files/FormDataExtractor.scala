@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.{ContentType, ContentTypes, EntityStreamSizeException, ExceptionWithErrorInfo, HttpEntity, Multipart}
 import akka.http.scaladsl.model.MediaTypes.`multipart/form-data`
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.server.*
@@ -15,6 +15,7 @@ import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.NotARejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.MediaType
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,7 +38,7 @@ trait FormDataExtractor {
 
 final case class UploadedFileInformation(
     filename: String,
-    contentType: Option[ContentType],
+    mediaType: Option[MediaType],
     contents: FileData
 )
 
@@ -54,7 +55,7 @@ object FormDataExtractor {
     MultipartUnmarshallers
       .multipartUnmarshaller[Multipart.FormData, Multipart.FormData.BodyPart, Multipart.FormData.BodyPart.Strict](
         mediaRange = `multipart/form-data`,
-        defaultContentType = defaultContentType,
+        defaultContentType = ContentTypes.`application/octet-stream`,
         createBodyPart = (entity, headers) => Multipart.General.BodyPart(entity, headers).toFormDataBodyPart.get,
         createStreamed = (_, parts) => Multipart.FormData(parts),
         createStrictBodyPart =
@@ -118,10 +119,16 @@ object FormDataExtractor {
           val contentTypeFromRequest = part.entity.contentType
           val suppliedContentType    = Option.when(contentTypeFromRequest != defaultContentType)(contentTypeFromRequest)
 
+          val detectedMediaType = mediaTypeDetector(
+            filename,
+            suppliedContentType.flatMap(toHttp4sMediaType),
+            Some(contentTypeFromRequest).flatMap(toHttp4sMediaType)
+          )
+
           Future(
             UploadedFileInformation(
               filename,
-              mediaTypeDetector(filename, suppliedContentType, Some(contentTypeFromRequest)),
+              detectedMediaType,
               convertStream(part.entity.dataBytes)
             ).some
           )
@@ -133,5 +140,8 @@ object FormDataExtractor {
         StreamConverter(source.asInstanceOf[Graph[SourceShape[ByteString], NotUsed]]).map { byteString =>
           byteString.asByteBuffer
         }
+
+      private def toHttp4sMediaType(contentType: ContentType) =
+        MediaType.parse(contentType.value).toOption
     }
 }
