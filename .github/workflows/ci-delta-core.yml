@@ -2,6 +2,7 @@ name: Delta Core unit tests
 on:
   pull_request:
     paths:
+      - 'akka/**'
       - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'

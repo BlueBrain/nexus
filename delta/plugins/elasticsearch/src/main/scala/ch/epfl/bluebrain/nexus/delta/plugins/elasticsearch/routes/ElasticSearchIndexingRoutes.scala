@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.server.*
 import cats.effect.IO
 import cats.implicits.*
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.*

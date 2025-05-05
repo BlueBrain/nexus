@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.server.Directives.{extractRequest, provide}
 import akka.http.scaladsl.server.{Directive, Directive1, Route}
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryResponse, SparqlQueryResponseType}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering

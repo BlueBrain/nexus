@@ -2,6 +2,7 @@ name: Delta Static analysis
 on:
   pull_request:
     paths:
+      - 'akka/**'
       - 'delta/**'
       - 'build.sbt'
       - 'project/**'

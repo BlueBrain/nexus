@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.*
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution

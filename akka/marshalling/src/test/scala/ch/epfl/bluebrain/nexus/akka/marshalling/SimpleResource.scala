@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.circe
+package ch.epfl.bluebrain.nexus.akka.marshalling
 
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.*

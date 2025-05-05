@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/sparql-results+json`
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes.`application/sparql-results+json`
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.*
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.*

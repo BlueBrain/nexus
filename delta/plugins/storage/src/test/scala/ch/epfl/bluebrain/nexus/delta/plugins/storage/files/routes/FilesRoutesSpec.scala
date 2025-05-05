@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.MediaTypes.{`multipart/form-data`, `text/html`}
 import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.mocks.FileOperationsMock
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId}

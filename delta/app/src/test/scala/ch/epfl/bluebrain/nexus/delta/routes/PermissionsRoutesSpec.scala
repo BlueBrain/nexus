@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress

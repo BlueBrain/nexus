@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, Http4sResponseSyntax, IOSyntax, InstantSyntax, KamonSyntax}
-import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
+import ch.epfl.bluebrain.nexus.delta.rdf.instances.{TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, HttpResponseFieldsInstances, IdentityInstances, IriInstances, ProjectRefInstances}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IORejectSyntax, IriEncodingSyntax, ProjectionErrorsSyntax}
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponse
 package object implicits
     extends TripleInstances
     with UriInstances
-    with SecretInstances
     with CredentialsInstances
     with Http4sResponseSyntax
     with HttpResponseFieldsInstances

@@ -2,13 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes
 
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.permissions.query
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{GraphAnalytics, GraphAnalyticsViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities

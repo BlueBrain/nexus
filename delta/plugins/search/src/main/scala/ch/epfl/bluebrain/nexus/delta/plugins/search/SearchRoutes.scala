@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeError
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.*
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, SearchR
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling

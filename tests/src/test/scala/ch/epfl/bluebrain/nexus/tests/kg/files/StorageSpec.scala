@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.*
 import akka.http.scaladsl.model.headers.{`If-None-Match`, Accept, ETag}
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.tests.CacheAssertions.expectConditionalCacheHeaders
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import ch.epfl.bluebrain.nexus.tests.HttpClient.*

@@ -2,6 +2,7 @@ name: Delta Integration Tests - Hash partitioning
 on:
   pull_request:
     paths:
+      - 'akka/**'
       - 'delta/**'
       - 'tests/**'
       - 'build.sbt'

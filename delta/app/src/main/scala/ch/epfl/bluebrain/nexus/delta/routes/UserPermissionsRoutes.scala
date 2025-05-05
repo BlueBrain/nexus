@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives

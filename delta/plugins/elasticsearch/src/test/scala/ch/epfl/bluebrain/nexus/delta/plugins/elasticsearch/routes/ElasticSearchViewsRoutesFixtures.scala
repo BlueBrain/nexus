@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.schema as elasticSearchSchema
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering

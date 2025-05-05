@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Directives.{extractRequestEntity, optionalHeade
 import akka.http.scaladsl.server.*
 import cats.effect.IO
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read as Read, write as Write}
