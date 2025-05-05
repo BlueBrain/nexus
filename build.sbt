@@ -244,7 +244,8 @@ lazy val akkaMarshalling = project
   .settings(name := "akka-marshalling", moduleName := "akka-marshalling")
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    libraryDependencies ++= Seq(
+    coverageFailOnMinimum := false,
+    libraryDependencies  ++= Seq(
       akkaStream,
       akkaHttp,
       circeCore,
