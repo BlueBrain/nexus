@@ -36,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, IriFilter, Label, ProjectRef}
@@ -46,6 +46,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.clock.FixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig

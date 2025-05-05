@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlTarget
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import com.typesafe.config.Config
 import org.http4s.{BasicCredentials, Uri}
 import pureconfig.generic.auto.*

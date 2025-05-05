@@ -5,12 +5,13 @@ import cats.effect.std.Env
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 
 trait EventMetricsProjection
@@ -59,7 +60,7 @@ object EventMetricsProjection {
     // define how to get metrics from a given offset
     val metrics = (offset: Offset) => EventStreaming.fetchScoped(Scope.root, allEntityTypes, offset, queryConfig, xas)
 
-    val sink = new EventMetricsSink(eventMetrics, batchConfig.maxElements, batchConfig.maxInterval)
+    val sink = new EventMetricsSink(eventMetrics, batchConfig)
 
     for {
       shouldRestart     <- Env[IO].get("RESET_EVENT_METRICS").map(_.getOrElse("false").toBoolean)

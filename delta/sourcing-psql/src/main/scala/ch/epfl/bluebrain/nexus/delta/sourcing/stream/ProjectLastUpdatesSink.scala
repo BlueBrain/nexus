@@ -8,25 +8,20 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectLastUpdatesSink.logger
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import shapeless.Typeable
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Sink that computes new project last updates from the elem stream and push them to the database
   * @param store
   *   the store to insert/update to the database
-  * @param chunkSize
-  *   the maximum number of elems to be processed at once
-  * @param maxWindow
-  *   the maximum window before the new values are pushed
+  * @param batchConfig
+  *   the batch configuration for the sink
   */
 final class ProjectLastUpdatesSink(
     store: ProjectLastUpdateStore,
-    override val chunkSize: Int,
-    override val maxWindow: FiniteDuration
+    override val batchConfig: BatchConfig
 ) extends Sink {
-  {}
 
   override type In = Unit
 
@@ -53,7 +48,7 @@ object ProjectLastUpdatesSink {
 
   private val logger = Logger[ProjectLastUpdatesSink]
 
-  def apply(store: ProjectLastUpdateStore, chunkSize: Int, maxWindow: FiniteDuration): ProjectLastUpdatesSink =
-    new ProjectLastUpdatesSink(store, chunkSize, maxWindow)
+  def apply(store: ProjectLastUpdateStore, batchConfig: BatchConfig): ProjectLastUpdatesSink =
+    new ProjectLastUpdatesSink(store, batchConfig)
 
 }

@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.MainIndexConfi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MainIndexingCoordinator.mainIndexingPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, ElemStream, ExecutionStrategy, Source}
 import fs2.Stream
 
@@ -56,8 +56,7 @@ object MainIndexingAction {
   )(implicit cr: RemoteContextResolution): MainIndexingAction = {
     val batchConfig = BatchConfig.individual
     new MainIndexingAction(
-      ElasticSearchSink
-        .mainIndexing(client, batchConfig.maxElements, batchConfig.maxInterval, config.index, syncIndexingRefresh),
+      ElasticSearchSink.mainIndexing(client, batchConfig, config.index, syncIndexingRefresh),
       timeout
     )
   }

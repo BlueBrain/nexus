@@ -7,11 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchSink, IndexingViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import fs2.Stream
 
 import scala.concurrent.duration.FiniteDuration
@@ -70,9 +70,7 @@ object ElasticSearchIndexingAction {
     new ElasticSearchIndexingAction(
       views.currentIndexingViews,
       PipeChain.compile(_, registry),
-      (v: ActiveViewDef) =>
-        ElasticSearchSink
-          .states(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, syncIndexingRefresh),
+      (v: ActiveViewDef) => ElasticSearchSink.states(client, batchConfig, v.index, syncIndexingRefresh),
       timeout
     )
   }

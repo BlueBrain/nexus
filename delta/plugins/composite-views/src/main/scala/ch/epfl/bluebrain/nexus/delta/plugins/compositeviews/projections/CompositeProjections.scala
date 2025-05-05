@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBra
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.FailedElemLogStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import fs2.{Pipe, Stream}
 
 import java.time.Instant

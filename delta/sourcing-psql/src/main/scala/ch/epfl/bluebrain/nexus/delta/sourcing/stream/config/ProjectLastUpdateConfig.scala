@@ -1,5 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.config
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.config
 
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 

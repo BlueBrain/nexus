@@ -17,8 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.typehierarchy.TypeHierarchyConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ElemQueryConfig, ProjectLastUpdateConfig, ProjectionConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ElemQueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.exporter.ExportConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.{ProjectLastUpdateConfig, ProjectionConfig}
 import com.typesafe.config.Config
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader

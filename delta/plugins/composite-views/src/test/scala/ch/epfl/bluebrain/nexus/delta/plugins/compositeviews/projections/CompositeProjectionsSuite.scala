@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBra
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -21,6 +20,7 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration.*
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class CompositeProjectionsSuite extends NexusSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {

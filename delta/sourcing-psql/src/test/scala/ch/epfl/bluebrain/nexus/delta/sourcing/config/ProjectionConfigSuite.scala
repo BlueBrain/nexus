@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.config
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import pureconfig.ConfigSource
 

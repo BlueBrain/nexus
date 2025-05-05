@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStor
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectLastUpdate
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import fs2.Chunk
 import munit.AnyFixture
@@ -48,7 +49,7 @@ class ProjectLastUpdatesSinkSuite extends NexusSuite with Doobie.Fixture {
       // Injecting initial updates
       _       <- store.save(existingUpdates)
       // Processing new incoming elems
-      sink     = ProjectLastUpdatesSink(store, 3, 10.millis)
+      sink     = ProjectLastUpdatesSink(store, BatchConfig(3, 10.millis))
       // Checking new updates in the db
       _       <- sink(incoming)
       expected = List(

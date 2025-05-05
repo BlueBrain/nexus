@@ -5,10 +5,10 @@ import cats.effect.std.Semaphore
 import cats.implicits.*
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.*
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.ProjectionConfig
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 

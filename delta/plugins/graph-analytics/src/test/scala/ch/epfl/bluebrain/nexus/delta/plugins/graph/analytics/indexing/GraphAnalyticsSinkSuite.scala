@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -30,7 +31,7 @@ class GraphAnalyticsSinkSuite extends NexusElasticsearchSuite with ElasticSearch
 
   private val index = IndexLabel.unsafe("test_analytics")
 
-  private lazy val sink = new GraphAnalyticsSink(client, 5, 100.millis, index)
+  private lazy val sink = new GraphAnalyticsSink(client, BatchConfig(5, 100.millis), index)
 
   private val project = ProjectRef.unsafe("myorg", "myproject")
 

@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationE
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings

@@ -7,20 +7,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchA
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchAction, ElasticSearchClient, IndexLabel, Refresh}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import io.circe.Json
 import shapeless.Typeable
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Sink that pushes json documents into an Elasticsearch index
   * @param client
   *   the ES client
-  * @param chunkSize
-  *   the maximum number of documents to be pushed at once
-  * @param maxWindow
-  *   the maximum window before a document is pushed
+  * @param batchConfig
+  *   the batch configuration for the sink
   * @param index
   *   the index to push into
   * @param documentId
@@ -34,8 +31,7 @@ import scala.concurrent.duration.FiniteDuration
   */
 final class ElasticSearchSink private (
     client: ElasticSearchClient,
-    override val chunkSize: Int,
-    override val maxWindow: FiniteDuration,
+    override val batchConfig: BatchConfig,
     index: IndexLabel,
     documentId: Elem[Json] => String,
     routing: Elem[Json] => Option[String],
@@ -75,10 +71,8 @@ object ElasticSearchSink {
   /**
     * @param client
     *   the ES client
-    * @param chunkSize
-    *   the maximum number of documents to be pushed at once
-    * @param maxWindow
-    *   the maximum window before a document is pushed
+    * @param batchConfig
+    *   the batch configuration for the sink
     * @param index
     *   the index to push into
     * @param refresh
@@ -88,15 +82,13 @@ object ElasticSearchSink {
     */
   def states(
       client: ElasticSearchClient,
-      chunkSize: Int,
-      maxWindow: FiniteDuration,
+      batchConfig: BatchConfig,
       index: IndexLabel,
       refresh: Refresh
   ): ElasticSearchSink =
     new ElasticSearchSink(
       client,
-      chunkSize,
-      maxWindow,
+      batchConfig,
       index,
       elem => elem.id.toString,
       _ => None,
@@ -106,10 +98,8 @@ object ElasticSearchSink {
   /**
     * @param client
     *   the ES client
-    * @param chunkSize
-    *   the maximum number of documents to be pushed at once
-    * @param maxWindow
-    *   the maximum window before a document is pushed
+    * @param batchConfig
+    *   the batch configuration for the sink
     * @param index
     *   the index to push into
     * @param refresh
@@ -117,15 +107,13 @@ object ElasticSearchSink {
     */
   def mainIndexing(
       client: ElasticSearchClient,
-      chunkSize: Int,
-      maxWindow: FiniteDuration,
+      batchConfig: BatchConfig,
       index: IndexLabel,
       refresh: Refresh
   ): ElasticSearchSink =
     new ElasticSearchSink(
       client,
-      chunkSize,
-      maxWindow,
+      batchConfig,
       index,
       elem => s"${elem.project}_${elem.id}",
       elem => Some(elem.project.toString),

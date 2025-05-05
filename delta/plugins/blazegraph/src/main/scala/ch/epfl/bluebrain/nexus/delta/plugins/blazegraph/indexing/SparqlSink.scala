@@ -14,29 +14,24 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import org.http4s.Uri
 import shapeless.Typeable
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Sink that pushed N-Triples into a given namespace in Sparql
   * @param client
   *   the SPARQL client
-  * @param chunkSize
-  *   the maximum number of elements to be pushed in ES at once
-  * @param maxWindow
-  *   the maximum number of elements to be pushed at once
+  * @param batchConfig
+  *   the batch configuration for the sink
   * @param namespace
   *   the namespace
   */
 final class SparqlSink(
     client: SparqlClient,
-    override val chunkSize: Int,
-    override val maxWindow: FiniteDuration,
+    override val batchConfig: BatchConfig,
     namespace: String,
     retryStrategy: RetryStrategy[Throwable]
 )(implicit base: BaseUri)
@@ -103,7 +98,7 @@ object SparqlSink {
       },
       RetryStrategy.logError(logger, "sinking")(_, _)
     )
-    new SparqlSink(client, batchConfig.maxElements, batchConfig.maxInterval, namespace, retryStrategy)
+    new SparqlSink(client, batchConfig, namespace, retryStrategy)
   }
 
   final case class SparqlBulk(invalidIds: Set[Iri], queries: Vector[SparqlWriteQuery], endpoint: Iri) {

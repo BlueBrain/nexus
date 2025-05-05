@@ -9,16 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScoped
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import shapeless.Typeable
 
-import scala.concurrent.duration.FiniteDuration
-
-final class EventMetricsSink(
-    eventMetrics: EventMetrics,
-    override val chunkSize: Int,
-    override val maxWindow: FiniteDuration
-) extends Sink {
+final class EventMetricsSink(eventMetrics: EventMetrics, override val batchConfig: BatchConfig) extends Sink {
 
   private def documentId(elem: Elem[ProjectScopedMetric]) = s"${elem.project}/${elem.id}:${elem.rev}"
 

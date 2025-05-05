@@ -21,15 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import fs2.Chunk
 import shapeless.Typeable
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * A composite sink handles querying the common blazegraph namespace, transforming the result into a format that can be
@@ -45,10 +43,8 @@ trait CompositeSink extends Sink
   *   function to transform a graph into the format needed by the sink
   * @param sink
   *   function that defines how to sink a chunk of Elem[SinkFormat]
-  * @param chunkSize
-  *   the maximum number of elements to be pushed into the sink
-  * @param maxWindow
-  *   the maximum time to wait for the chunk to gather [[chunkSize]] elements
+  * @param batchConfig
+  *   the batch configuration for the sink
   * @tparam SinkFormat
   *   the type of data accepted by the sink
   */
@@ -56,8 +52,7 @@ final class Single[SinkFormat](
     queryGraph: SingleQueryGraph,
     transform: GraphResource => IO[Option[SinkFormat]],
     sink: ElemChunk[SinkFormat] => IO[ElemChunk[Unit]],
-    override val chunkSize: Int,
-    override val maxWindow: FiniteDuration,
+    override val batchConfig: BatchConfig,
     retryStrategy: RetryStrategy[Throwable]
 ) extends CompositeSink {
 
@@ -90,10 +85,8 @@ final class Single[SinkFormat](
   *   function to transform a graph into the format needed by the sink
   * @param sink
   *   function that defines how to sink a chunk of Elem[SinkFormat]
-  * @param chunkSize
-  *   the maximum number of elements to be pushed into the sink
-  * @param maxWindow
-  *   the maximum time to wait for the chunk to gather [[chunkSize]] elements
+  * @param batchConfig
+  *   the batch configuration for the sink
   * @tparam SinkFormat
   *   the type of data accepted by the sink
   */
@@ -101,8 +94,7 @@ final class Batch[SinkFormat](
     queryGraph: BatchQueryGraph,
     transform: GraphResource => IO[Option[SinkFormat]],
     sink: ElemChunk[SinkFormat] => IO[ElemChunk[Unit]],
-    override val chunkSize: Int,
-    override val maxWindow: FiniteDuration,
+    override val batchConfig: BatchConfig,
     retryStrategy: RetryStrategy[Throwable]
 )(implicit rcr: RemoteContextResolution)
     extends CompositeSink {
@@ -213,8 +205,7 @@ object CompositeSink {
   )(implicit rcr: RemoteContextResolution): ElasticSearchProjection => CompositeSink = { target =>
     implicit val jsonLdOptions: JsonLdOptions = JsonLdOptions.AlwaysEmbed
 
-    val (maxElements, maxInterval) = (batchConfig.maxElements, batchConfig.maxInterval)
-    val esSink                     = ElasticSearchSink.states(esClient, maxElements, maxInterval, index, Refresh.False)
+    val esSink = ElasticSearchSink.states(esClient, batchConfig, index, Refresh.False)
 
     compositeSink(
       sparqlClient,
@@ -238,7 +229,7 @@ object CompositeSink {
       sinkConfig: SinkConfig,
       retryStrategyConfig: RetryStrategyConfig
   )(implicit rcr: RemoteContextResolution): CompositeSink = {
-    val retryStrategy              = RetryStrategy[Throwable](
+    val retryStrategy = RetryStrategy[Throwable](
       retryStrategyConfig,
       {
         case _: SparqlQueryError => true
@@ -246,14 +237,13 @@ object CompositeSink {
       },
       RetryStrategy.logError(logger, "sinking")(_, _)
     )
-    val (maxElements, maxInterval) = (batchConfig.maxElements, batchConfig.maxInterval)
     sinkConfig match {
       case SinkConfig.Single =>
         val queryGraph = new SingleQueryGraph(sparqlClient, common, query)
-        new Single(queryGraph, transform, sink, maxElements, maxInterval, retryStrategy)
+        new Single(queryGraph, transform, sink, batchConfig, retryStrategy)
       case SinkConfig.Batch  =>
         val queryGraph = new BatchQueryGraph(sparqlClient, common, query)
-        new Batch(queryGraph, transform, sink, maxElements, maxInterval, retryStrategy)
+        new Batch(queryGraph, transform, sink, batchConfig, retryStrategy)
     }
   }
 }

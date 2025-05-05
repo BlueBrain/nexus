@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import shapeless.Typeable
 
 import scala.collection.concurrent.TrieMap
@@ -36,9 +37,8 @@ final class CacheSink[A: Typeable] private (documentId: Elem[A] => Iri) extends 
     }
   }
 
-  override def chunkSize: Int = 1
+  override val batchConfig: BatchConfig = BatchConfig(1, 10.millis)
 
-  override def maxWindow: FiniteDuration = 10.millis
 }
 
 object CacheSink {

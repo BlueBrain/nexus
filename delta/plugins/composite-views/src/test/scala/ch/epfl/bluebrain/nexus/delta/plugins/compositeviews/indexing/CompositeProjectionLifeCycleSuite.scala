@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import munit.Location
@@ -18,6 +17,7 @@ import munit.Location
 import java.util.UUID
 import scala.concurrent.duration.*
 import cats.effect.Ref
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 
 class CompositeProjectionLifeCycleSuite extends NexusSuite with CompositeViewsFixture {

@@ -137,8 +137,7 @@ object GraphAnalyticsCoordinator {
         ref =>
           new GraphAnalyticsSink(
             client,
-            config.batch.maxElements,
-            config.batch.maxInterval,
+            config.batch,
             index(config.prefix, ref)
           ),
         ref =>
