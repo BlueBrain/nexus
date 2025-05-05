@@ -15,7 +15,6 @@ package object syntax
     with IterableSyntax
     with KamonSyntax
     with IORejectSyntax
-    with HttpRequestSyntax
     with HttpResponseFieldsSyntax
     with ClassTagSyntax
     with IOSyntax
