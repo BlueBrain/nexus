@@ -5,9 +5,8 @@ import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/sparql-query`
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.akka.marshalling.{CirceMarshalling, RdfMediaTypes}
+import RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.{encodeUriPath, encodeUriQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews

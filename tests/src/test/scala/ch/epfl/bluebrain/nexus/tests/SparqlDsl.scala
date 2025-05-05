@@ -5,8 +5,7 @@ import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.Accept
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.akka.marshalling.{CirceUnmarshalling, RdfMediaTypes}
 import io.circe.optics.JsonPath.root
 import org.scalatest.matchers.should.Matchers
 

@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.MediaType
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.{`application/ld+json`, `application/sparql-results+json`}
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes
+import RdfMediaTypes.{`application/ld+json`, `application/sparql-results+json`}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling

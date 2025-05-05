@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.*
 import cats.effect.IO
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.{CirceMarshalling, CirceUnmarshalling}
+import ch.epfl.bluebrain.nexus.akka.marshalling.{CirceMarshalling, CirceUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDelegationRequest.{FileDelegationCreationRequest, FileDelegationUpdateRequest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.*

@@ -1,13 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.circe
+package ch.epfl.bluebrain.nexus.akka.marshalling
 
 import akka.http.scaladsl.model.ContentTypeRange
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.*
+import RdfMediaTypes.*
 import io.circe.{jawn, Decoder, Json}
 
-import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 /**

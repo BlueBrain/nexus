@@ -6,8 +6,8 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.model.{HttpRequest, StatusCode}
 import akka.stream.Materializer
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers

@@ -1,31 +1,28 @@
-package ch.epfl.bluebrain.nexus.testkit.archive
+package ch.epfl.bluebrain.nexus.test.archive
 
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers.ArchiveContent
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ArchiveHelpers.ArchiveContent
 import io.circe.Json
 import io.circe.parser.parse
 import org.scalactic.source.Position
-import org.scalatest.{OptionValues, Suite}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{Assertions, OptionValues}
 
 import java.nio.file.Files as JFiles
+import java.security.MessageDigest
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
-import java.security.MessageDigest
-import org.scalatest.concurrent.PatienceConfiguration
-import org.scalatest.time.Span
-import org.scalatest.time.Seconds
 
-trait ArchiveHelpers extends ScalaFutures with EitherValues with OptionValues {
-
-  self: Suite =>
+trait ArchiveHelpers extends ScalaFutures with OptionValues { self: Assertions =>
 
   implicit class ByteStringMapOps(value: ArchiveContent)(implicit position: Position) {
-    def entryAsJson(path: String): Json = parse(entryAsString(path)).rightValue
+    def entryAsJson(path: String): Json = parse(entryAsString(path)) match {
+      case Left(value)  => fail(value)
+      case Right(value) => value
+    }
 
     def entryAsString(path: String): String = value.get(path).value.utf8String
 
@@ -41,25 +38,25 @@ trait ArchiveHelpers extends ScalaFutures with EitherValues with OptionValues {
 
   def fromZip(source: Source[ByteString, Any])(implicit m: Materializer, e: ExecutionContext): ArchiveContent = {
     val path = JFiles.createTempFile("test", ".zip")
-    source
-      .completionTimeout(10.seconds)
-      .runWith(FileIO.toPath(path))
-      .futureValue(PatienceConfiguration.Timeout(Span(10, Seconds)))
-    Archive
-      .zipReader(path.toFile)
-      .mapAsync(1) { case (metadata, source) =>
-        source
-          .runFold(ByteString.empty) { case (bytes, elem) =>
-            bytes ++ elem
-          }
-          .map { bytes =>
-            (metadata.name, bytes)
-          }
-      }
-      .runFold(Map.empty[String, ByteString]) { case (map, elem) =>
-        map + elem
-      }
-      .futureValue
+
+    val futureContent = source.completionTimeout(10.seconds).runWith(FileIO.toPath(path)).flatMap { _ =>
+      Archive
+        .zipReader(path.toFile)
+        .mapAsync(1) { case (metadata, source) =>
+          source
+            .runFold(ByteString.empty) { case (bytes, elem) =>
+              bytes ++ elem
+            }
+            .map { bytes =>
+              (metadata.name, bytes)
+            }
+        }
+        .runFold(Map.empty[String, ByteString]) { case (map, elem) =>
+          map + elem
+        }
+    }
+
+    futureContent.futureValue
   }
 
 }

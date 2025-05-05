@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.*
 import cats.implicits.*
-import ch.epfl.bluebrain.nexus.delta.kernel.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragePluginExceptionHandler.handleStorageExceptions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.*
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection

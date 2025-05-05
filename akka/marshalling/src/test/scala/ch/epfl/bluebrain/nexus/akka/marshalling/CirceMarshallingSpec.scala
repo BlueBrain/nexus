@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.circe
+package ch.epfl.bluebrain.nexus.akka.marshalling
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshal

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import cats.Functor
-import io.circe.{Decoder, Encoder, Json}
 import pureconfig.ConfigReader
 
 /**
@@ -21,15 +20,6 @@ final case class Secret[A](value: A) {
 }
 
 object Secret {
-
-  implicit def secretEncoder[A]: Encoder[Secret[A]] =
-    Encoder.instance(_ => Json.Null)
-
-  implicit def secretDecoder[A](implicit D: Decoder[A]): Decoder[Secret[A]] =
-    D.map(Secret.apply)
-
-  implicit def secretConverter[A](implicit A: ConfigReader[A]): ConfigReader[Secret[A]] =
-    A.map(Secret.apply)
 
   implicit val secretFunctor: Functor[Secret] =
     new Functor[Secret] {

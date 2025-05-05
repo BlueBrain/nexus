@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.circe
+package ch.epfl.bluebrain.nexus.akka.marshalling
 
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaType}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.RdfMediaTypes.`application/ld+json`
+import RdfMediaTypes.`application/ld+json`
 import io.circe.{Encoder, Json, Printer}
 
 trait CirceMarshalling {

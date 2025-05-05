@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
+import ch.epfl.bluebrain.nexus.test.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient.*
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
 import ch.epfl.bluebrain.nexus.tests.Optics.*

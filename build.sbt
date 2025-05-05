@@ -239,14 +239,54 @@ lazy val docs = project
     }
   )
 
+lazy val akkaMarshalling = project
+  .in(file("akka/marshalling"))
+  .settings(name := "akka-marshalling", moduleName := "akka-marshalling")
+  .settings(shared, compilation, coverage, release, assertJavaVersion)
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaStream,
+      akkaHttp,
+      circeCore,
+      circeParser,
+      circeGenericExtras % Test,
+      circeLiteral       % Test,
+      scalaTest          % Test,
+      akkaTestKit        % Test,
+      akkaHttpTestKit    % Test
+    ),
+    addCompilerPlugin(kindProjector),
+    addCompilerPlugin(betterMonadicFor)
+  )
+
+lazy val akkaTestArchive = project
+  .in(file("akka/test-archive"))
+  .settings(name := "akka-test-archive", moduleName := "akka-test-archive")
+  .settings(shared, compilation, coverage, release, assertJavaVersion)
+  .settings(
+    coverageMinimumStmtTotal := 0,
+    libraryDependencies     ++= Seq(
+      akkaStream,
+      alpakkaFile,
+      circeCore,
+      circeParser,
+      scalaTest
+    ),
+    addCompilerPlugin(kindProjector),
+    addCompilerPlugin(betterMonadicFor)
+  )
+
+lazy val akka = project
+  .in(file("akka"))
+  .settings(shared, compilation, noPublish)
+  .aggregate(akkaMarshalling, akkaTestArchive)
+
 lazy val kernel = project
   .in(file("delta/kernel"))
   .settings(name := "delta-kernel", moduleName := "delta-kernel")
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
     libraryDependencies  ++= Seq(
-      akkaStream, // Needed to create content type
-      akkaHttp,
       caffeine,
       catsCore,
       catsRetry,
@@ -262,10 +302,7 @@ lazy val kernel = project
       kamonCore,
       log4cats,
       munit           % Test,
-      munitCatsEffect % Test,
-      scalaTest       % Test,
-      akkaTestKit     % Test,
-      akkaHttpTestKit % Test
+      munitCatsEffect % Test
     ) ++ pureConfig ++ http4s,
     addCompilerPlugin(kindProjector),
     addCompilerPlugin(betterMonadicFor),
@@ -280,7 +317,6 @@ lazy val testkit = project
   .settings(
     coverageMinimumStmtTotal := 0,
     libraryDependencies     ++= Seq(
-      alpakkaFile,
       logback,
       munit,
       munitCatsEffect,
@@ -337,7 +373,7 @@ lazy val sdk = project
     name       := "delta-sdk",
     moduleName := "delta-sdk"
   )
-  .dependsOn(kernel, sourcingPsql % "compile->compile;test->test", rdf % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(kernel, akkaMarshalling, sourcingPsql % "compile->compile;test->test", rdf % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
@@ -575,8 +611,9 @@ lazy val archivePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk           % Provided,
-    storagePlugin % "provided;test->test"
+    sdk             % Provided,
+    akkaTestArchive % "test->compile",
+    storagePlugin   % "provided;test->test"
   )
   .settings(
     name                       := "delta-archive-plugin",
@@ -663,7 +700,7 @@ lazy val delta = project
 
 lazy val tests = project
   .in(file("tests"))
-  .dependsOn(testkit)
+  .dependsOn(akkaMarshalling, testkit, akkaTestArchive)
   .settings(noPublish)
   .settings(shared, compilation, coverage, release)
   .settings(
@@ -694,7 +731,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(compilation, shared, noPublish)
-  .aggregate(docs, delta, tests)
+  .aggregate(docs, akka, delta, tests)
 
 lazy val noPublish = Seq(
   publish / skip                         := true,
@@ -885,7 +922,7 @@ addCommandAlias(
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
 addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
 
-val coreModules = List("kernel", "rdf", "sdk", "sourcingPsql", "testkit")
+val coreModules = List("kernel", "akkaMarshalling", "akkaTestArchive", "rdf", "sdk", "sourcingPsql", "testkit")
 
 val staticAnalysis =
   s"""
