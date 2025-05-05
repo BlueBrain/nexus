@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.*
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import com.typesafe.config.Config
 import org.http4s.{BasicCredentials, Uri}
 import pureconfig.module.http4s.*

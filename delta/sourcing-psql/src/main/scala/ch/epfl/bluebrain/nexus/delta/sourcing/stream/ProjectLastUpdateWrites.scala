@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectLastUpdateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{ElemStreaming, SelectFilter}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 
 trait ProjectLastUpdateWrites
@@ -51,7 +51,7 @@ object ProjectLastUpdateWrites {
       batchConfig: BatchConfig
   ): IO[ProjectLastUpdateWrites] = {
     val source             = Source { (offset: Offset) => elemStream(offset) }
-    val sink               = ProjectLastUpdatesSink(store, batchConfig.maxElements, batchConfig.maxInterval)
+    val sink               = ProjectLastUpdatesSink(store, batchConfig)
     val compiledProjection = CompiledProjection.compile(
       projectionMetadata,
       ExecutionStrategy.PersistentSingleNode,

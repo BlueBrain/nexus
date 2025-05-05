@@ -139,8 +139,7 @@ object ElasticSearchCoordinator {
         graphStream,
         PipeChain.compile(_, registry),
         supervisor,
-        (v: ActiveViewDef) =>
-          ElasticSearchSink.states(client, config.batch.maxElements, config.batch.maxInterval, v.index, Refresh.False),
+        (v: ActiveViewDef) => ElasticSearchSink.states(client, config.batch, v.index, Refresh.False),
         (v: ActiveViewDef) =>
           client
             .createIndex(v.index, Some(v.mapping), Some(v.settings))

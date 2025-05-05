@@ -1,7 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.config
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{PurgeConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.ProjectionConfig.ClusterConfig
 import pureconfig.ConfigReader
 import pureconfig.error.FailureReason
 import pureconfig.generic.semiauto.deriveReader

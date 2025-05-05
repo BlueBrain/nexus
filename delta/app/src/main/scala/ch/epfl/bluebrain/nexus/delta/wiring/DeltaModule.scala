@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmProvisioning
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.partition.DatabasePartitioner
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.{ProjectLastUpdateConfig, ProjectionConfig}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.config
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.config
 
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
@@ -17,7 +17,7 @@ final case class BatchConfig(maxElements: Int, maxInterval: FiniteDuration)
 
 object BatchConfig {
 
-  val individual = BatchConfig(1, 200.millis)
+  val individual: BatchConfig = BatchConfig(1, 200.millis)
 
   implicit final val batchConfigReader: ConfigReader[BatchConfig] =
     deriveReader[BatchConfig]

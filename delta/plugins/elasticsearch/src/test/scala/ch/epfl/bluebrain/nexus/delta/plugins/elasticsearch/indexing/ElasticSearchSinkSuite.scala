@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailureReason
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import fs2.Chunk
 import io.circe.Json
@@ -22,7 +23,7 @@ class ElasticSearchSinkSuite extends NexusElasticsearchSuite with ElasticSearchC
   override def munitFixtures: Seq[AnyFixture[?]] = List(esClient)
 
   private def createSink(index: IndexLabel) =
-    ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)
+    ElasticSearchSink.states(client, BatchConfig(2, 50.millis), index, Refresh.True)
 
   private val membersEntity = EntityType("members")
   private val index         = IndexLabel.unsafe("test_members")
@@ -132,7 +133,7 @@ class ElasticSearchSinkSuite extends NexusElasticsearchSuite with ElasticSearchC
     val charlie_2 = (nxv + "charlie", json"""{"name": "Charlie M.", "age": 35 }""")
 
     val chunk = asChunk(List(charlie, rose, charlie_2))
-    val sink  = ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)
+    val sink  = ElasticSearchSink.states(client, BatchConfig(2, 50.millis), index, Refresh.True)
 
     for {
       _ <- client.createIndex(index, None, None).assertEquals(true)
@@ -151,7 +152,7 @@ class ElasticSearchSinkSuite extends NexusElasticsearchSuite with ElasticSearchC
 
     val chunk = Chunk.concat(List(indexingChunk, deleteChunk))
 
-    val sink = ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)
+    val sink = ElasticSearchSink.states(client, BatchConfig(2, 50.millis), index, Refresh.True)
 
     for {
       _ <- client.createIndex(index, None, None).assertEquals(true)

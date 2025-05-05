@@ -7,32 +7,27 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.MarkElems
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.{Index, Noop, UpdateByQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import fs2.Chunk
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, ElemChunk}
 import io.circe.JsonObject
 import io.circe.literal.*
 import io.circe.syntax.EncoderOps
 import shapeless.Typeable
 
-import scala.concurrent.duration.FiniteDuration
-
 /**
   * Sink that pushes the [[GraphAnalyticsResult]] to the given index
   * @param client
   *   the ES client
-  * @param chunkSize
-  *   the maximum number of documents to be pushed at once
-  * @param maxWindow
-  *   the maximum window before a document is pushed
+  * @param batchConfig
+  *   the batch configuration for the sink
   * @param index
   *   the index to push into
   */
 final class GraphAnalyticsSink(
     client: ElasticSearchClient,
-    override val chunkSize: Int,
-    override val maxWindow: FiniteDuration,
+    override val batchConfig: BatchConfig,
     index: IndexLabel
 ) extends Sink {
 
@@ -69,7 +64,7 @@ final class GraphAnalyticsSink(
 
   private def documentId[A](elem: Elem[A]) = elem.id.toString
 
-  override def apply(elements: Chunk[Elem[GraphAnalyticsResult]]): IO[Chunk[Elem[Unit]]] = {
+  override def apply(elements: ElemChunk[GraphAnalyticsResult]): IO[ElemChunk[Unit]] = {
     val result = elements.foldLeft(GraphAnalyticsSink.empty) {
       case (acc, success: SuccessElem[GraphAnalyticsResult]) =>
         success.value match {

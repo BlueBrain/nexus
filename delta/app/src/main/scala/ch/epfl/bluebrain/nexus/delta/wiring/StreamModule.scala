@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.{Clock, IO, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ElemQueryConfig, ProjectLastUpdateConfig, ProjectionConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ElemQueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectLastUpdateStore, ProjectLastUpdateStream, ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.ElemStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PurgeProjectionCoordinator.PurgeProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.{ProjectLastUpdateConfig, ProjectionConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.StateTombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures, Transactors}

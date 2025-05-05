@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode.{Async, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, ElemStream, Projection}
 
 import scala.concurrent.duration.*

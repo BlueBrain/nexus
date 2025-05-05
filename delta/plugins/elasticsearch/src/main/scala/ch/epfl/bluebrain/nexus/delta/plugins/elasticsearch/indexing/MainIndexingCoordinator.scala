@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.main.MainIndexDef
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, SourceAsText}
 
 sealed trait MainIndexingCoordinator
@@ -118,8 +118,7 @@ object MainIndexingCoordinator {
       def fetchProjects(offset: Offset) =
         projects.states(offset).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) })
 
-      def elasticsearchSink =
-        ElasticSearchSink.mainIndexing(client, batch.maxElements, batch.maxInterval, targetIndex, Refresh.False)
+      def elasticsearchSink = ElasticSearchSink.mainIndexing(client, batch, targetIndex, Refresh.False)
 
       def createAlias(project: ProjectRef) = client.createAlias(mainIndexingAlias(targetIndex, project))
 

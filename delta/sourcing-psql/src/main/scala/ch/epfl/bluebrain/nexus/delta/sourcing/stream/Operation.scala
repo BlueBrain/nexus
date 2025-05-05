@@ -4,13 +4,11 @@ import cats.data.NonEmptyChain
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemChunk, ElemPipe, ElemStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import fs2.{Pull, Stream}
 import shapeless.Typeable
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Operations represent individual steps in a [[Projection]] where [[Elem]] values are processed.
@@ -228,14 +226,12 @@ object Operation {
     type Out = Unit
     def outType: Typeable[Out] = Typeable[Unit]
 
-    def chunkSize: Int
-
-    def maxWindow: FiniteDuration
+    def batchConfig: BatchConfig
 
     def apply(elements: ElemChunk[In]): IO[ElemChunk[Unit]]
 
     override protected[stream] def asFs2: ElemPipe[In, Unit] =
-      _.groupWithin(chunkSize, maxWindow)
+      _.groupWithin(batchConfig.maxElements, batchConfig.maxInterval)
         .evalMap { chunk =>
           apply(chunk)
         }

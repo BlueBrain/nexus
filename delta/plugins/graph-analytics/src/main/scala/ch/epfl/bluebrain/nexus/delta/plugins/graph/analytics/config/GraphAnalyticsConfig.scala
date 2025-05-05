@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config
 
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import com.typesafe.config.Config
 import pureconfig.error.FailureReason
 import pureconfig.generic.semiauto.deriveReader
