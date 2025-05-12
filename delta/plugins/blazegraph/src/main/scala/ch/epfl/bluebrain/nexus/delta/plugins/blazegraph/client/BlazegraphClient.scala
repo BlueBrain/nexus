@@ -87,6 +87,7 @@ final class BlazegraphClient(client: Client[IO], endpoint: Uri, queryTimeout: Du
         val request       = POST(endpoint / "namespace").withEntity(withNamespace.toString)
         client.status(request).flatMap {
           case Status.Created  => IO.pure(true)
+          case Status.Conflict => IO.pure(false)
           case Status.NotFound => IO.pure(false)
           case status          => IO.raiseError(SparqlActionError(status, "create"))
         }
