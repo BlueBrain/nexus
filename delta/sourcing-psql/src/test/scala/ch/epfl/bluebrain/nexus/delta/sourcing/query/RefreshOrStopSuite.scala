@@ -9,8 +9,7 @@ import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.PatienceConfig
 import fs2.concurrent.SignallingRef
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
 
 class RefreshOrStopSuite extends NexusSuite {
 
@@ -81,19 +80,6 @@ class RefreshOrStopSuite extends NexusSuite {
       _                    <- signal.set(true)
       _                    <- obtained.get.assertEquals(Some(expected)).eventually
     } yield ()
-  }
-
-  test("Safely add two durations and return the result") {
-    val d1       = FiniteDuration(42L, TimeUnit.NANOSECONDS)
-    val d2       = FiniteDuration(8L, TimeUnit.NANOSECONDS)
-    val expected = FiniteDuration(50L, TimeUnit.NANOSECONDS)
-    assertEquals(RefreshOrStop.safeAdd(d1, d2), Some(expected))
-  }
-
-  test("Trigger an overflow and handle the error") {
-    val d1 = FiniteDuration(Long.MaxValue - 5L, TimeUnit.NANOSECONDS)
-    val d2 = FiniteDuration(8L, TimeUnit.NANOSECONDS)
-    assertEquals(RefreshOrStop.safeAdd(d1, d2), None)
   }
 
 }
