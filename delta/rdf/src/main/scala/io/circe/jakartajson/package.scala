@@ -1,8 +1,9 @@
 package io.circe
 
+import com.apicatalog.jsonld.json.JsonProvider
 import io.circe.syntax.EncoderOps
 import jakarta.json.JsonValue.ValueType as JakartaValueType
-import jakarta.json.{Json as JakartaJson, JsonNumber as JakartaJsonNumber, JsonObject as JakartaJsonObject, JsonString, JsonValue as JakartaJsonValue}
+import jakarta.json.{JsonNumber as JakartaJsonNumber, JsonObject as JakartaJsonObject, JsonString, JsonValue as JakartaJsonValue}
 
 import scala.jdk.CollectionConverters.*
 import java.math.BigDecimal as JBigDecimal
@@ -12,6 +13,8 @@ import java.math.BigDecimal as JBigDecimal
   * https://github.com/circe/circe-jackson/blob/master/shared/src/main/scala/io/circe/jackson/package.scala
   */
 package object jakartajson {
+
+  private val jsonProvider = JsonProvider.instance
 
   private val negativeZeroJson: Json = Json.fromDoubleOrNull(-0.0)
 
@@ -31,41 +34,41 @@ package object jakartajson {
     },
     number =>
       if (json == negativeZeroJson) {
-        JakartaJson.createValue(number.toDouble)
+        jsonProvider.createValue(number.toDouble)
       } else
         number match {
           case _: JsonBiggerDecimal | _: JsonBigDecimal =>
             number.toBigDecimal
-              .map(bigDecimal => JakartaJson.createValue(bigDecimal.underlying))
-              .getOrElse(JakartaJson.createValue(number.toString))
-          case JsonLong(x)                              => JakartaJson.createValue(x)
-          case JsonDouble(x)                            => JakartaJson.createValue(x)
-          case JsonFloat(x)                             => JakartaJson.createValue(x.toDouble)
+              .map(bigDecimal => jsonProvider.createValue(bigDecimal.underlying))
+              .getOrElse(jsonProvider.createValue(number.toString))
+          case JsonLong(x)                              => jsonProvider.createValue(x)
+          case JsonDouble(x)                            => jsonProvider.createValue(x)
+          case JsonFloat(x)                             => jsonProvider.createValue(x.toDouble)
           case JsonDecimal(x)                           =>
             try {
-              JakartaJson.createValue(new JBigDecimal(x))
+              jsonProvider.createValue(new JBigDecimal(x))
             } catch {
-              case _: NumberFormatException => JakartaJson.createValue(x)
+              case _: NumberFormatException => jsonProvider.createValue(x)
             }
         },
-    JakartaJson.createValue,
+    jsonProvider.createValue,
     array =>
       array
-        .foldLeft(JakartaJson.createArrayBuilder) { case (builder, json) =>
+        .foldLeft(jsonProvider.createArrayBuilder) { case (builder, json) =>
           builder.add(circeToJakarta(json))
         }
         .build(),
     obj => {
-      obj.toMap
-        .foldLeft(JakartaJson.createObjectBuilder()) { case (builder, (key, value)) =>
+      obj.toIterable
+        .foldLeft(jsonProvider.createObjectBuilder()) { case (builder, (key, value)) =>
           builder.add(key, circeToJakarta(value))
         }
         .build()
     }
   )
 
-  def circeToJakarta(obj: JsonObject): JakartaJsonObject = obj.toMap
-    .foldLeft(JakartaJson.createObjectBuilder()) { case (builder, (key, value)) =>
+  def circeToJakarta(obj: JsonObject): JakartaJsonObject = obj.toIterable
+    .foldLeft(jsonProvider.createObjectBuilder()) { case (builder, (key, value)) =>
       builder.add(key, circeToJakarta(value))
     }
     .build()
