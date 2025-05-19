@@ -12,7 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultWriterConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
+import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import io.circe.{Json, Printer}
 
 /**
@@ -31,12 +34,12 @@ trait RdfMarshalling {
     */
   implicit def jsonLdMarshaller[A <: JsonLd](implicit
       ordering: JsonKeyOrdering,
-      printer: Printer = defaultPrinter
+      codec: JsonValueCodec[Json] = RdfMarshalling.jsonCodecDropNull
   ): ToEntityMarshaller[A] =
     Marshaller.withFixedContentType(ContentType(`application/ld+json`)) { jsonLd =>
       HttpEntity(
         `application/ld+json`,
-        ByteString(printer.printToByteBuffer(jsonLd.json.sort, `application/ld+json`.charset.nioCharset()))
+        ByteString(writeToArray(jsonLd.json.sort, defaultWriterConfig))
       )
     }
 
@@ -45,13 +48,14 @@ trait RdfMarshalling {
     */
   def customContentTypeJsonMarshaller(
       contentType: ContentType
-  )(implicit ordering: JsonKeyOrdering, printer: Printer = defaultPrinter): ToEntityMarshaller[Json] =
+  )(implicit
+      ordering: JsonKeyOrdering,
+      codec: JsonValueCodec[Json] = RdfMarshalling.jsonCodecDropNull
+  ): ToEntityMarshaller[Json] =
     Marshaller.withFixedContentType(contentType) { json =>
       HttpEntity(
         contentType,
-        ByteString(
-          printer.printToByteBuffer(json.sort, contentType.charsetOption.getOrElse(HttpCharsets.`UTF-8`).nioCharset())
-        )
+        ByteString(writeToArray(json.sort, defaultWriterConfig))
       )
     }
 
@@ -60,7 +64,7 @@ trait RdfMarshalling {
     */
   implicit def jsonMarshaller(implicit
       ordering: JsonKeyOrdering,
-      printer: Printer = defaultPrinter
+      codec: JsonValueCodec[Json] = RdfMarshalling.jsonCodecDropNull
   ): ToEntityMarshaller[Json] =
     Marshaller.oneOf(jsonMediaTypes.map(customContentTypeJsonMarshaller)*)
 
@@ -95,4 +99,11 @@ trait RdfMarshalling {
     Unmarshaller.strict(SparqlQuery(_))
 }
 
-object RdfMarshalling extends RdfMarshalling
+object RdfMarshalling extends RdfMarshalling {
+  private val defaultWriterConfig: WriterConfig = WriterConfig.withPreferredBufSize(100 * 1024)
+
+  val jsonCodecDropNull: JsonValueCodec[Json] =
+    JsoniterScalaCodec.jsonCodec(maxDepth = 512, doSerialize = _ ne Json.Null)
+  val jsonSourceCodec: JsonValueCodec[Json]   = JsoniterScalaCodec.jsonCodec(maxDepth = 512)
+
+}

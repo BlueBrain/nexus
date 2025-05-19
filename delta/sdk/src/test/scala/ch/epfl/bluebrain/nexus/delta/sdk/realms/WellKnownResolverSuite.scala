@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import io.circe.Json
-import org.http4s.circe.CirceInstances
+import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.*
 import org.http4s.{Method, Status, Uri}
 import org.http4s.client.UnexpectedStatus
 import org.http4s.implicits.http4sLiteralsSyntax

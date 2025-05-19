@@ -156,7 +156,7 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
       q: SparqlQuery,
       additionalHeaders: Seq[Header.ToRaw]
   ): IO[SparqlResultsResponse] = {
-    import org.http4s.circe.CirceEntityDecoder.*
+    import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityDecoder.*
     namespace.toList
       .foldLeftM(SparqlResults.empty) { (results, namespace) =>
         queryRequest[SparqlResults](namespace, q, SparqlResultsJson.mediaTypes, additionalHeaders)
@@ -194,7 +194,7 @@ trait SparqlClient extends SparqlQueryClient with XmlSupport {
       q: SparqlQuery,
       additionalHeaders: Seq[Header.ToRaw]
   ): IO[SparqlJsonLdResponse] = {
-    import org.http4s.circe.CirceEntityDecoder.*
+    import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityDecoder.*
     namespaces.toList
       .foldLeftM(Vector.empty[Json]) { (results, namespace) =>
         queryRequest[Json](namespace, q, SparqlJsonLd.mediaTypes, additionalHeaders)

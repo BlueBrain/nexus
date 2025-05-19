@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.instances
 
+import ch.epfl.bluebrain.nexus.delta.kernel.http
+import ch.epfl.bluebrain.nexus.delta.kernel.http.circe
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -8,8 +10,8 @@ import org.http4s.Uri
 
 trait UriInstances {
 
-  implicit val uriEncoder: Encoder[Uri] = org.http4s.circe.encodeUri
-  implicit val uriDecoder: Decoder[Uri] = org.http4s.circe.decodeUri
+  implicit val uriEncoder: Encoder[Uri] = circe.encodeUri
+  implicit val uriDecoder: Decoder[Uri] = http.circe.decodeUri
 
   implicit final val uriJsonLdEncoder: JsonLdEncoder[Uri] = JsonLdEncoder.computeFromCirce(ContextValue.empty)
   implicit final val uriJsonLdDecoder: JsonLdDecoder[Uri] =

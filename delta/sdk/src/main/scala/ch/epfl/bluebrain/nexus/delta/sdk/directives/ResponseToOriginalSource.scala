@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{conditionalCache, requestEncoding}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.jsonSourceCodec
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, OriginalSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import io.circe.syntax.EncoderOps
@@ -32,7 +33,7 @@ object ResponseToOriginalSource extends RdfMarshalling {
   implicit private def originalSourceMarshaller(implicit
       ordering: JsonKeyOrdering
   ): ToEntityMarshaller[OriginalSource] =
-    jsonMarshaller(ordering, sourcePrinter).compose(_.asJson)
+    jsonMarshaller(ordering, jsonSourceCodec).compose(_.asJson)
 
   private[directives] def apply[E: JsonLdEncoder](
       io: IO[Either[Response[E], Complete[OriginalSource]]]

@@ -125,7 +125,7 @@ final class BlazegraphClient(client: Client[IO], endpoint: Uri, queryTimeout: Du
     val namespacePredicate = "http://www.bigdata.com/rdf#/features/KB/Namespace"
     val describeEndpoint   = (endpoint / "namespace").withQueryParam("describe-each-named-graph", "false")
     val request            = GET(describeEndpoint, accept(SparqlResultsJson.mediaTypes))
-    import org.http4s.circe.CirceEntityDecoder.*
+    import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityDecoder.*
     client.expect[SparqlResults](request).map { response =>
       response.results.bindings.foldLeft(Vector.empty[String]) { case (acc, binding) =>
         val isNamespace   = binding.get("predicate").exists(_.value == namespacePredicate)

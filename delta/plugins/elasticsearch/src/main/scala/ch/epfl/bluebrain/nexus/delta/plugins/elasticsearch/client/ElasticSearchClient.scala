@@ -17,9 +17,9 @@ import io.circe.*
 import io.circe.literal.*
 import io.circe.syntax.*
 import org.http4s.Method.*
-import org.http4s.circe.*
-import org.http4s.circe.CirceEntityEncoder.*
-import org.http4s.circe.CirceEntityDecoder.*
+import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.*
+import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityEncoder.*
+import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityDecoder.*
 import org.http4s.client.Client
 import org.http4s.client.dsl.io.*
 import org.http4s.client.middleware.GZip

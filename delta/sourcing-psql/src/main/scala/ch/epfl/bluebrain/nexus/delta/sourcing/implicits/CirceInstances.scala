@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.implicits
 
-import cats.Show
-import cats.syntax.all.*
 import cats.data.NonEmptyList
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.CirceInstances.{defaultWriterConfig, jsonSourceCodec}
+import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import doobie.util.{Get, Put}
-import io.circe.jawn.parse
 import io.circe.syntax.*
-import io.circe.{Decoder, Encoder, Json, Printer}
+import io.circe.{Decoder, Encoder, Json}
 import org.postgresql.util.PGobject
 
 /**
@@ -17,12 +18,16 @@ import org.postgresql.util.PGobject
   */
 trait CirceInstances {
 
-  implicit private val showPGobject: Show[PGobject] = Show.show(_.getValue.take(250))
-
   implicit def jsonbPut: Put[Json] =
-    jsonbPut(Printer.noSpaces)
+    jsonbPut(jsonSourceCodec)
 
-  def jsonbPut(printer: Printer): Put[Json] =
+  def write(value: Json)(implicit codec: JsonValueCodec[Json]): String =
+    writeToString(value, defaultWriterConfig)
+
+  def read(value: String): Json =
+    readFromString(value)(jsonSourceCodec)
+
+  def jsonbPut(implicit codec: JsonValueCodec[Json]): Put[Json] =
     Put.Advanced
       .other[PGobject](
         NonEmptyList.of("jsonb")
@@ -30,7 +35,7 @@ trait CirceInstances {
       .tcontramap { a =>
         val o = new PGobject
         o.setType("jsonb")
-        o.setValue(printer.print(a))
+        o.setValue(write(a))
         o
       }
 
@@ -39,7 +44,7 @@ trait CirceInstances {
       .other[PGobject](
         NonEmptyList.of("jsonb")
       )
-      .temap(a => parse(a.getValue).leftMap(_.show))
+      .map(a => read(a.getValue))
 
   def pgEncoderPutT[A: Encoder]: Put[A] =
     Put[Json].tcontramap(_.asJson)
@@ -53,4 +58,13 @@ trait CirceInstances {
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def pgDecoderGet[A: Decoder]: Get[A] =
     Get[Json].map(json => json.as[A].fold(throw _, identity))
+}
+
+object CirceInstances extends CirceInstances {
+
+  private val defaultWriterConfig: WriterConfig = WriterConfig.withPreferredBufSize(100 * 1024)
+
+  val jsonCodecDropNull: JsonValueCodec[Json] =
+    JsoniterScalaCodec.jsonCodec(maxDepth = 512, doSerialize = _ ne Json.Null)
+  val jsonSourceCodec: JsonValueCodec[Json]   = JsoniterScalaCodec.jsonCodec(maxDepth = 512)
 }

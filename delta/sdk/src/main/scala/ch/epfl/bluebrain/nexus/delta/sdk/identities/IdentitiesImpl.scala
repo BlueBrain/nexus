@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import io.circe.{Decoder, HCursor, Json}
 import org.http4s.Method.GET
-import org.http4s.circe.*
+import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.*
 import org.http4s.client.dsl.io.*
 import org.http4s.client.{Client, UnexpectedStatus}
 import org.http4s.headers.Authorization

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 import akka.http.scaladsl.model.{StatusCode as AkkaStatusCode, StatusCodes}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
-import ch.epfl.bluebrain.nexus.delta.kernel.http.client.ResponseUtils.decodeBodyAsJson
+import ch.epfl.bluebrain.nexus.delta.kernel.http.ResponseUtils.decodeBodyAsJson
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
