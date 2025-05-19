@@ -22,7 +22,7 @@ trait ResourceShifts {
   /**
     * Fetch a resource as a [[JsonLdContent]]
     */
-  def fetch(reference: ResourceRef, project: ProjectRef): IO[Option[JsonLdContent[?, ?]]]
+  def fetch(reference: ResourceRef, project: ProjectRef): IO[Option[JsonLdContent[?]]]
 
   /**
     * Return a function to decode a json to a [[GraphResource]] according to its [[EntityType]]
@@ -38,19 +38,19 @@ object ResourceShifts {
   private case class NoShiftAvailable(entityType: EntityType)
       extends Exception(s"No shift is available for entity type $entityType")
 
-  def apply(shifts: Set[ResourceShift[?, ?, ?]], xas: Transactors)(implicit
+  def apply(shifts: Set[ResourceShift[?, ?]], xas: Transactors)(implicit
       cr: RemoteContextResolution
   ): ResourceShifts = new ResourceShifts {
     private val shiftsMap = shifts.map { encoder => encoder.entityType -> encoder }.toMap
 
     override def entityTypes: Option[NonEmptyList[EntityType]] = NonEmptyList.fromList(shiftsMap.keys.toList)
 
-    private def findShift(entityType: EntityType): IO[ResourceShift[?, ?, ?]] = IO
+    private def findShift(entityType: EntityType): IO[ResourceShift[?, ?]] = IO
       .fromOption(shiftsMap.get(entityType))(
         NoShiftAvailable(entityType)
       )
 
-    override def fetch(reference: ResourceRef, project: ProjectRef): IO[Option[JsonLdContent[?, ?]]] =
+    override def fetch(reference: ResourceRef, project: ProjectRef): IO[Option[JsonLdContent[?]]] =
       for {
         entityType <- EntityCheck.findType(reference.iri, project, xas)
         shift      <- entityType.traverse(findShift)

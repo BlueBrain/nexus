@@ -113,9 +113,9 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with ArchiveH
 
   private val generatedId = project.base.iri / uuid.toString
 
-  val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[?, ?]]] = {
+  val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[?]]] = {
     case (`fileId`, `projectRef`) =>
-      IO.pure(Some(JsonLdContent(file, file.value.asJson, None)))
+      IO.pure(Some(JsonLdContent(file, file.value.asJson, file.value.tags)))
     case _                        =>
       IO.none
   }

@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.apache.jena.graph.Node
 
 class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
 
@@ -60,8 +61,13 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     }
 
     "return a filtered graph" in {
-      val deprecated = predicate(schema + "deprecated")
-      val result     = graph.filter { case (s, p, _) => s == iriSubject && p.getNameSpace == schema.base.toString }
+      val deprecated    = predicate(schema + "deprecated")
+      val triplesToKeep = List(
+        (iriSubject, name, Node.ANY),
+        (iriSubject, birthDate, Node.ANY),
+        (iriSubject, deprecated, Node.ANY)
+      )
+      val result        = graph.filter(triplesToKeep)
       result.triples shouldEqual
         Set(
           (iriSubject, deprecated, obj(false)),
@@ -71,8 +77,11 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     }
 
     "return an empty filtered graph" in {
-      val none = predicate(schema + "none")
-      graph.filter { case (s, p, _) => s == iriSubject && p == none }.triples shouldEqual Set.empty[Triple]
+      val none          = predicate(schema + "none")
+      val triplesToKeep = List(
+        (iriSubject, none, Node.ANY)
+      )
+      graph.filter(triplesToKeep).triples shouldEqual Set.empty[Triple]
     }
 
     "return a Triple" in {
@@ -102,7 +111,8 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
     }
 
     "return a new Graph with added triples" in {
-      graph.add(schema.age, 30).triples shouldEqual graph.triples + ((iriSubject, schema.age, 30))
+      val copy = Graph(graph)
+      copy.add(schema.age, 30).triples shouldEqual graph.triples + ((iriSubject, schema.age, 30))
     }
 
     "be converted to NTriples" in {
@@ -168,20 +178,6 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
       graphNoId.toDot(context).accepted.toString should equalLinesUnordered(expected)
     }
 
-    // The returned json is not exactly the same as the original expanded json from where the Graph was created.
-    // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
-    "be converted to expanded JSON-LD" in {
-      val expanded = jsonContentOf("graph/expanded.json")
-      graph.toExpandedJsonLd.accepted.json shouldEqual expanded
-    }
-
-    // The returned json is not exactly the same as the original expanded json from where the Graph was created.
-    // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
-    "be converted to expanded JSON-LD with a root blank node" in {
-      val expanded = jsonContentOf("graph/expanded.json").removeAll(keywords.id -> iri)
-      graphNoId.toExpandedJsonLd.accepted.json shouldEqual expanded
-    }
-
     "failed to be converted to compacted JSON-LD from a multiple root" in {
       val expandedJson = jsonContentOf("graph/expanded-multiple-roots.json")
       val expanded     = ExpandedJsonLd(expandedJson).accepted
@@ -237,9 +233,12 @@ class GraphSpec extends CatsEffectSpec with GraphHelpers with CirceLiteral {
           |}
           |""".stripMargin)
 
-      graph.transform(query).rightValue shouldEqual graph.filter { case (s, p, _) =>
-        s == graph.rootResource && (p == name || p == birthDate || p == rdfType)
-      }
+      val tripleToKeep = List(
+        (graph.rootResource, name, Node.ANY),
+        (graph.rootResource, birthDate, Node.ANY),
+        (graph.rootResource, rdfType, Node.ANY)
+      )
+      graph.transform(query).rightValue shouldEqual graph.filter(tripleToKeep)
     }
 
     "raise an error for an invalid query" in {

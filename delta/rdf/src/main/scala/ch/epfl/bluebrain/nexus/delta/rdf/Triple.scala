@@ -76,10 +76,8 @@ object Triple {
   def obj(value: IriOrBNode): Node =
     subject(value)
 
-  final def apply(quad: Quad): Triple = {
-    val triple = quad.asTriple()
-    (triple.getSubject, triple.getPredicate, triple.getObject)
-  }
+  final def apply(quad: Quad): Triple =
+    (quad.getSubject, quad.getPredicate, quad.getObject)
 
 }
 // $COVERAGE-ON$

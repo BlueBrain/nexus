@@ -12,13 +12,14 @@ import com.apicatalog.jsonld.JsonLdOptions.RdfDirection
 import com.apicatalog.jsonld.context.ActiveContext
 import com.apicatalog.jsonld.document.{JsonDocument, RdfDocument}
 import com.apicatalog.jsonld.loader.DocumentLoader
-import com.apicatalog.jsonld.processor.ProcessingRuntime
+import com.apicatalog.jsonld.processor.{ProcessingRuntime, ToRdfProcessor}
 import com.apicatalog.jsonld.uri.UriValidationPolicy
 import com.apicatalog.jsonld.{JsonLd, JsonLdError, JsonLdErrorCode, JsonLdOptions as TitaniumJsonLdOptions}
+import com.apicatalog.rdf.RdfDatasetSupplier
 import io.circe.jakartajson.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
-import jakarta.json.JsonStructure
+import jakarta.json.{JsonArray, JsonStructure}
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.jena.irix.IRIxResolver
 import org.apache.jena.riot.RIOT
@@ -50,7 +51,7 @@ final class TitaniumJsonLdApi(config: JsonLdApiConfig) extends JsonLdApi {
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[JsonObject] = {
     for {
       document  <- tryExpensiveIO(circeToDocument(input), "building input")
-      context   <- tryExpensiveIO(circeToDocument(ctx.contextObj.asJson), "building context")
+      context   <- tryExpensiveIO(ctx.titaniumDocument, "building context")
       options   <- documentLoader(input, ctx.contextObj.asJson).map(toOpts)
       compacted <-
         tryExpensiveIO(jakartaJsonToCirceObject(JsonLd.compact(document, context).options(options).get()), "compacting")
@@ -86,8 +87,13 @@ final class TitaniumJsonLdApi(config: JsonLdApiConfig) extends JsonLdApi {
 
   override private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): IO[DatasetGraph] = {
     def toRdf: DatasetGraph = {
-      val document     = circeToDocument(input)
-      val rdfDataset   = JsonLd.toRdf(document).options(toOpts(TitaniumDocumentLoader.empty)).get()
+      val consumer     = new RdfDatasetSupplier
+      ToRdfProcessor.toRdf(
+        consumer,
+        circeToJakarta(input).asInstanceOf[JsonArray],
+        toOpts(TitaniumDocumentLoader.empty)
+      )
+      val rdfDataset   = consumer.get()
       val errorHandler = config.errorHandling match {
         case ErrorHandling.Default   => ErrorHandlerFactory.getDefaultErrorHandler
         case ErrorHandling.Strict    => ErrorHandlerFactory.errorHandlerStrictNoLogging

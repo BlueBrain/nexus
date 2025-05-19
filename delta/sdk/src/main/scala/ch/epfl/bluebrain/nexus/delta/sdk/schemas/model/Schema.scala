@@ -71,8 +71,8 @@ final case class Schema(
 
 object Schema {
 
-  def toJsonLdContent(schema: ResourceF[Schema]): JsonLdContent[Schema, Nothing] =
-    JsonLdContent(schema, schema.value.source, None)
+  def toJsonLdContent(schema: ResourceF[Schema]): JsonLdContent[Schema] =
+    JsonLdContent(schema, schema.value.source, schema.value.tags)
 
   implicit val schemaJsonLdEncoder: JsonLdEncoder[Schema] =
     new JsonLdEncoder[Schema] {

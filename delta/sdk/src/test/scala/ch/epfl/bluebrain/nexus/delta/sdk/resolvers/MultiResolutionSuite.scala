@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult,
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, Tags}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import io.circe.Json
 
@@ -45,12 +45,12 @@ class MultiResolutionSuite extends NexusSuite with Fixtures {
   private val unknownResourceRef = Latest(unknownResourceId)
 
   private def content[R](resource: ResourceF[R], source: Json)(implicit enc: JsonLdEncoder[R]) =
-    JsonLdContent(resource, source, None)
+    JsonLdContent(resource, source, Tags.empty)
 
   private val resourceValue = content(resourceFR, resourceFR.value.source)
   private val schemaValue   = content(resourceFS, resourceFS.value.source)
 
-  def fetch: (ResourceRef, ProjectRef) => Fetch[JsonLdContent[?, ?]] =
+  def fetch: (ResourceRef, ProjectRef) => Fetch[JsonLdContent[?]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
         case Latest(`resourceId`)       => IO.pure(Some(resourceValue))

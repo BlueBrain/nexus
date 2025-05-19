@@ -78,7 +78,6 @@ final case class ResourceState(
 
   def toAssembly: IO[JsonLdAssembly] = {
     implicit val api: JsonLdApi = TitaniumJsonLdApi.lenient
-    tags.tags
     expanded.toGraph
       .map { graph =>
         JsonLdAssembly(id, source, compacted, expanded, graph, remoteContexts)

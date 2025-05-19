@@ -129,7 +129,7 @@ object ResourceGen {
       resolution: RemoteContextResolution
   ) = {
     val resourceF = sourceToResourceF(id, project, source)
-    JsonLdContent(resourceF, resourceF.value.source, None)
+    JsonLdContent(resourceF, resourceF.value.source, Tags.empty)
   }
 
   implicit final private class CatsIOValuesOps[A](private val io: IO[A]) {

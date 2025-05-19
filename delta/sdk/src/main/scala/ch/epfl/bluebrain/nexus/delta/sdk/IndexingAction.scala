@@ -88,7 +88,7 @@ object IndexingAction {
   ) {
 
     def apply[A](project: ProjectRef, res: ResourceF[A], indexingMode: IndexingMode)(implicit
-        shift: ResourceShift[?, A, ?]
+        shift: ResourceShift[?, A]
     ): IO[Unit] =
       indexingMode match {
         case Async => IO.unit

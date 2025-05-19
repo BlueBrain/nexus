@@ -23,7 +23,7 @@ trait MultiFetch {
 object MultiFetch {
   def apply(
       aclCheck: AclCheck,
-      fetchResource: MultiFetchRequest.Input => IO[Option[JsonLdContent[?, ?]]]
+      fetchResource: MultiFetchRequest.Input => IO[Option[JsonLdContent[?]]]
   ): MultiFetch =
     new MultiFetch {
       override def apply(request: MultiFetchRequest)(implicit

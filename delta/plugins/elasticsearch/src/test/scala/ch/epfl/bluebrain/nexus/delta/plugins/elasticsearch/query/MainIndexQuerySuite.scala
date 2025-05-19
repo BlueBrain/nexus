@@ -22,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.*
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
@@ -327,8 +326,8 @@ object MainIndexQuerySuite {
         rcr: RemoteContextResolution,
         jsonldApi: JsonLdApi
     ): IO[Json] = {
-      val metadata = Resource.fileMetadataEncoder(Resource.Metadata(tag.toList))
-      asResourceF.toCompactedJsonLd.map(_.json.deepMerge(metadata))
+      val tags = Json.obj("_tags" -> tag.toList.asJson)
+      asResourceF.toCompactedJsonLd.map(_.json.deepMerge(tags))
     }
   }
 

@@ -49,7 +49,7 @@ object IdResolution {
 
   object ResolutionResult {
 
-    final case class SingleResult[A](id: ResourceRef, project: ProjectRef, content: JsonLdContent[A, ?])
+    final case class SingleResult[A](id: ResourceRef, project: ProjectRef, content: JsonLdContent[A])
         extends ResolutionResult
 
     case class MultipleResults(searchResults: SearchResults[JsonObject]) extends ResolutionResult
@@ -60,7 +60,7 @@ object IdResolution {
     implicit def resultJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ResolutionResult] =
       new JsonLdEncoder[ResolutionResult] {
 
-        private def encoder[A](value: JsonLdContent[A, ?])(implicit baseUri: BaseUri): JsonLdEncoder[ResourceF[A]] = {
+        private def encoder[A](value: JsonLdContent[A])(implicit baseUri: BaseUri): JsonLdEncoder[ResourceF[A]] = {
           implicit val encoder: JsonLdEncoder[A] = value.encoder
           resourceFAJsonLdEncoder[A](ContextValue.empty)
         }
@@ -94,7 +94,7 @@ object IdResolution {
   def apply(
       projectScopeResolver: ProjectScopeResolver,
       mainIndexQuery: MainIndexQuery,
-      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?, ?]]]
+      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?]]]
   ): IdResolution = new IdResolution {
 
     override def apply(iri: Iri)(implicit caller: Caller): IO[ResolutionResult] = {
