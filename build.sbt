@@ -746,10 +746,12 @@ lazy val benchmarks = project
   .in(file("benchmarks"))
   .dependsOn(kernel)
   .enablePlugins(GatlingPlugin)
+  .disablePlugins(ScapegoatSbtPlugin)
   .settings(noPublish)
   .settings(shared, compilation)
   .settings(
-    libraryDependencies := gatling
+    libraryDependencies := gatling,
+    Test / fork         := true
   )
 
 lazy val root = project
