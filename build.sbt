@@ -1,5 +1,8 @@
 import scala.io.Source
 
+// explicit import to avoid clash with gatling plugin
+import sbtassembly.AssemblyPlugin.autoImport.assembly
+
 /*
 scalafmt: {
   maxColumn = 150
@@ -34,7 +37,9 @@ val distageVersion             = "1.2.17"
 val doobieVersion              = "1.0.0-RC9"
 val fs2Version                 = "3.12.0"
 val fs2AwsVersion              = "6.2.0"
+val gatlingVersion             = "3.13.5"
 val glassFishJakartaVersion    = "2.0.1"
+val jsonIterVersion            = "2.35.3"
 val handleBarsVersion          = "4.4.0"
 val hikariVersion              = "6.3.0"
 val http4sVersion              = "0.23.30"
@@ -117,6 +122,11 @@ lazy val fs2Aws = Seq(
   )
 }
 
+lazy val gatling = Seq(
+  "io.gatling.highcharts" % "gatling-charts-highcharts" % gatlingVersion % "test,it",
+  "io.gatling"            % "gatling-test-framework"    % gatlingVersion % "test,it"
+)
+
 lazy val glassFishJakarta = "org.glassfish"     % "jakarta.json" % glassFishJakartaVersion
 lazy val handleBars       = "com.github.jknack" % "handlebars"   % handleBarsVersion
 
@@ -128,11 +138,13 @@ lazy val http4sServerTest = Seq(
 
 lazy val http4s = Seq(
   "org.http4s" %% "http4s-ember-client" % http4sVersion,
-  "org.http4s" %% "http4s-circe"        % http4sVersion,
   "org.http4s" %% "http4s-scala-xml"    % http4sXMLVersion
 ) ++ http4sServerTest
 
-lazy val jenaArq         = "org.apache.jena"               % "jena-arq"          % jenaVersion
+lazy val jenaArq = "org.apache.jena" % "jena-arq" % jenaVersion
+
+lazy val jsoniterCirce = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-circe" % jsonIterVersion
+
 lazy val kamonAkkaHttp   = "io.kamon"                     %% "kamon-akka-http"   % kamonVersion
 lazy val kamonCore       = "io.kamon"                     %% "kamon-core"        % kamonVersion
 lazy val kanelaAgent     = "io.kamon"                      % "kanela-agent"      % kanelaAgentVersion
@@ -250,6 +262,7 @@ lazy val akkaMarshalling = project
       akkaHttp,
       circeCore,
       circeParser,
+      jsoniterCirce,
       circeGenericExtras % Test,
       circeLiteral       % Test,
       scalaTest          % Test,
@@ -298,6 +311,7 @@ lazy val kernel = project
       circeGenericExtras,
       fs2,
       fs2io,
+      jsoniterCirce,
       handleBars,
       nimbusJoseJwt,
       kamonCore,
@@ -728,11 +742,23 @@ lazy val tests = project
     Test / fork                        := true
   )
 
+lazy val benchmarks = project
+  .in(file("benchmarks"))
+  .dependsOn(kernel)
+  .enablePlugins(GatlingPlugin)
+  .disablePlugins(ScapegoatSbtPlugin)
+  .settings(noPublish)
+  .settings(shared, compilation)
+  .settings(
+    libraryDependencies := gatling,
+    Test / fork         := true
+  )
+
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(compilation, shared, noPublish)
-  .aggregate(docs, akka, delta, tests)
+  .aggregate(docs, akka, delta, tests, benchmarks)
 
 lazy val noPublish = Seq(
   publish / skip                         := true,

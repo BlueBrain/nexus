@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.kernel.http.client.ResponseUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.http.ResponseUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RdfHttp4sMediaTypes}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient.RemoteCheck.{RemoteCheckFailed, RemoteCheckTimeout, RemoteUnknownHost}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
@@ -111,7 +111,7 @@ object DeltaClient {
   final private class DeltaClientImpl(client: Client[IO], retryDelay: FiniteDuration) extends DeltaClient {
 
     override def projectStatistics(source: RemoteProjectSource): IO[ProjectStatistics] = {
-      import org.http4s.circe.CirceEntityDecoder.*
+      import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityDecoder.*
       val remoteOrg     = source.project.organization.value
       val remoteProject = source.project.project.value
       val endpoint      = source.endpoint / "projects" / remoteOrg / remoteProject / "statistics"
@@ -120,7 +120,7 @@ object DeltaClient {
     }
 
     override def remaining(source: RemoteProjectSource, offset: Offset): IO[RemainingElems] = {
-      import org.http4s.circe.CirceEntityDecoder.*
+      import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityDecoder.*
       SseClient.lastEventId(offset).flatMap { lastEventId =>
         val headers: Vector[Header.ToRaw] = Vector(accept, lastEventId)
         val request                       = GET(elemAddress(source) / "remaining", headers*)

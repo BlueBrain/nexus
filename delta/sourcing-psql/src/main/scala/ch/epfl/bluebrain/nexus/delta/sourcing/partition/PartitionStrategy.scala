@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.{jsonbGet, jsonbPut}
 import cats.syntax.all.*
 import doobie.{Get, Put}
-import io.circe.{Codec, Printer}
+import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import pureconfig.generic.auto.*
@@ -43,5 +43,5 @@ object PartitionStrategy {
   implicit val partitionGet: Get[PartitionStrategy] =
     jsonbGet.temap(v => partitionCodec.decodeJson(v).leftMap(_.message))
 
-  implicit val partitionValue: Put[PartitionStrategy] = jsonbPut(Printer.noSpaces).contramap(partitionCodec(_))
+  implicit val partitionValue: Put[PartitionStrategy] = jsonbPut.contramap(partitionCodec(_))
 }

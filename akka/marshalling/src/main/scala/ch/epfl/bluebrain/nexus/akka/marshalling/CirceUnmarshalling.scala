@@ -4,8 +4,10 @@ import akka.http.scaladsl.model.ContentTypeRange
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
-import RdfMediaTypes.*
-import io.circe.{jawn, Decoder, Json}
+import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes.*
+import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec.*
+import com.github.plokhotnyuk.jsoniter_scala.core.*
+import io.circe.{Decoder, Json}
 
 import scala.concurrent.Future
 
@@ -26,7 +28,7 @@ trait CirceUnmarshalling {
       .forContentTypes(unmarshallerContentTypes*)
       .map {
         case ByteString.empty => throw Unmarshaller.NoContentException
-        case data             => jawn.parseByteBuffer(data.asByteBuffer).fold(throw _, identity)
+        case data             => readFromArray[Json](data.toArray)
       }
 
   /**
@@ -39,7 +41,7 @@ trait CirceUnmarshalling {
     * ByteString => `Json`
     */
   implicit final def fromByteStringUnmarshaller[A: Decoder]: Unmarshaller[ByteString, A] =
-    Unmarshaller[ByteString, Json](_ => bs => Future.fromTry(jawn.parseByteBuffer(bs.asByteBuffer).toTry))
+    Unmarshaller[ByteString, Json](ec => bs => Future(readFromByteBuffer(bs.asByteBuffer))(ec))
       .map(Decoder[A].decodeJson)
       .map(_.fold(throw _, identity))
 }

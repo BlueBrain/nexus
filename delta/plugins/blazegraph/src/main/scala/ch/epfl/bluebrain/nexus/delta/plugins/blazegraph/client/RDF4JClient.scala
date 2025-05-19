@@ -57,7 +57,7 @@ final class RDF4JClient(client: Client[IO], endpoint: Uri, repositoryTemplate: S
 
   override def listNamespaces: IO[Vector[String]] = {
     val request = GET(repositoriesEndpoint, accept(SparqlResultsJson.mediaTypes))
-    import org.http4s.circe.CirceEntityDecoder.*
+    import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.CirceEntityDecoder.*
     client.expect[SparqlResults](request).map { response =>
       response.results.bindings.foldLeft(Vector.empty[String]) { case (acc, binding) =>
         val namespaceName = binding.get("id").map(_.value)

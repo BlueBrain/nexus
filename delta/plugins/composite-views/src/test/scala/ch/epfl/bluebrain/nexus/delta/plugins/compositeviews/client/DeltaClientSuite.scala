@@ -21,7 +21,7 @@ import io.circe.syntax.EncoderOps
 import org.http4s.Method.GET
 import org.http4s.ServerSentEvent.EventId
 import org.http4s.Uri.Path.Root
-import org.http4s.circe.*
+import ch.epfl.bluebrain.nexus.delta.kernel.http.circe.*
 import org.http4s.client.{Client, UnexpectedStatus}
 import org.http4s.dsl.io.{/, *}
 import org.http4s.headers.`Content-Type`

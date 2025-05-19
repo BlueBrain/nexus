@@ -4,10 +4,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.CirceInstances.{read, write}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.mu.{EitherAssertions, JsonAssertions, NexusSuite}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{ClasspathResources, MUnitExtractValue}
-import io.circe.parser.*
 import io.circe.{Json, JsonObject}
 import munit.{Assertions, Location}
 
@@ -42,8 +42,7 @@ abstract class SerializationSuite
     jsonContentOf(s"$module/database/$fileName")
 
   private def generateOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value) =
-    parse(serializer.printer.print(serializer.codec(obtained)))
-      .getOrElse(fail(s"$obtained could not be parsed back as a json"))
+    read(write(serializer.codec(obtained))(serializer.jsonIterCodec))
 
   def assertOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value, expected: Json)(implicit
       loc: Location

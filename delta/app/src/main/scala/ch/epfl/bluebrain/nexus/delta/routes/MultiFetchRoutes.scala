@@ -10,10 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.*
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.{jsonCodecDropNull, jsonSourceCodec}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.MultiFetch
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchRequest
-import io.circe.Printer
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import io.circe.Json
 
 /**
   * Route allowing to fetch multiple resources in a single request
@@ -36,7 +38,7 @@ class MultiFetchRoutes(
         pathPrefix("resources") {
           extractCaller { implicit caller =>
             ((get | post) & entity(as[MultiFetchRequest])) { request =>
-              implicit val printer: Printer = selectPrinter(request)
+              implicit val codec: JsonValueCodec[Json] = selectCodec(request)
               emit(multiFetch(request).flatMap(_.asJson))
             }
           }
@@ -44,13 +46,13 @@ class MultiFetchRoutes(
       }
     }
 
-  private def selectPrinter(request: MultiFetchRequest) =
+  private def selectCodec(request: MultiFetchRequest) =
     if (
       request.format == ResourceRepresentation.SourceJson ||
       request.format == ResourceRepresentation.AnnotatedSourceJson
     )
-      sourcePrinter
+      jsonSourceCodec
     else
-      defaultPrinter
+      jsonCodecDropNull
 
 }

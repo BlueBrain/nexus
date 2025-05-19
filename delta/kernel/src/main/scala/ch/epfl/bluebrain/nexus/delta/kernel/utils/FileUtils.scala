@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.LoadFileError.{InvalidJson, UnaccessibleFile}
-import io.circe.Decoder
-import io.circe.parser.decode
+import io.circe.{Decoder, Json}
+import io.circe.parser.{decode, parse}
 
 import java.nio.file.{Files, Path}
-import scala.util.Try
 
 object FileUtils {
 
@@ -31,9 +30,15 @@ object FileUtils {
   /**
     * Load the content of the given file as a string
     */
-  def loadAsString(filePath: Path): IO[String] = IO.fromEither(
-    Try(Files.readString(filePath)).toEither.leftMap(UnaccessibleFile(filePath, _))
-  )
+  def loadAsString(filePath: Path): IO[String] =
+    IO.blocking(Files.readString(filePath))
+      .adaptError { case th => UnaccessibleFile(filePath, th) }
+
+  def loadAsJson(filePath: Path): IO[Json] =
+    loadAsString(filePath).flatMap { content =>
+      IO.fromEither(parse(content))
+        .adaptError { e => InvalidJson(filePath, e.getMessage) }
+    }
 
   /**
     * Load the content of the given file as json and try to decode it as an A
@@ -42,9 +47,7 @@ object FileUtils {
     */
   def loadJsonAs[A: Decoder](filePath: Path): IO[A] =
     for {
-      content <- IO.fromEither(
-                   Try(Files.readString(filePath)).toEither.leftMap(UnaccessibleFile(filePath, _))
-                 )
+      content <- loadAsString(filePath)
       json    <- IO.fromEither(decode[A](content).leftMap { e => InvalidJson(filePath, e.getMessage) })
     } yield json
 
