@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 
-import io.circe.jakartajson.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext
-import com.apicatalog.jsonld.{JsonLdError, JsonLdErrorCode}
-import com.apicatalog.jsonld.document.{Document, JsonDocument}
+import com.apicatalog.jsonld.document.Document
 import com.apicatalog.jsonld.loader.{DocumentLoader, DocumentLoaderOptions}
+import com.apicatalog.jsonld.{JsonLdError, JsonLdErrorCode}
 
 import java.net.URI
 
@@ -29,7 +28,7 @@ object TitaniumDocumentLoader {
 
   def apply(remoteContexts: Map[Iri, RemoteContext]): TitaniumDocumentLoader = {
     val documents = remoteContexts.map { case (iri, context) =>
-      new URI(iri.toString) -> JsonDocument.of(circeToJakarta(context.value.contextObj))
+      new URI(iri.toString) -> context.value.titaniumDocument
     }
     new TitaniumDocumentLoader(documents)
   }

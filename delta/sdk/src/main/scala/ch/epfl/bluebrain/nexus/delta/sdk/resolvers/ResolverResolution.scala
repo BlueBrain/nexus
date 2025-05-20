@@ -255,7 +255,7 @@ object ResolverResolution {
       extractTypes: R => Set[Iri],
       readPermission: Permission,
       deprecationCheck: DeprecationCheck[R]
-  ) = {
+  ): ResolverResolution[R] = {
     def fetchActiveResolvers(project: ProjectRef) = resolvers
       .list(project)
       .map { r =>
@@ -274,10 +274,10 @@ object ResolverResolution {
   def apply(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      fetch: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?, ?]]],
+      fetch: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?]]],
       excludeDeprecated: Boolean
-  ): ResolverResolution[JsonLdContent[?, ?]] = {
-    val deprecationCheck = DeprecationCheck[JsonLdContent[?, ?]](excludeDeprecated, _.resource.deprecated)
+  ): ResolverResolution[JsonLdContent[?]] = {
+    val deprecationCheck = DeprecationCheck[JsonLdContent[?]](excludeDeprecated, _.resource.deprecated)
     apply(aclCheck, resolvers, fetch, _.resource.types, Permissions.resources.read, deprecationCheck)
   }
 

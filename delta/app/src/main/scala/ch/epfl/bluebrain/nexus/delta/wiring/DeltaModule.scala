@@ -175,7 +175,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
 
   make[ResourceShifts].from {
-    (shifts: Set[ResourceShift[?, ?, ?]], xas: Transactors, rcr: RemoteContextResolution @Id("aggregate")) =>
+    (shifts: Set[ResourceShift[?, ?]], xas: Transactors, rcr: RemoteContextResolution @Id("aggregate")) =>
       ResourceShifts(shifts, xas)(rcr)
   }
 

@@ -51,9 +51,13 @@ class SelectPredicatesSuite extends NexusSuite {
 
   private val pullRequestType: Iri = nxv + "PullRequest"
   private val fileType: Iri        = nxv + "File"
-  private val fileElem             = element.copy(value =
-    element.value.copy(graph = graph.graph.add(rdf.tpe, fileType), types = Set(pullRequestType, fileType))
-  )
+  private val fileGraph            = Graph
+    .empty(base / "id")
+    .add(rdf.tpe, fileType)
+    .add(rdfs.label, "File name")
+    .add(nxv + "fileSize", 42)
+  private def fileElem             =
+    element.copy(value = element.value.copy(graph = fileGraph, types = Set(fileType)))
 
   def pipe(predicates: Set[Iri]): SelectPredicates =
     registry
@@ -87,7 +91,7 @@ class SelectPredicatesSuite extends NexusSuite {
   }
 
   test(s"Retain only the '${rdfs.label}' predicate for a file if '$fileType' is not a forward type") {
-    val graph    = Graph.empty(base / "id").add(rdfs.label, "active")
+    val graph    = Graph.empty(base / "id").add(rdfs.label, "File name")
     val expected = fileElem.copy(value = fileElem.value.copy(graph = graph, types = Set.empty))
     pipe(Set(rdfs.label)).apply(fileElem).assertEquals(expected)
   }

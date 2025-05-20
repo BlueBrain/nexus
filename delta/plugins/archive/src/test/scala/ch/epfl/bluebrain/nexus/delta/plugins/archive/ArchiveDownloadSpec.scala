@@ -105,11 +105,11 @@ class ArchiveDownloadSpec
     val file2                = FileGen.resourceFor(id2, projectRef, storageRef, fileAttributes(file2Name, file2Size))
     val file2Content: String = "file content 2"
 
-    val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[?, ?]]] = {
+    val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[?]]] = {
       case (`id1`, `projectRef`) =>
-        IO.pure(Some(JsonLdContent(file1, file1.value.asJson, None)))
+        IO.pure(Some(JsonLdContent(file1, file1.value.asJson, file1.value.tags)))
       case (`id2`, `projectRef`) =>
-        IO.pure(Some(JsonLdContent(file2, file2.value.asJson, None)))
+        IO.pure(Some(JsonLdContent(file2, file2.value.asJson, file2.value.tags)))
       case _                     =>
         IO.none
     }

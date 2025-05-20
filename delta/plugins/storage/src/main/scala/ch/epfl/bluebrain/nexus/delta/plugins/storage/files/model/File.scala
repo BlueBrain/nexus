@@ -1,18 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.File.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.ShowFileLocation
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef, Tags}
 import io.circe.generic.extras.Configuration
 import io.circe.syntax.*
@@ -41,13 +37,9 @@ final case class File(
     storageType: StorageType,
     attributes: FileAttributes,
     tags: Tags
-) {
-  def metadata: Metadata = Metadata(tags.tags)
-}
+)
 
 object File {
-
-  final case class Metadata(tags: List[UserTag])
 
   implicit def fileEncoder(implicit showLocation: ShowFileLocation): Encoder.AsObject[File] =
     Encoder.encodeJsonObject.contramapObject { file =>
@@ -69,21 +61,14 @@ object File {
   implicit def fileJsonLdEncoder(implicit showLocation: ShowFileLocation): JsonLdEncoder[File] =
     JsonLdEncoder.computeFromCirce(_.id, Files.context)
 
-  implicit private val fileMetadataEncoder: Encoder[Metadata] = { m =>
-    Json.obj("_tags" -> m.tags.asJson)
-  }
-
-  implicit val fileMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
-
-  type Shift = ResourceShift[FileState, File, Metadata]
+  type Shift = ResourceShift[FileState, File]
 
   def shift(files: Files)(implicit baseUri: BaseUri, showLocation: ShowFileLocation): Shift =
-    ResourceShift.withMetadata[FileState, File, Metadata](
+    ResourceShift[FileState, File](
       Files.entityType,
       (ref, project) => files.fetch(FileId(ref, project)),
       state => state.toResource,
-      value => JsonLdContent(value, value.value.asJson, Some(value.value.metadata))
+      value => JsonLdContent(value, value.value.asJson, value.value.tags)
     )
 
 }

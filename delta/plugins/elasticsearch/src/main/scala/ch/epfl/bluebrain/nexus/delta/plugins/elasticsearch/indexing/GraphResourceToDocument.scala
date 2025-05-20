@@ -42,7 +42,8 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
           .map(ld => injectContext(ld.obj.asJson))
       else {
         val id = getSourceId(element.source).getOrElse(element.id.toString)
-        (graph -- graph.rootTypesGraph)
+        graph
+          .delete(graph.rootTypesNodes)
           .toCompactedJsonLd(context)
           .map(ld => injectContext(mergeJsonLd(element.source, ld.json)))
           .map(json => injectId(json, id))

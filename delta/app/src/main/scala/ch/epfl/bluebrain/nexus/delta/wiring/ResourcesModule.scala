@@ -121,6 +121,6 @@ object ResourcesModule extends ModuleDef {
     Resource.shift(resources)(base)
   }
 
-  many[ResourceShift[?, ?, ?]].ref[Resource.Shift]
+  many[ResourceShift[?, ?]].ref[Resource.Shift]
 
 }

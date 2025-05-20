@@ -31,9 +31,10 @@ class SelectPredicates(config: SelectPredicatesConfig) extends Pipe {
     if (config.forwardTypes.exists { p => p.exists(element.value.types.contains) }) {
       element
     } else {
-      val id       = subject(element.value.id)
-      val newGraph = element.value.graph.filter { case (s, p, _) => s == id && config.nodeSet.contains(p) }
-      val newState = element.value.copy(graph = newGraph, types = newGraph.rootTypes)
+      val id            = subject(element.value.id)
+      val triplesToKeep = config.nodeSet.map { p => (id, p, Node.ANY) }
+      val newGraph      = element.value.graph.filter(triplesToKeep)
+      val newState      = element.value.copy(graph = newGraph, types = newGraph.rootTypes)
       element.copy(value = newState)
     }
   }

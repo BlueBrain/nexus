@@ -66,17 +66,19 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   )
   private val resourceFS     = SchemaGen.resourceFor(schemaResource)
 
-  def fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[Resource, Nothing]]] =
+  def fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[Resource]]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Latest(`resourceId`) => IO.pure(Some(JsonLdContent(resourceFR, resourceFR.value.source, None)))
+        case Latest(`resourceId`) =>
+          IO.pure(Some(JsonLdContent(resourceFR, resourceFR.value.source, resourceFR.value.tags)))
         case _                    => IO.none
       }
 
-  def fetchSchema: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[Schema, Nothing]]] =
+  def fetchSchema: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[Schema]]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Revision(_, `schemaId`, 5) => IO.pure(Some(JsonLdContent(resourceFS, resourceFS.value.source, None)))
+        case Revision(_, `schemaId`, 5) =>
+          IO.pure(Some(JsonLdContent(resourceFS, resourceFS.value.source, resourceFS.value.tags)))
         case _                          => IO.none
       }
 

@@ -8,7 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextObj
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.*
+import com.apicatalog.jsonld.document.JsonDocument
 import io.circe.syntax.*
+import io.circe.jakartajson.circeToJakarta
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 
 /**
@@ -21,6 +23,8 @@ sealed trait ContextValue {
     *   the json representation of the context value
     */
   def value: Json
+
+  lazy val titaniumDocument: JsonDocument = JsonDocument.of(circeToJakarta(contextObj))
 
   override def toString: String = value.noSpaces
 

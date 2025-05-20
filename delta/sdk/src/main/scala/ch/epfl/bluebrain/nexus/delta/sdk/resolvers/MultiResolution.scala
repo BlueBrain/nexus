@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
   */
 final class MultiResolution(
     fetchProject: ProjectRef => IO[ProjectContext],
-    resourceResolution: ResolverResolution[JsonLdContent[?, ?]]
+    resourceResolution: ResolverResolution[JsonLdContent[?]]
 ) {
 
   private val expandResourceIri = new ExpandIri(InvalidResolvedResourceId.apply)
@@ -94,7 +94,7 @@ object MultiResolution {
       fetchResource: FetchResource,
       fetchSchema: FetchSchema
   ): MultiResolution = {
-    def combinedFetch(resourceRef: ResourceRef, project: ProjectRef): Fetch[JsonLdContent[?, ?]] =
+    def combinedFetch(resourceRef: ResourceRef, project: ProjectRef): Fetch[JsonLdContent[?]] =
       fetchResource.fetch(resourceRef, project).flatMap {
         case Some(resource) => IO.some(Resource.toJsonLdContent(resource))
         case None           => fetchSchema.option(resourceRef, project).map(_.map(Schema.toJsonLdContent))
@@ -118,7 +118,7 @@ object MultiResolution {
     */
   def apply(
       fetchContext: FetchContext,
-      resourceResolution: ResolverResolution[JsonLdContent[?, ?]]
+      resourceResolution: ResolverResolution[JsonLdContent[?]]
   ): MultiResolution =
     new MultiResolution(fetchContext.onRead, resourceResolution)
 

@@ -80,18 +80,17 @@ object RemoteGraphStream {
       metadataPredicates: MetadataPredicates
   ): IO[GraphResource] = IO.fromEither {
     for {
-      graph      <- Graph(nQuads)
-      valueGraph  = graph.filter { case (_, p, _) => !metadataPredicates.values.contains(p) }
-      metaGraph   = graph.filter { case (_, p, _) => metadataPredicates.values.contains(p) }
-      types       = graph.rootTypes
-      schema     <- metaGraph
-                      .find(elem.id, nxv.constrainedBy.iri)
-                      .map(triple => ResourceRef(iri"${triple.getURI}"))
-                      .toRight(MissingPredicate(nxv.constrainedBy.iri))
-      deprecated <- metaGraph
-                      .find(elem.id, nxv.deprecated.iri)
-                      .map(_.getLiteralLexicalForm.toBoolean)
-                      .toRight(MissingPredicate(nxv.deprecated.iri))
+      graph                  <- Graph(nQuads)
+      (metaGraph, valueGraph) = graph.partition { case (_, p, _) => metadataPredicates.values.contains(p) }
+      types                   = graph.rootTypes
+      schema                 <- metaGraph
+                                  .find(elem.id, nxv.constrainedBy.iri)
+                                  .map(triple => ResourceRef(iri"${triple.getURI}"))
+                                  .toRight(MissingPredicate(nxv.constrainedBy.iri))
+      deprecated             <- metaGraph
+                                  .find(elem.id, nxv.deprecated.iri)
+                                  .map(_.getLiteralLexicalForm.toBoolean)
+                                  .toRight(MissingPredicate(nxv.deprecated.iri))
 
     } yield GraphResource(
       elem.tpe,

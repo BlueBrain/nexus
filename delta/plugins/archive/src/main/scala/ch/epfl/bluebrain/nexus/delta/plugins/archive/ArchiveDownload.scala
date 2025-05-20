@@ -87,7 +87,7 @@ object ArchiveDownload {
     */
   def apply(
       aclCheck: AclCheck,
-      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?, ?]]],
+      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[?]]],
       fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileResponse],
       fileSelf: FileSelf
   )(implicit
@@ -236,7 +236,7 @@ object ArchiveDownload {
       }
 
       private def valueToByteString[A](
-          value: JsonLdContent[A, ?],
+          value: JsonLdContent[A],
           repr: ResourceRepresentation
       ): IO[ByteString] = {
         implicit val encoder: JsonLdEncoder[A] = value.encoder

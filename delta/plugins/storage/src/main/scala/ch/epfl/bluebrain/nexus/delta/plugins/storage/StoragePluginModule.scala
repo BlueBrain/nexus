@@ -261,7 +261,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     File.shift(files)(base, showLocation)
   }
 
-  many[ResourceShift[?, ?, ?]].ref[File.Shift]
+  many[ResourceShift[?, ?]].ref[File.Shift]
 
   many[ScopeInitialization].addSet { (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>
     Option.when(cfg.enableDefaultCreation)(StorageScopeInitialization(storages, serviceAccount, cfg.defaults)).toSet

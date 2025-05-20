@@ -2,25 +2,25 @@ package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
 import cats.effect.IO
 import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.rdf.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ParsingError, SparqlConstructQueryError, UnexpectedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject, Triple}
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
-import ch.epfl.bluebrain.nexus.delta.rdf.*
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{fakeId, rdfType}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.fakeId
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.TitaniumJsonLdApi.*
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.*
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
-import org.apache.jena.graph.{Node, Triple as JenaTriple}
-import org.apache.jena.query.{DatasetFactory, QueryExecutionFactory}
+import org.apache.jena.graph.Node
+import org.apache.jena.query.{DatasetFactory, QueryExecutionFactory, TxnType}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
 import org.apache.jena.sparql.graph.GraphFactory
@@ -40,18 +40,18 @@ import scala.util.Try
   */
 final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
-  val rootResource: Node = subject(rootNode)
+  def rootResource: Node = subject(rootNode)
 
   /**
     * Returns all the triples of the current graph
     */
-  lazy val triples: Set[Triple] =
+  def triples: Set[Triple] =
     value.find().asScala.map(Triple(_)).toSet
 
   /**
     * Returns all the quads of the current graph
     */
-  lazy val quads: Set[Quad] =
+  def quads: Set[Quad] =
     value.find().asScala.map(q => (q.getGraph, q.getSubject, q.getPredicate, q.getObject)).toSet
 
   /**
@@ -65,14 +65,30 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   /**
     * Returns a subgraph retaining all the triples that satisfy the provided predicate.
     */
-  def filter(evalTriple: Triple => Boolean): Graph = {
-    val iter     = value.find()
-    val newGraph = DatasetFactory.create().asDatasetGraph()
-    while (iter.hasNext) {
-      val quad = iter.next()
-      if (evalTriple(Triple(quad))) newGraph.add(quad)
+  def filter(triples: Iterable[Triple]): Graph = {
+    val iterator = triples.iterator.flatMap { triple =>
+      value.find(Node.ANY, triple._1, triple._2, triple._3).asScala
     }
+    val newGraph = DatasetFactory.create().asDatasetGraph()
+    iterator.foreach(newGraph.add)
     copy(value = newGraph)
+  }
+
+  /**
+    * A pair of, first, all triples that satisfy predicate `p` and, second, all triples that do not.
+    */
+  def partition(evalTriple: Triple => Boolean): (Graph, Graph) = {
+    val left     = DatasetFactory.create().asDatasetGraph()
+    val right    = DatasetFactory.create().asDatasetGraph()
+    val iterator = value.find()
+    while (iterator.hasNext) {
+      val quad = iterator.next()
+      if (evalTriple(Triple(quad)))
+        left.add(quad)
+      else
+        right.add(quad)
+    }
+    (Graph(rootNode, left), Graph(rootNode, right))
   }
 
   /**
@@ -96,12 +112,10 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     * Returns an object of a triple with a given subject and predicate.
     */
   def find(subject: IriOrBNode, predicate: Iri): Option[Node] = {
-    val sNode = Triple.subject(subject)
-    val pNode = Triple.predicate(predicate)
-    find {
-      case (s, p, _) if s == sNode && p == pNode => true
-      case _                                     => false
-    }.map(_._3)
+    val sNode    = Triple.subject(subject)
+    val pNode    = Triple.predicate(predicate)
+    val iterator = value.find(Node.ANY, sNode, pNode, Node.ANY)
+    Option.when(iterator.hasNext)(iterator.next().getObject)
   }
 
   /**
@@ -138,41 +152,47 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   /**
     * Returns the objects with the predicate ''rdf:type'' and subject ''root''.
     */
-  def rootTypes: Set[Iri] =
-    filter { case (s, p, _) => p == predicate(rdf.tpe) && s == rootResource }.value
-      .find()
-      .asScala
-      .map(Triple(_))
-      .collect {
-        case (_, _, r: Node) if r.isURI && r.getURI != null && r.getURI.nonEmpty => iri"${r.getURI}"
-      }
-      .toSet
+  def rootTypes: Set[Iri] = rootTypesNodes.map { t => iri"${t._3.getURI}" }
 
   /**
-    * Returns the Graph with the predicate ''rdf:type'' and subject ''root''.
+    * Returns the triples with the predicate ''rdf:type'' and subject ''root''.
     */
-  def rootTypesGraph: Graph =
-    Graph.empty(rootNode).add(rootTypes.map(tpe => (rootResource, rdfType, obj(tpe))))
+  def rootTypesNodes: Set[Triple] = {
+    val iterator           = value.find(Node.ANY, rootResource, predicate(rdf.tpe), Node.ANY)
+    def validType(r: Node) = r.isURI && r.getURI != null && r.getURI.nonEmpty
+    iterator.asScala
+      .filter(q => validType(q.getObject))
+      .map(Triple(_))
+      .toSet
+  }
 
   /**
     * Adds the passed ''triple'' to the existing graph.
     */
-  def add(triple: Triple): Graph =
-    add(Set(triple))
+  def add(triple: Triple): Graph = writeTx {
+    _.getDefaultGraph.add(triple._1, triple._2, triple._3)
+  }
 
   /**
     * Adds a triple using the current ''root'' subject and the passed predicate ''p'' and object ''o''.
     */
   def add(p: Node, o: Node): Graph =
-    add(Set((rootResource, p, o)))
+    add((rootResource, p, o))
 
   /**
     * Adds a set of triples to the existing graph.
     */
-  def add(triple: Set[Triple]): Graph = {
-    val newGraph = copyGraph(value)
-    triple.foreach { case (s, p, o) => newGraph.getDefaultGraph.add(JenaTriple.create(s, p, o)) }
-    copy(value = newGraph)
+  def add(triple: Set[Triple]): Graph = writeTx { ds =>
+    triple.foreach { case (s, p, o) => ds.getDefaultGraph.add(s, p, o) }
+  }
+
+  /**
+    * Deletes a set of triples from the existing graph.
+    */
+  def delete(triples: Set[Triple]): Graph = writeTx { ds =>
+    triples.foreach { triple =>
+      ds.getDefaultGraph.delete(triple._1, triple._2, triple._3)
+    }
   }
 
   /**
@@ -235,8 +255,8 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   ): IO[CompactedJsonLd] = {
 
     def computeCompacted(id: IriOrBNode, input: Json): IO[CompactedJsonLd] = {
-      if (triples.isEmpty) IO.delay(CompactedJsonLd.unsafe(id, contextValue, JsonObject.empty))
-      else if (value.listGraphNodes().asScala.nonEmpty) {
+      if (isEmpty) IO.delay(CompactedJsonLd.unsafe(id, contextValue, JsonObject.empty))
+      else if (value.listGraphNodes().hasNext) {
         CompactedJsonLd(id, contextValue, input)
       } else {
         CompactedJsonLd.frame(id, contextValue, input)
@@ -253,34 +273,19 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   }
 
   /**
-    * Attempts to convert the current Graph to the JSON-LD expanded format:
-    * https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
-    *
-    * Note: This is done in three steps, first transforming the graph to JSON-LD expanded format and then framing it (to
-    * have a single root) and then expanding it again.
-    */
-  def toExpandedJsonLd(implicit
-      api: JsonLdApi,
-      resolution: RemoteContextResolution,
-      opts: JsonLdOptions
-  ): IO[ExpandedJsonLd] =
-    toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded)
-
-  /**
     * Merges the current graph with the passed ''that'' while keeping the current ''rootNode''
     */
-  def ++(that: Graph): Graph = {
-    val newGraph = DatasetFactory.create().asDatasetGraph()
-    val quads    = value.find().asScala ++ that.value.find().asScala
-    quads.foreach(newGraph.add)
-    Graph(rootNode, newGraph)
-  }
+  def ++(that: Graph): Graph =
+    writeTx { _.addAll(that.value) }
 
   /**
     * Removes the passed graph triples from the current [[Graph]]
     */
   def --(graph: Graph): Graph =
-    filter(spo => !graph.triples.contains(spo))
+    writeTx { ds =>
+      val iterator = graph.value.find().asScala
+      iterator.foreach(ds.delete)
+    }
 
   override def hashCode(): Int = (rootNode, quads).##
 
@@ -294,16 +299,21 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   override def toString: String =
     s"rootNode = '$rootNode', triples = '$triples'"
 
-  private def copyGraph(graph: DatasetGraph): DatasetGraph = {
-    val newGraph = DatasetFactory.create().asDatasetGraph()
-    graph.find().asScala.foreach(newGraph.add)
-    newGraph
-  }
-
   private def collapseGraphs = {
     val newGraph = GraphFactory.createDefaultGraph()
     value.find().asScala.foreach(quad => newGraph.add(quad.asTriple()))
     newGraph
+  }
+
+  private def writeTx(f: DatasetGraph => Unit): Graph = {
+    value.begin(TxnType.WRITE)
+    try {
+      f(value)
+      value.commit()
+      this
+    } finally {
+      value.end()
+    }
   }
 
 }
@@ -315,12 +325,12 @@ object Graph {
   // We replace the Blank Node for the fakeId, do the conversion and then replace the fakeId with the Blank Node again.
   private[graph] val fakeId = iri"http://localhost/${UUID.randomUUID()}"
 
-  val rdfType = predicate(rdf.tpe)
+  val rdfType: Node = predicate(rdf.tpe)
 
   /**
     * An empty graph with a auto generated [[BNode]] as a root node
     */
-  final val empty: Graph = empty(BNode.random)
+  final def empty: Graph = empty(BNode.random)
 
   /**
     * An empty graph with the passed ''rootNode''.
@@ -347,6 +357,13 @@ object Graph {
       case (None, iri: Iri)    =>
         api.toRdf(expanded.json).map(g => Graph(iri, g))
     }
+
+  def apply(graph: Graph): Graph = {
+    val newGraph = DatasetFactory.create().asDatasetGraph()
+    newGraph.addAll(graph.value)
+    graph.value.find().asScala.foreach(newGraph.add)
+    Graph(graph.rootNode, newGraph)
+  }
 
   /**
     * Generates a [[Graph]] from the passed ''nTriples'' representation
