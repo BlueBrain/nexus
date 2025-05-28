@@ -178,6 +178,12 @@ object Optics {
       )
   }
 
+  object sparql {
+
+    val countResult: Json => Option[Int] = root.results.bindings(0).count.value.string.getOption(_).map(_.toInt)
+
+  }
+
   object supervision {
 
     /**

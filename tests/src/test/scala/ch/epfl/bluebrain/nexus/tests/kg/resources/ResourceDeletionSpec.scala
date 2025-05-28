@@ -5,6 +5,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encodeUriPath
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.Bob
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
+import ch.epfl.bluebrain.nexus.tests.Optics.sparql
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics}
@@ -46,40 +47,19 @@ class ResourceDeletionSpec extends BaseIntegrationSpec {
       } >> IO.unit
     }
 
-  private def countResponse(exists: Boolean) = {
-    val count = if (exists) 1 else 0
-    json"""
-        {
-         "head" : {
-           "vars" : [
-             "count"
-           ]
-         },
-         "results" : {
-           "bindings" : [
-             {
-               "count" : {
-                 "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
-                 "type" : "literal",
-                 "value" : "$count"
-               }
-             }
-           ]
-         }
-       }"""
-  }
-
   private def assertGraph(id: String, exists: Boolean)(implicit position: Position) = eventually {
+    val count = if (exists) 1 else 0
     deltaClient.sparqlQuery[Json](s"/views/$project/graph/sparql", query(id), Bob) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
-      json shouldEqual countResponse(exists)
+      sparql.countResult(json).value shouldEqual count
     } >> IO.unit
   }
 
   private def assertSearchGraph(id: String, exists: Boolean)(implicit position: Position) = eventually {
+    val count = if (exists) 1 else 0
     deltaClient.sparqlQuery[Json](s"/views/$project/search/sparql", query(id), Bob) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
-      json shouldEqual countResponse(exists)
+      sparql.countResult(json).value shouldEqual count
     } >> IO.unit
   }
 

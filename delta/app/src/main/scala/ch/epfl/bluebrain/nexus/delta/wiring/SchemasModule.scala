@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.{FetchResource, Resources, Va
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{SchemaDefinition, SchemaLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.*
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.job.{SchemaValidationCoordinator, SchemaValidationStream}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
@@ -164,4 +164,10 @@ object SchemasModule extends ModuleDef {
   many[PriorityRoute].add { (route: SchemaJobRoutes) =>
     PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
   }
+
+  make[Schema.Shift].from { (schemas: Schemas, base: BaseUri) =>
+    Schema.shift(schemas)(base)
+  }
+
+  many[ResourceShift[?, ?]].ref[Schema.Shift]
 }
