@@ -61,12 +61,6 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse)
 
-  def postIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
-      assertResponse: (A, HttpResponse) => Assertion
-  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
-    body.flatMap(body => requestAssert(POST, url, Some(body), identity, extraHeaders)(assertResponse))
-  }
-
   def putJsonAndStatus(url: String, body: Json, identity: Identity): IO[(Json, StatusCode)] = {
     requestJsonAndStatus(PUT, url, Some(body), identity, jsonHeaders)
   }
@@ -91,12 +85,6 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] =
     requestAssert(PUT, url, None, identity, extraHeaders)(assertResponse)
-
-  def putIO[A](url: String, body: IO[Json], identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
-      assertResponse: (A, HttpResponse) => Assertion
-  )(implicit um: FromEntityUnmarshaller[A]): IO[Assertion] = {
-    body.flatMap(body => requestAssert(PUT, url, Some(body), identity, extraHeaders)(assertResponse))
-  }
 
   def putAttachmentFromPath[A](
       url: String,
