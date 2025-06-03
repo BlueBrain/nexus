@@ -204,7 +204,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -241,7 +240,12 @@ BlueBrain/nexus
   <li><a href="../../../docs/running-nexus/configuration/index.html#nexus-configuration" class="header">Nexus configuration</a>
   <ul>
     <li><a href="../../../docs/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a></li>
-    <li><a href="../../../docs/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
+    <li><a href="../../../docs/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a>
+    <ul>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#database-pool" class="header">Database pool</a></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#partitioning" class="header">Partitioning</a></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#init-scripts" class="header">Init scripts</a></li>
+    </ul></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#realm-provisioning" class="header">Realm provisioning</a></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#acl-provisioning" class="header">Acl provisioning</a></li>
@@ -266,8 +270,15 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#monitoring" class="header">Monitoring</a>
     <ul>
-      <li><a href="../../../docs/running-nexus/configuration/index.html#instrumentation" class="header">Instrumentation</a></li>
-      <li><a href="../../../docs/running-nexus/configuration/index.html#reporters" class="header">Reporters</a></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#kamon" class="header">Kamon</a>
+      <ul>
+        <li><a href="../../../docs/running-nexus/configuration/index.html#instrumentation" class="header">Instrumentation</a></li>
+        <li><a href="../../../docs/running-nexus/configuration/index.html#reporters" class="header">Reporters</a></li>
+      </ul></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#opentelemetry" class="header">OpenTelemetry</a>
+      <ul>
+        <li><a href="../../../docs/running-nexus/configuration/index.html#logs" class="header">Logs</a></li>
+      </ul></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -293,7 +304,12 @@ BlueBrain/nexus
   <li><a href="../../../docs/running-nexus/configuration/index.html#nexus-configuration" class="header">Nexus configuration</a>
   <ul>
     <li><a href="../../../docs/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a></li>
-    <li><a href="../../../docs/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
+    <li><a href="../../../docs/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a>
+    <ul>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#database-pool" class="header">Database pool</a></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#partitioning" class="header">Partitioning</a></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#init-scripts" class="header">Init scripts</a></li>
+    </ul></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#realm-provisioning" class="header">Realm provisioning</a></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#acl-provisioning" class="header">Acl provisioning</a></li>
@@ -318,8 +334,15 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../docs/running-nexus/configuration/index.html#monitoring" class="header">Monitoring</a>
     <ul>
-      <li><a href="../../../docs/running-nexus/configuration/index.html#instrumentation" class="header">Instrumentation</a></li>
-      <li><a href="../../../docs/running-nexus/configuration/index.html#reporters" class="header">Reporters</a></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#kamon" class="header">Kamon</a>
+      <ul>
+        <li><a href="../../../docs/running-nexus/configuration/index.html#instrumentation" class="header">Instrumentation</a></li>
+        <li><a href="../../../docs/running-nexus/configuration/index.html#reporters" class="header">Reporters</a></li>
+      </ul></li>
+      <li><a href="../../../docs/running-nexus/configuration/index.html#opentelemetry" class="header">OpenTelemetry</a>
+      <ul>
+        <li><a href="../../../docs/running-nexus/configuration/index.html#logs" class="header">Logs</a></li>
+      </ul></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -352,10 +375,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L11" title="The `http` section" target="_blank" rel="noopener noreferrer">The <code>http</code> section</a> of the configuration defines the binding address and port where the service will be listening.</p>
 <p>The configuration flag <code>akka.http.server.parsing.max-content-length</code> can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.</p>
 <h2><a href="#postgres-configuration" name="postgres-configuration" class="anchor"><span class="anchor-link"></span></a>Postgres configuration</h2>
+<h3><a href="#database-pool" name="database-pool" class="anchor"><span class="anchor-link"></span></a>Database pool</h3>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L23" title="The `database` section" target="_blank" rel="noopener noreferrer">The <code>database</code> section</a> of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools (&lsquo;read&rsquo;, &lsquo;write&rsquo;, &lsquo;streaming&rsquo;), it is recommended to set the host, port, database name, username, and password via the <code>app.defaults.database</code> field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective <code>app.database.{read|write|streaming}</code> fields. </p>
 <p>The pool size can be set using the <code>app.defaults.database.access.pool-size</code> setting for all pools, or individually for each pool (<code>app.database.{read|write|streaming}.access.pool-size</code>).</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>A default Postgres deployment will limit the number of connections to 100, unless configured otherwise. See the <a href="https://www.postgresql.org/docs/current/runtime-config-connection.html" title="Postgres Connection and Authentication documentation" target="_blank" rel="noopener noreferrer">Postgres Connection and Authentication documentation</a>.</p></div>
+<h3><a href="#partitioning" name="partitioning" class="anchor"><span class="anchor-link"></span></a>Partitioning</h3>
+<p>Nexus supports currently two types of partitioning list and hash.</p>
+<p>This can be set via the <code>app.database.partition-strategy</code>.</p>
+<p>Note that it is an essential setting which can not be changed automatically once it is set, so configure it carefully according to your needs.</p>
+<p>More information about partitioning is available <a href="../postgresql.html">here</a>.</p>
+<h3><a href="#init-scripts" name="init-scripts" class="anchor"><span class="anchor-link"></span></a>Init scripts</h3>
 <p>Before running Nexus Delta, the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init" title="init scripts" target="_blank" rel="noopener noreferrer">init scripts</a> should be run in the lexicographical order.</p>
+<p>The scripts in the subdirectory matching your partitioning strategy should be run first, followed by those in the common folder.</p>
 <p>It is possible to let Nexus Delta automatically create them using the following configuration parameters: <code>app.database.tables-autocreate=true</code>.</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>Auto creation of tables is included as a development convenience and should be avoided in production.</p></div>
 <h2><a href="#service-account-configuration" name="service-account-configuration" class="anchor"><span class="anchor-link"></span></a>Service account configuration</h2>
@@ -503,7 +534,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <ul>
   <li>Select the <code>Content-Type</code> header from the file creation/update request</li>
   <li>Compare the extension to the custom list provided in the configuratio</li>
-  <li>Fallback on akka automatic detection</li>
+  <li>Fallback on http4s automatic detection</li>
   <li>Fallback to the default value <code>application/octet-stream</code></li>
 </ul>
 <h4><a href="#s3-storage-configuration" name="s3-storage-configuration" class="anchor"><span class="anchor-link"></span></a>S3 storage configuration</h4>
@@ -527,10 +558,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#archive-plugin-configuration" name="archive-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Archive plugin configuration</h3>
 <p>The archive plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/archive/src/main/resources/archive.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
 <h2><a href="#monitoring" name="monitoring" class="anchor"><span class="anchor-link"></span></a>Monitoring</h2>
+<h3><a href="#kamon" name="kamon" class="anchor"><span class="anchor-link"></span></a>Kamon</h3>
 <p>For monitoring, Nexus Delta relies on <a href="https://kamon.io/" title="Kamon" target="_blank" rel="noopener noreferrer">Kamon</a>.</p>
 <p>Kamon can be disabled by passing the environment variable <code>KAMON_ENABLED</code> set to <code>false</code>.</p>
 <p>Delta configuration for Kamon is provided <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L391" title="in the `monitoring` section" target="_blank" rel="noopener noreferrer">in the <code>monitoring</code> section</a>. For a more complete description on the different options available, please look at the Kamon website.</p>
-<h3><a href="#instrumentation" name="instrumentation" class="anchor"><span class="anchor-link"></span></a>Instrumentation</h3>
+<h4><a href="#instrumentation" name="instrumentation" class="anchor"><span class="anchor-link"></span></a>Instrumentation</h4>
 <p>Delta provides the Kamon instrumentation for:</p>
 <ul>
   <li><a href="https://kamon.io/docs/v1/instrumentation/executors/" title="Executors" target="_blank" rel="noopener noreferrer">Executors</a></li>
@@ -538,12 +570,25 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><a href="https://kamon.io/docs/v1/instrumentation/logback/" title="Logback" target="_blank" rel="noopener noreferrer">Logback</a></li>
   <li><a href="https://kamon.io/docs/v1/instrumentation/system-metrics/" title="System metrics" target="_blank" rel="noopener noreferrer">System metrics</a></li>
 </ul>
-<h3><a href="#reporters" name="reporters" class="anchor"><span class="anchor-link"></span></a>Reporters</h3>
+<h4><a href="#reporters" name="reporters" class="anchor"><span class="anchor-link"></span></a>Reporters</h4>
 <p>Kamon reporters are also available for:</p>
 <ul>
   <li><a href="https://kamon.io/docs/v1/reporters/jaeger/" title="Jaeger" target="_blank" rel="noopener noreferrer">Jaeger</a></li>
   <li><a href="https://kamon.io/docs/v1/reporters/prometheus/" title="Prometheus" target="_blank" rel="noopener noreferrer">Prometheus</a></li>
 </ul>
+<h3><a href="#opentelemetry" name="opentelemetry" class="anchor"><span class="anchor-link"></span></a>OpenTelemetry</h3>
+<p>Since 1.12, Nexus also allows to use OpenTelemetry via otel4s where some configuration tips are provided <a href="https://typelevel.org/otel4s/sdk/configuration.html" title="here">here</a>.</p>
+<p>OpenTelemetry is disabled by default and can be enabled by setting the system property <code>otel.sdk.disabled</code> or the environment variable <code>OTEL_SDK_DISABLED</code> to false.</p>
+<p>When enabled, the otlp endpoint must also be provided via the system property <code>otel.exporter.otlp.endpoint</code> or the environment variable <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>.</p>
+<p>Note the default protocol inherited by the OpenTelemetry SDK is <code>grpc</code>.</p>
+<h4><a href="#logs" name="logs" class="anchor"><span class="anchor-link"></span></a>Logs</h4>
+<p>For logs, Nexus relies on the OpenTelemetry Log SDK and the logback appender.</p>
+<p>See <a href="https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/instrumentation/logback/logback-appender-1.0/library/README.md" title="here">here</a> for the configuration options.</p>
+<p>The appender can be configured via the logback.xml file.</p>
+<pre class="prettyprint"><code class="language-xml">&lt;appender name=&quot;OpenTelemetry&quot;
+    class=&quot;io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender&quot;&gt;
+&lt;/appender&gt;
+</code></pre>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/running-nexus/configuration/index.md" title="Edit this page" class="md-source-file md-edit">

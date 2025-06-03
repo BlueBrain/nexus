@@ -204,7 +204,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -242,6 +241,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html#schema-changes" class="header">Schema changes</a></li>
     <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html#indexing-in-elasticsearch-and-blazegraph" class="header">Indexing in Elasticsearch and Blazegraph</a></li>
+    <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html#adopt-hash-partitioning" class="header">Adopt hash partitioning</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -267,6 +267,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html#schema-changes" class="header">Schema changes</a></li>
     <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html#indexing-in-elasticsearch-and-blazegraph" class="header">Indexing in Elasticsearch and Blazegraph</a></li>
+    <li><a href="../../docs/releases/v1.11-to-v1.12-migration.html#adopt-hash-partitioning" class="header">Adopt hash partitioning</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -286,8 +287,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#v1-11-to-v1-12-migration" name="v1-11-to-v1-12-migration" class="anchor"><span class="anchor-link"></span></a>v1.11 To v1.12 Migration</h1>
 <h1><a href="#schema-changes" name="schema-changes" class="anchor"><span class="anchor-link"></span></a>Schema changes</h1>
-<p>Run the differents scripts starting with V1_12 in order:</p>
-<p><a href="https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/postgres/init">https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/postgres/init</a></p>
+<p>Run the different scripts starting with V1_12 in order from <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init">the repository</a>.</p>
 <h1><a href="#indexing-in-elasticsearch-and-blazegraph" name="indexing-in-elasticsearch-and-blazegraph" class="anchor"><span class="anchor-link"></span></a>Indexing in Elasticsearch and Blazegraph</h1>
 <p>Those different changes in 1.12 require a full reindexing in Elasticsearch and Blazegraph:</p>
 <ul>
@@ -304,22 +304,141 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Configure Delta via the <code>plugins.elasticsearch.main-index.shards</code> depending on your amount of data and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/size-your-shards.html">following the Elastic recommendations about sharding</a></li>
   <li>You can optionally allocate more resources to Delta, PostgreSQL, Blazegraph and Elasticsearch to accommodate for the load related to the indexing</li>
   <li>You may also want to reindex in Elasticsearch first and then in Blazegraph if the load is too high</li>
-  <li>
-  <p>Run the following SQL script to delete the former default elasticsearch views and their progress:</p>
-  <pre class="prettyprint"><code class="language-sql">DELETE FROM scoped_events WHERE type = &#39;elasticsearch&#39; AND id = &#39;https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex&#39;;
+  <li>Run the following SQL script to delete the former default elasticsearch views and their progress:</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">DELETE FROM scoped_events WHERE type = &#39;elasticsearch&#39; AND id = &#39;https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex&#39;;
 DELETE FROM scoped_states WHERE type = &#39;elasticsearch&#39; AND id = &#39;https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex&#39;;
 DELETE FROM projection_offsets WHERE module = &#39;elasticsearch&#39; AND resource_id = &#39;https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex&#39;;
 DELETE FROM projection_offsets WHERE name = &#39;event-metrics&#39;;
-</code></pre></li>
-  <li>
-  <p>Run the following SQL script to delete the progress of Blazegraph indexing:</p>
-  <pre class="prettyprint"><code class="language-sql">DELETE FROM projection_offsets WHERE module = &#39;blazegraph&#39;;
-</code></pre></li>
+</code></pre>
+<ul>
+  <li>Run the following SQL script to delete the progress of Blazegraph indexing:</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">DELETE FROM projection_offsets WHERE module = &#39;blazegraph&#39;;
+</code></pre>
+<ul>
   <li>Start Nexus Delta</li>
-  <li>
-  <p>Monitor the load of the different components and the indexing process by running the following query</p>
-  <pre class="prettyprint"><code class="language-sql">SELECT * FROM projection_offsets ORDER BY updated_at DESC;
-</code></pre></li>
+  <li>Monitor the load of the different components and the indexing process by running the following query</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">SELECT * FROM projection_offsets ORDER BY updated_at DESC;
+</code></pre>
+<h1><a href="#adopt-hash-partitioning" name="adopt-hash-partitioning" class="anchor"><span class="anchor-link"></span></a>Adopt hash partitioning</h1>
+<ul>
+  <li>Make a backup of your PostgreSQL instance</li>
+  <li>Make sure to accommodate your deployment so that it can accomodate twice your data during the migration</li>
+  <li>Scale down Delta</li>
+  <li>Run the <a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init/common/V1_12_M02__partition_config.ddl">following script</a> to init the partition_config table</li>
+  <li>Run the following script to rename the partitioning tables and their indices:</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">-- Renaming scoped_events table and its indices
+ALTER TABLE scoped_events RENAME TO scoped_events_list;
+ALTER INDEX scoped_events_type_idx RENAME TO scoped_events_type_idx_list ;
+ALTER INDEX scoped_events_ordering_idx RENAME TO scoped_events_ordering_idx_list ;
+
+-- Renaming scoped_states table and its indices
+ALTER TABLE scoped_states RENAME TO scoped_states_list;
+ALTER INDEX scoped_states_type_idx RENAME TO scoped_states_type_idx_list ;
+ALTER INDEX scoped_states_ordering_idx RENAME TO scoped_states_ordering_idx_list ;
+ALTER INDEX project_uuid_idx RENAME TO project_uuid_idx_list ;
+ALTER INDEX state_value_types_idx RENAME TO state_value_types_idx_list ;
+</code></pre>
+<ul>
+  <li>Run the following script to create the new tables:</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">-- scoped_events
+CREATE TABLE IF NOT EXISTS public.scoped_events(
+    ordering bigint       NOT NULL DEFAULT nextval(&#39;event_offset&#39;),
+    type     text         NOT NULL,
+    org      text         NOT NULL,
+    project  text         NOT NULL,
+    id       text         NOT NULL,
+    rev      integer      NOT NULL,
+    value    JSONB        NOT NULL,
+    instant  timestamptz  NOT NULL,
+    PRIMARY KEY(org, project, id, rev)
+) PARTITION BY HASH (org, project);
+
+CREATE INDEX IF NOT EXISTS scoped_events_type_idx ON public.scoped_events(type);
+CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events (ordering);
+
+CREATE TABLE public.scoped_states_0000 PARTITION OF public.scoped_states FOR VALUES WITH (MODULUS 2, REMAINDER 0);
+CREATE TABLE public.scoped_states_0001 PARTITION OF public.scoped_states FOR VALUES WITH (MODULUS 2, REMAINDER 1);
+
+-- scoped_states
+CREATE TABLE IF NOT EXISTS public.scoped_states(
+    ordering   bigint       NOT NULL DEFAULT nextval(&#39;state_offset&#39;),
+    type       text         NOT NULL,
+    org        text         NOT NULL,
+    project    text         NOT NULL,
+    id         text         NOT NULL,
+    tag        text         NOT NULL,
+    rev        integer      NOT NULL,
+    value      JSONB        NOT NULL,
+    deprecated boolean      NOT NULL,
+    instant    timestamptz  NOT NULL,
+    PRIMARY KEY(org, project, tag, id)
+) PARTITION BY HASH (org, project);
+
+CREATE INDEX IF NOT EXISTS scoped_states_type_idx ON public.scoped_states(type);
+CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states (ordering);
+CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value-&gt;&gt;&#39;uuid&#39;)) WHERE type = &#39;project&#39;;
+CREATE INDEX IF NOT EXISTS state_value_types_idx ON public.scoped_states USING GIN ((value-&gt;&#39;types&#39;));
+</code></pre>
+<ul>
+  <li>Start Nexus with a configuration with the hash partition strategy without making it available to users.</li>
+</ul>
+<p>The modulo value should remain low(at most a few hundreds) and should be set to fit your number of projects and resources</p>
+<pre class="prettyprint"><code class="language-hocon">app {
+  database {
+    partition-strategy {
+     type = hash
+     # Adapt the modulo value to the number of partitions you expect
+     modulo = 5
+    }
+  }
+}  
+</code></pre>
+<ul>
+  <li>Stop Nexus again once this log appears:</li>
+</ul>
+<pre><code>2025-03-05 14:05:25 INFO  c.e.b.n.d.s.p.DatabasePartitioner - The partition strategy has not been set yet, initializing...
+</code></pre>
+<ul>
+  <li>The following queries should return the different partitions</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">SELECT table_name 
+FROM information_schema.tables WHERE table_name LIKE &#39;scoped_events_0%&#39;;
+</code></pre>
+<pre class="prettyprint"><code class="language-sql">SELECT table_name 
+FROM information_schema.tables WHERE table_name LIKE &#39;scoped_states_0%&#39;;
+</code></pre>
+<ul>
+  <li>Running a query against the table partition_config should also return a row matching your configuration:</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">SELECT * FROM partition_config;
+</code></pre>
+<ul>
+  <li>Run the following scripts to copy data to the new tables</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">INSERT INTO scoped_events (SELECT * FROM scoped_events_list);
+INSERT INTO scoped_states (SELECT * FROM scoped_states_list);
+</code></pre>
+<ul>
+  <li>Run a count against the old tables and the new ones to check they have the same number of rows</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">SELECT count(*) from scoped_events_list;
+SELECT count(*) from scoped_events;
+SELECT count(*) from scoped_states_list;
+SELECT count(*) from scoped_states;
+</code></pre>
+<ul>
+  <li>Delete the previous tables:</li>
+</ul>
+<pre class="prettyprint"><code class="language-sql">DROP TABLE IF EXISTS public.scoped_events_list;
+DROP TABLE IF EXISTS public.scoped_states_list;
+</code></pre>
+<ul>
+  <li>Start Delta again</li>
 </ul>
 </div>
 <div>

@@ -204,7 +204,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="active page">Resources</a></li>
       <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -250,6 +249,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#undeprecate" class="header">Undeprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#deletion" class="header">Deletion</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#change-schema" class="header">Change schema</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
@@ -304,6 +304,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#undeprecate" class="header">Undeprecate</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#deletion" class="header">Deletion</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#change-schema" class="header">Change schema</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
@@ -724,6 +725,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_updatedAt&quot;: &quot;2021-04-17T15:02:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
 }</code></pre></dd>
+</dl>
+<h2><a href="#deletion" name="deletion" class="anchor"><span class="anchor-link"></span></a>Deletion</h2>
+<p>Permanently deletes a resource, purging any reference to it in the system from the primary store to the target of the different projections.</p>
+<pre><code>DELETE /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?prune=true
+</code></pre>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/delete.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X DELETE \
+     -H &quot;Content-Type: application/json&quot; \
+     &quot;http://localhost:8080/v1/resources/myorg/myproj/_/fd8a2b32-170e-44e8-808f-44a8cbbc49b0?prune=true&quot;</code></pre></dd>
 </dl>
 <h2><a href="#change-schema" name="change-schema" class="anchor"><span class="anchor-link"></span></a>Change schema</h2>
 <p>This operation allows to only change the schema of a resource without providing any payload.</p>

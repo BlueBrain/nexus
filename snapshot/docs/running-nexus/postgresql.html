@@ -204,7 +204,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -240,14 +239,16 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/running-nexus/postgresql.html#postgresql" class="header">PostgreSQL</a>
   <ul>
+    <li><a href="../../docs/running-nexus/postgresql.html#postgresql-partitioning" class="header">PostgreSQL partitioning</a>
+    <ul>
+      <li><a href="../../docs/running-nexus/postgresql.html#list-partitioning" class="header">List partitioning</a></li>
+      <li><a href="../../docs/running-nexus/postgresql.html#hash-partitioning" class="header">Hash partitioning</a></li>
+      <li><a href="../../docs/running-nexus/postgresql.html#advanced-subpartitioning" class="header">Advanced subpartitioning</a></li>
+    </ul></li>
     <li><a href="../../docs/running-nexus/postgresql.html#tables" class="header">Tables</a>
     <ul>
       <li><a href="../../docs/running-nexus/postgresql.html#initializing-the-schema" class="header">Initializing the schema</a></li>
       <li><a href="../../docs/running-nexus/postgresql.html#description" class="header">Description</a></li>
-      <li><a href="../../docs/running-nexus/postgresql.html#postgresql-partitioning" class="header">PostgreSQL partitioning</a>
-      <ul>
-        <li><a href="../../docs/running-nexus/postgresql.html#advanced-subpartitioning" class="header">Advanced subpartitioning</a></li>
-      </ul></li>
     </ul></li>
     <li><a href="../../docs/running-nexus/postgresql.html#running-and-monitoring" class="header">Running and monitoring</a></li>
     <li><a href="../../docs/running-nexus/postgresql.html#tools-and-resources" class="header">Tools and resources</a></li>
@@ -274,14 +275,16 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/running-nexus/postgresql.html#postgresql" class="header">PostgreSQL</a>
   <ul>
+    <li><a href="../../docs/running-nexus/postgresql.html#postgresql-partitioning" class="header">PostgreSQL partitioning</a>
+    <ul>
+      <li><a href="../../docs/running-nexus/postgresql.html#list-partitioning" class="header">List partitioning</a></li>
+      <li><a href="../../docs/running-nexus/postgresql.html#hash-partitioning" class="header">Hash partitioning</a></li>
+      <li><a href="../../docs/running-nexus/postgresql.html#advanced-subpartitioning" class="header">Advanced subpartitioning</a></li>
+    </ul></li>
     <li><a href="../../docs/running-nexus/postgresql.html#tables" class="header">Tables</a>
     <ul>
       <li><a href="../../docs/running-nexus/postgresql.html#initializing-the-schema" class="header">Initializing the schema</a></li>
       <li><a href="../../docs/running-nexus/postgresql.html#description" class="header">Description</a></li>
-      <li><a href="../../docs/running-nexus/postgresql.html#postgresql-partitioning" class="header">PostgreSQL partitioning</a>
-      <ul>
-        <li><a href="../../docs/running-nexus/postgresql.html#advanced-subpartitioning" class="header">Advanced subpartitioning</a></li>
-      </ul></li>
     </ul></li>
     <li><a href="../../docs/running-nexus/postgresql.html#running-and-monitoring" class="header">Running and monitoring</a></li>
     <li><a href="../../docs/running-nexus/postgresql.html#tools-and-resources" class="header">Tools and resources</a></li>
@@ -305,6 +308,52 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#postgresql" name="postgresql" class="anchor"><span class="anchor-link"></span></a>PostgreSQL</h1>
 <p>Nexus uses <a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a> as its <em>primary store</em> as for its strong reputation for performance, reliability and flexibility.</p>
 <p>Since this is the <em>primary store</em> it is the most important system to be <a href="https://www.postgresql.org/docs/current/backup.html" title="backed up" target="_blank" rel="noopener noreferrer">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in PostgreSQL as the other stores are used as mere indexing systems.</p>
+<h3><a href="#postgresql-partitioning" name="postgresql-partitioning" class="anchor"><span class="anchor-link"></span></a>PostgreSQL partitioning</h3>
+<p>Nexus Delta takes advantage of PostgreSQL&rsquo;s <a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" title="Table Partitioning">Table Partitioning</a> feature. This allows for improved query performance, and facilitates loading, deleting, or transferring data.</p>
+<p>It currently supports 2 partition strategies offered by PostgreSQL:</p>
+<ul>
+  <li>List partitioning</li>
+  <li>Hash partitioning</li>
+</ul><div class="callout note warning"><div class="callout-title">Note</div>
+<p>List partitioning is the default strategy.</p>
+<p>Please be careful when configuring partitioning as Delta does not allow out-of-the box to adopt another one.</p></div>
+<h4><a href="#list-partitioning" name="list-partitioning" class="anchor"><span class="anchor-link"></span></a>List partitioning</h4>
+<p><strong>This strategy is best when you have a small number of projects which can contain a lot of resources.</strong></p>
+<p>The <code>public.scoped_events</code> and <code>public.scoped_states</code> are partitioned by organization, which is itself partitioned by the projects it contains; this follows the natural hierarchy that can be found in Nexus Delta.</p>
+<p>Nexus Delta takes care of handling the creation and deletion of the partitions.</p>
+<ul>
+  <li>If the created project is the first one of a given organization, both the organization partition and the project subpartition will be created.</li>
+  <li>If the organization partition already exist, then only the project subpartition will be created upon project creation.</li>
+</ul>
+<p>The naming scheme of the (sub)partitions is as follows:</p>
+<p><code>{table_name}_{MD5_org_hash}</code> for organization partitions</p>
+<p><code>{table_name}_{MD5_project_hash}</code> for project partition</p>
+<p>where</p>
+<ul>
+  <li><code>{table_name}</code> is either <code>scoped_events</code> or <code>scoped_states</code></li>
+  <li><code>{MD5_org_hash}</code> is the MD5 hash of the organization name</li>
+  <li><code>{MD5_project_hash}</code> is the MD5 hash of the project reference (i.e. has the form <code>{org_name}/{project_name}</code>)</li>
+</ul>
+<p>MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQL table names (such as <code>-</code>).</p>
+<p>Example:</p>
+<p>You create the organization called <code>myorg</code>, inside of which you create the <code>myproject</code> project. When the project is created, Nexus Delta will have created the following partitions:</p>
+<ul>
+  <li><code>scoped_events_B665280652D01C4679777AFD9861170C</code>, the partition of events from the <code>myorg</code> organization</li>
+  <li><code>scoped_events_7922DA7049D5E38C83053EE145B27596</code>, the subpartition of the events from the <code>myorg/myproject</code> project</li>
+  <li><code>scoped_states_B665280652D01C4679777AFD9861170C</code>, the partition of states from the <code>myorg</code> organization</li>
+  <li><code>scoped_states_7922DA7049D5E38C83053EE145B27596</code>, the subpartition of the states from the <code>myorg/myproject</code> project</li>
+</ul>
+<h4><a href="#hash-partitioning" name="hash-partitioning" class="anchor"><span class="anchor-link"></span></a>Hash partitioning</h4>
+<p>Since 1.12, Nexus allows hash partitioning. This strategy is best when you have a lot of projects containing a small amount of resources.</p>
+<p>The <code>public.scoped_events</code> and <code>public.scoped_states</code> are partitioned with a fixed number of partitions where all events and states from a given project will end up in the same partition.</p>
+<p>Nexus takes care of creating the different partitions the first time it starts with this configuration.</p>
+<p>The naming scheme of the partitions is as follows:</p>
+<ul>
+  <li><code>{table_name}_{(%04d)}</code> (ex: <code>scoped_events_0001</code>)</li>
+</ul>
+<h4><a href="#advanced-subpartitioning" name="advanced-subpartitioning" class="anchor"><span class="anchor-link"></span></a>Advanced subpartitioning</h4>
+<p>While Nexus Delta provides table partitioning out-of-the-box, it is primarily addressing the case where the data is more or less uniformly spread out across multiple projects. If however there is one or more project that are very large, it is possible to add further subpartitions according to a custom rule. This custom subpartitioning must be decided on a case-by-case basis using your knowledge of the given project; the idea is to create uniform partitions of your project.</p>
+<p>Please refer to the <a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" title="PostgreSQL Table Partitioning documentation">PostgreSQL Table Partitioning documentation</a>.</p>
 <h2><a href="#tables" name="tables" class="anchor"><span class="anchor-link"></span></a>Tables</h2>
 <h3><a href="#initializing-the-schema" name="initializing-the-schema" class="anchor"><span class="anchor-link"></span></a>Initializing the schema</h3>
 <p>The different scripts are available <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init" title="here">here</a> They must be run in the alphabetical order.</p>
@@ -335,41 +384,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>This table allows to save the failures in order to be able to a posteriori call <a href="../delta/api/supervision-api.html#project-healing">the supervision healing endpoint</a>.</p>
 <p><strong>project_last_updates:</strong> Stores the last_update and last_ordering properties for the different projects.</p>
 <p>This table allows to power the passivation strategy for the different views.</p>
-<h3><a href="#postgresql-partitioning" name="postgresql-partitioning" class="anchor"><span class="anchor-link"></span></a>PostgreSQL partitioning</h3>
-<p>Nexus Delta takes advantage of PostgreSQL&rsquo;s <a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" title="Table Partitioning">Table Partitioning</a> feature. This allows for improved query performance, and facilitates loading, deleting, or transferring data.</p>
-<p>The <code>public.scoped_events</code> and <code>public.scoped_states</code> are partitioned by organization, which is itself partitioned by the projects it contains; this follows the natural hierarchy that can be found in Nexus Delta.</p>
-<p>Nexus Delta takes care of handling the creation and deletion of the partitions.</p>
-<ul>
-  <li>If the created project is the first one of a given organization, both the organization partition and the project subpartition will be created.</li>
-  <li>If the organization partition already exist, then only the project subpartition will be created upon project creation.</li>
-</ul>
-<p>The naming scheme of the (sub)partitions is as follows:</p>
-<p><code>{table_name}_{MD5_org_hash}</code> for organization partitions</p>
-<p><code>{table_name}_{MD5_project_hash}</code> for project partition</p>
-<p>where</p>
-<ul>
-  <li><code>{table_name}</code> is either <code>scoped_events</code> or <code>scoped_states</code></li>
-  <li><code>{MD5_org_hash}</code> is the MD5 hash of the organization name</li>
-  <li><code>{MD5_project_hash}</code> is the MD5 hash of the project reference (i.e. has the form <code>{org_name}/{project_name}</code>)</li>
-</ul>
-<p>MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQL table names (such as <code>-</code>).</p>
-<p>Example:</p>
-<p>You create the organization called <code>myorg</code>, inside of which you create the <code>myproject</code> project. When the project is created, Nexus Delta will have created the following partitions:</p>
-<ul>
-  <li><code>scoped_events_B665280652D01C4679777AFD9861170C</code>, the partition of events from the <code>myorg</code> organization
-    <ul>
-      <li><code>scoped_events_7922DA7049D5E38C83053EE145B27596</code>, the subpartition of the events from the <code>myorg/myproject</code> project</li>
-    </ul>
-  </li>
-  <li><code>scoped_states_B665280652D01C4679777AFD9861170C</code>, the partition of states from the <code>myorg</code> organization
-    <ul>
-      <li><code>scoped_states_7922DA7049D5E38C83053EE145B27596</code>, the subpartition of the states from the <code>myorg/myproject</code> project</li>
-    </ul>
-  </li>
-</ul>
-<h4><a href="#advanced-subpartitioning" name="advanced-subpartitioning" class="anchor"><span class="anchor-link"></span></a>Advanced subpartitioning</h4>
-<p>While Nexus Delta provides table partitioning out-of-the-box, it is primarily addressing the case where the data is more or less uniformly spread out across multiple projects. If however there is one or more project that are very large, it is possible to add further subpartitions according to a custom rule. This custom subpartitioning must be decided on a case-by-case basis using your knowledge of the given project; the idea is to create uniform partitions of your project.</p>
-<p>Please refer to the <a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" title="PostgreSQL Table Partitioning documentation">PostgreSQL Table Partitioning documentation</a>.</p>
 <h2><a href="#running-and-monitoring" name="running-and-monitoring" class="anchor"><span class="anchor-link"></span></a>Running and monitoring</h2>
 <p><strong>CPU:</strong> High CPU usage suggests inefficient query execution and query plans, resource contention, deadlocks.</p>
 <p><strong>Memory:</strong> Low memory indicates swapping and degraded performance.</p>

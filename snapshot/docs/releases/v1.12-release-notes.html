@@ -204,7 +204,6 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
-      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
@@ -244,6 +243,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/releases/v1.12-release-notes.html#support-of-json-ld-1-1" class="header">Support of JSON-LD 1.1</a></li>
       <li><a href="../../docs/releases/v1.12-release-notes.html#default-indexing" class="header">Default indexing</a></li>
+      <li><a href="../../docs/releases/v1.12-release-notes.html#support-of-hash-partitioning-in-postgresql" class="header">Support of hash partitioning in PostgreSQL</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -272,6 +272,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/releases/v1.12-release-notes.html#support-of-json-ld-1-1" class="header">Support of JSON-LD 1.1</a></li>
       <li><a href="../../docs/releases/v1.12-release-notes.html#default-indexing" class="header">Default indexing</a></li>
+      <li><a href="../../docs/releases/v1.12-release-notes.html#support-of-hash-partitioning-in-postgresql" class="header">Support of hash partitioning in PostgreSQL</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -301,6 +302,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>This change allow Nexus to provide a full support of JSON-LD 1.1 including features such as scoped contexts and JSON literals.</p>
 <h3><a href="#default-indexing" name="default-indexing" class="anchor"><span class="anchor-link"></span></a>Default indexing</h3>
 <p>The default Elasticsearch view now points to a single index to avoid the oversharding problems when a Nexus instance contains a lot of projects.</p>
+<h3><a href="#support-of-hash-partitioning-in-postgresql" name="support-of-hash-partitioning-in-postgresql" class="anchor"><span class="anchor-link"></span></a>Support of hash partitioning in PostgreSQL</h3>
+<p>Since 1.8 and the introduction of PostgreSQL as the primary store, Nexus only permitted list partitioning where each project was assigned to a PostgreSQL partition.</p>
+<p>While this approach stands for deployments where there are few projects which can be quite large, it is not adapted to the scenario where there are a lot of small projects. The new hash strategy allows to address this case.</p>
+<p><a href="../running-nexus/configuration/index.html#postgres-configuration">See database config for more details</a></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.12-release-notes.md" title="Edit this page" class="md-source-file md-edit">
