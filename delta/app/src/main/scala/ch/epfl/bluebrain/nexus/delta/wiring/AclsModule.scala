@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, UserPermissionsRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.*
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.FlattenedAclStore
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -29,18 +30,28 @@ object AclsModule extends ModuleDef {
 
   make[AclsConfig].from { (config: AppConfig) => config.acls }
 
-  make[Acls].from { (permissions: Permissions, config: AclsConfig, xas: Transactors, clock: Clock[IO]) =>
-    acls.AclsImpl(
-      permissions.fetchPermissionSet,
-      AclsImpl.findUnknownRealms(xas),
-      permissions.minimum,
-      config.eventLog,
-      xas,
-      clock
-    )
+  make[FlattenedAclStore].from { (xas: Transactors) => new FlattenedAclStore(xas) }
+
+  make[Acls].fromEffect {
+    (
+        permissions: Permissions,
+        flattenedAclStore: FlattenedAclStore,
+        config: AclsConfig,
+        xas: Transactors,
+        clock: Clock[IO]
+    ) =>
+      AclsImpl.applyWithInitial(
+        permissions.fetchPermissionSet,
+        AclsImpl.findUnknownRealms(xas),
+        permissions.minimum,
+        config.eventLog,
+        flattenedAclStore,
+        xas,
+        clock
+      )
   }
 
-  make[AclCheck].from { (acls: Acls) => AclCheck(acls) }
+  make[AclCheck].from { (flattenedAclStore: FlattenedAclStore) => AclCheck(flattenedAclStore) }
 
   make[AclsRoutes].from {
     (

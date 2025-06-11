@@ -88,7 +88,7 @@ final class ProjectsImpl private (
     ).span("listProjects")
 
   override def currentRefs(scope: Scope): Stream[IO, ProjectRef] =
-    log.currentStates(scope).map(_.value.project)
+    log.currentStates(scope, _.project)
 
   override def states(offset: Offset): SuccessElemStream[ProjectState] = log.states(Scope.root, offset)
 

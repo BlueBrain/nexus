@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.{AclCannotContainEmptyPermissionCollection, AclIsEmpty, AclNotFound, NothingToBeUpdated, RevisionNotFound, UnknownPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclCollection, AclState}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclCollection, AclState, FlattenedAclStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -60,11 +60,13 @@ class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with Cance
   val minimumPermissions: Set[Permission] = PermissionsGen.minimum
 
   "An ACLs implementation" should {
+    lazy val aclStore   = new FlattenedAclStore(xas)
     lazy val acls: Acls = AclsImpl(
       IO.pure(minimumPermissions),
       Acls.findUnknownRealms(_, Set(realm, realm2)),
       minimumPermissions,
       eventLogConfig,
+      aclStore,
       xas,
       clock
     )

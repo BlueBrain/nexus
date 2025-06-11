@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 import cats.effect.unsafe.implicits.*
 import cats.effect.{IO, Ref}
 import cats.syntax.all.*
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -41,9 +40,15 @@ object AclSimpleCheck {
 
   private def emptyAclSimpleCheck: IO[AclSimpleCheck] = {
     Ref.of[IO, Map[AclAddress, Acl]](Map.empty).map { cache =>
-      val aclCheck = AclCheck(
-        address => cache.get.flatMap { c => IO.fromOption(c.get(address))(AclNotFound(address)) },
-        cache.get
+      val aclCheck = AclCheck((address, permission, identities) =>
+        address.ancestors.foldM(false) {
+          case (false, address) =>
+            cache.get.map {
+              _.get(address).exists(_.hasPermission(identities, permission))
+
+            }
+          case (true, _)        => IO.pure(true)
+        }
       )
       new AclSimpleCheck(cache) {
         override def authorizeForOr[E <: Throwable](

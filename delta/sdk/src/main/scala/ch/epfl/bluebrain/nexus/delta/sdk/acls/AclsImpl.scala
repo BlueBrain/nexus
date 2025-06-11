@@ -1,13 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.{Clock, IO}
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsImpl.AclsLog
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.*
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
@@ -17,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
+import doobie.syntax.all.*
 
 final class AclsImpl private (
     log: AclsLog,
@@ -98,6 +101,8 @@ object AclsImpl {
 
   type AclsLog = GlobalEventLog[AclAddress, AclState, AclCommand, AclEvent, AclRejection]
 
+  private val logger = Logger[AclsImpl]
+
   def findUnknownRealms(xas: Transactors)(labels: Set[Label]): IO[Unit] = {
     GlobalStateStore
       .listIds(Realms.entityType, xas.write)
@@ -119,12 +124,34 @@ object AclsImpl {
       findUnknownRealms: Set[Label] => IO[Unit],
       minimum: Set[Permission],
       config: EventLogConfig,
+      flattenedAclStore: FlattenedAclStore,
       xas: Transactors,
       clock: Clock[IO]
   ): Acls =
     new AclsImpl(
-      GlobalEventLog(Acls.definition(fetchPermissionSet, findUnknownRealms, clock), config, xas),
+      GlobalEventLog(Acls.definition(fetchPermissionSet, findUnknownRealms, flattenedAclStore, clock), config, xas),
       minimum
     )
+
+  final def applyWithInitial(
+      fetchPermissionSet: IO[Set[Permission]],
+      findUnknownRealms: Set[Label] => IO[Unit],
+      minimum: Set[Permission],
+      config: EventLogConfig,
+      flattenedAclStore: FlattenedAclStore,
+      xas: Transactors,
+      clock: Clock[IO]
+  ): IO[Acls] = {
+    val acls = apply(fetchPermissionSet, findUnknownRealms, minimum, config, flattenedAclStore, xas, clock)
+    for {
+      isRootAclSet <- acls.isRootAclSet
+      _            <- IO.unlessA(isRootAclSet) {
+                        val initial = AclState.initial(minimum).acl
+                        (flattenedAclStore.delete(AclAddress.Root) >> flattenedAclStore.insert(AclAddress.Root, initial.value))
+                          .transact(xas.write)
+                      }
+      _            <- IO.unlessA(isRootAclSet) { logger.warn("No root acl are set, please define some in real deployments.") }
+    } yield acls
+  }
 
 }

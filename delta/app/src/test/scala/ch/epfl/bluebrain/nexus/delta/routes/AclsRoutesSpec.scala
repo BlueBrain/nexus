@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project, Root}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, FlattenedAclStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -82,16 +82,19 @@ class AclsRoutesSpec extends BaseRouteSpec {
 
   private val identities = IdentitiesDummy(caller)
 
+  private lazy val aclStore = new FlattenedAclStore(xas)
+
   private lazy val acls =
     AclsImpl(
       IO.pure(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read)),
       Acls.findUnknownRealms(_, Set(realm1, realm2)),
       Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read),
       EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis),
+      aclStore,
       xas,
       clock
     )
-  lazy val routes       = Route.seal(AclsRoutes(identities, acls, AclCheck(acls)).routes)
+  lazy val routes       = Route.seal(AclsRoutes(identities, acls, AclCheck(aclStore)).routes)
 
   val paths = Seq(
     "/"             -> AclAddress.Root,

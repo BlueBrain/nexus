@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.*
 import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
@@ -40,9 +41,9 @@ class AclAddressSpec extends BaseSpec with AclFixtures {
 
     "return the correct ancestor list" in {
       val list = List(
-        Root        -> List(Root),
-        orgAddress  -> List(orgAddress, Root),
-        projAddress -> List(projAddress, orgAddress, Root)
+        Root        -> NonEmptyList.one(Root),
+        orgAddress  -> NonEmptyList.of(orgAddress, Root),
+        projAddress -> NonEmptyList.of(projAddress, orgAddress, Root)
       )
       forAll(list) { case (address, ancestors) =>
         address.ancestors shouldEqual ancestors

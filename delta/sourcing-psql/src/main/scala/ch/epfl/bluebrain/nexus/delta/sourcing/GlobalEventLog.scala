@@ -6,10 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
-import doobie.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ProjectionStateSave}
 import doobie.postgres.sqlstate
+import doobie.syntax.all.*
 import fs2.Stream
 
 import scala.concurrent.duration.FiniteDuration
@@ -76,6 +76,7 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection 
   /**
     * Delete both states and events for the given id
     * @param id
+    *   the entity identifier
     */
   def delete(id: Id): IO[Unit]
 
@@ -108,6 +109,7 @@ object GlobalEventLog {
       GlobalStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
       definition.stateMachine,
       definition.onUniqueViolation,
+      definition.projectionStateSave,
       config.maxDuration,
       xas
     )
@@ -117,6 +119,7 @@ object GlobalEventLog {
       stateStore: GlobalStateStore[Id, S],
       stateMachine: StateMachine[S, Command, E],
       onUniqueViolation: (Id, Command) => Rejection,
+      projectionStateSave: ProjectionStateSave[Id, S],
       maxDuration: FiniteDuration,
       xas: Transactors
   ): GlobalEventLog[Id, S, Command, E, Rejection] =
@@ -138,7 +141,10 @@ object GlobalEventLog {
           stateMachine
             .evaluate(current, command, maxDuration)
             .flatTap { case (event, state) =>
-              (eventStore.save(event) >> stateStore.save(state))
+              (eventStore.save(event) >>
+                stateStore.save(state) >>
+                projectionStateSave.delete(id) >>
+                projectionStateSave.insert(id, state))
                 .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                   onUniqueViolation(id, command)
                 }
@@ -153,7 +159,7 @@ object GlobalEventLog {
         }
 
       override def delete(id: Id): IO[Unit] =
-        (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write)
+        (projectionStateSave.delete(id) >> stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write)
 
       override def currentStates[T](offset: Offset, f: S => T): Stream[IO, T] =
         stateStore.currentStates(offset).map(f)
