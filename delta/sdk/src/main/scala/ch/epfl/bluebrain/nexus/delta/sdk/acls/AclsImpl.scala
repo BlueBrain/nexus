@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
+import cats.effect.std.Env
 import cats.effect.{Clock, IO}
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -18,8 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import doobie.syntax.all.*
+import fs2.Stream
 
 final class AclsImpl private (
     log: AclsLog,
@@ -79,6 +82,8 @@ final class AclsImpl private (
     list(filter)
       .map(_.filter(caller.identities))
       .span("listSelfAcls", Map("withAncestors" -> filter.withAncestors))
+
+  override def states(offset: Offset): Stream[IO, AclState] = log.currentStates(offset, identity)
 
   override def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource] =
     eval(ReplaceAcl(acl, rev, caller)).span("replaceAcls")
@@ -144,6 +149,8 @@ object AclsImpl {
   ): IO[Acls] = {
     val acls = apply(fetchPermissionSet, findUnknownRealms, minimum, config, flattenedAclStore, xas, clock)
     for {
+      shouldReplay <- Env[IO].get("RESET_ACL_PROJECTION").map(_.getOrElse("false").toBoolean)
+      _            <- IO.whenA(shouldReplay)(replayAclProjection(acls, flattenedAclStore, xas))
       isRootAclSet <- acls.isRootAclSet
       _            <- IO.unlessA(isRootAclSet) {
                         val initial = AclState.initial(minimum).acl
@@ -154,4 +161,15 @@ object AclsImpl {
     } yield acls
   }
 
+  private[acls] def replayAclProjection(acls: Acls, flattenedAclStore: FlattenedAclStore, xas: Transactors) =
+    logger.warn("Replay acl projection as the env RESET_ACL_PROJECTION is set...") >>
+      flattenedAclStore.reset.transact(xas.write) >>
+      acls
+        .states(Offset.Start)
+        .evalTap { state =>
+          flattenedAclStore.insert(state.acl.address, state.acl.value).transact(xas.write)
+        }
+        .compile
+        .drain >>
+      logger.info("Acl projection has been successfully replayed.")
 }

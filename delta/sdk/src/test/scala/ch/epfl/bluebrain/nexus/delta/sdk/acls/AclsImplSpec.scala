@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import doobie.syntax.all.*
 import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
@@ -268,12 +269,22 @@ class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with Cance
       acls.fetch(AclAddress.Root).accepted shouldEqual resourceFor(userR(AclAddress.Root), 7, subject)
     }
 
-    s"should delete the entry for a project" in {
+    "should delete the entry for a project" in {
       val project      = ProjectRef.unsafe("org", "to_delete")
       acls.append(userR(project), 0).accepted
       val deletionTask = Acls.projectDeletionTask(acls)
       deletionTask(project).accepted
       acls.fetch(project).rejectedWith[AclNotFound]
+    }
+
+    "should replay the acl projection which should match the previous one" in {
+      def count = sql"SELECT count(*) FROM flattened_acls".query[Int].unique.transact(xas.read)
+
+      val beforeCount = count.accepted
+      AclsImpl.replayAclProjection(acls, aclStore, xas).accepted
+      val afterCount  = count.accepted
+
+      afterCount shouldEqual beforeCount
     }
 
   }
