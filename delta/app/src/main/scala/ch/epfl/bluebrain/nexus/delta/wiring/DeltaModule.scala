@@ -16,16 +16,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ErrorRoutes
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.*
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclProvisioning, Acls}
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.jws.JWSPayloadHelper
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.*
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig, ScopeInitializationErrorStore}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ScopeInitializationErrorStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmProvisioning
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.*
@@ -161,10 +161,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .withExposedHeaders(List(Location.name))
   )
 
-  many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>
-    OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
-  }
-
   many[PriorityRoute].add { (cfg: AppConfig, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
     val route = new ErrorRoutes()(cfg.http.baseUri, cr, ordering)
     PriorityRoute(pluginsMaxPriority + 999, route.routes, requiresStrictEntity = true)
@@ -180,7 +176,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
 
   include(PermissionsModule)
-  include(AclsModule)
+  include(new AclsModule(appCfg.acls, appCfg.permissions))
   include(RealmsModule)
   include(OrganizationsModule)
   include(ProjectsModule)
