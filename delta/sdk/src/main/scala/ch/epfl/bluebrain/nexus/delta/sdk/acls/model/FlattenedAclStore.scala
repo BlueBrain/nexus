@@ -64,4 +64,6 @@ final class FlattenedAclStore(xas: Transactors) {
           | order by address
           |""".stripMargin.query[AclAddress].to[Set].transact(xas.read)
   }
+
+  def reset: ConnectionIO[Unit] = sql"TRUNCATE flattened_acls".update.run.void
 }

@@ -98,4 +98,14 @@ class FlattenedAclStoreSuite extends NexusSuite with Doobie.Fixture {
       aclStore.exists(addressProj11, resources.read, alice.identities).assertEquals(false) >>
       aclStore.fetchAddresses(AclAddress.Root, resources.read, alice.identities).assertEquals(Set(addressOrg2))
   }
+
+  test("Reset") {
+    def count = sql"SELECT count(*) FROM flattened_acls".query[Int].unique.transact(xas.read)
+
+    for {
+      _ <- count.assert(_ > 0, "There should be some acls before the truncation")
+      _ <- aclStore.reset.transact(xas.write)
+      _ <- count.assertEquals(0)
+    } yield ()
+  }
 }
