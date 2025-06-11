@@ -11,14 +11,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.FetchActiveOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects as projectsPermissions, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectScopeResolver.PermissionAccess
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.*
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectScopeResolver, ProjectsConfig, ProjectsImpl, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ProjectMatchers.deprecated
@@ -80,6 +84,31 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
     (statisticsReader, AclAddress.Root, Set(resources.read))
   )
 
+  private val projectScopeResolver = new ProjectScopeResolver {
+    override def apply(scope: Scope, permission: Permission)(implicit caller: Caller): IO[Set[ProjectRef]] = ???
+
+    override def access(scope: Scope, permission: Permission)(implicit
+        caller: Caller
+    ): IO[ProjectScopeResolver.PermissionAccess] = {
+      IO.pure {
+        (caller.subject, permission) match {
+          case (`reader`, projectsPermissions.read)              => PermissionAccess(projectsPermissions.read, Set(AclAddress.Root))
+          case (`singleProjectReader`, projectsPermissions.read) =>
+            PermissionAccess(projectsPermissions.read, Set(AclAddress.Project(ref)))
+          case (`creator`, projectsPermissions.create)           =>
+            PermissionAccess(projectsPermissions.create, Set(AclAddress.Root))
+          case (`writer`, projectsPermissions.write)             =>
+            PermissionAccess(projectsPermissions.write, Set(AclAddress.Root))
+          case (`deleter`, projectsPermissions.delete)           =>
+            PermissionAccess(projectsPermissions.delete, Set(AclAddress.Root))
+          case (`statisticsReader`, resources.read)              => PermissionAccess(resources.read, Set(AclAddress.Root))
+          case (_, permission)                                   => PermissionAccess(permission, Set.empty)
+        }
+      }
+
+    }
+  }
+
   private lazy val projects =
     ProjectsImpl(
       fetchOrg,
@@ -97,6 +126,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with BeforeAndAfterAll {
       identities,
       aclCheck,
       projects,
+      projectScopeResolver,
       projectsStatistics
     )
   )

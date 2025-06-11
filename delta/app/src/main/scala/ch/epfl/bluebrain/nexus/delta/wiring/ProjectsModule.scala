@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.*
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.FlattenedAclStore
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.{ProjectDeletionCoordinator, ProjectDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -68,8 +69,8 @@ object ProjectsModule extends ModuleDef {
       )
   }
 
-  make[ProjectScopeResolver].from { (projects: Projects, aclCheck: AclCheck) =>
-    ProjectScopeResolver(projects, aclCheck)
+  make[ProjectScopeResolver].from { (projects: Projects, flattenedAclStore: FlattenedAclStore) =>
+    ProjectScopeResolver(projects, flattenedAclStore)
   }
 
   make[ProjectsHealth].from { (errorStore: ScopeInitializationErrorStore) =>
@@ -126,13 +127,14 @@ object ProjectsModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         projects: Projects,
+        projectScopeResolver: ProjectScopeResolver,
         projectsStatistics: ProjectsStatistics,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics)(
+      new ProjectsRoutes(identities, aclCheck, projects, projectScopeResolver, projectsStatistics)(
         baseUri,
         config.projects,
         cr,

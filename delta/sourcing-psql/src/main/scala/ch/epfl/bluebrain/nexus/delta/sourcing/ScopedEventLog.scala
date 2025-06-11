@@ -84,7 +84,7 @@ object ScopedEventLog {
 
   private val logger = Logger[ScopedEventLog.type]
 
-  private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
+  private val noop: ConnectionIO[Unit] = doobie.free.connection.unit
 
   def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable](
       definition: ScopedEntityDefinition[Id, S, Command, E, Rejection],

@@ -24,23 +24,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.projects.{creat
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.read as ReadResources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.*
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsConfig, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectScopeResolver, Projects, ProjectsConfig, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
 /**
   * The project routes
-  * @param identities
-  *   the identity module
-  * @param aclCheck
-  *   verify the acls for users
-  * @param projects
-  *   the projects module
-  * @param projectsStatistics
-  *   the statistics by project
   */
 final class ProjectsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     projects: Projects,
+    projectScopeResolver: ProjectScopeResolver,
     projectsStatistics: ProjectsStatistics
 )(implicit
     baseUri: BaseUri,
@@ -53,16 +48,17 @@ final class ProjectsRoutes(
 
   implicit val paginationConfig: PaginationConfig = config.pagination
 
-  private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] = {
+  private def projectsSearchParams(org: Option[Label])(implicit caller: Caller): Directive1[ProjectSearchParams] = {
     (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      val filter = projectScopeResolver.access(org.fold(Scope.root)(Scope.Org), ReadProjects).memoize
       ProjectSearchParams(
-        None,
+        org,
         deprecated,
         rev,
         createdBy,
         updatedBy,
         label,
-        proj => aclCheck.authorizeFor(proj.ref, ReadProjects)
+        proj => filter.flatMap(_.map(_.grant(proj.ref)))
       )
     }
   }
@@ -75,7 +71,7 @@ final class ProjectsRoutes(
         extractCaller { implicit caller =>
           concat(
             // List projects
-            (get & pathEndOrSingleSlash & extractHttp4sUri & fromPaginated & projectsSearchParams &
+            (get & pathEndOrSingleSlash & extractHttp4sUri & fromPaginated & projectsSearchParams(None) &
               sort[Project]) { (uri, pagination, params, order) =>
               implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
                 searchResultsJsonLdEncoder(Project.context, pagination, uri)
@@ -157,13 +153,13 @@ final class ProjectsRoutes(
               )
             },
             // list projects for an organization
-            (get & label & pathEndOrSingleSlash & extractHttp4sUri & fromPaginated & projectsSearchParams &
-              sort[Project]) { (organization, uri, pagination, params, order) =>
-              implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
-                searchResultsJsonLdEncoder(Project.context, pagination, uri)
-
-              val filter = params.copy(organization = Some(organization))
-              emit(projects.list(pagination, filter, order).widen[SearchResults[ProjectResource]])
+            (get & label & pathEndOrSingleSlash) { org =>
+              (extractHttp4sUri & fromPaginated & projectsSearchParams(Some(org)) & sort[Project]) {
+                (uri, pagination, params, order) =>
+                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
+                    searchResultsJsonLdEncoder(Project.context, pagination, uri)
+                  emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
+              }
             }
           )
         }
@@ -181,6 +177,7 @@ object ProjectsRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       projects: Projects,
+      projectScopeResolver: ProjectScopeResolver,
       projectsStatistics: ProjectsStatistics
   )(implicit
       baseUri: BaseUri,
@@ -189,6 +186,6 @@ object ProjectsRoutes {
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
   ): Route =
-    new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics).routes
+    new ProjectsRoutes(identities, aclCheck, projects, projectScopeResolver, projectsStatistics).routes
 
 }

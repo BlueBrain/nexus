@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Boom, Never, Subtract}
@@ -10,9 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ProjectionStateSave}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import doobie.syntax.all.*
 import munit.AnyFixture
 
 import scala.concurrent.duration.*
@@ -41,15 +44,29 @@ class GlobalEventLogSuite extends NexusSuite with Doobie.Fixture {
 
   private val maxDuration = 100.millis
 
+  private def projectionSave = ProjectionStateSave[Iri, Total](
+    (id: Iri, total: Total) => sql"""| CREATE TABLE IF NOT EXISTS public.test_total_projection(
+            |    id        text            NOT NULL,
+            |    total     bigint          NOT NULL
+            | );
+            | INSERT INTO public.test_total_projection VALUES ($id, ${total.value}) ;
+            |""".stripMargin.update.run.void,
+    _ => sql"""DROP TABLE IF EXISTS public.test_total_projection;""".update.run.void
+  )
+
   private lazy val eventLog: GlobalEventLog[Iri, Total, ArithmeticCommand, ArithmeticEvent, ArithmeticRejection] =
     GlobalEventLog(
       eventStore,
       stateStore,
       Arithmetic.stateMachine,
       AlreadyExists,
+      projectionSave,
       maxDuration,
       xas
     )
+
+  private def getProjectionTotal(id: Iri) =
+    sql"""SELECT total from public.test_total_projection where id = $id""".query[Int].unique.transact(xas.read)
 
   private val plus2  = Plus(1, 2)
   private val plus3  = Plus(2, 3)
@@ -70,6 +87,7 @@ class GlobalEventLogSuite extends NexusSuite with Doobie.Fixture {
       _ <- eventLog.evaluate(id, Add(2)).assertEquals((plus2, total1))
       _ <- eventStore.history(id).assert(plus2)
       _ <- eventLog.stateOr(id, NotFound).assertEquals(total1)
+      _ <- getProjectionTotal(id).assertEquals(total1.value)
     } yield ()
   }
 

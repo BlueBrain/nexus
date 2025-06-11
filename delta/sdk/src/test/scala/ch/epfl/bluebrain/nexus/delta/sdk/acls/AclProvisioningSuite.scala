@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.ProvisioningAction.Outcome
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{AclAddressFilter, FlattenedAclStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -29,11 +29,14 @@ class AclProvisioningSuite extends NexusSuite with Doobie.Fixture with TempDirec
 
   private val minimumPermissions: Set[Permission] = PermissionsGen.minimum
 
+  private lazy val aclStore = new FlattenedAclStore(xas)
+
   private lazy val acls: Acls = AclsImpl(
     IO.pure(minimumPermissions),
     Acls.findUnknownRealms(_, Set(realm)),
     minimumPermissions,
     eventLogConfig,
+    aclStore,
     xas,
     clock
   )

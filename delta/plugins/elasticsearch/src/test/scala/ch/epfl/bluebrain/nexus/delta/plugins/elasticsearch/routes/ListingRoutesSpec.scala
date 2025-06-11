@@ -36,6 +36,10 @@ class ListingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   private def projectResolver: ProjectScopeResolver = new ProjectScopeResolver {
     override def apply(scope: Scope, permission: Permission)(implicit caller: Caller): IO[Set[ProjectRef]] =
       IO.pure { Set.empty }
+
+    override def access(scope: Scope, permission: Permission)(implicit
+        caller: Caller
+    ): IO[ProjectScopeResolver.PermissionAccess] = ???
   }
 
   private lazy val mainIndexQuery = new DummyMainIndexQuery

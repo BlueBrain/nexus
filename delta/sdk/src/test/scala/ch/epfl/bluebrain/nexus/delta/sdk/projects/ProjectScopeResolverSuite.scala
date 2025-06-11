@@ -1,17 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import cats.syntax.all.*
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{AclAddress, FlattenedAclStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.permissions
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import doobie.syntax.all.*
+import fs2.Stream
+import munit.AnyFixture
 
-class ProjectScopeResolverSuite extends NexusSuite {
+class ProjectScopeResolverSuite extends NexusSuite with Doobie.Fixture {
+
+  override def munitFixtures: Seq[AnyFixture[?]] = List(doobie)
 
   private val realm           = Label.unsafe("myrealm")
   private val alice: Caller   = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -26,26 +32,28 @@ class ProjectScopeResolverSuite extends NexusSuite {
   private val org2     = Label.unsafe("org2")
   private val project3 = ProjectRef(org2, Label.unsafe("proj3"))
 
-  private val aclCheck = AclSimpleCheck.unsafe(
-    // Bob has full access
-    (bob.subject, AclAddress.Root, Set(permissions.read)),
-    // Alice has full access to all resources in org
-    (alice.subject, AclAddress.Organization(org), Set(permissions.read)),
-    // Charlie has access to resources in project1
-    (charlie.subject, AclAddress.Project(project1), Set(permissions.read))
-  )
+  private lazy val xas = doobie()
 
-  private def fetchProjects(scope: Scope): IO[List[ProjectRef]] = IO.pure {
+  private lazy val aclStore = new FlattenedAclStore(xas)
+
+  private def fetchProjects(scope: Scope): Stream[IO, ProjectRef] =
     scope match {
-      case Scope.Root             => List(project1, project2, project3)
-      case Scope.Org(`org`)       => List(project1, project2)
-      case Scope.Org(`org2`)      => List(project3)
-      case Scope.Org(_)           => List.empty
-      case Scope.Project(project) => List(project)
+      case Scope.Root             => Stream(project1, project2, project3)
+      case Scope.Org(`org`)       => Stream(project1, project2)
+      case Scope.Org(`org2`)      => Stream(project3)
+      case Scope.Org(_)           => Stream.empty
+      case Scope.Project(project) => Stream(project)
     }
-  }
 
-  private val projectResolver = ProjectScopeResolver(fetchProjects(_), aclCheck)
+  private lazy val projectResolver = ProjectScopeResolver(fetchProjects(_), aclStore)
+
+  test("Import acls") {
+    (
+      aclStore.insert(AclAddress.Root, Map(bob.subject -> Set(permissions.read))) >>
+        aclStore.insert(AclAddress.Organization(org), Map(alice.subject -> Set(permissions.read))) >>
+        aclStore.insert(AclAddress.Project(project1), Map(charlie.subject -> Set(permissions.read)))
+    ).transact(xas.write)
+  }
 
   test(s"Get $project1 for a user with full access") {
     projectResolver(Scope.Project(project1), permissions.read)(bob).assertEquals(Set(project1))

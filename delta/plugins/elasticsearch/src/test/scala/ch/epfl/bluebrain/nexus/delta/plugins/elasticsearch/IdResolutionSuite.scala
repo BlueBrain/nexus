@@ -38,6 +38,10 @@ class IdResolutionSuite extends NexusSuite with Fixtures {
   private def projectResolver: ProjectScopeResolver = new ProjectScopeResolver {
     override def apply(scope: Scope, permission: Permission)(implicit caller: Caller): IO[Set[ProjectRef]] =
       IO.pure { Set(project1, project2) }
+
+    override def access(scope: Scope, permission: Permission)(implicit
+        caller: Caller
+    ): IO[ProjectScopeResolver.PermissionAccess] = ???
   }
 
   private def mainIndexQuery(searchResults: SearchResults[JsonObject]): MainIndexQuery = {

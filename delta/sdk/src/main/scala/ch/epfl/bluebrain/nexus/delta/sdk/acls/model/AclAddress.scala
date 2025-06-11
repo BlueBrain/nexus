@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
+import cats.data.NonEmptyList
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalAclAddressFormatError
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import doobie.{Get, Put}
 import io.circe.{Decoder, Encoder, KeyDecoder}
@@ -27,7 +29,7 @@ sealed trait AclAddress extends Product with Serializable {
     * @return
     *   an ordered list of ancestors (that includes this address) first to last being project to root
     */
-  def ancestors: List[AclAddress]
+  def ancestors: NonEmptyList[AclAddress]
 
   override def toString: String = string
 }
@@ -55,6 +57,12 @@ object AclAddress {
     case _                           => Left(IllegalAclAddressFormatError())
   }
 
+  final def fromScope(scope: Scope): AclAddress = scope match {
+    case Scope.Root             => Root
+    case Scope.Org(label)       => Organization(label)
+    case Scope.Project(project) => Project(project)
+  }
+
   type Root = Root.type
 
   /**
@@ -62,9 +70,9 @@ object AclAddress {
     */
   final case object Root extends AclAddress {
 
-    val string: String              = "/"
-    val parent: Option[AclAddress]  = None
-    val ancestors: List[AclAddress] = List(this)
+    val string: String                      = "/"
+    val parent: Option[AclAddress]          = None
+    val ancestors: NonEmptyList[AclAddress] = NonEmptyList.one(this)
   }
 
   /**
@@ -72,9 +80,9 @@ object AclAddress {
     */
   final case class Organization(org: Label) extends AclAddress {
 
-    val string                      = s"/$org"
-    val parent: Option[AclAddress]  = Some(Root)
-    val ancestors: List[AclAddress] = List(this, Root)
+    val string                              = s"/$org"
+    val parent: Option[AclAddress]          = Some(Root)
+    val ancestors: NonEmptyList[AclAddress] = NonEmptyList.of(this, Root)
   }
 
   /**
@@ -82,9 +90,9 @@ object AclAddress {
     */
   final case class Project(org: Label, project: Label) extends AclAddress {
 
-    val string                      = s"/$org/$project"
-    val parent: Option[AclAddress]  = Some(Organization(org))
-    val ancestors: List[AclAddress] = List(this, Organization(org), Root)
+    val string                              = s"/$org/$project"
+    val parent: Option[AclAddress]          = Some(Organization(org))
+    val ancestors: NonEmptyList[AclAddress] = NonEmptyList.of(this, Organization(org), Root)
   }
 
   object Project {

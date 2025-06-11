@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.*
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ProjectionStateSave
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 
 import java.time.Instant
@@ -324,6 +325,7 @@ object Acls {
   def definition(
       fetchPermissionSet: IO[Set[Permission]],
       findUnknownRealms: Set[Label] => IO[Unit],
+      flattenedAclStore: FlattenedAclStore,
       clock: Clock[IO]
   ): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
     GlobalEntityDefinition(
@@ -334,7 +336,11 @@ object Acls {
       onUniqueViolation = (address: AclAddress, c: AclCommand) =>
         c match {
           case c => IncorrectRev(address, c.rev, c.rev + 1)
-        }
+        },
+      ProjectionStateSave(
+        (address, state) => flattenedAclStore.insert(address, state.acl.value),
+        flattenedAclStore.delete
+      )
     )
 
   /**
