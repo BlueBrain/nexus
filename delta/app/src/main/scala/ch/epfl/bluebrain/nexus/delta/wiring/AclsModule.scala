@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import akka.http.scaladsl.server.RouteConcatenation
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsConfig, StoragePermissionProvider}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 
@@ -24,11 +25,11 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   * Acls module wiring config.
   */
 // $COVERAGE-OFF$
-object AclsModule extends ModuleDef {
+class AclsModule(aclsConfig: AclsConfig, permissionConfig: PermissionsConfig) extends ModuleDef {
+
+  private val logger = Logger[AclsModule]
 
   implicit private val loader: ClasspathResourceLoader = ClasspathResourceLoader.withContext(getClass)
-
-  make[AclsConfig].from { (config: AppConfig) => config.acls }
 
   make[FlattenedAclStore].from { (xas: Transactors) => new FlattenedAclStore(xas) }
 
@@ -36,7 +37,6 @@ object AclsModule extends ModuleDef {
     (
         permissions: Permissions,
         flattenedAclStore: FlattenedAclStore,
-        config: AclsConfig,
         xas: Transactors,
         clock: Clock[IO]
     ) =>
@@ -44,7 +44,7 @@ object AclsModule extends ModuleDef {
         permissions.fetchPermissionSet,
         AclsImpl.findUnknownRealms(xas),
         permissions.minimum,
-        config.eventLog,
+        aclsConfig.eventLog,
         flattenedAclStore,
         xas,
         clock
@@ -65,8 +65,18 @@ object AclsModule extends ModuleDef {
       new AclsRoutes(identities, acls, aclCheck)(baseUri, cr, ordering)
   }
 
-  make[AclProvisioning].from { (acls: Acls, config: AclsConfig, serviceAccount: ServiceAccount) =>
-    new AclProvisioning(acls, config.provisioning, serviceAccount)
+  if (aclsConfig.enableOwnerPermissions) {
+    many[ScopeInitialization].addEffect { (acls: Acls, serviceAccount: ServiceAccount) =>
+      logger
+        .info("Owner permissions initialization is enabled")
+        .as(
+          OwnerPermissionsScopeInitialization(acls, permissionConfig.ownerPermissions, serviceAccount)
+        )
+    }
+  }
+
+  make[AclProvisioning].from { (acls: Acls, serviceAccount: ServiceAccount) =>
+    new AclProvisioning(acls, aclsConfig.provisioning, serviceAccount)
   }
 
   many[ProjectDeletionTask].add { (acls: Acls) => Acls.projectDeletionTask(acls) }

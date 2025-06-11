@@ -11,10 +11,13 @@ import pureconfig.generic.semiauto.deriveReader
   *   The event log configuration
   * @param provisioning
   *   The provisioning
+  * @param enableOwnerPermissions
+  *   Enable the creation of owner permissions when
   */
 final case class AclsConfig(
     eventLog: EventLogConfig,
-    provisioning: AclProvisioningConfig
+    provisioning: AclProvisioningConfig,
+    enableOwnerPermissions: Boolean
 )
 
 object AclsConfig {
