@@ -772,8 +772,6 @@ lazy val noPublish = Seq(
   Test / packageBin / publishArtifact    := false,
   Test / packageDoc / publishArtifact    := false,
   Test / packageSrc / publishArtifact    := false,
-  sonatypeCredentialHost                 := "s01.oss.sonatype.org",
-  sonatypeRepository                     := "https://s01.oss.sonatype.org/service/local",
   versionScheme                          := Some("strict")
 )
 
@@ -867,8 +865,6 @@ lazy val release = Seq(
   pomPostProcess                      := { node =>
     XmlTransformer.transformer(moduleFilter("org.scoverage") | moduleFilter("com.sksamuel.scapegoat")).transform(node).head
   },
-  sonatypeCredentialHost              := "s01.oss.sonatype.org",
-  sonatypeRepository                  := "https://s01.oss.sonatype.org/service/local",
   versionScheme                       := Some("strict")
 )
 
@@ -911,8 +907,6 @@ ThisBuild / developers                   := List(
   Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
   Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
 )
-ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
-ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"
 
 Global / excludeLintKeys        += packageDoc / publishArtifact
 Global / excludeLintKeys        += docs / paradoxRoots
