@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.{Directive, Route}
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.akka.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.mainIndexingProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.read as Read
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.MainIndexQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -66,7 +67,7 @@ final class MainIndexRoutes(
               (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                 authorizeFor(project, permissions.query).apply {
                   (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                    emit(defaultIndexQuery.search(project, query, qp))
+                    emit(defaultIndexQuery.search(project, query, qp).attemptNarrow[ElasticSearchViewRejection])
                   }
                 }
               }
