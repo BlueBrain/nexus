@@ -14,7 +14,7 @@ class ElasticSearchContainer(password: String)
     extends GenericContainer[ElasticSearchContainer](
       DockerImageName.parse(s"docker.elastic.co/elasticsearch/elasticsearch:$Version")
     ) {
-  addEnv("ES_JAVA_OPTS", "-Xmx512m")
+  addEnv("ES_JAVA_OPTS", "-Xmx4G")
   addEnv("discovery.type", "single-node")
   addEnv("xpack.security.enabled", "true")
   addEnv("ingest.geoip.downloader.enabled", "false")
