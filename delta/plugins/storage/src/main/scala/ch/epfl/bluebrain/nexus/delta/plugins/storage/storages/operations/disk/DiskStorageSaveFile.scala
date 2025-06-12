@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
 import cats.effect.IO
+import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Hex
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
@@ -52,14 +53,19 @@ final class DiskStorageSaveFile(implicit uuidf: UUIDF) {
   // Stores the file while computing the hash and the file size
   private def store(algorithm: DigestAlgorithm, fullPath: Path): Pipe[IO, ByteBuffer, (Long, ComputedDigest)] = {
     def go(hasher: Hasher[IO], cursor: WriteCursor[IO], stream: FileData): Pull[IO, (Long, ComputedDigest), Unit] = {
-      stream.pull.uncons1.flatMap {
-        case Some((buffer, tail)) =>
-          val chunk = Chunk.byteBuffer(buffer)
-          Pull.eval(hasher.update(chunk)) >>
-            Pull.eval(cursor.write(chunk)).flatMap { nc =>
+      stream.pull.uncons.flatMap {
+        case Some((buffers, tail)) =>
+          Pull
+            .eval(
+              buffers.foldLeftM(cursor) { (accCursor, buffer) =>
+                val chunk = Chunk.byteBuffer(buffer)
+                hasher.update(chunk) >> accCursor.write(chunk)
+              }
+            )
+            .flatMap { nc =>
               go(hasher, nc, tail)
             }
-        case None                 =>
+        case None                  =>
           Pull.eval(hasher.hash).flatMap { hash =>
             val digest = ComputedDigest(algorithm, Hex.valueOf(hash.bytes.toArray))
             Pull.eval(cursor.file.size).flatMap { size =>
@@ -88,7 +94,7 @@ object DiskStorageSaveFile {
       _                    <- Files[IO].createDirectories(dir).adaptError { e => couldNotCreateDirectory(dir, e.getMessage) }
     } yield resolved -> relative
 
-  def computeLocation(
+  private def computeLocation(
       project: ProjectRef,
       volume: AbsolutePath,
       filename: String,

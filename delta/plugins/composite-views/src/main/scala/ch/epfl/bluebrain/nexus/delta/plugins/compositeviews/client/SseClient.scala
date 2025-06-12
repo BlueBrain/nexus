@@ -28,10 +28,10 @@ object SseClient {
   def apply(client: Client[IO], retryDelay: FiniteDuration, uri: Uri, offset: Offset): EventStream[IO] = {
 
     def go(stream: EventStream[IO], lastEventId: EventId): Pull[IO, ServerSentEvent, Unit] =
-      stream.pull.uncons1.flatMap {
-        case Some((event, tail)) =>
-          Pull.output1(event) >> go(tail, event.id.getOrElse(lastEventId))
-        case None                =>
+      stream.pull.uncons.flatMap {
+        case Some((events, tail)) =>
+          Pull.output(events) >> go(tail, events.last.flatMap(_.id).getOrElse(lastEventId))
+        case None                 =>
           Pull.eval(IO.sleep(retryDelay)) >>
             resume(lastEventId)
       }
