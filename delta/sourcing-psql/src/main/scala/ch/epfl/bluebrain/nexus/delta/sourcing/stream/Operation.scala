@@ -4,7 +4,7 @@ import cats.data.NonEmptyChain
 import cats.effect.IO
 import cats.syntax.all.*
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.config.BatchConfig
 import fs2.{Pull, Stream}
@@ -163,39 +163,24 @@ object Operation {
       */
     def apply(element: SuccessElem[In]): IO[Elem[Out]]
 
-    /**
-      * Checks if the provided elem has a successful element value of type `I`. If true, it will return it in Right.
-      * Otherwise it will return it in Left with the type `O`. This is safe because [[Elem]] is covariant.
-      *
-      * @param element
-      *   an elem with an Elem to be tested
-      */
-    protected def partitionSuccess[I, O](element: Elem[I]): Either[Elem[O], SuccessElem[I]] =
-      element match {
-        case _: SuccessElem[?]              => Right(element.asInstanceOf[SuccessElem[I]])
-        case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
-      }
-
     override protected[stream] def asFs2: ElemPipe[In, Out] = {
       def go(s: ElemStream[In]): Pull[IO, Elem[Out], Unit] = {
-        s.pull.uncons1.flatMap {
-          case Some((head, tail)) =>
-            partitionSuccess(head) match {
-              case Right(value) =>
-                Pull
-                  .eval(
-                    apply(value)
-                      .handleErrorWith { err =>
-                        logger
-                          .error(err)(s"Error while applying pipe $name on element ${value.id}")
-                          .as(value.failed(err))
-                      }
-                  )
-                  .flatMap(Pull.output1) >> go(tail)
-              case Left(other)  =>
-                Pull.output1(other) >> go(tail)
-            }
-          case None               => Pull.done
+        s.pull.uncons.flatMap {
+          case Some((chunk, tail)) =>
+            Pull
+              .eval(
+                chunk.traverse {
+                  case s: SuccessElem[In] =>
+                    apply(s).handleErrorWith { err =>
+                      logger
+                        .error(err)(s"Error while applying pipe $name on element ${s.id}")
+                        .as(s.failed(err))
+                    }
+                  case other              => IO.pure(other.asInstanceOf[Elem[Out]])
+                }
+              )
+              .flatMap(Pull.output) >> go(tail)
+          case None                => Pull.done
         }
       }
       in => go(in).stream
