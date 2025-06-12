@@ -195,14 +195,17 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
 
     "return 400 with bad query instances on main and custom views" in {
       for {
-        _ <- deltaClient.post[Json](s"/views/$project1/test-resource:cell-view/_search", invalidElasticQuery, ScoobyDoo) { (json, response) =>
-          response.status shouldEqual StatusCodes.BadRequest
-          json shouldEqual jsonContentOf("kg/views/elasticsearch/elastic-error.json")
-        }
-        _ <- deltaClient.post[Json](s"/views/$project1/documents/_search", invalidElasticQuery, ScoobyDoo) { (json, response) =>
-          response.status shouldEqual StatusCodes.BadRequest
-          json shouldEqual jsonContentOf("kg/views/elasticsearch/elastic-error.json")
-        }
+        _ <-
+          deltaClient.post[Json](s"/views/$project1/test-resource:cell-view/_search", invalidElasticQuery, ScoobyDoo) {
+            (json, response) =>
+              response.status shouldEqual StatusCodes.BadRequest
+              json shouldEqual jsonContentOf("kg/views/elasticsearch/elastic-error.json")
+          }
+        _ <- deltaClient.post[Json](s"/views/$project1/documents/_search", invalidElasticQuery, ScoobyDoo) {
+               (json, response) =>
+                 response.status shouldEqual StatusCodes.BadRequest
+                 json shouldEqual jsonContentOf("kg/views/elasticsearch/elastic-error.json")
+             }
       } yield succeed
     }
 
