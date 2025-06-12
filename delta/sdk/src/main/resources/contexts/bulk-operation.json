@@ -1,9 +1,0 @@
-{
-  "@context": {
-    "_results": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/results",
-      "@container": "@list"
-    }
-  },
-  "@id": "https://bluebrain.github.io/nexus/contexts/bulk-operation.json"
-}

@@ -99,7 +99,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
-      bulkOpCtx         <- ContextValue.fromFile("contexts/bulk-operation.json")
       errorCtx          <- ContextValue.fromFile("contexts/error.json")
       metadataCtx       <- ContextValue.fromFile("contexts/metadata.json")
       searchCtx         <- ContextValue.fromFile("contexts/search.json")
@@ -117,8 +116,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
         contexts.remoteContexts -> remoteContextsCtx,
         contexts.tags           -> tagsCtx,
         contexts.version        -> versionCtx,
-        contexts.validation     -> validationCtx,
-        contexts.bulkOperation  -> bulkOpCtx
+        contexts.validation     -> validationCtx
       )
       .merge(otherCtxResolutions.toSeq*)
   }
