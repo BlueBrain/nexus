@@ -11,7 +11,8 @@ on:
       - '.github/workflows/ci-snapshot.yml'
 jobs:
   publish-snapshot:
-    if: github.event_name == 'push'
+    if: false  # Disabling the snapshot workflow for now
+    #if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
