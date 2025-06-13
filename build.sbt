@@ -681,7 +681,7 @@ lazy val graphAnalyticsPlugin = project
     libraryDependencies        += kamonAkkaHttp % Provided,
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
-    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics",
+    buildInfoPackage           := "ai.senscience.nexus.delta.plugins.graph.analytics",
     assembly / assemblyJarName := "graph-analytics.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
