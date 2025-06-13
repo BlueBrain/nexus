@@ -636,7 +636,7 @@ lazy val archivePlugin = project
     ),
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
-    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.archive",
+    buildInfoPackage           := "ai.senscience.nexus.delta.plugins.archive",
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
