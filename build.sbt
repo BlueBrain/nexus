@@ -208,10 +208,10 @@ lazy val docs = project
         .withFavicon("./assets/img/favicon-32x32.png")
         .withLogo("./assets/img/logo.png")
         .withCustomStylesheet("./assets/css/docs.css")
-        .withRepository(uri("https://github.com/BlueBrain/nexus"))
+        .withRepository(uri("https://github.com/senscience/nexus-delta"))
         .withSocial(
-          uri("https://github.com/BlueBrain"),
-          uri("https://github.com/BlueBrain/nexus/discussions")
+          uri("https://github.com/senscience"),
+          uri("https://github.com/senscience/nexus-delta/discussions")
         )
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright(s"""Nexus is Open Source and available under the Apache 2 License.<br/>
@@ -899,10 +899,9 @@ ThisBuild / scapegoatDisabledInspections := Seq(
 )
 ThisBuild / homepage                     := Some(url("https://bluebrainnexus.io"))
 ThisBuild / licenses                     := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
-ThisBuild / scmInfo                      := Some(ScmInfo(url("https://github.com/BlueBrain/nexus"), "scm:git:git@github.com:BlueBrain/nexus.git"))
+ThisBuild / scmInfo                      := Some(ScmInfo(url("https://github.com/senscience/nexus-delta"), "scm:git:git@github.com:senscience/nexus-delta.git"))
 ThisBuild / developers                   := List(
-  Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
+  Developer("imsdu", "Simon Dumas", "noreply@senscience.ai", url("https://www.senscience.ai/"))
 )
 
 Global / excludeLintKeys        += packageDoc / publishArtifact
