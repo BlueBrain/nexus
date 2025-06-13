@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
+package ai.senscience.nexus.delta.projectdeletion
 
+import ai.senscience.nexus.delta.projectdeletion.model.ProjectDeletionConfig
 import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.instantSyntax
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 
 import java.time.{Duration, Instant}

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
+package ai.senscience.nexus.delta.projectdeletion
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts as nxvContexts

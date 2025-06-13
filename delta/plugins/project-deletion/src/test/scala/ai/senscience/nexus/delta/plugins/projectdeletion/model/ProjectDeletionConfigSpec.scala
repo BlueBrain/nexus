@@ -1,5 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model
+package ai.senscience.nexus.delta.plugins.projectdeletion.model
 
+import ai.senscience.nexus.delta.projectdeletion.model.ProjectDeletionConfig
+import ai.senscience.nexus.delta.projectdeletion.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, TitaniumJsonLdApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits.*

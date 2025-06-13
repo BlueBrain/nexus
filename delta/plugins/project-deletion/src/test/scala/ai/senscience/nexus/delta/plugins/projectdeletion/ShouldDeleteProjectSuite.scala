@@ -1,8 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
+package ai.senscience.nexus.delta.plugins.projectdeletion
 
+import ai.senscience.nexus.delta.plugins.projectdeletion.ShouldDeleteProjectSuite.{assertDeleted, assertNotDeleted, configWhere, projectWhere, shouldBeDeleted, ThreeHoursAgo, TwoDaysAgo}
+import ai.senscience.nexus.delta.projectdeletion.ShouldDeleteProject
+import ai.senscience.nexus.delta.projectdeletion.model.ProjectDeletionConfig
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ShouldDeleteProjectSuite.{assertDeleted, assertNotDeleted, configWhere, projectWhere, shouldBeDeleted, ThreeHoursAgo, TwoDaysAgo}
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource

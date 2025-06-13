@@ -1,8 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
+package ai.senscience.nexus.delta.plugins.projectdeletion
 
+import ai.senscience.nexus.delta.projectdeletion.ProjectDeletionRoutes
+import ai.senscience.nexus.delta.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri

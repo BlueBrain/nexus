@@ -1,8 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
+package ai.senscience.nexus.delta.projectdeletion
 
+import ai.senscience.nexus.delta.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceLoader
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model
+package ai.senscience.nexus.delta.projectdeletion.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords

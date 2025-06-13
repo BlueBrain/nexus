@@ -1,8 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
+package ai.senscience.nexus.delta.projectdeletion
 
+import ai.senscience.nexus.delta.plugins.projectdeletion.BuildInfo
+import ai.senscience.nexus.delta.projectdeletion.model.ProjectDeletionConfig
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.dependency.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef

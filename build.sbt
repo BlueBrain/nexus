@@ -656,7 +656,7 @@ lazy val projectDeletionPlugin = project
     moduleName                 := "delta-project-deletion-plugin",
     libraryDependencies        += kamonAkkaHttp % Provided,
     buildInfoKeys              := Seq[BuildInfoKey](version),
-    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion",
+    buildInfoPackage           := "ai.senscience.nexus.delta.plugins.projectdeletion",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "project-deletion.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
