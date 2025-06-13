@@ -21,7 +21,7 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="ch.epfl.bluebrain.nexus" additivity="false" level="${LOG_LEVEL:-INFO}">
+    <logger name="ai.senscience.nexus" additivity="false" level="${LOG_LEVEL:-INFO}">
         <appender-ref ref="STDOUT" />
     </logger>
 

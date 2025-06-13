@@ -12,7 +12,7 @@ import ai.senscience.nexus.tests.kg.files.model.FileInput
 import ai.senscience.nexus.tests.kg.files.model.FileInput.*
 import ai.senscience.nexus.tests.{BaseIntegrationSpec, Identity}
 import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.headers.{Accept, ETag, `If-None-Match`}
+import akka.http.scaladsl.model.headers.{`If-None-Match`, Accept, ETag}
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.akka.marshalling.RdfMediaTypes

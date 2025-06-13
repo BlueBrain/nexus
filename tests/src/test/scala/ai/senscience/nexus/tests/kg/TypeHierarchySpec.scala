@@ -1,7 +1,7 @@
 package ai.senscience.nexus.tests.kg
 
 import ai.senscience.nexus.tests.BaseIntegrationSpec
-import ai.senscience.nexus.tests.Identity.{Anonymous, typehierarchy}
+import ai.senscience.nexus.tests.Identity.{typehierarchy, Anonymous}
 import ai.senscience.nexus.tests.iam.types.Permission.TypeHierarchy
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.{IO, Ref}

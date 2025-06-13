@@ -427,7 +427,7 @@ lazy val app = project
     addCompilerPlugin(betterMonadicFor),
     run / fork            := true,
     buildInfoKeys         := Seq[BuildInfoKey](version),
-    buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
+    buildInfoPackage      := "ai.senscience.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
     copyPlugins           := {
       val esFile              = (elasticsearchPlugin / assembly).value

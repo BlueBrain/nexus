@@ -40,11 +40,11 @@ dependencies which can be used by Delta and other plugins.
 **Example**
 
 TestPluginRoutes.scala
-:   @@snip [TestPluginRoutes.scala](../../../../../../../delta/plugins/test-plugin/src/main/scala/ch/epfl/bluebrain/nexus/delta/testplugin/TestPluginRoutes.scala)
+:   @@snip [TestPluginRoutes.scala](../../../../../../../delta/plugins/test-plugin/src/main/scala/ai/senscience/nexus/delta/testplugin/TestPluginRoutes.scala)
 
 
 TestPluginDef.scala
-:   @@snip [TestPluginDef.scala](../../../../../../../delta/plugins/test-plugin/src/main/scala/ch/epfl/bluebrain/nexus/delta/testplugin/TestPluginDef.scala)
+:   @@snip [TestPluginDef.scala](../../../../../../../delta/plugins/test-plugin/src/main/scala/ai/senscience/nexus/delta/testplugin/TestPluginDef.scala)
 
 ### Delta SDK
 

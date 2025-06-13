@@ -4,7 +4,7 @@ import ai.senscience.nexus.tests.BaseIntegrationSpec
 import ai.senscience.nexus.tests.Identity.compositeviews.Jerry
 import ai.senscience.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
 import ai.senscience.nexus.tests.kg.CompositeViewsLifeCycleSpec.Spaces.ProjectionSpace
-import ai.senscience.nexus.tests.kg.CompositeViewsLifeCycleSpec.{Spaces, query}
+import ai.senscience.nexus.tests.kg.CompositeViewsLifeCycleSpec.{query, Spaces}
 import cats.data.NonEmptyMap
 import cats.effect.IO
 import io.circe.generic.semiauto.deriveDecoder
