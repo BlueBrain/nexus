@@ -581,7 +581,7 @@ lazy val searchPlugin = project
     moduleName                 := "delta-search-plugin",
     libraryDependencies        += kamonAkkaHttp % Provided,
     buildInfoKeys              := Seq[BuildInfoKey](version),
-    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.search",
+    buildInfoPackage           := "ai.senscience.nexus.delta.plugins.search",
     addCompilerPlugin(betterMonadicFor),
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "search.jar",
